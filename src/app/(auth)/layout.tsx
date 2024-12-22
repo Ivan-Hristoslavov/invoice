@@ -1,7 +1,5 @@
 import Image from "next/image";
 import forest from "../../../public/grayforest.png";
-import elen from "../../../public/elen.png";
-import nature from "../../../public/nature.jpg";
 
 export default function AuthLayout({
   children,
@@ -12,7 +10,7 @@ export default function AuthLayout({
         <div className="w-1/2 h-4/6 ml-10 z-10">{children}</div>
           <Image
             src={forest}
-            alt="test"
+            alt="Forest"
             className="h-fit w-fit absolute rounded-3xl shadow-2xl "
           />
       </div>
