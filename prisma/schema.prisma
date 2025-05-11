@@ -12,3 +12,211 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  defaultLocale String    @default("en")
+  
+  accounts      Account[]
+  sessions      Session[]
+  companies     Company[]
+  clients       Client[]
+  products      Product[]
+  invoices      Invoice[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Invoice-related models
+
+model Company {
+  id                String    @id @default(cuid())
+  name              String
+  email             String?
+  phone             String?
+  address           String?
+  city              String?
+  state             String?
+  zipCode           String?
+  country           String?
+  vatNumber         String?   // VAT number for EU companies
+  taxIdNumber       String?   // Tax ID for other regions
+  registrationNumber String?  // Company registration number
+  bankName          String?
+  bankAccount       String?
+  bankSwift         String?
+  bankIban          String?
+  logo              String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  userId            String    
+  
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invoices          Invoice[]
+}
+
+model Client {
+  id                String    @id @default(cuid())
+  name              String
+  email             String?
+  phone             String?
+  address           String?
+  city              String?
+  state             String?
+  zipCode           String?
+  country           String?
+  vatNumber         String?   // VAT number for EU companies
+  taxIdNumber       String?   // Tax ID for other regions
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  userId            String
+  locale            String    @default("en") // Client preferred locale
+  
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invoices          Invoice[]
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  unit        String   @default("piece")
+  taxRate     Decimal  @default(0) @db.Decimal(5, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      String
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invoiceItems InvoiceItem[]
+  
+  // Product translations
+  translations ProductTranslation[]
+}
+
+model ProductTranslation {
+  id          String @id @default(cuid())
+  productId   String
+  locale      String
+  name        String
+  description String?
+  unit        String?
+  
+  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@unique([productId, locale])
+}
+
+model Invoice {
+  id              String   @id @default(cuid())
+  invoiceNumber   String
+  clientId        String
+  companyId       String
+  userId          String
+  issueDate       DateTime
+  dueDate         DateTime
+  status          InvoiceStatus @default(DRAFT)
+  subtotal        Decimal  @db.Decimal(10, 2)
+  taxAmount       Decimal  @db.Decimal(10, 2)
+  discount        Decimal? @db.Decimal(10, 2)
+  total           Decimal  @db.Decimal(10, 2)
+  notes           String?
+  termsAndConditions String?
+  currency        String   @default("USD")
+  locale          String   @default("en") // Invoice language
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  client          Client   @relation(fields: [clientId], references: [id])
+  company         Company  @relation(fields: [companyId], references: [id])
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items           InvoiceItem[]
+  payments        Payment[]
+  
+  @@unique([invoiceNumber, companyId])
+}
+
+model InvoiceItem {
+  id          String   @id @default(cuid())
+  invoiceId   String
+  productId   String?
+  description String
+  quantity    Decimal  @db.Decimal(10, 2)
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  taxRate     Decimal  @default(0) @db.Decimal(5, 2)
+  subtotal    Decimal  @db.Decimal(10, 2)
+  taxAmount   Decimal  @db.Decimal(10, 2)
+  total       Decimal  @db.Decimal(10, 2)
+  
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product     Product? @relation(fields: [productId], references: [id])
+}
+
+model Payment {
+  id          String       @id @default(cuid())
+  invoiceId   String
+  amount      Decimal      @db.Decimal(10, 2)
+  paymentDate DateTime
+  paymentMethod PaymentMethod
+  reference   String?
+  notes       String?
+  createdAt   DateTime     @default(now())
+  
+  invoice     Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+enum InvoiceStatus {
+  DRAFT
+  UNPAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  CASH
+  CREDIT_CARD
+  PAYPAL
+  OTHER
+}
