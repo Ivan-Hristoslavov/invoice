@@ -24,12 +24,18 @@ model User {
   updatedAt     DateTime  @updatedAt
   defaultLocale String    @default("en")
   
+  // Stripe related fields
+  stripeCustomerId String?  @unique
+  
   accounts      Account[]
   sessions      Session[]
   companies     Company[]
   clients       Client[]
   products      Product[]
   invoices      Invoice[]
+  documents     Document[]
+  userRoles     UserRole[]
+  subscriptions Subscription[]
 }
 
 model Account {
@@ -87,12 +93,28 @@ model Company {
   bankSwift         String?
   bankIban          String?
   logo              String?
+  
+  // Bulgarian-specific fields
+  bulstatNumber     String?   // Bulgarian company identifier (ЕИК/БУЛСТАТ)
+  vatRegistered     Boolean   @default(false) // Whether company is VAT registered (Регистрация по ЗДДС)
+  vatRegistrationNumber String? // VAT registration number (№ по ЗДДС)
+  mол               String?   // MOL - Manager/Representative (Представляващ/МОЛ)
+  accountablePerson String?   // Person responsible for the accounting
+  napUserName       String?   // Username for the NAP portal
+  napPassword       String?   // Encrypted password for NAP portal
+  certificateSerialNumber String? // Certificate serial number for e-signing
+  certificateThumbprint String?  // Certificate thumbprint
+  uicType           String?   @default("BULSTAT") // Valid values: "BULSTAT" or "EGN"
+  
+  taxComplianceSystem String?  @default("general") // Tax system: "bulgarian", "eu", or "general"
+  
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   userId            String    
   
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   invoices          Invoice[]
+  userRoles         UserRole[]
 }
 
 model Client {
@@ -107,6 +129,16 @@ model Client {
   country           String?
   vatNumber         String?   // VAT number for EU companies
   taxIdNumber       String?   // Tax ID for other regions
+  
+  // Bulgarian-specific fields
+  bulstatNumber     String?   // Bulgarian company identifier (ЕИК/БУЛСТАТ)
+  vatRegistered     Boolean   @default(false) // Whether client is VAT registered
+  vatRegistrationNumber String? // VAT registration number (№ по ЗДДС)
+  mол               String?   // MOL - Manager/Representative
+  uicType           String?   @default("BULSTAT") // Valid values: "BULSTAT" or "EGN"
+  
+  taxComplianceSystem String?  @default("general") // Tax system: "bulgarian", "eu", or "general"
+  
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   userId            String
@@ -167,11 +199,22 @@ model Invoice {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
+  // Bulgarian tax authority (НАП) specific fields
+  bulstatNumber   String?  // Bulgarian BULSTAT/EIK
+  isOriginal      Boolean  @default(true) // Whether this is the original or a copy
+  uniqueNapId     String?  // Unique identifier for НАП
+  placeOfIssue    String?  // Required place where invoice was issued
+  paymentMethod   String?  // For tracking payment method as per Bulgarian requirements
+  supplyDate      DateTime? // Date of supply/service delivery (дата на данъчно събитие)
+  isEInvoice      Boolean  @default(false) // Whether this is an electronic invoice
+  napStatus       String?  // Status of the invoice in the НАП system
+  
   client          Client   @relation(fields: [clientId], references: [id])
   company         Company  @relation(fields: [companyId], references: [id])
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   items           InvoiceItem[]
   payments        Payment[]
+  documents       Document[]
   
   @@unique([invoiceNumber, companyId])
 }
@@ -217,6 +260,143 @@ enum PaymentMethod {
   BANK_TRANSFER
   CASH
   CREDIT_CARD
-  PAYPAL
+  APPLE_PAY
+  GOOGLE_PAY
+  WIRE_TRANSFER
   OTHER
+}
+
+model Document {
+  id        String   @id @default(cuid())
+  name      String
+  size      Int
+  type      String
+  url       String
+  invoiceId String
+  userId    String
+  createdAt DateTime @default(now())
+  
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// User roles and permissions models
+
+enum Role {
+  ADMIN     // System admin with full access
+  OWNER     // Business owner with full access to their companies
+  MANAGER   // Company manager with access to most features
+  ACCOUNTANT // Can manage invoices and financials
+  VIEWER    // Read-only access
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rolePermissions RolePermission[]
+}
+
+model UserRole {
+  id        String   @id @default(cuid())
+  userId    String
+  role      Role     @default(VIEWER)
+  companyId String?  // If null, role applies across the system
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, companyId])
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  role         Role
+  permissionId String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([role, permissionId])
+}
+
+// Subscription models
+model Subscription {
+  id                   String            @id @default(cuid())
+  userId               String
+  stripeSubscriptionId String            @unique
+  status               SubscriptionStatus
+  plan                 SubscriptionPlan
+  priceId              String
+  quantity             Int               @default(1)
+  cancelAtPeriodEnd    Boolean           @default(false)
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  
+  // Payment history for this subscription
+  paymentHistory       SubscriptionPayment[]
+  history              SubscriptionHistory[]
+  
+  // Relation to User
+  user                 User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model SubscriptionPayment {
+  id                   String            @id @default(cuid())
+  subscriptionId       String
+  stripeInvoiceId      String            @unique
+  amount               Decimal           @db.Decimal(10, 2)
+  currency             String            @default("USD")
+  status               PaymentStatus
+  paymentMethod        String?
+  paymentIntentId      String?
+  createdAt            DateTime          @default(now())
+  
+  // Relation to Subscription
+  subscription         Subscription      @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+}
+
+model SubscriptionHistory {
+  id                   String            @id @default(cuid())
+  subscriptionId       String
+  status               SubscriptionStatus
+  event                String
+  createdAt            DateTime          @default(now())
+  
+  // Relation to Subscription
+  subscription         Subscription      @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  UNPAID
+  CANCELED
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  TRIALING
+  PAUSED
+}
+
+enum SubscriptionPlan {
+  BASIC
+  PRO
+  VIP
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
+  FAILED
+  PENDING
+  REFUNDED
+  VOID
 }

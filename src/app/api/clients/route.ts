@@ -16,7 +16,18 @@ const clientSchema = z.object({
   country: z.string().optional().or(z.literal("")),
   vatNumber: z.string().optional().or(z.literal("")),
   taxIdNumber: z.string().optional().or(z.literal("")),
+  
+  // Bulgarian-specific fields
+  bulstatNumber: z.string().optional().or(z.literal("")),
+  vatRegistered: z.boolean().optional().default(false),
+  vatRegistrationNumber: z.string().optional().or(z.literal("")),
+  mол: z.string().optional().or(z.literal("")),
+  uicType: z.enum(["BULSTAT", "EGN"]).optional().default("BULSTAT"),
+  
   locale: z.string().default("en"),
+  
+  // Tax compliance system selection
+  taxComplianceSystem: z.string().optional().default("general"),
 });
 
 export async function GET(request: NextRequest) {

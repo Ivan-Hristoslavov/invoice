@@ -1,0 +1,41 @@
+"use client";
+
+import { useState } from 'react';
+import { Button, ButtonProps } from '@/components/ui/button';
+import { useSubscription } from '@/hooks/useSubscription';
+import { SUBSCRIPTION_PLANS } from '@/lib/stripe';
+
+interface CheckoutButtonProps extends ButtonProps {
+  plan: keyof typeof SUBSCRIPTION_PLANS;
+  children: React.ReactNode;
+}
+
+export function CheckoutButton({
+  plan,
+  children,
+  ...props
+}: CheckoutButtonProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const { createCheckoutSession } = useSubscription();
+
+  const handleClick = async () => {
+    try {
+      setIsLoading(true);
+      await createCheckoutSession(plan);
+    } catch (error) {
+      console.error('Checkout error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Button
+      onClick={handleClick}
+      disabled={isLoading}
+      {...props}
+    >
+      {isLoading ? 'Redirecting...' : children}
+    </Button>
+  );
+} 

@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 export function Navbar() {
   const { data: session, status } = useSession();
@@ -21,6 +22,28 @@ export function Navbar() {
   // Skip rendering navbar on auth pages
   if (pathname.includes("/signin") || pathname.includes("/signup")) {
     return null;
+  }
+
+  // If we're on the home page but not authenticated, only show minimal navbar
+  if (pathname === "/" && !isAuthenticated) {
+    return (
+      <header className="sticky top-0 z-20 w-full bg-background/95 backdrop-blur border-b">
+        <div className="flex items-center justify-between h-16 px-4 md:px-6">
+          <div>
+            {/* Empty div for spacing */}
+          </div>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/signin">Sign in</Link>
+            </Button>
+            <Button size="sm" asChild>
+              <Link href="/signup">Sign up</Link>
+            </Button>
+          </div>
+        </div>
+      </header>
+    );
   }
 
   // Only show create invoice button on relevant pages
@@ -49,6 +72,8 @@ export function Navbar() {
 
           {isAuthenticated ? (
             <div className="flex items-center gap-4">
+              <ThemeToggle />
+              
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500"></span>
@@ -87,6 +112,7 @@ export function Navbar() {
             </div>
           ) : (
             <div className="flex items-center gap-2">
+              <ThemeToggle />
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/signin">Sign in</Link>
               </Button>

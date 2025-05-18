@@ -7,8 +7,16 @@ import { authOptions } from "@/lib/auth";
 const paymentSchema = z.object({
   invoiceId: z.string().min(1),
   amount: z.number().positive(),
-  paymentDate: z.date(),
-  paymentMethod: z.enum(["BANK_TRANSFER", "CASH", "CREDIT_CARD", "PAYPAL", "OTHER"]),
+  paymentDate: z.preprocess(
+    // Convert string dates, ISO strings or Date objects to Date
+    (arg) => {
+      if (arg instanceof Date) return arg;
+      if (typeof arg === 'string') return new Date(arg);
+      return arg;
+    },
+    z.date()
+  ),
+  paymentMethod: z.enum(["BANK_TRANSFER", "CASH", "CREDIT_CARD", "APPLE_PAY", "GOOGLE_PAY", "WIRE_TRANSFER", "OTHER"]),
   reference: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -25,78 +33,84 @@ export async function POST(request: NextRequest) {
     }
 
     const json = await request.json();
-    const validated = paymentSchema.parse(json);
-
-    // Verify invoice exists and belongs to user
-    const invoice = await prisma.invoice.findUnique({
-      where: {
-        id: validated.invoiceId,
-        userId: session.user.id,
-      },
-    });
-
-    if (!invoice) {
-      return NextResponse.json(
-        { error: "Invoice not found or doesn't belong to user" },
-        { status: 404 }
-      );
-    }
-
-    // Create payment
-    const payment = await prisma.payment.create({
-      data: {
-        invoiceId: validated.invoiceId,
-        amount: validated.amount,
-        paymentDate: validated.paymentDate,
-        paymentMethod: validated.paymentMethod,
-        reference: validated.reference || null,
-        notes: validated.notes || null,
-      },
-    });
-
-    // Check if invoice is fully paid
-    const totalPayments = await prisma.payment.aggregate({
-      where: {
-        invoiceId: validated.invoiceId,
-      },
-      _sum: {
-        amount: true,
-      },
-    });
-
-    const totalPaid = totalPayments._sum.amount || 0;
-
-    // Update invoice status if payment covers the total
-    if (totalPaid >= Number(invoice.total)) {
-      await prisma.invoice.update({
+    console.log("Received payment data:", JSON.stringify(json));
+    
+    try {
+      const validated = paymentSchema.parse(json);
+      
+      // Verify invoice exists and belongs to user
+      const invoice = await prisma.invoice.findUnique({
         where: {
           id: validated.invoiceId,
-        },
-        data: {
-          status: "PAID",
+          userId: session.user.id,
         },
       });
-    } else if (invoice.status === "DRAFT" || invoice.status === "OVERDUE") {
-      // If invoice was draft or overdue, update to unpaid
-      await prisma.invoice.update({
-        where: {
-          id: validated.invoiceId,
-        },
-        data: {
-          status: "UNPAID",
-        },
-      });
-    }
 
-    return NextResponse.json(payment, { status: 201 });
+      if (!invoice) {
+        return NextResponse.json(
+          { error: "Invoice not found or doesn't belong to user" },
+          { status: 404 }
+        );
+      }
+
+      // Create payment
+      const payment = await prisma.payment.create({
+        data: {
+          invoiceId: validated.invoiceId,
+          amount: validated.amount,
+          paymentDate: validated.paymentDate,
+          paymentMethod: validated.paymentMethod,
+          reference: validated.reference || null,
+          notes: validated.notes || null,
+        },
+      });
+
+      // Check if invoice is fully paid
+      const totalPayments = await prisma.payment.aggregate({
+        where: {
+          invoiceId: validated.invoiceId,
+        },
+        _sum: {
+          amount: true,
+        },
+      });
+
+      const totalPaid = totalPayments._sum.amount || 0;
+
+      // Update invoice status if payment covers the total
+      if (totalPaid >= Number(invoice.total)) {
+        await prisma.invoice.update({
+          where: {
+            id: validated.invoiceId,
+          },
+          data: {
+            status: "PAID",
+          },
+        });
+      } else if (invoice.status === "DRAFT" || invoice.status === "OVERDUE") {
+        // If invoice was draft or overdue, update to unpaid
+        await prisma.invoice.update({
+          where: {
+            id: validated.invoiceId,
+          },
+          data: {
+            status: "UNPAID",
+          },
+        });
+      }
+
+      return NextResponse.json(payment, { status: 201 });
+    } catch (validationError) {
+      if (validationError instanceof z.ZodError) {
+        console.error("Validation error:", validationError.errors);
+        return NextResponse.json(
+          { error: "Invalid payment data", details: validationError.errors },
+          { status: 400 }
+        );
+      }
+      throw validationError;
+    }
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Invalid payment data", details: error.errors },
-        { status: 400 }
-      );
-    }
-
     console.error("Error creating payment:", error);
     return NextResponse.json(
       { error: "Failed to create payment" },

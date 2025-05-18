@@ -17,6 +17,14 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const companyInfoSchema = z.object({
   id: z.string().optional(),
@@ -31,6 +39,13 @@ const companyInfoSchema = z.object({
   vatNumber: z.string().optional().or(z.literal("")),
   taxIdNumber: z.string().optional().or(z.literal("")),
   registrationNumber: z.string().optional().or(z.literal("")),
+  // Bulgarian-specific fields
+  bulstatNumber: z.string().optional().or(z.literal("")),
+  vatRegistered: z.boolean().default(false),
+  vatRegistrationNumber: z.string().optional().or(z.literal("")),
+  mол: z.string().optional().or(z.literal("")),
+  accountablePerson: z.string().optional().or(z.literal("")),
+  uicType: z.string().optional().or(z.literal("")),
 });
 
 const bankInfoSchema = z.object({
@@ -79,7 +94,10 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
 
   const form = useForm<CompanyInfoValues>({
     resolver: zodResolver(companyInfoSchema),
-    defaultValues,
+    defaultValues: {
+      ...defaultValues,
+      vatRegistered: defaultValues.vatRegistered || false
+    },
   });
 
   async function onSubmit(data: CompanyInfoValues) {
@@ -286,6 +304,134 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
             </FormItem>
           )}
         />
+        
+        {/* Bulgarian NAP compliance fields */}
+        <div className="mt-6 border-t pt-6">
+          <h3 className="text-lg font-medium mb-4">Bulgarian Tax Authority (НАП) Compliance</h3>
+          
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="bulstatNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>БУЛСТАТ/ЕИК</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Example: 123456789" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Unique Bulgarian company identifier
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="uicType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>ЕИК/БУЛСТАТ Type</FormLabel>
+                  <Select 
+                    onValueChange={field.onChange}
+                    defaultValue={field.value || "BULSTAT"}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select UIC type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="BULSTAT">BULSTAT</SelectItem>
+                      <SelectItem value="EGN">EGN</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    Type of identifier (BULSTAT for companies, EGN for individuals)
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 mt-4">
+            <FormField
+              control={form.control}
+              name="vatRegistered"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Регистрация по ЗДДС</FormLabel>
+                    <FormDescription>
+                      Компанията е регистрирана по ЗДДС
+                    </FormDescription>
+                  </div>
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="vatRegistrationNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>VAT Registration Number</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Example: BG123456789" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    № по ЗДДС (Required if VAT registered)
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 mt-4">
+            <FormField
+              control={form.control}
+              name="mол"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>МОЛ (Представляващ)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Име на представляващия" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Материално отговорно лице / Представляващ компанията
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="accountablePerson"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Счетоводител</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Име на счетоводителя" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Лице, отговорно за счетоводството
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
         
         <div className="flex justify-end">
           <Button type="submit" disabled={isLoading}>

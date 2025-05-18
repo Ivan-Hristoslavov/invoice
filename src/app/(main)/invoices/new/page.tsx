@@ -22,9 +22,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { generateBulgarianInvoiceNumber } from "@/lib/bulgarian-invoice";
 
 export default function NewInvoicePage() {
   const router = useRouter();
@@ -49,7 +49,14 @@ export default function NewInvoicePage() {
     issueDate: new Date().toISOString().substr(0, 10),
     dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().substr(0, 10),
     companyId: "",
-    currency: "USD"
+    currency: "USD",
+    // Bulgarian NAP compliance fields
+    bulstatNumber: "",
+    isOriginal: true,
+    placeOfIssue: "",
+    paymentMethod: "BANK_TRANSFER",
+    supplyDate: new Date().toISOString().substr(0, 10),
+    isEInvoice: false
   });
   const [isLoadingData, setIsLoadingData] = useState(true);
 
@@ -164,11 +171,32 @@ export default function NewInvoicePage() {
 
   // Handle form input changes
   const handleInputChange = useCallback((field: string, value: string) => {
-    setInvoiceData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  }, []);
+    setInvoiceData(prev => {
+      const newData = {
+        ...prev,
+        [field]: value
+      };
+      
+      // When currency changes to BGN, set default Bulgarian values
+      if (field === 'currency' && value === 'BGN') {
+        const selectedCompany = companies.find(c => c.id === prev.companyId);
+        const bulstatNumber = selectedCompany?.bulstatNumber || selectedCompany?.vatNumber?.replace(/^BG/, '') || '';
+        
+        // Generate Bulgarian invoice number format
+        const lastInvoiceNumber = "0"; // In a real app, you would fetch the last invoice number
+        const sequentialNumber = parseInt(lastInvoiceNumber || "0") + 1;
+        
+        return {
+          ...newData,
+          bulstatNumber: bulstatNumber,
+          placeOfIssue: selectedCompany?.city || "София",
+          invoiceNumber: generateBulgarianInvoiceNumber(sequentialNumber, bulstatNumber)
+        };
+      }
+      
+      return newData;
+    });
+  }, [companies]);
 
   // Calculate invoice totals
   const calculateTotal = useCallback(() => {
@@ -194,7 +222,51 @@ export default function NewInvoicePage() {
         return;
       }
       
-      // Implementation for submitting the form would go here
+      if (!invoiceData.invoiceNumber) {
+        toast.error("Invoice number is required");
+        setIsLoading(false);
+        return;
+      }
+      
+      // Validate items
+      const hasEmptyItems = items.some(item => !item.description);
+      if (hasEmptyItems) {
+        toast.error("All items must have a description");
+        setIsLoading(false);
+        return;
+      }
+      
+      // Prepare data for submission
+      const data = {
+        invoiceNumber: invoiceData.invoiceNumber,
+        clientId: selectedClientId,
+        companyId: invoiceData.companyId,
+        issueDate: invoiceData.issueDate,
+        dueDate: invoiceData.dueDate,
+        currency: invoiceData.currency,
+        items: items.map(item => ({
+          id: item.id,
+          description: item.description,
+          quantity: Number(item.quantity),
+          unitPrice: Number(item.unitPrice),
+          taxRate: Number(item.taxRate)
+        }))
+      };
+      
+      // Submit to API
+      const response = await fetch("/api/invoices", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create invoice");
+      }
+      
       toast.success("Invoice created", { 
         description: "Your invoice has been created successfully."
       });
@@ -364,10 +436,16 @@ export default function NewInvoicePage() {
                 <Label htmlFor="invoiceNumber">Invoice Number</Label>
                 <Input 
                   id="invoiceNumber" 
-                  placeholder="INV-001" 
+                  placeholder={invoiceData.currency === 'BGN' ? "Will be auto-generated" : "INV-001"} 
                   value={invoiceData.invoiceNumber}
                   onChange={(e) => handleInputChange('invoiceNumber', e.target.value)}
+                  readOnly={invoiceData.currency === 'BGN'} // Make read-only for Bulgarian invoices
                 />
+                {invoiceData.currency === 'BGN' && (
+                  <p className="text-xs text-muted-foreground">
+                    Bulgarian invoice numbers follow NAP requirements and are auto-generated in format YYCCCCNNNNNNИ
+                  </p>
+                )}
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -430,6 +508,87 @@ export default function NewInvoicePage() {
                   </SelectContent>
                 </Select>
               </div>
+              
+              {/* Bulgarian Tax Authority (НАП) Compliance Fields */}
+              {invoiceData.currency === 'BGN' && (
+                <div className="border-t pt-4 mt-4">
+                  <h3 className="text-base font-medium mb-4">Bulgarian Tax Authority (НАП) Compliance</h3>
+                  
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="bulstatNumber">БУЛСТАТ/ЕИК</Label>
+                      <Input 
+                        id="bulstatNumber" 
+                        placeholder="Example: 123456789" 
+                        value={invoiceData.bulstatNumber}
+                        onChange={(e) => handleInputChange('bulstatNumber', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="placeOfIssue">Място на издаване</Label>
+                      <Input 
+                        id="placeOfIssue" 
+                        placeholder="Example: София" 
+                        value={invoiceData.placeOfIssue}
+                        onChange={(e) => handleInputChange('placeOfIssue', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="supplyDate">Дата на данъчно събитие</Label>
+                      <Input 
+                        id="supplyDate" 
+                        type="date" 
+                        value={invoiceData.supplyDate}
+                        onChange={(e) => handleInputChange('supplyDate', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="paymentMethod">Начин на плащане</Label>
+                      <Select 
+                        value={invoiceData.paymentMethod}
+                        onValueChange={(value) => handleInputChange('paymentMethod', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Изберете начин на плащане" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="BANK_TRANSFER">Банков превод</SelectItem>
+                          <SelectItem value="CASH">В брой</SelectItem>
+                          <SelectItem value="CREDIT_CARD">Кредитна/дебитна карта</SelectItem>
+                          <SelectItem value="WIRE_TRANSFER">Нареждане за превод</SelectItem>
+                          <SelectItem value="OTHER">Друго</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mt-4">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="isOriginal"
+                        checked={invoiceData.isOriginal}
+                        onChange={(e) => handleInputChange('isOriginal', e.target.checked.toString())}
+                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                      />
+                      <Label htmlFor="isOriginal">Оригинал (не е дубликат)</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="isEInvoice"
+                        checked={invoiceData.isEInvoice}
+                        onChange={(e) => handleInputChange('isEInvoice', e.target.checked.toString())}
+                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                      />
+                      <Label htmlFor="isEInvoice">Електронна фактура</Label>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 

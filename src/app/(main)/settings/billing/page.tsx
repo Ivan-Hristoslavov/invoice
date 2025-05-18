@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Check, CreditCard, Download } from "lucide-react";
+import { CheckoutButton } from "@/components/subscription/CheckoutButton";
 
 export const metadata: Metadata = {
   title: `Billing & Subscription | ${APP_NAME}`,
@@ -152,17 +153,57 @@ export default async function BillingSettingsPage() {
               </CardFooter>
             </Card>
             
-            {/* Pro Plan */}
+            {/* Basic Plan */}
             <Card>
               <CardHeader>
-                <CardTitle>Pro</CardTitle>
+                <CardTitle>Basic</CardTitle>
                 <div className="mt-2">
-                  <span className="text-3xl font-bold">$29</span>
+                  <span className="text-3xl font-bold">$10</span>
                   <span className="text-muted-foreground">/month</span>
                 </div>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2">
+                  <li className="flex items-center">
+                    <Check className="h-4 w-4 text-green-500 mr-2" />
+                    <span>Access to basic invoicing features</span>
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="h-4 w-4 text-green-500 mr-2" />
+                    <span>Up to 10 clients</span>
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="h-4 w-4 text-green-500 mr-2" />
+                    <span>Up to 50 invoices per month</span>
+                  </li>
+                </ul>
+              </CardContent>
+              <CardFooter>
+                <CheckoutButton plan="BASIC" className="w-full">
+                  Subscribe to Basic
+                </CheckoutButton>
+              </CardFooter>
+            </Card>
+            
+            {/* Pro Plan */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Pro</CardTitle>
+                <div className="mt-2">
+                  <span className="text-3xl font-bold">$20</span>
+                  <span className="text-muted-foreground">/month</span>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  <li className="flex items-center">
+                    <Check className="h-4 w-4 text-green-500 mr-2" />
+                    <span>All Basic features</span>
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="h-4 w-4 text-green-500 mr-2" />
+                    <span>Up to 50 clients</span>
+                  </li>
                   <li className="flex items-center">
                     <Check className="h-4 w-4 text-green-500 mr-2" />
                     <span>Unlimited invoices</span>
@@ -171,33 +212,21 @@ export default async function BillingSettingsPage() {
                     <Check className="h-4 w-4 text-green-500 mr-2" />
                     <span>Custom branding</span>
                   </li>
-                  <li className="flex items-center">
-                    <Check className="h-4 w-4 text-green-500 mr-2" />
-                    <span>Client portal</span>
-                  </li>
-                  <li className="flex items-center">
-                    <Check className="h-4 w-4 text-green-500 mr-2" />
-                    <span>Premium templates</span>
-                  </li>
-                  <li className="flex items-center">
-                    <Check className="h-4 w-4 text-green-500 mr-2" />
-                    <span>Priority support</span>
-                  </li>
                 </ul>
               </CardContent>
               <CardFooter>
-                <Button className="w-full">
-                  Upgrade to Pro
-                </Button>
+                <CheckoutButton plan="PRO" className="w-full">
+                  Subscribe to Pro
+                </CheckoutButton>
               </CardFooter>
             </Card>
             
-            {/* Enterprise Plan */}
-            <Card>
+            {/* VIP Plan */}
+            <Card className="mt-6 md:mt-0">
               <CardHeader>
-                <CardTitle>Enterprise</CardTitle>
+                <CardTitle>VIP</CardTitle>
                 <div className="mt-2">
-                  <span className="text-3xl font-bold">$99</span>
+                  <span className="text-3xl font-bold">$30</span>
                   <span className="text-muted-foreground">/month</span>
                 </div>
               </CardHeader>
@@ -205,30 +234,26 @@ export default async function BillingSettingsPage() {
                 <ul className="space-y-2">
                   <li className="flex items-center">
                     <Check className="h-4 w-4 text-green-500 mr-2" />
-                    <span>Everything in Pro</span>
+                    <span>All Pro features</span>
                   </li>
                   <li className="flex items-center">
                     <Check className="h-4 w-4 text-green-500 mr-2" />
-                    <span>Unlimited team members</span>
+                    <span>Unlimited clients</span>
                   </li>
                   <li className="flex items-center">
                     <Check className="h-4 w-4 text-green-500 mr-2" />
-                    <span>Advanced reporting</span>
+                    <span>Priority support</span>
                   </li>
                   <li className="flex items-center">
                     <Check className="h-4 w-4 text-green-500 mr-2" />
-                    <span>API access</span>
-                  </li>
-                  <li className="flex items-center">
-                    <Check className="h-4 w-4 text-green-500 mr-2" />
-                    <span>Dedicated account manager</span>
+                    <span>Advanced analytics</span>
                   </li>
                 </ul>
               </CardContent>
               <CardFooter>
-                <Button variant="outline" className="w-full">
-                  Contact Sales
-                </Button>
+                <CheckoutButton plan="VIP" className="w-full" variant="outline">
+                  Subscribe to VIP
+                </CheckoutButton>
               </CardFooter>
             </Card>
           </div>
