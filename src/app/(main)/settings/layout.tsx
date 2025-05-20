@@ -16,7 +16,8 @@ import {
   ShieldCheck, 
   Users, 
   CreditCard,
-  ChevronRight
+  ChevronRight,
+  FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -33,49 +34,55 @@ export default async function SettingsLayout({ children }: SettingsLayoutProps) 
 
   const navItems = [
     {
-      title: "Profile",
+      title: "Профил",
       href: "/settings/profile",
       icon: User,
-      description: "Manage your personal information"
+      description: "Управление на личната информация"
     },
     {
-      title: "Company",
+      title: "Компания",
       href: "/settings/company",
       icon: Building,
-      description: "Update your company details"
+      description: "Обновяване на детайлите за компанията"
     },
     {
-      title: "Security",
+      title: "Сигурност",
       href: "/settings/security",
       icon: ShieldCheck,
-      description: "Password and account security"
+      description: "Парола и сигурност на акаунта"
     },
     {
-      title: "Team Members",
+      title: "Членове на екипа",
       href: "/settings/team",
       icon: Users,
-      description: "Invite and manage team members"
+      description: "Покана и управление на членове на екипа"
     },
     {
-      title: "Billing",
+      title: "Фактуриране",
       href: "/settings/billing",
       icon: CreditCard,
-      description: "Manage your subscription and billing"
+      description: "Управление на вашия абонамент и фактуриране"
+    },
+    {
+      title: "Настройки на фактури",
+      href: "/settings/invoice-preferences",
+      icon: FileText,
+      description: "Настройки за фактури и ДДС"
     }
   ];
   
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="text-muted-foreground">Manage your account and preferences</p>
+        <h1 className="text-3xl font-bold">Настройки</h1>
+        <p className="text-muted-foreground">Управление на вашия акаунт и предпочитания</p>
       </div>
       
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3 lg:grid-cols-4">
         <Card className="md:col-span-1">
           <CardHeader>
-            <CardTitle>Settings</CardTitle>
-            <CardDescription>Manage your account</CardDescription>
+            <CardTitle>Настройки</CardTitle>
+            <CardDescription>Управление на вашия акаунт</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <nav className="flex flex-col">

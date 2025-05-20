@@ -16,6 +16,18 @@ import { format } from "date-fns";
 import { checkPermission } from "@/lib/permissions";
 import ExportDialogWrapper from "./ExportDialogWrapper";
 
+interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  issueDate: Date;
+  dueDate: Date;
+  total: number;
+  status: string;
+  client: {
+    name: string;
+  };
+}
+
 export default async function InvoicesPage() {
   const session = await getServerSession(authOptions);
 
@@ -23,10 +35,10 @@ export default async function InvoicesPage() {
     return (
       <div className="flex items-center justify-center min-h-[80vh]">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
-          <p className="text-muted-foreground mb-6">Please sign in to access invoices</p>
+          <h2 className="text-2xl font-bold mb-4">Достъпът е отказан</h2>
+          <p className="text-muted-foreground mb-6">Моля, влезте в системата, за да имате достъп до фактурите</p>
           <Button asChild>
-            <Link href="/signin">Sign In</Link>
+            <Link href="/signin">Вход</Link>
           </Button>
         </div>
       </div>
@@ -79,13 +91,13 @@ export default async function InvoicesPage() {
   return (
     <div>
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
-        <h1 className="text-3xl font-bold">Invoices</h1>
+        <h1 className="text-3xl font-bold">Фактури</h1>
         <div className="flex gap-2 w-full sm:w-auto">
           <div className="relative w-full sm:w-auto">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search invoices..."
+              placeholder="Търсене на фактури..."
               className="w-full pl-8 sm:w-[300px]"
             />
           </div>
@@ -94,13 +106,13 @@ export default async function InvoicesPage() {
               <Button variant="outline" asChild>
                 <Link href="/invoices/import">
                   <Upload className="mr-2 h-4 w-4" />
-                  Import
+                  Импорт
                 </Link>
               </Button>
               <Button asChild>
                 <Link href="/invoices/new">
                   <Plus className="mr-2 h-4 w-4" />
-                  New Invoice
+                  Нова фактура
                 </Link>
               </Button>
             </>
@@ -119,10 +131,10 @@ export default async function InvoicesPage() {
                     <Plus className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-medium">Create Invoice</h3>
-                    <p className="text-sm text-muted-foreground">Create a new invoice manually</p>
+                    <h3 className="font-medium">Създаване на фактура</h3>
+                    <p className="text-sm text-muted-foreground">Създайте нова фактура ръчно</p>
                     <Button size="sm" className="mt-2" asChild>
-                      <Link href="/invoices/new">New Invoice</Link>
+                      <Link href="/invoices/new">Нова фактура</Link>
                     </Button>
                   </div>
                 </div>
@@ -132,10 +144,10 @@ export default async function InvoicesPage() {
                     <Upload className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-medium">Import Invoices</h3>
-                    <p className="text-sm text-muted-foreground">Import multiple invoices from CSV</p>
+                    <h3 className="font-medium">Импорт на фактури</h3>
+                    <p className="text-sm text-muted-foreground">Импортирайте множество фактури от CSV</p>
                     <Button size="sm" className="mt-2" asChild>
-                      <Link href="/invoices/import">Import CSV</Link>
+                      <Link href="/invoices/import">Импорт CSV</Link>
                     </Button>
                   </div>
                 </div>
@@ -145,8 +157,8 @@ export default async function InvoicesPage() {
                     <Download className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-medium">Export Invoices</h3>
-                    <p className="text-sm text-muted-foreground">Export invoices to CSV or PDF</p>
+                    <h3 className="font-medium">Експорт на фактури</h3>
+                    <p className="text-sm text-muted-foreground">Експортирайте фактури във CSV или PDF</p>
                     <ExportDialogWrapper clients={clients} companies={companies} />
                   </div>
                 </div>
@@ -157,9 +169,9 @@ export default async function InvoicesPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>All Invoices</CardTitle>
+            <CardTitle>Всички фактури</CardTitle>
             <CardDescription>
-              Manage your invoices and track payments
+              Управлявайте вашите фактури и проследявайте плащанията
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -167,38 +179,38 @@ export default async function InvoicesPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
-                    <th className="px-4 py-3 text-left font-medium">Invoice</th>
-                    <th className="px-4 py-3 text-left font-medium">Client</th>
-                    <th className="px-4 py-3 text-left font-medium">Issue Date</th>
-                    <th className="px-4 py-3 text-left font-medium">Due Date</th>
-                    <th className="px-4 py-3 text-left font-medium">Amount</th>
-                    <th className="px-4 py-3 text-left font-medium">Status</th>
-                    <th className="px-4 py-3 text-right font-medium">Actions</th>
+                    <th className="px-4 py-3 text-left font-medium">Фактура</th>
+                    <th className="px-4 py-3 text-left font-medium">Клиент</th>
+                    <th className="px-4 py-3 text-left font-medium">Дата на издаване</th>
+                    <th className="px-4 py-3 text-left font-medium">Дата на плащане</th>
+                    <th className="px-4 py-3 text-left font-medium">Сума</th>
+                    <th className="px-4 py-3 text-left font-medium">Статус</th>
+                    <th className="px-4 py-3 text-right font-medium">Действия</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {invoices.map((invoice) => (
+                  {invoices.map((invoice: Invoice) => (
                     <tr key={invoice.id} className="border-b hover:bg-muted/50">
                       <td className="px-4 py-3 text-xs sm:text-sm">{invoice.invoiceNumber}</td>
                       <td className="px-4 py-3 text-xs sm:text-sm">{invoice.client.name}</td>
-                      <td className="px-4 py-3 text-xs sm:text-sm">{format(invoice.issueDate, 'MMM dd, yyyy')}</td>
-                      <td className="px-4 py-3 text-xs sm:text-sm">{format(invoice.dueDate, 'MMM dd, yyyy')}</td>
-                      <td className="px-4 py-3 text-xs sm:text-sm">${Number(invoice.total).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-xs sm:text-sm">{format(invoice.issueDate, 'dd.MM.yyyy')}</td>
+                      <td className="px-4 py-3 text-xs sm:text-sm">{format(invoice.dueDate, 'dd.MM.yyyy')}</td>
+                      <td className="px-4 py-3 text-xs sm:text-sm">{Number(invoice.total).toFixed(2)} лв.</td>
                       <td className="px-4 py-3 text-xs sm:text-sm">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusStyles(invoice.status)}`}>
-                          {invoice.status}
+                          {getStatusText(invoice.status)}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-xs sm:text-sm">
                         <div className="flex justify-end gap-2">
                           <Button variant="ghost" size="sm" asChild>
                             <Link href={`/invoices/${invoice.id}`}>
-                              View
+                              Преглед
                             </Link>
                           </Button>
                           <Button variant="ghost" size="sm" asChild>
                             <Link href={`/invoices/${invoice.id}/edit`}>
-                              Edit
+                              Редактиране
                             </Link>
                           </Button>
                         </div>
@@ -208,7 +220,7 @@ export default async function InvoicesPage() {
                   {invoices.length === 0 && (
                     <tr>
                       <td colSpan={7} className="px-4 py-6 text-center text-muted-foreground">
-                        No invoices found
+                        Не са намерени фактури
                       </td>
                     </tr>
                   )}
@@ -234,5 +246,20 @@ function getStatusStyles(status: string) {
       return "bg-slate-100 text-slate-800";
     default:
       return "bg-gray-100 text-gray-800";
+  }
+}
+
+function getStatusText(status: string) {
+  switch (status) {
+    case "PAID":
+      return "Платена";
+    case "UNPAID":
+      return "Неплатена";
+    case "OVERDUE":
+      return "Просрочена";
+    case "DRAFT":
+      return "Чернова";
+    default:
+      return status;
   }
 } 

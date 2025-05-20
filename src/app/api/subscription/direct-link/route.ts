@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { authOptions } from '@/lib/auth';
+import { stripe } from '@/lib/stripe';
+import { Decimal } from '@prisma/client/runtime/library';
 
 // Get direct Stripe checkout URLs from environment variables
 const STRIPE_URLS = {
@@ -8,67 +11,72 @@ const STRIPE_URLS = {
   VIP: process.env.STRIPE_VIP,
 };
 
+// Helper function to serialize Prisma Decimal objects
+function serializeDecimal(value: any): any {
+  if (value instanceof Decimal) {
+    return value.toString();
+  }
+  if (Array.isArray(value)) {
+    return value.map(serializeDecimal);
+  }
+  if (typeof value === 'object' && value !== null) {
+    const result: any = {};
+    for (const [key, val] of Object.entries(value)) {
+      result[key] = serializeDecimal(val);
+    }
+    return result;
+  }
+  return value;
+}
+
 export async function POST(req: Request) {
   try {
-    // Verify authentication
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
     
     if (!session?.user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
+      return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    // Parse request body
-    let body;
-    try {
-      body = await req.json();
-    } catch (error) {
-      console.error("Error parsing request body:", error);
-      return NextResponse.json(
-        { error: "Invalid request body" },
-        { status: 400 }
-      );
+    const { plan } = await req.json();
+
+    if (!plan || !['BASIC', 'PRO', 'VIP'].includes(plan)) {
+      return new NextResponse('Invalid plan', { status: 400 });
     }
 
-    const { plan } = body;
-    
-    if (!plan) {
-      return NextResponse.json(
-        { error: "Plan is required" },
-        { status: 400 }
-      );
+    // Get the price ID for the selected plan
+    const priceId = process.env[`STRIPE_${plan}_PRICE_ID`];
+    if (!priceId) {
+      return new NextResponse('Price ID not configured', { status: 500 });
     }
 
-    // Validate plan
-    if (!Object.keys(STRIPE_URLS).includes(plan)) {
-      return NextResponse.json(
-        { error: "Invalid subscription plan" },
-        { status: 400 }
-      );
-    }
+    // Create a Stripe Checkout Session
+    const checkoutSession = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings/subscription?success=true`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings/subscription?canceled=true`,
+      customer_email: session.user.email,
+      metadata: {
+        userId: session.user.id,
+        plan: plan,
+      },
+    });
 
-    // Get direct checkout URL
-    const url = STRIPE_URLS[plan as keyof typeof STRIPE_URLS];
+    // Serialize the response to handle any potential Decimal objects
+    const serializedResponse = serializeDecimal({
+      url: checkoutSession.url,
+      sessionId: checkoutSession.id
+    });
 
-    if (!url) {
-      console.error(`Missing URL for plan: ${plan}`);
-      return NextResponse.json(
-        { error: `No checkout URL configured for ${plan} plan` },
-        { status: 500 }
-      );
-    }
-
-    console.log(`Returning direct Stripe URL for ${plan}:`, url);
-
-    // Return the URL
-    return NextResponse.json({ url });
-  } catch (error: any) {
-    console.error("Error getting direct link:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to get checkout link" },
-      { status: 500 }
-    );
+    return NextResponse.json(serializedResponse);
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
+    return new NextResponse('Internal Server Error', { status: 500 });
   }
 } 

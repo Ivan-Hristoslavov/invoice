@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     if (!session || !session.user) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Неоторизиран достъп" },
         { status: 401 }
       );
     }
@@ -41,14 +41,14 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid product data", details: error.errors },
+        { error: "Невалидни данни за продукта", details: error.errors },
         { status: 400 }
       );
     }
 
-    console.error("Error creating product:", error);
+    console.error("Грешка при създаване на продукт:", error);
     return NextResponse.json(
-      { error: "Failed to create product" },
+      { error: "Неуспешно създаване на продукт" },
       { status: 500 }
     );
   }
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
 
     if (!session || !session.user) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Неоторизиран достъп" },
         { status: 401 }
       );
     }
@@ -76,9 +76,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(products);
   } catch (error) {
-    console.error("Error fetching products:", error);
+    console.error("Грешка при извличане на продукти:", error);
     return NextResponse.json(
-      { error: "Failed to fetch products" },
+      { error: "Неуспешно извличане на продукти" },
       { status: 500 }
     );
   }

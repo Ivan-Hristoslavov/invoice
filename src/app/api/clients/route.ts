@@ -6,8 +6,8 @@ import { z } from "zod";
 
 // Define validation schema for client
 const clientSchema = z.object({
-  name: z.string().min(1, "Client name is required"),
-  email: z.string().email("Please enter a valid email").optional().or(z.literal("")),
+  name: z.string().min(1, "Името на клиента е задължително"),
+  email: z.string().email("Моля, въведете валиден имейл").optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   address: z.string().optional().or(z.literal("")),
   city: z.string().optional().or(z.literal("")),
@@ -24,10 +24,7 @@ const clientSchema = z.object({
   mол: z.string().optional().or(z.literal("")),
   uicType: z.enum(["BULSTAT", "EGN"]).optional().default("BULSTAT"),
   
-  locale: z.string().default("en"),
-  
-  // Tax compliance system selection
-  taxComplianceSystem: z.string().optional().default("general"),
+  locale: z.string().default("bg"),
 });
 
 export async function GET(request: NextRequest) {
@@ -36,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     if (!session || !session.user) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Неоторизиран достъп" },
         { status: 401 }
       );
     }
@@ -68,9 +65,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(clients);
   } catch (error) {
-    console.error("Error fetching clients:", error);
+    console.error("Грешка при извличане на клиенти:", error);
     return NextResponse.json(
-      { error: "Failed to fetch clients" },
+      { error: "Неуспешно извличане на клиенти" },
       { status: 500 }
     );
   }
@@ -82,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     if (!session || !session.user) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Неоторизиран достъп" },
         { status: 401 }
       );
     }
@@ -101,18 +98,18 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(client, { status: 201 });
   } catch (error) {
-    console.error("Error creating client:", error);
+    console.error("Грешка при създаване на клиент:", error);
     
     // Return validation errors if present
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Validation failed", details: error.errors },
+        { error: "Неуспешна валидация", details: error.errors },
         { status: 400 }
       );
     }
     
     return NextResponse.json(
-      { error: "Failed to create client" },
+      { error: "Неуспешно създаване на клиент" },
       { status: 500 }
     );
   }

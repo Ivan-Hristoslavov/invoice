@@ -41,7 +41,7 @@ export function RegisterForm() {
     setError("");
 
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+      setError("Паролите не съвпадат");
       setIsLoading(false);
       return;
     }
@@ -62,16 +62,16 @@ export function RegisterForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Something went wrong");
+        throw new Error(data.message || "Нещо се обърка");
       }
 
-      toast.success("Account created successfully!");
+      toast.success("Акаунтът е създаден успешно!");
       router.push("/signin");
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message);
       } else {
-        setError("An unexpected error occurred");
+        setError("Възникна неочаквана грешка");
       }
       setIsLoading(false);
     }
@@ -131,14 +131,14 @@ export function RegisterForm() {
       className="w-full space-y-6"
     >
       <motion.div variants={itemVariants} className="space-y-2 text-center">
-        <h1 className="text-3xl font-bold">Create an account</h1>
-        <p className="text-muted-foreground">Enter your information to get started</p>
+        <h1 className="text-3xl font-bold">Създаване на акаунт</h1>
+        <p className="text-muted-foreground">Въведете вашата информация, за да започнете</p>
       </motion.div>
       
       <form onSubmit={handleSubmit} className="space-y-5">
         <motion.div variants={itemVariants} className="space-y-2">
           <Label htmlFor="name" className="text-sm font-medium">
-            Full Name
+            Пълно име
           </Label>
           <div className="relative">
             <UserIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -146,7 +146,7 @@ export function RegisterForm() {
               id="name"
               name="name"
               type="text"
-              placeholder="John Doe"
+              placeholder="Иван Иванов"
               value={formData.name}
               onChange={handleChange}
               className="pl-10"
@@ -157,7 +157,7 @@ export function RegisterForm() {
         
         <motion.div variants={itemVariants} className="space-y-2">
           <Label htmlFor="email" className="text-sm font-medium">
-            Email
+            Имейл
           </Label>
           <div className="relative">
             <MailIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -165,7 +165,7 @@ export function RegisterForm() {
               id="email"
               name="email"
               type="email"
-              placeholder="name@example.com"
+              placeholder="име@пример.com"
               value={formData.email}
               onChange={handleChange}
               className="pl-10"
@@ -176,7 +176,7 @@ export function RegisterForm() {
         
         <motion.div variants={itemVariants} className="space-y-2">
           <Label htmlFor="password" className="text-sm font-medium">
-            Password
+            Парола
           </Label>
           <div className="relative">
             <LockIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -205,7 +205,7 @@ export function RegisterForm() {
         
         <motion.div variants={itemVariants} className="space-y-2">
           <Label htmlFor="confirmPassword" className="text-sm font-medium">
-            Confirm Password
+            Потвърдете паролата
           </Label>
           <div className="relative">
             <LockIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -272,10 +272,10 @@ export function RegisterForm() {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                Creating account...
+                Създаване на акаунт...
               </>
             ) : (
-              "Create account"
+              "Създай акаунт"
             )}
           </Button>
         </motion.div>
@@ -283,9 +283,9 @@ export function RegisterForm() {
       
       <motion.div variants={itemVariants} className="text-center">
         <p className="text-sm text-muted-foreground">
-          Already have an account?{" "}
+          Вече имате акаунт?{" "}
           <Link href="/signin" className="text-primary hover:underline hover:text-primary/90 transition-colors">
-            Sign in
+            Вход
           </Link>
         </p>
       </motion.div>

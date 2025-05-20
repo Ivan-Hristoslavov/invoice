@@ -3,20 +3,31 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
+import { Decimal } from '@prisma/client/runtime/library';
+
+// Helper function to serialize Prisma Decimal objects
+function serializeDecimal(value: any): any {
+  if (value instanceof Decimal) {
+    return value.toString();
+  }
+  if (Array.isArray(value)) {
+    return value.map(serializeDecimal);
+  }
+  if (typeof value === 'object' && value !== null) {
+    const result: any = {};
+    for (const [key, val] of Object.entries(value)) {
+      result[key] = serializeDecimal(val);
+    }
+    return result;
+  }
+  return value;
+}
 
 const paymentSchema = z.object({
-  invoiceId: z.string().min(1),
-  amount: z.number().positive(),
-  paymentDate: z.preprocess(
-    // Convert string dates, ISO strings or Date objects to Date
-    (arg) => {
-      if (arg instanceof Date) return arg;
-      if (typeof arg === 'string') return new Date(arg);
-      return arg;
-    },
-    z.date()
-  ),
-  paymentMethod: z.enum(["BANK_TRANSFER", "CASH", "CREDIT_CARD", "APPLE_PAY", "GOOGLE_PAY", "WIRE_TRANSFER", "OTHER"]),
+  invoiceId: z.string().min(1, "Invoice ID is required"),
+  amount: z.number().min(0.01, "Amount must be greater than 0"),
+  paymentDate: z.string().min(1, "Payment date is required"),
+  paymentMethod: z.string().min(1, "Payment method is required"),
   reference: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -58,12 +69,22 @@ export async function POST(request: NextRequest) {
         data: {
           invoiceId: validated.invoiceId,
           amount: validated.amount,
-          paymentDate: validated.paymentDate,
+          paymentDate: new Date(validated.paymentDate),
           paymentMethod: validated.paymentMethod,
           reference: validated.reference || null,
           notes: validated.notes || null,
         },
+        include: {
+          invoice: {
+            include: {
+              client: true,
+            },
+          },
+        },
       });
+
+      // Serialize the response to handle Decimal objects
+      const serializedPayment = serializeDecimal(payment);
 
       // Check if invoice is fully paid
       const totalPayments = await prisma.payment.aggregate({
@@ -99,7 +120,7 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      return NextResponse.json(payment, { status: 201 });
+      return NextResponse.json(serializedPayment, { status: 201 });
     } catch (validationError) {
       if (validationError instanceof z.ZodError) {
         console.error("Validation error:", validationError.errors);
@@ -152,7 +173,10 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(payments);
+    // Serialize the response to handle Decimal objects
+    const serializedPayments = serializeDecimal(payments);
+
+    return NextResponse.json(serializedPayments);
   } catch (error) {
     console.error("Error fetching payments:", error);
     return NextResponse.json(

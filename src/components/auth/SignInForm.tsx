@@ -32,7 +32,7 @@ export function SignInForm() {
       });
 
       if (result?.error) {
-        setError("Invalid email or password");
+        setError("Невалиден имейл или парола");
         setIsLoading(false);
         return;
       }
@@ -40,7 +40,7 @@ export function SignInForm() {
       router.push("/dashboard");
       router.refresh();
     } catch (error) {
-      setError("Something went wrong. Please try again.");
+      setError("Нещо се обърка. Моля, опитайте отново.");
       setIsLoading(false);
     }
   };
@@ -103,21 +103,21 @@ export function SignInForm() {
       className="w-full space-y-6"
     >
       <motion.div variants={itemVariants} className="space-y-2 text-center">
-        <h1 className="text-3xl font-bold">Welcome back</h1>
-        <p className="text-muted-foreground">Enter your credentials to access your account</p>
+        <h1 className="text-3xl font-bold">Добре дошли отново</h1>
+        <p className="text-muted-foreground">Въведете вашите данни, за да влезете в акаунта си</p>
       </motion.div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <motion.div variants={itemVariants} className="space-y-2">
           <Label htmlFor="email" className="text-sm font-medium">
-            Email
+            Имейл
           </Label>
           <div className="relative">
             <MailIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               id="email"
               type="email"
-              placeholder="name@example.com"
+              placeholder="име@пример.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="pl-10"
@@ -129,13 +129,13 @@ export function SignInForm() {
         <motion.div variants={itemVariants} className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password" className="text-sm font-medium">
-              Password
+              Парола
             </Label>
             <Link 
               href="#" 
               className="text-xs text-primary hover:underline hover:text-primary/90 transition-colors"
             >
-              Forgot password?
+              Забравена парола?
             </Link>
           </div>
           <div className="relative">
@@ -202,10 +202,10 @@ export function SignInForm() {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                Signing in...
+                Влизане...
               </>
             ) : (
-              "Sign in"
+              "Вход"
             )}
           </Button>
         </motion.div>
@@ -213,9 +213,9 @@ export function SignInForm() {
 
       <motion.div variants={itemVariants} className="text-center">
         <p className="text-sm text-muted-foreground">
-          Don't have an account?{" "}
+          Нямате акаунт?{" "}
           <Link href="/signup" className="text-primary hover:underline hover:text-primary/90 transition-colors">
-            Create account
+            Създайте акаунт
           </Link>
         </p>
       </motion.div>

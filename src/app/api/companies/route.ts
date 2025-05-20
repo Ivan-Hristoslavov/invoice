@@ -6,8 +6,8 @@ import { z } from "zod";
 
 // Define validation schema for company data
 const companySchema = z.object({
-  name: z.string().min(1, "Company name is required"),
-  email: z.string().email("Please enter a valid email").optional().or(z.literal("")),
+  name: z.string().min(1, "Името на компанията е задължително"),
+  email: z.string().email("Моля, въведете валиден имейл").optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   address: z.string().optional().or(z.literal("")),
   city: z.string().optional().or(z.literal("")),
@@ -31,9 +31,6 @@ const companySchema = z.object({
   bankAccount: z.string().optional().or(z.literal("")),
   bankSwift: z.string().optional().or(z.literal("")),
   bankIban: z.string().optional().or(z.literal("")),
-  
-  // Tax compliance system
-  taxComplianceSystem: z.string().optional().default("general"),
 });
 
 export async function GET(request: NextRequest) {
@@ -42,7 +39,7 @@ export async function GET(request: NextRequest) {
 
     if (!session || !session.user) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Неоторизиран достъп" },
         { status: 401 }
       );
     }
@@ -58,9 +55,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(companies);
   } catch (error) {
-    console.error("Error fetching companies:", error);
+    console.error("Грешка при извличане на компании:", error);
     return NextResponse.json(
-      { error: "Failed to fetch companies" },
+      { error: "Неуспешно извличане на компании" },
       { status: 500 }
     );
   }
@@ -72,7 +69,7 @@ export async function POST(request: NextRequest) {
 
     if (!session || !session.user) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Неоторизиран достъп" },
         { status: 401 }
       );
     }
@@ -91,18 +88,18 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(company);
   } catch (error) {
-    console.error("Error creating company:", error);
+    console.error("Грешка при създаване на компания:", error);
     
     // Return validation errors if present
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Validation failed", details: error.errors },
+        { error: "Неуспешна валидация", details: error.errors },
         { status: 400 }
       );
     }
     
     return NextResponse.json(
-      { error: "Failed to create company" },
+      { error: "Неуспешно създаване на компания" },
       { status: 500 }
     );
   }

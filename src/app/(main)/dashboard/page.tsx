@@ -9,19 +9,27 @@ import { Button } from "@/components/ui/button";
 import { APP_NAME } from "@/config/constants";
 import { prisma } from "@/lib/db";
 import { format } from "date-fns";
-import { Invoice, InvoiceStatus } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
+
+type InvoiceStatus = "DRAFT" | "UNPAID" | "PAID" | "OVERDUE" | "CANCELLED";
 
 export const metadata: Metadata = {
-  title: `Dashboard | ${APP_NAME}`,
-  description: "Manage your account and view your dashboard",
+  title: `Табло | ${APP_NAME}`,
+  description: "Управлявайте вашия акаунт и прегледайте вашето табло",
 };
 
-type InvoiceWithClient = Invoice & {
+interface InvoiceWithClient {
+  id: string;
+  invoiceNumber: string;
+  issueDate: Date;
+  dueDate: Date;
+  total: number;
+  status: InvoiceStatus;
   client: {
     id: string;
     name: string;
   };
-};
+}
 
 type InvoiceCountResult = {
   status: InvoiceStatus;
@@ -92,10 +100,10 @@ export default async function DashboardPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <h1 className="text-3xl font-bold">Табло</h1>
         <div className="flex gap-2">
           <Button asChild>
-            <Link href="/invoices/new">Create Invoice</Link>
+            <Link href="/invoices/new">Създаване на фактура</Link>
           </Button>
         </div>
       </div>
@@ -104,13 +112,13 @@ export default async function DashboardPage() {
       <div className="grid gap-6 mb-8 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="shadow-md">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Приходи</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-2xl font-bold">${totalRevenue.toFixed(2)}</div>
-                <p className="text-xs text-muted-foreground">From paid invoices</p>
+                <div className="text-2xl font-bold">{totalRevenue.toFixed(2)} лв.</div>
+                <p className="text-xs text-muted-foreground">От платени фактури</p>
               </div>
               <div className="p-2 rounded-full bg-primary/10 text-primary">
                 <DollarSign className="h-5 w-5" />
@@ -121,13 +129,13 @@ export default async function DashboardPage() {
 
         <Card className="shadow-md">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Invoices</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Фактури</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-2xl font-bold">{counts.total}</div>
-                <p className="text-xs text-muted-foreground">{counts.paid} paid, {counts.unpaid} unpaid, {counts.overdue} overdue</p>
+                <p className="text-xs text-muted-foreground">{counts.paid} платени, {counts.unpaid} неплатени, {counts.overdue} просрочени</p>
               </div>
               <div className="p-2 rounded-full bg-primary/10 text-primary">
                 <FileText className="h-5 w-5" />
@@ -138,13 +146,13 @@ export default async function DashboardPage() {
 
         <Card className="shadow-md">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Clients</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Клиенти</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-2xl font-bold">{clientCount}</div>
-                <p className="text-xs text-muted-foreground">Total clients</p>
+                <p className="text-xs text-muted-foreground">Общо клиенти</p>
               </div>
               <div className="p-2 rounded-full bg-primary/10 text-primary">
                 <Users className="h-5 w-5" />
@@ -155,13 +163,13 @@ export default async function DashboardPage() {
 
         <Card className="shadow-md">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Pending Payments</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Чакащи плащания</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-2xl font-bold">${(counts.unpaid + counts.overdue) * 100}</div>
-                <p className="text-xs text-muted-foreground">Across {counts.unpaid + counts.overdue} invoices</p>
+                <div className="text-2xl font-bold">{(counts.unpaid + counts.overdue) * 100} лв.</div>
+                <p className="text-xs text-muted-foreground">В {counts.unpaid + counts.overdue} фактури</p>
               </div>
               <div className="p-2 rounded-full bg-primary/10 text-primary">
                 <ArrowUpRight className="h-5 w-5" />
@@ -174,20 +182,20 @@ export default async function DashboardPage() {
       {/* Recent Invoices */}
       <Card className="shadow-md">
         <CardHeader className="pb-2">
-          <CardTitle>Recent Invoices</CardTitle>
-          <CardDescription>Latest invoices across all clients</CardDescription>
+          <CardTitle>Последни фактури</CardTitle>
+          <CardDescription>Най-новите фактури за всички клиенти</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left pb-3 px-2">Invoice</th>
-                  <th className="text-left pb-3 px-2">Client</th>
-                  <th className="text-left pb-3 px-2">Date</th>
-                  <th className="text-left pb-3 px-2">Amount</th>
-                  <th className="text-left pb-3 px-2">Status</th>
-                  <th className="text-right pb-3 px-2">Actions</th>
+                  <th className="text-left pb-3 px-2">Фактура</th>
+                  <th className="text-left pb-3 px-2">Клиент</th>
+                  <th className="text-left pb-3 px-2">Дата</th>
+                  <th className="text-left pb-3 px-2">Сума</th>
+                  <th className="text-left pb-3 px-2">Статус</th>
+                  <th className="text-right pb-3 px-2">Действия</th>
                 </tr>
               </thead>
               <tbody>
@@ -195,16 +203,16 @@ export default async function DashboardPage() {
                   <tr key={invoice.id} className="border-b hover:bg-muted/50">
                     <td className="py-3 px-2">{invoice.invoiceNumber}</td>
                     <td className="py-3 px-2">{invoice.client.name}</td>
-                    <td className="py-3 px-2">{format(invoice.issueDate, 'MMM dd, yyyy')}</td>
-                    <td className="py-3 px-2">${Number(invoice.total).toFixed(2)}</td>
+                    <td className="py-3 px-2">{format(invoice.issueDate, 'dd.MM.yyyy')}</td>
+                    <td className="py-3 px-2">{Number(invoice.total).toFixed(2)} лв.</td>
                     <td className="py-3 px-2">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusStyles(invoice.status)}`}>
-                        {invoice.status}
+                        {getStatusText(invoice.status)}
                       </span>
                     </td>
                     <td className="py-3 px-2 text-right">
                       <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/invoices/${invoice.id}`}>View</Link>
+                        <Link href={`/invoices/${invoice.id}`}>Преглед</Link>
                       </Button>
                     </td>
                   </tr>
@@ -212,7 +220,7 @@ export default async function DashboardPage() {
                 {recentInvoices.length === 0 && (
                   <tr>
                     <td colSpan={6} className="py-6 text-center text-muted-foreground">
-                      No invoices found. Create your first invoice to get started.
+                      Не са намерени фактури. Създайте първата си фактура, за да започнете.
                     </td>
                   </tr>
                 )}
@@ -222,7 +230,7 @@ export default async function DashboardPage() {
           {recentInvoices.length > 0 && (
             <div className="flex justify-end mt-4">
               <Button variant="outline" size="sm" asChild>
-                <Link href="/invoices">View all invoices</Link>
+                <Link href="/invoices">Преглед на всички фактури</Link>
               </Button>
             </div>
           )}
@@ -244,5 +252,20 @@ function getStatusStyles(status: string) {
       return "bg-slate-100 text-slate-800";
     default:
       return "bg-gray-100 text-gray-800";
+  }
+}
+
+function getStatusText(status: string) {
+  switch (status) {
+    case "PAID":
+      return "Платена";
+    case "UNPAID":
+      return "Неплатена";
+    case "OVERDUE":
+      return "Просрочена";
+    case "DRAFT":
+      return "Чернова";
+    default:
+      return status;
   }
 } 

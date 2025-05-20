@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { Decimal } from '@prisma/client/runtime/library';
 
 // Mock subscription data for development when database is unavailable
 const mockSubscription = {
@@ -28,87 +30,60 @@ const mockSubscription = {
   ]
 };
 
+// Helper function to serialize Prisma Decimal objects
+function serializeDecimal(value: any): any {
+  if (value instanceof Decimal) {
+    return value.toString();
+  }
+  if (Array.isArray(value)) {
+    return value.map(serializeDecimal);
+  }
+  if (typeof value === 'object' && value !== null) {
+    const result: any = {};
+    for (const [key, val] of Object.entries(value)) {
+      result[key] = serializeDecimal(val);
+    }
+    return result;
+  }
+  return value;
+}
+
 export async function GET() {
   try {
-    // Get session
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
     
     if (!session?.user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
+      return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    try {
-      // Try to get the user's subscription from database
-      const subscription = await prisma.subscription.findFirst({
-        where: {
-          userId: session.user.id as string,
-          status: {
-            in: ['ACTIVE', 'TRIALING', 'PAST_DUE']
+    // Get user's subscription from database
+    const subscription = await prisma.subscription.findFirst({
+      where: {
+        userId: session.user.id,
+        status: {
+          in: ['ACTIVE', 'TRIALING', 'PAST_DUE']
+        }
+      },
+      include: {
+        paymentHistory: {
+          orderBy: {
+            createdAt: 'desc'
           }
         },
-        include: {
-          paymentHistory: {
-            select: {
-              id: true,
-              amount: true,
-              currency: true,
-              status: true,
-              createdAt: true
-            },
-            orderBy: {
-              createdAt: 'desc'
-            },
-            take: 10
-          },
-          history: {
-            select: {
-              id: true,
-              status: true,
-              event: true,
-              createdAt: true
-            },
-            orderBy: {
-              createdAt: 'desc'
-            },
-            take: 10
+        statusHistory: {
+          orderBy: {
+            createdAt: 'desc'
           }
         }
-      });
-
-      // Format the response
-      const formattedSubscription = subscription ? {
-        id: subscription.id,
-        plan: subscription.plan,
-        status: subscription.status,
-        cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-        currentPeriodEnd: subscription.currentPeriodEnd,
-        paymentHistory: (subscription as any).paymentHistory || [],
-        statusHistory: (subscription as any).history || []
-      } : null;
-
-      return NextResponse.json({ subscription: formattedSubscription });
-    } catch (dbError) {
-      console.warn('Database error (using mock data):', dbError);
-      
-      // In development mode, return mock data instead of failing
-      if (process.env.NODE_ENV === 'development') {
-        return NextResponse.json({ 
-          subscription: mockSubscription,
-          mock: true
-        });
       }
-      
-      // In production, propagate the error
-      throw dbError;
-    }
-  } catch (error: any) {
-    console.error('Get subscription error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to get subscription' },
-      { status: 500 }
-    );
+    });
+
+    // Serialize the response to handle Decimal objects
+    const serializedSubscription = subscription ? serializeDecimal(subscription) : null;
+
+    return NextResponse.json({ subscription: serializedSubscription });
+  } catch (error) {
+    console.error('Error fetching subscription:', error);
+    return new NextResponse('Internal Server Error', { status: 500 });
   }
 } 

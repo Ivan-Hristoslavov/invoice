@@ -37,21 +37,21 @@ export function Sidebar() {
 
   // Navigation items only shown to authenticated users
   const navItems = [
-    { name: "Dashboard", href: "/dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
-    { name: "Invoices", href: "/invoices", icon: <FileText className="w-5 h-5" /> },
-    { name: "Clients", href: "/clients", icon: <Users className="w-5 h-5" /> },
-    { name: "Companies", href: "/companies", icon: <Building className="w-5 h-5" /> },
-    { name: "Products", href: "/products", icon: <Package className="w-5 h-5" /> },
-    { name: "Payments", href: "/payments", icon: <CreditCard className="w-5 h-5" /> },
-    { name: "Settings", href: "/settings", icon: <Settings className="w-5 h-5" /> },
-    { name: "Tax Compliance", href: "/settings/tax-compliance", icon: <FileCheck className="w-5 h-5" /> },
-    { name: "Subscription", href: "/settings/subscription", icon: <CreditCardIcon className="w-5 h-5" /> },
+    { name: "Табло", href: "/dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
+    { name: "Фактури", href: "/invoices", icon: <FileText className="w-5 h-5" /> },
+    { name: "Клиенти", href: "/clients", icon: <Users className="w-5 h-5" /> },
+    { name: "Компании", href: "/companies", icon: <Building className="w-5 h-5" /> },
+    { name: "Продукти", href: "/products", icon: <Package className="w-5 h-5" /> },
+    { name: "Плащания", href: "/payments", icon: <CreditCard className="w-5 h-5" /> },
+    { name: "Настройки", href: "/settings", icon: <Settings className="w-5 h-5" /> },
+    { name: "Данъчно съответствие", href: "/settings/tax-compliance", icon: <FileCheck className="w-5 h-5" /> },
+    { name: "Абонамент", href: "/settings/subscription", icon: <CreditCardIcon className="w-5 h-5" /> },
   ];
   
   // Public navigation items shown to everyone
   const publicNavItems = [
-    { name: "Features", href: "/#features", icon: <Package className="w-5 h-5" /> },
-    { name: "Pricing", href: "/#pricing", icon: <CreditCardIcon className="w-5 h-5" /> },
+    { name: "Функции", href: "/#features", icon: <Package className="w-5 h-5" /> },
+    { name: "Ценообразуване", href: "/#pricing", icon: <CreditCardIcon className="w-5 h-5" /> },
   ];
 
   // If we're on the home page but not authenticated, don't show the sidebar at all

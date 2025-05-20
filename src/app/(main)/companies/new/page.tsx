@@ -6,7 +6,7 @@ import Link from "next/link";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Save, Building, FileCheck, Flag, Globe } from "lucide-react";
+import { ArrowLeft, Save, Building, FileCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,8 +45,8 @@ import {
 // Company schema with validation
 const companySchema = z.object({
   // Basic Info
-  name: z.string().min(1, "Company name is required"),
-  email: z.string().email("Please enter a valid email").optional().or(z.literal("")),
+  name: z.string().min(1, "Името на компанията е задължително"),
+  email: z.string().email("Моля, въведете валиден имейл").optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   
   // Address
@@ -74,20 +74,13 @@ const companySchema = z.object({
   bankAccount: z.string().optional().or(z.literal("")),
   bankSwift: z.string().optional().or(z.literal("")),
   bankIban: z.string().optional().or(z.literal("")),
-  
-  // Tax compliance system selection
-  taxComplianceSystem: z.string().default("general"),
 });
 
 type CompanyFormValues = z.infer<typeof companySchema>;
 
-type TaxComplianceSystem = "bulgarian" | "eu" | "general";
-
 export default function NewCompanyPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [taxSystem, setTaxSystem] = useState<TaxComplianceSystem>("general");
-  const [showComplianceSelection, setShowComplianceSelection] = useState(true);
 
   // Initialize form with default values
   const form = useForm<CompanyFormValues>({
@@ -100,7 +93,7 @@ export default function NewCompanyPage() {
       city: "",
       state: "",
       zipCode: "",
-      country: "",
+      country: "България",
       vatNumber: "",
       taxIdNumber: "",
       registrationNumber: "",
@@ -114,29 +107,8 @@ export default function NewCompanyPage() {
       bankAccount: "",
       bankSwift: "",
       bankIban: "",
-      taxComplianceSystem: "general",
     },
   });
-
-  // Select tax compliance system
-  const selectTaxSystem = (system: TaxComplianceSystem) => {
-    setTaxSystem(system);
-    form.setValue("taxComplianceSystem", system);
-    
-    // Set appropriate country defaults based on selection
-    if (system === "bulgarian") {
-      form.setValue("country", "Bulgaria");
-    } else if (system === "eu") {
-      // Keep country blank for EU, but could set other defaults
-    }
-    
-    setShowComplianceSelection(false);
-  };
-  
-  // Handle going back to tax system selection
-  const backToTaxSelection = () => {
-    setShowComplianceSelection(true);
-  };
 
   // Handle form submission
   async function onSubmit(data: CompanyFormValues) {
@@ -152,114 +124,36 @@ export default function NewCompanyPage() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create company");
+        throw new Error("Неуспешно създаване на компания");
       }
 
-      toast.success("Company created", {
-        description: "Your company has been created successfully."
+      toast.success("Компанията е създадена", {
+        description: "Вашата компания беше създадена успешно."
       });
       
       router.push("/companies");
       router.refresh();
     } catch (error) {
-      console.error("Error creating company:", error);
-      toast.error("Error", {
-        description: "There was an error creating your company. Please try again."
+      console.error("Грешка при създаване на компания:", error);
+      toast.error("Грешка", {
+        description: "Възникна грешка при създаване на вашата компания. Моля, опитайте отново."
       });
     } finally {
       setIsLoading(false);
     }
   }
 
-  // Tax Compliance Selection Step
-  if (showComplianceSelection) {
-    return (
-      <div>
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/companies">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
-              </Link>
-            </Button>
-            <h1 className="text-3xl font-bold">New Company</h1>
-          </div>
-        </div>
-        
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Select Tax Compliance System</CardTitle>
-            <CardDescription>
-              Choose the tax compliance system that applies to your company
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Bulgarian NAP Card */}
-              <Card 
-                className="cursor-pointer transition-all hover:border-primary hover:shadow-md"
-                onClick={() => selectTaxSystem("bulgarian")}
-              >
-                <CardContent className="p-6 flex flex-col items-center text-center">
-                  <div className="mb-4 p-3 rounded-full bg-primary/10">
-                    <Flag className="h-8 w-8 text-primary" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">Bulgarian Tax Authority (НАП)</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Comply with Bulgarian НАП requirements for invoices and reporting
-                  </p>
-                </CardContent>
-              </Card>
-              
-              {/* EU VAT Card */}
-              <Card 
-                className="cursor-pointer transition-all hover:border-primary hover:shadow-md"
-                onClick={() => selectTaxSystem("eu")}
-              >
-                <CardContent className="p-6 flex flex-col items-center text-center">
-                  <div className="mb-4 p-3 rounded-full bg-primary/10">
-                    <FileCheck className="h-8 w-8 text-primary" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">European Union VAT</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Standard EU VAT compliance for companies based in the European Union
-                  </p>
-                </CardContent>
-              </Card>
-              
-              {/* General Card */}
-              <Card 
-                className="cursor-pointer transition-all hover:border-primary hover:shadow-md"
-                onClick={() => selectTaxSystem("general")}
-              >
-                <CardContent className="p-6 flex flex-col items-center text-center">
-                  <div className="mb-4 p-3 rounded-full bg-primary/10">
-                    <Globe className="h-8 w-8 text-primary" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">General / International</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Standard company details without specific regional tax compliance
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Main Form View after selecting tax system
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={backToTaxSelection}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Tax Selection
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/companies">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Назад
+            </Link>
           </Button>
-          <h1 className="text-3xl font-bold">New Company</h1>
+          <h1 className="text-3xl font-bold">Нова компания</h1>
         </div>
         <Button 
           type="submit" 
@@ -267,7 +161,7 @@ export default function NewCompanyPage() {
           disabled={isLoading}
         >
           <Save className="w-4 h-4 mr-2" />
-          {isLoading ? "Saving..." : "Save Company"}
+          {isLoading ? "Запазване..." : "Запази компания"}
         </Button>
       </div>
 
@@ -275,21 +169,11 @@ export default function NewCompanyPage() {
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle>Company Details</CardTitle>
+              <CardTitle>Данни за компанията</CardTitle>
               <CardDescription>
-                Add your company information for invoices
+                Добавете информацията за вашата компания за фактури
               </CardDescription>
             </div>
-            {taxSystem === "bulgarian" && (
-              <div className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
-                Bulgarian НАП
-              </div>
-            )}
-            {taxSystem === "eu" && (
-              <div className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
-                EU VAT
-              </div>
-            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -297,10 +181,10 @@ export default function NewCompanyPage() {
             <form id="company-form" onSubmit={form.handleSubmit(onSubmit)}>
               <Tabs defaultValue="basic" className="w-full">
                 <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="basic">Basic Info</TabsTrigger>
-                  <TabsTrigger value="address">Address</TabsTrigger>
-                  <TabsTrigger value="tax">Tax Information</TabsTrigger>
-                  <TabsTrigger value="banking">Banking</TabsTrigger>
+                  <TabsTrigger value="basic">Основна информация</TabsTrigger>
+                  <TabsTrigger value="address">Адрес</TabsTrigger>
+                  <TabsTrigger value="tax">Данъчна информация</TabsTrigger>
+                  <TabsTrigger value="banking">Банкова информация</TabsTrigger>
                 </TabsList>
                 
                 {/* Basic Information Tab */}
@@ -310,9 +194,9 @@ export default function NewCompanyPage() {
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Company Name</FormLabel>
+                        <FormLabel>Име на компанията</FormLabel>
                         <FormControl>
-                          <Input placeholder="Acme Inc." {...field} />
+                          <Input placeholder="Фирма ООД" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -325,11 +209,11 @@ export default function NewCompanyPage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel>Имейл</FormLabel>
                           <FormControl>
                             <Input type="email" placeholder="contact@example.com" {...field} />
                           </FormControl>
-                          <FormDescription>Company contact email for invoices</FormDescription>
+                          <FormDescription>Имейл за контакт за фактури</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -340,9 +224,9 @@ export default function NewCompanyPage() {
                       name="phone"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Phone</FormLabel>
+                          <FormLabel>Телефон</FormLabel>
                           <FormControl>
-                            <Input placeholder="+1 (555) 123-4567" {...field} />
+                            <Input placeholder="+359 2 123 4567" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -358,9 +242,9 @@ export default function NewCompanyPage() {
                     name="address"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Street Address</FormLabel>
+                        <FormLabel>Адрес</FormLabel>
                         <FormControl>
-                          <Input placeholder="123 Business Ave" {...field} />
+                          <Input placeholder="ул. Бизнес 123" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -373,9 +257,9 @@ export default function NewCompanyPage() {
                       name="city"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>City</FormLabel>
+                          <FormLabel>Град</FormLabel>
                           <FormControl>
-                            <Input placeholder="City" {...field} />
+                            <Input placeholder="Град" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -387,9 +271,9 @@ export default function NewCompanyPage() {
                       name="state"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>State/Province</FormLabel>
+                          <FormLabel>Област</FormLabel>
                           <FormControl>
-                            <Input placeholder="State" {...field} />
+                            <Input placeholder="Област" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -403,9 +287,9 @@ export default function NewCompanyPage() {
                       name="zipCode"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Postal/ZIP Code</FormLabel>
+                          <FormLabel>Пощенски код</FormLabel>
                           <FormControl>
-                            <Input placeholder="12345" {...field} />
+                            <Input placeholder="1000" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -417,9 +301,9 @@ export default function NewCompanyPage() {
                       name="country"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Country</FormLabel>
+                          <FormLabel>Държава</FormLabel>
                           <FormControl>
-                            <Input placeholder="Country" {...field} />
+                            <Input placeholder="България" value="България" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -430,18 +314,17 @@ export default function NewCompanyPage() {
                 
                 {/* Tax Information Tab */}
                 <TabsContent value="tax" className="space-y-6 pt-4">
-                  {/* General Tax Fields for All Systems */}
                   <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                     <FormField
                       control={form.control}
                       name="vatNumber"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>VAT Number</FormLabel>
+                          <FormLabel>ДДС номер</FormLabel>
                           <FormControl>
-                            <Input placeholder="EU VAT Number" {...field} />
+                            <Input placeholder="BG123456789" {...field} />
                           </FormControl>
-                          <FormDescription>For European businesses</FormDescription>
+                          <FormDescription>ДДС номер на компанията</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -452,11 +335,11 @@ export default function NewCompanyPage() {
                       name="taxIdNumber"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Tax ID Number</FormLabel>
+                          <FormLabel>Данъчен номер</FormLabel>
                           <FormControl>
-                            <Input placeholder="Tax ID" {...field} />
+                            <Input placeholder="Данъчен номер" {...field} />
                           </FormControl>
-                          <FormDescription>Business tax identifier</FormDescription>
+                          <FormDescription>Бизнес данъчен идентификатор</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -467,158 +350,143 @@ export default function NewCompanyPage() {
                       name="registrationNumber"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Registration Number</FormLabel>
+                          <FormLabel>Регистрационен номер</FormLabel>
                           <FormControl>
-                            <Input placeholder="Company registration number" {...field} />
+                            <Input placeholder="Регистрационен номер на компанията" {...field} />
                           </FormControl>
-                          <FormDescription>Official registration ID</FormDescription>
+                          <FormDescription>Официален регистрационен номер</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                   </div>
                   
-                  {/* Bulgarian-specific Tax Fields */}
-                  {taxSystem === "bulgarian" && (
-                    <div className="mt-8 border-t pt-6">
-                      <h3 className="text-lg font-medium mb-4">Bulgarian Tax Authority (НАП) Compliance</h3>
+                  <div className="mt-6">
+                    <h3 className="text-lg font-medium mb-4">Информация за НАП</h3>
+                    
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name="bulstatNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>БУЛСТАТ/ЕИК</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Например: 123456789" {...field} />
+                            </FormControl>
+                            <FormDescription>
+                              Уникален български фирмен идентификатор
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                       
-                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                        <FormField
-                          control={form.control}
-                          name="bulstatNumber"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>БУЛСТАТ/ЕИК</FormLabel>
+                      <FormField
+                        control={form.control}
+                        name="uicType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Тип идентификатор</FormLabel>
+                            <Select 
+                              onValueChange={field.onChange} 
+                              defaultValue={field.value}
+                            >
                               <FormControl>
-                                <Input placeholder="Example: 123456789" {...field} />
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Изберете тип" />
+                                </SelectTrigger>
                               </FormControl>
-                              <FormDescription>
-                                Unique Bulgarian company identifier
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="uicType"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>UIC Type</FormLabel>
-                              <Select 
-                                onValueChange={field.onChange} 
-                                defaultValue={field.value}
-                              >
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select UIC type" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="BULSTAT">BULSTAT</SelectItem>
-                                  <SelectItem value="EGN">EGN</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormDescription>
-                                Type of identifier (BULSTAT or EGN)
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      
-                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 mt-4">
-                        <FormField
-                          control={form.control}
-                          name="vatRegistered"
-                          render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                />
-                              </FormControl>
-                              <div className="space-y-1 leading-none">
-                                <FormLabel>Регистрация по ЗДДС</FormLabel>
-                                <FormDescription>
-                                  Компанията е регистрирана по ЗДДС
-                                </FormDescription>
-                              </div>
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="vatRegistrationNumber"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>VAT Registration Number</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Example: BG123456789" {...field} />
-                              </FormControl>
-                              <FormDescription>
-                                № по ЗДДС (Required if VAT registered)
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      
-                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 mt-4">
-                        <FormField
-                          control={form.control}
-                          name="mол"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>МОЛ (Представляващ)</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Име на представляващия" {...field} />
-                              </FormControl>
-                              <FormDescription>
-                                Материално отговорно лице / Представляващ компанията
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="accountablePerson"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Счетоводител</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Име на счетоводителя" {...field} />
-                              </FormControl>
-                              <FormDescription>
-                                Лице, отговорно за счетоводството
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
+                              <SelectContent>
+                                <SelectItem value="BULSTAT">БУЛСТАТ</SelectItem>
+                                <SelectItem value="EGN">ЕГН</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>
+                              Тип на идентификатора (БУЛСТАТ или ЕГН)
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
-                  )}
-                  
-                  {/* EU-specific Tax Fields */}
-                  {taxSystem === "eu" && (
-                    <div className="mt-8 border-t pt-6">
-                      <h3 className="text-lg font-medium mb-4">European Union VAT Compliance</h3>
-                      <p className="text-muted-foreground mb-4">
-                        Make sure your VAT number is correctly formatted and valid for VIES verification.
-                      </p>
+                    
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 mt-4">
+                      <FormField
+                        control={form.control}
+                        name="vatRegistered"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>Регистрация по ЗДДС</FormLabel>
+                              <FormDescription>
+                                Компанията е регистрирана по ЗДДС
+                              </FormDescription>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
                       
-                      {/* Additional EU-specific fields could be added here */}
+                      <FormField
+                        control={form.control}
+                        name="vatRegistrationNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>ДДС номер</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Например: BG123456789" {...field} />
+                            </FormControl>
+                            <FormDescription>
+                              № по ЗДДС (Задължително, ако е регистрирана по ДДС)
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
-                  )}
+                    
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 mt-4">
+                      <FormField
+                        control={form.control}
+                        name="mол"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>МОЛ (Представляващ)</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Име на представляващия" {...field} />
+                            </FormControl>
+                            <FormDescription>
+                              Материално отговорно лице / Представляващ компанията
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="accountablePerson"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Счетоводител</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Име на счетоводителя" {...field} />
+                            </FormControl>
+                            <FormDescription>
+                              Лице, отговорно за счетоводството
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
                 </TabsContent>
                 
                 {/* Banking Details Tab */}
@@ -628,9 +496,9 @@ export default function NewCompanyPage() {
                     name="bankName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Bank Name</FormLabel>
+                        <FormLabel>Име на банката</FormLabel>
                         <FormControl>
-                          <Input placeholder="Bank of Example" {...field} />
+                          <Input placeholder="Банка Пример" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -643,9 +511,9 @@ export default function NewCompanyPage() {
                       name="bankAccount"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Account Number</FormLabel>
+                          <FormLabel>Номер на сметка</FormLabel>
                           <FormControl>
-                            <Input placeholder="Account number" {...field} />
+                            <Input placeholder="Номер на сметка" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -657,11 +525,11 @@ export default function NewCompanyPage() {
                       name="bankSwift"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>SWIFT/BIC Code</FormLabel>
+                          <FormLabel>SWIFT/BIC код</FormLabel>
                           <FormControl>
-                            <Input placeholder="SWIFT/BIC code" {...field} />
+                            <Input placeholder="SWIFT/BIC код" {...field} />
                           </FormControl>
-                          <FormDescription>International bank code</FormDescription>
+                          <FormDescription>Международен банков код</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -675,9 +543,9 @@ export default function NewCompanyPage() {
                       <FormItem>
                         <FormLabel>IBAN</FormLabel>
                         <FormControl>
-                          <Input placeholder="International Bank Account Number" {...field} />
+                          <Input placeholder="Международен номер на банкова сметка" {...field} />
                         </FormControl>
-                        <FormDescription>For international payments</FormDescription>
+                        <FormDescription>За международни плащания</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

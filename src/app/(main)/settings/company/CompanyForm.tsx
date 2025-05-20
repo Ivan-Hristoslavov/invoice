@@ -28,8 +28,8 @@ import {
 
 const companyInfoSchema = z.object({
   id: z.string().optional(),
-  name: z.string().min(2, "Company name is required"),
-  email: z.string().email("Please enter a valid email address").optional().or(z.literal("")),
+  name: z.string().min(2, "Името на компанията е задължително"),
+  email: z.string().email("Моля, въведете валиден имейл адрес").optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   address: z.string().optional().or(z.literal("")),
   city: z.string().optional().or(z.literal("")),
@@ -96,6 +96,7 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
     resolver: zodResolver(companyInfoSchema),
     defaultValues: {
       ...defaultValues,
+      country: defaultValues.country || "България",
       vatRegistered: defaultValues.vatRegistered || false
     },
   });
@@ -116,11 +117,11 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to ${isNewCompany ? "create" : "update"} company information`);
+        throw new Error(`Неуспешно ${isNewCompany ? "създаване" : "обновяване"} на информацията за компанията`);
       }
       
-      toast.success(`Company ${isNewCompany ? "created" : "updated"}`, {
-        description: `Your company information has been ${isNewCompany ? "created" : "updated"} successfully.`
+      toast.success(`Компанията ${isNewCompany ? "създадена" : "обновена"}`, {
+        description: `Информацията за вашата компания беше успешно ${isNewCompany ? "създадена" : "обновена"}.`
       });
       
       router.refresh();
@@ -130,9 +131,9 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
         window.location.reload();
       }
     } catch (error) {
-      console.error(`Error ${isNewCompany ? "creating" : "updating"} company:`, error);
-      toast.error("Error", {
-        description: `There was an error ${isNewCompany ? "creating" : "updating"} your company. Please try again.`
+      console.error(`Грешка при ${isNewCompany ? "създаване" : "обновяване"} на компанията:`, error);
+      toast.error("Грешка", {
+        description: `Възникна грешка при ${isNewCompany ? "създаване" : "обновяване"} на вашата компания. Моля, опитайте отново.`
       });
     } finally {
       setIsLoading(false);
@@ -147,9 +148,9 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Company Name</FormLabel>
+              <FormLabel>Име на компанията</FormLabel>
               <FormControl>
-                <Input placeholder="Your Company Name" {...field} />
+                <Input placeholder="Име на вашата компания" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -162,7 +163,7 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel>Имейл</FormLabel>
                 <FormControl>
                   <Input type="email" placeholder="company@example.com" {...field} />
                 </FormControl>
@@ -176,9 +177,9 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
             name="phone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Phone</FormLabel>
+                <FormLabel>Телефон</FormLabel>
                 <FormControl>
-                  <Input placeholder="+1 (555) 123-4567" {...field} />
+                  <Input placeholder="+359 2 123 4567" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -191,9 +192,9 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
           name="address"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Address</FormLabel>
+              <FormLabel>Адрес</FormLabel>
               <FormControl>
-                <Input placeholder="123 Business Street" {...field} />
+                <Input placeholder="ул. Бизнес 123" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -206,9 +207,9 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
             name="city"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>City</FormLabel>
+                <FormLabel>Град</FormLabel>
                 <FormControl>
-                  <Input placeholder="City" {...field} />
+                  <Input placeholder="Град" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -220,9 +221,9 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
             name="state"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>State/Province</FormLabel>
+                <FormLabel>Област</FormLabel>
                 <FormControl>
-                  <Input placeholder="State" {...field} />
+                  <Input placeholder="Област" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -234,9 +235,9 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
             name="zipCode"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>ZIP/Postal Code</FormLabel>
+                <FormLabel>Пощенски код</FormLabel>
                 <FormControl>
-                  <Input placeholder="12345" {...field} />
+                  <Input placeholder="1000" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -249,9 +250,9 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
           name="country"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Country</FormLabel>
+              <FormLabel>Държава</FormLabel>
               <FormControl>
-                <Input placeholder="Country" {...field} />
+                <Input placeholder="България" value="България" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -264,12 +265,12 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
             name="vatNumber"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>VAT Number</FormLabel>
+                <FormLabel>ДДС номер</FormLabel>
                 <FormControl>
-                  <Input placeholder="EU VAT Number" {...field} />
+                  <Input placeholder="ЕС ДДС номер" {...field} />
                 </FormControl>
                 <FormDescription>
-                  Required for EU businesses
+                  Необходимо за бизнеси в ЕС
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -281,9 +282,9 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
             name="taxIdNumber"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Tax ID</FormLabel>
+                <FormLabel>Данъчен номер</FormLabel>
                 <FormControl>
-                  <Input placeholder="Tax Identification Number" {...field} />
+                  <Input placeholder="Данъчен идентификационен номер" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -296,9 +297,9 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
           name="registrationNumber"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Registration Number</FormLabel>
+              <FormLabel>Регистрационен номер</FormLabel>
               <FormControl>
-                <Input placeholder="Company Registration Number" {...field} />
+                <Input placeholder="Регистрационен номер на компанията" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -307,7 +308,7 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
         
         {/* Bulgarian NAP compliance fields */}
         <div className="mt-6 border-t pt-6">
-          <h3 className="text-lg font-medium mb-4">Bulgarian Tax Authority (НАП) Compliance</h3>
+          <h3 className="text-lg font-medium mb-4">Съответствие с българската данъчна система (НАП)</h3>
           
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <FormField
@@ -317,10 +318,10 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
                 <FormItem>
                   <FormLabel>БУЛСТАТ/ЕИК</FormLabel>
                   <FormControl>
-                    <Input placeholder="Example: 123456789" {...field} />
+                    <Input placeholder="Например: 123456789" {...field} />
                   </FormControl>
                   <FormDescription>
-                    Unique Bulgarian company identifier
+                    Уникален български идентификатор на компанията
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -332,23 +333,23 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
               name="uicType"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>ЕИК/БУЛСТАТ Type</FormLabel>
+                  <FormLabel>Тип ЕИК/БУЛСТАТ</FormLabel>
                   <Select 
                     onValueChange={field.onChange}
                     defaultValue={field.value || "BULSTAT"}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select UIC type" />
+                        <SelectValue placeholder="Изберете тип" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="BULSTAT">BULSTAT</SelectItem>
-                      <SelectItem value="EGN">EGN</SelectItem>
+                      <SelectItem value="BULSTAT">БУЛСТАТ</SelectItem>
+                      <SelectItem value="EGN">ЕГН</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    Type of identifier (BULSTAT for companies, EGN for individuals)
+                    Тип на идентификатора (БУЛСТАТ за компании, ЕГН за физически лица)
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -383,12 +384,12 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
               name="vatRegistrationNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>VAT Registration Number</FormLabel>
+                  <FormLabel>ДДС номер</FormLabel>
                   <FormControl>
-                    <Input placeholder="Example: BG123456789" {...field} />
+                    <Input placeholder="Например: BG123456789" {...field} />
                   </FormControl>
                   <FormDescription>
-                    № по ЗДДС (Required if VAT registered)
+                    № по ЗДДС (Задължително, ако сте регистрирани по ДДС)
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -435,7 +436,7 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
         
         <div className="flex justify-end">
           <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Saving..." : isNewCompany ? "Create Company" : "Save Changes"}
+            {isLoading ? "Запазване..." : isNewCompany ? "Създаване на компания" : "Запазване на промените"}
           </Button>
         </div>
       </form>
@@ -472,18 +473,18 @@ function BankInfoForm({ defaultValues, isNewCompany = false }: BankInfoFormProps
       });
 
       if (!response.ok) {
-        throw new Error("Failed to update bank information");
+        throw new Error("Неуспешно обновяване на банковата информация");
       }
       
-      toast.success("Bank information updated", {
-        description: "Your bank details have been updated successfully."
+      toast.success("Банковата информация е обновена", {
+        description: "Банковите ви детайли бяха успешно обновени."
       });
       
       router.refresh();
     } catch (error) {
-      console.error("Error updating bank information:", error);
-      toast.error("Error", {
-        description: "There was an error updating your bank information. Please try again."
+      console.error("Грешка при обновяване на банковата информация:", error);
+      toast.error("Грешка", {
+        description: "Възникна грешка при обновяване на банковата информация. Моля, опитайте отново."
       });
     } finally {
       setIsLoading(false);
@@ -498,9 +499,9 @@ function BankInfoForm({ defaultValues, isNewCompany = false }: BankInfoFormProps
           name="bankName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Bank Name</FormLabel>
+              <FormLabel>Име на банката</FormLabel>
               <FormControl>
-                <Input placeholder="Bank Name" {...field} />
+                <Input placeholder="Име на банката" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -512,9 +513,9 @@ function BankInfoForm({ defaultValues, isNewCompany = false }: BankInfoFormProps
           name="bankAccount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Account Number</FormLabel>
+              <FormLabel>Номер на сметка</FormLabel>
               <FormControl>
-                <Input placeholder="Account Number" {...field} />
+                <Input placeholder="Номер на сметка" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -527,9 +528,9 @@ function BankInfoForm({ defaultValues, isNewCompany = false }: BankInfoFormProps
             name="bankSwift"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>SWIFT/BIC Code</FormLabel>
+                <FormLabel>SWIFT/BIC код</FormLabel>
                 <FormControl>
-                  <Input placeholder="SWIFT Code" {...field} />
+                  <Input placeholder="SWIFT код" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -553,7 +554,7 @@ function BankInfoForm({ defaultValues, isNewCompany = false }: BankInfoFormProps
         
         <div className="flex justify-end">
           <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Saving..." : "Save Bank Information"}
+            {isLoading ? "Запазване..." : "Запазване на банковата информация"}
           </Button>
         </div>
       </form>

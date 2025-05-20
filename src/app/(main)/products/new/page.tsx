@@ -38,39 +38,39 @@ import {
 
 // List of common product units
 const PRODUCT_UNITS = [
-  { value: "piece", label: "Piece" },
-  { value: "hour", label: "Hour" },
-  { value: "day", label: "Day" },
-  { value: "month", label: "Month" },
-  { value: "kg", label: "Kilogram" },
-  { value: "g", label: "Gram" },
-  { value: "lb", label: "Pound" },
-  { value: "l", label: "Liter" },
-  { value: "ml", label: "Milliliter" },
-  { value: "m", label: "Meter" },
-  { value: "cm", label: "Centimeter" },
-  { value: "sq_m", label: "Square Meter" },
-  { value: "cu_m", label: "Cubic Meter" },
-  { value: "service", label: "Service" },
-  { value: "project", label: "Project" },
-  { value: "license", label: "License" },
-  { value: "subscription", label: "Subscription" },
-  { value: "user", label: "User" },
-  { value: "custom", label: "Custom" },
+  { value: "piece", label: "Брой" },
+  { value: "hour", label: "Час" },
+  { value: "day", label: "Ден" },
+  { value: "month", label: "Месец" },
+  { value: "kg", label: "Килограм" },
+  { value: "g", label: "Грам" },
+  { value: "lb", label: "Фунт" },
+  { value: "l", label: "Литър" },
+  { value: "ml", label: "Милилитър" },
+  { value: "m", label: "Метър" },
+  { value: "cm", label: "Сантиметър" },
+  { value: "sq_m", label: "Квадратен метър" },
+  { value: "cu_m", label: "Кубичен метър" },
+  { value: "service", label: "Услуга" },
+  { value: "project", label: "Проект" },
+  { value: "license", label: "Лиценз" },
+  { value: "subscription", label: "Абонамент" },
+  { value: "user", label: "Потребител" },
+  { value: "custom", label: "По избор" },
 ] as const;
 
 // Update the schema to only allow values from the units array
 const productSchema = z.object({
-  name: z.string().min(1, "Product name is required"),
+  name: z.string().min(1, "Името на продукта е задължително"),
   description: z.string().optional(),
-  price: z.string().min(1, "Price is required").refine(
+  price: z.string().min(1, "Цената е задължителна").refine(
     (val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0,
-    "Price must be a positive number"
+    "Цената трябва да бъде положително число"
   ),
-  unit: z.string().min(1, "Unit is required"),
+  unit: z.string().min(1, "Единицата е задължителна"),
   taxRate: z.string().refine(
     (val) => val === "" || (!isNaN(parseFloat(val)) && parseFloat(val) >= 0),
-    "Tax rate must be a positive number or empty"
+    "Данъчната ставка трябва да бъде положително число или празна"
   ),
 });
 
@@ -87,7 +87,7 @@ export default function NewProductPage() {
       description: "",
       price: "",
       unit: "piece",
-      taxRate: "0",
+      taxRate: "20",
     },
   });
 
@@ -105,24 +105,24 @@ export default function NewProductPage() {
           description: data.description || "",
           price: parseFloat(data.price),
           unit: data.unit,
-          taxRate: data.taxRate ? parseFloat(data.taxRate) : 0,
+          taxRate: data.taxRate ? parseFloat(data.taxRate) : 20,
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create product");
+        throw new Error("Неуспешно създаване на продукт");
       }
 
-      toast.success("Product created", {
-        description: "Your product has been created successfully."
+      toast.success("Продуктът е създаден", {
+        description: "Вашият продукт беше създаден успешно."
       });
       
       router.push("/products");
       router.refresh();
     } catch (error) {
-      console.error("Error creating product:", error);
-      toast.error("Error", {
-        description: "There was an error creating your product. Please try again."
+      console.error("Грешка при създаване на продукт:", error);
+      toast.error("Грешка", {
+        description: "Възникна грешка при създаване на продукта. Моля, опитайте отново."
       });
     } finally {
       setIsLoading(false);
@@ -136,10 +136,10 @@ export default function NewProductPage() {
           <Button variant="ghost" size="sm" asChild>
             <Link href="/products">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
+              Назад
             </Link>
           </Button>
-          <h1 className="text-3xl font-bold">New Product</h1>
+          <h1 className="text-3xl font-bold">Нов продукт</h1>
         </div>
         <Button 
           type="submit" 
@@ -147,15 +147,15 @@ export default function NewProductPage() {
           disabled={isLoading}
         >
           <Save className="w-4 h-4 mr-2" />
-          {isLoading ? "Saving..." : "Save Product"}
+          {isLoading ? "Запазване..." : "Запази продукт"}
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Product Details</CardTitle>
+          <CardTitle>Детайли за продукта</CardTitle>
           <CardDescription>
-            Add a new product or service to your inventory
+            Добавете нов продукт или услуга към вашия инвентар
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -166,9 +166,9 @@ export default function NewProductPage() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Product Name</FormLabel>
+                    <FormLabel>Име на продукта</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Web Design Service" {...field} />
+                      <Input placeholder="напр., Услуга уеб дизайн" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -180,10 +180,10 @@ export default function NewProductPage() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel>Описание</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Describe your product or service"
+                        placeholder="Опишете вашия продукт или услуга"
                         className="resize-none"
                         {...field}
                       />
@@ -199,11 +199,11 @@ export default function NewProductPage() {
                   name="price"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Price</FormLabel>
+                      <FormLabel>Цена</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <span className="absolute inset-y-0 left-3 flex items-center text-muted-foreground">
-                            $
+                            лв
                           </span>
                           <Input 
                             type="text" 
@@ -223,14 +223,14 @@ export default function NewProductPage() {
                   name="unit"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Unit</FormLabel>
+                      <FormLabel>Единица</FormLabel>
                       <FormControl>
                         <Select 
                           defaultValue={field.value} 
                           onValueChange={field.onChange}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select unit" />
+                            <SelectValue placeholder="Изберете единица" />
                           </SelectTrigger>
                           <SelectContent>
                             {PRODUCT_UNITS.map((unit) => (
@@ -242,7 +242,7 @@ export default function NewProductPage() {
                         </Select>
                       </FormControl>
                       <FormDescription>
-                        The unit this product is sold in
+                        Единица, в която се продава продуктът
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -254,7 +254,7 @@ export default function NewProductPage() {
                   name="taxRate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tax Rate (%)</FormLabel>
+                      <FormLabel>Данъчна ставка (%)</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Input 
@@ -268,7 +268,7 @@ export default function NewProductPage() {
                         </div>
                       </FormControl>
                       <FormDescription>
-                        Leave at 0 for tax-exempt items
+                        По подразбиране е 20% (ДДС в България)
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

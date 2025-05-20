@@ -53,12 +53,12 @@ export function SubscriptionPlans() {
     if (!subscription || !subscription.currentPeriodEnd) return '';
     
     const endDate = new Date(subscription.currentPeriodEnd);
-    return `Your subscription will ${subscription.cancelAtPeriodEnd ? 'end' : 'renew'} on ${endDate.toLocaleDateString()}`;
+    return `Вашият абонамент ще ${subscription.cancelAtPeriodEnd ? 'приключи' : 'се поднови'} на ${endDate.toLocaleDateString('bg-BG')}`;
   };
 
   // Show loading state while fetching plans
   if (plansLoading) {
-    return <div className="text-center py-8">Loading subscription plans...</div>;
+    return <div className="text-center py-8">Зареждане на абонаментните планове...</div>;
   }
 
   // Show error if plans couldn't be loaded
@@ -66,7 +66,7 @@ export function SubscriptionPlans() {
     return (
       <Alert variant="destructive">
         <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
+        <AlertTitle>Грешка</AlertTitle>
         <AlertDescription>{plansError}</AlertDescription>
       </Alert>
     );
@@ -82,22 +82,22 @@ export function SubscriptionPlans() {
       {error && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
+          <AlertTitle>Грешка</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
       {subscription && (
         <div className="bg-muted p-4 rounded-lg">
-          <h3 className="font-medium">Your Current Subscription</h3>
+          <h3 className="font-medium">Вашият текущ абонамент</h3>
           <p className="text-sm text-muted-foreground mt-1">
-            You are currently on the {subscription.plan} plan.
+            В момента сте на план {subscription.plan}.
           </p>
           <p className="text-sm text-muted-foreground mt-1">
             {getSubscriptionEndsText()}
           </p>
           {subscription.cancelAtPeriodEnd ? (
-            <Badge className="mt-2" variant="outline">Canceling</Badge>
+            <Badge className="mt-2" variant="outline">Анулиране</Badge>
           ) : (
             <Button 
               className="mt-2" 
@@ -106,7 +106,7 @@ export function SubscriptionPlans() {
               onClick={handleCancelSubscription}
               disabled={cancelingSubscription}
             >
-              {cancelingSubscription ? 'Canceling...' : 'Cancel Subscription'}
+              {cancelingSubscription ? 'Анулиране...' : 'Анулиране на абонамента'}
             </Button>
           )}
         </div>
@@ -114,9 +114,9 @@ export function SubscriptionPlans() {
 
       <div className="grid gap-6 sm:grid-cols-3">
         <PlanCard
-          title="Basic"
+          title="Базов"
           price={plans.BASIC.price}
-          description="Perfect for freelancers and individual users"
+          description="Идеален за фрийлансъри и индивидуални потребители"
           features={plans.BASIC.features}
           current={isCurrentPlan('BASIC')}
           onSubscribe={() => handleSubscribe('BASIC')}
@@ -124,9 +124,9 @@ export function SubscriptionPlans() {
         />
 
         <PlanCard
-          title="Pro"
+          title="Про"
           price={plans.PRO.price}
-          description="Ideal for small businesses"
+          description="Идеален за малки бизнеси"
           features={plans.PRO.features}
           popular={true}
           current={isCurrentPlan('PRO')}
@@ -135,9 +135,9 @@ export function SubscriptionPlans() {
         />
 
         <PlanCard
-          title="VIP"
+          title="ВИП"
           price={plans.VIP.price}
-          description="For enterprises and growing teams"
+          description="За предприятия и разрастващи се екипи"
           features={plans.VIP.features}
           current={isCurrentPlan('VIP')}
           onSubscribe={() => handleSubscribe('VIP')}
@@ -174,7 +174,7 @@ function PlanCard({
       {popular && (
         <div className="absolute -top-3 left-0 right-0 flex justify-center">
           <Badge variant="outline" className="bg-primary text-primary-foreground">
-            Most Popular
+            Най-популярен
           </Badge>
         </div>
       )}
@@ -184,7 +184,7 @@ function PlanCard({
         <CardDescription>{description}</CardDescription>
         <div className="mt-4 flex items-baseline">
           <span className="text-3xl font-bold">{formatPrice(price)}</span>
-          <span className="text-sm text-muted-foreground ml-1">/month</span>
+          <span className="text-sm text-muted-foreground ml-1">/месец</span>
         </div>
       </CardHeader>
       
@@ -202,7 +202,7 @@ function PlanCard({
       <CardFooter>
         {current ? (
           <Button variant="outline" className="w-full" disabled>
-            Current Plan
+            Текущ план
           </Button>
         ) : (
           <Button 
@@ -211,7 +211,7 @@ function PlanCard({
             disabled={loading}
             variant={popular ? "default" : "outline"}
           >
-            {loading ? 'Loading...' : 'Subscribe'}
+            {loading ? 'Зареждане...' : 'Абониране'}
           </Button>
         )}
       </CardFooter>

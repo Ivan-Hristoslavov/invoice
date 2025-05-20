@@ -3,8 +3,8 @@ import { Metadata } from "next";
 import { APP_NAME } from "@/config/constants";
 
 export const metadata: Metadata = {
-  title: `Sign In | ${APP_NAME}`,
-  description: `Sign in to your ${APP_NAME} account`,
+  title: `Вход | ${APP_NAME}`,
+  description: `Влезте във вашия ${APP_NAME} акаунт`,
 };
 
 export default function SignInPage() {

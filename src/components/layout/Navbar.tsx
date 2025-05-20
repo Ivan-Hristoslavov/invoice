@@ -35,10 +35,10 @@ export function Navbar() {
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <Button variant="ghost" size="sm" asChild>
-              <Link href="/signin">Sign in</Link>
+              <Link href="/signin">Вход</Link>
             </Button>
             <Button size="sm" asChild>
-              <Link href="/signup">Sign up</Link>
+              <Link href="/signup">Регистрация</Link>
             </Button>
           </div>
         </div>
@@ -65,7 +65,7 @@ export function Navbar() {
             <Button size="sm" asChild>
               <Link href="/invoices/new">
                 <PlusCircle className="w-4 h-4 mr-2" />
-                New Invoice
+                Нова Фактура
               </Link>
             </Button>
           )}
@@ -96,16 +96,16 @@ export function Navbar() {
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/profile">Profile</Link>
+                    <Link href="/profile">Профил</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/settings">Settings</Link>
+                    <Link href="/settings">Настройки</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => signOut({ callbackUrl: "/" })}
                   >
-                    Sign out
+                    Изход
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -114,10 +114,10 @@ export function Navbar() {
             <div className="flex items-center gap-2">
               <ThemeToggle />
               <Button variant="ghost" size="sm" asChild>
-                <Link href="/signin">Sign in</Link>
+                <Link href="/signin">Вход</Link>
               </Button>
               <Button size="sm" asChild>
-                <Link href="/signup">Sign up</Link>
+                <Link href="/signup">Регистрация</Link>
               </Button>
             </div>
           )}

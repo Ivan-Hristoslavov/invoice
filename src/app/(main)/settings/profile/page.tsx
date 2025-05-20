@@ -13,8 +13,8 @@ import {
 import { ProfileForm } from "./ProfileForm";
 
 export const metadata: Metadata = {
-  title: `Profile Settings | ${APP_NAME}`,
-  description: "Update your profile information",
+  title: `Настройки на профила | ${APP_NAME}`,
+  description: "Обновете информацията за вашия профил",
 };
 
 export default async function ProfileSettingsPage() {
@@ -28,9 +28,9 @@ export default async function ProfileSettingsPage() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Profile</CardTitle>
+          <CardTitle>Профил</CardTitle>
           <CardDescription>
-            Manage your personal information
+            Управление на вашата лична информация
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -45,9 +45,9 @@ export default async function ProfileSettingsPage() {
       
       <Card>
         <CardHeader>
-          <CardTitle>Profile Picture</CardTitle>
+          <CardTitle>Профилна снимка</CardTitle>
           <CardDescription>
-            Upload a profile picture to personalize your account
+            Качете профилна снимка, за да персонализирате акаунта си
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -56,7 +56,7 @@ export default async function ProfileSettingsPage() {
               {session.user.image ? (
                 <img
                   src={session.user.image}
-                  alt={session.user.name || "Profile picture"}
+                  alt={session.user.name || "Профилна снимка"}
                   className="h-full w-full object-cover"
                 />
               ) : (
@@ -69,7 +69,7 @@ export default async function ProfileSettingsPage() {
               <div className="flex flex-col gap-2 sm:flex-row">
                 <div className="grid w-full max-w-sm items-center gap-1.5">
                   <label htmlFor="picture" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                    Upload a new picture
+                    Качете нова снимка
                   </label>
                   <input
                     id="picture"
@@ -79,7 +79,7 @@ export default async function ProfileSettingsPage() {
                 </div>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                JPG, PNG or GIF. Maximum file size 2MB.
+                JPG, PNG или GIF. Максимален размер на файла 2MB.
               </p>
             </div>
           </div>

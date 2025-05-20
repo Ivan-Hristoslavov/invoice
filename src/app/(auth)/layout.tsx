@@ -13,7 +13,7 @@ export default function AuthLayout({
         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-background/50 z-10" />
         <Image
           src={forest}
-          alt="Forest landscape"
+          alt="Горски пейзаж"
           fill
           className="object-cover"
           priority
@@ -27,7 +27,7 @@ export default function AuthLayout({
           </Link>
           <div className="max-w-md">
             <h1 className="text-4xl font-bold text-white mb-4">
-              Simplify your invoicing workflow
+              Опростете вашия процес на фактуриране
             </h1>
             <p className="text-white/90">
               {APP_DESCRIPTION}

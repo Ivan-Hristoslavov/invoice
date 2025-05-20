@@ -43,9 +43,9 @@ export function SubscriptionHistory() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Subscription History</CardTitle>
+          <CardTitle>История на абонамента</CardTitle>
           <CardDescription>
-            You don't have an active subscription.
+            Нямате активен абонамент.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -59,9 +59,9 @@ export function SubscriptionHistory() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Subscription History</CardTitle>
+          <CardTitle>История на абонамента</CardTitle>
           <CardDescription>
-            No subscription history available yet.
+            Все още няма история на абонамента.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -71,9 +71,9 @@ export function SubscriptionHistory() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Subscription History</CardTitle>
+        <CardTitle>История на абонамента</CardTitle>
         <CardDescription>
-          View your subscription payment and status history
+          Преглед на историята на плащанията и промените в статуса
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -81,11 +81,11 @@ export function SubscriptionHistory() {
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="payments" className="flex items-center gap-2">
               <CreditCard className="h-4 w-4" />
-              <span>Payments</span>
+              <span>Плащания</span>
             </TabsTrigger>
             <TabsTrigger value="status" className="flex items-center gap-2">
               <ReceiptText className="h-4 w-4" />
-              <span>Status Changes</span>
+              <span>Промени в статуса</span>
             </TabsTrigger>
           </TabsList>
           
@@ -94,7 +94,7 @@ export function SubscriptionHistory() {
               <PaymentsTable payments={subscription.paymentHistory} />
             ) : (
               <div className="text-center py-6 text-muted-foreground">
-                No payment history available yet
+                Все още няма история на плащанията
               </div>
             )}
           </TabsContent>
@@ -104,7 +104,7 @@ export function SubscriptionHistory() {
               <StatusHistoryTable history={subscription.statusHistory} />
             ) : (
               <div className="text-center py-6 text-muted-foreground">
-                No status changes recorded yet
+                Все още няма промени в статуса
               </div>
             )}
           </TabsContent>
@@ -120,25 +120,25 @@ function PaymentsTable({ payments }: { payments: PaymentItem[] }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Date</TableHead>
-            <TableHead>Amount</TableHead>
-            <TableHead className="text-right">Status</TableHead>
+            <TableHead>Дата</TableHead>
+            <TableHead>Сума</TableHead>
+            <TableHead className="text-right">Статус</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {payments.map((payment) => (
             <TableRow key={payment.id}>
               <TableCell>
-                {new Date(payment.createdAt).toLocaleDateString(undefined, {
+                {new Date(payment.createdAt).toLocaleDateString('bg-BG', {
                   year: 'numeric',
                   month: 'short',
                   day: 'numeric'
                 })}
               </TableCell>
               <TableCell>
-                {new Intl.NumberFormat('en-US', {
+                {new Intl.NumberFormat('bg-BG', {
                   style: 'currency',
-                  currency: payment.currency || 'USD',
+                  currency: payment.currency || 'BGN',
                 }).format(payment.amount)}
               </TableCell>
               <TableCell className="text-right">
@@ -153,28 +153,37 @@ function PaymentsTable({ payments }: { payments: PaymentItem[] }) {
 }
 
 function StatusHistoryTable({ history }: { history: StatusHistoryItem[] }) {
+  const eventTranslations: Record<string, string> = {
+    'SUBSCRIPTION_CREATED': 'Създаден абонамент',
+    'SUBSCRIPTION_UPDATED': 'Обновен абонамент',
+    'SUBSCRIPTION_CANCELED': 'Отменен абонамент',
+    'SUBSCRIPTION_RENEWED': 'Подновен абонамент',
+    'PAYMENT_FAILED': 'Неуспешно плащане',
+    'PAYMENT_SUCCEEDED': 'Успешно плащане'
+  };
+
   return (
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Date</TableHead>
-            <TableHead>Event</TableHead>
-            <TableHead className="text-right">Status</TableHead>
+            <TableHead>Дата</TableHead>
+            <TableHead>Събитие</TableHead>
+            <TableHead className="text-right">Статус</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {history.map((item) => (
             <TableRow key={item.id}>
               <TableCell>
-                {new Date(item.createdAt).toLocaleDateString(undefined, {
+                {new Date(item.createdAt).toLocaleDateString('bg-BG', {
                   year: 'numeric',
                   month: 'short',
                   day: 'numeric'
                 })}
               </TableCell>
               <TableCell>
-                {item.event}
+                {eventTranslations[item.event] || item.event}
               </TableCell>
               <TableCell className="text-right">
                 <SubscriptionStatusBadge status={item.status} />
@@ -188,6 +197,12 @@ function StatusHistoryTable({ history }: { history: StatusHistoryItem[] }) {
 }
 
 function PaymentStatusBadge({ status }: { status: string }) {
+  const statusTranslations: Record<string, string> = {
+    'PAID': 'Платено',
+    'FAILED': 'Неуспешно',
+    'PENDING': 'В изчакване'
+  };
+
   let variant: 'default' | 'destructive' | 'outline' | 'secondary' | null = null;
   
   switch (status) {
@@ -206,12 +221,20 @@ function PaymentStatusBadge({ status }: { status: string }) {
   
   return (
     <Badge variant={variant}>
-      {status.charAt(0) + status.slice(1).toLowerCase()}
+      {statusTranslations[status] || status.charAt(0) + status.slice(1).toLowerCase()}
     </Badge>
   );
 }
 
 function SubscriptionStatusBadge({ status }: { status: string }) {
+  const statusTranslations: Record<string, string> = {
+    'ACTIVE': 'Активен',
+    'CANCELED': 'Отменен',
+    'PAST_DUE': 'Просрочен',
+    'UNPAID': 'Неплатен',
+    'TRIALING': 'Пробен период'
+  };
+
   let variant: 'default' | 'destructive' | 'outline' | 'secondary' | null = null;
   
   switch (status) {
@@ -236,7 +259,7 @@ function SubscriptionStatusBadge({ status }: { status: string }) {
   
   return (
     <Badge variant={variant}>
-      {status.charAt(0) + status.slice(1).toLowerCase()}
+      {statusTranslations[status] || status.charAt(0) + status.slice(1).toLowerCase()}
     </Badge>
   );
 }

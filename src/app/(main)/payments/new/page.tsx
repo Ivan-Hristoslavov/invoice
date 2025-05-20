@@ -37,12 +37,12 @@ import { toast } from "sonner";
 import { formatCurrency, getCurrencySymbol } from "@/lib/utils";
 
 const paymentSchema = z.object({
-  invoiceId: z.string().min(1, "Invoice is required"),
-  amount: z.string().min(1, "Amount is required").refine(
+  invoiceId: z.string().min(1, "Фактурата е задължителна"),
+  amount: z.string().min(1, "Сумата е задължителна").refine(
     (val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0,
-    "Amount must be a positive number"
+    "Сумата трябва да е положително число"
   ),
-  paymentDate: z.string().min(1, "Payment date is required"),
+  paymentDate: z.string().min(1, "Датата на плащане е задължителна"),
   paymentMethod: z.enum(["BANK_TRANSFER", "CASH", "CREDIT_CARD", "APPLE_PAY", "GOOGLE_PAY", "WIRE_TRANSFER", "OTHER"]),
   reference: z.string().optional(),
   notes: z.string().optional(),
@@ -182,11 +182,11 @@ export default function NewPaymentPage() {
           });
         }
       } catch (error: any) {
-        console.error("Error fetching invoices:", error);
-        setLoadingError(typeof error === 'object' && error.message ? error.message : 'Failed to load invoices');
+        console.error("Грешка при зареждане на фактурите:", error);
+        setLoadingError(typeof error === 'object' && error.message ? error.message : 'Неуспешно зареждане на фактурите');
         setInvoices([]);
-        toast.error("Error", {
-          description: "Could not load invoices. Please try again."
+        toast.error("Грешка", {
+          description: "Неуспешно зареждане на фактурите. Моля, опитайте отново."
         });
       } finally {
         setIsLoadingInvoices(false);
@@ -237,8 +237,8 @@ export default function NewPaymentPage() {
     try {
       // Validate required data
       if (!data.invoiceId || !data.amount) {
-        toast.error("Missing required fields", {
-          description: "Please fill in all required fields"
+        toast.error("Липсващи задължителни полета", {
+          description: "Моля, попълнете всички задължителни полета"
         });
         setIsLoading(false);
         return;
@@ -247,8 +247,8 @@ export default function NewPaymentPage() {
       // Validate amount is a valid number
       const amount = parseFloat(data.amount);
       if (isNaN(amount) || amount <= 0) {
-        toast.error("Invalid amount", {
-          description: "Please enter a valid positive amount"
+        toast.error("Невалидна сума", {
+          description: "Моля, въведете валидна положителна сума"
         });
         setIsLoading(false);
         return;
@@ -303,7 +303,7 @@ export default function NewPaymentPage() {
             description: errorDetails.map((e: any) => e.message || e.path?.join('.') || 'Unknown error').join(', ')
           });
         } else {
-          toast.error("Error", {
+          toast.error("Грешка", {
             description: errorMessage
           });
         }
@@ -311,8 +311,8 @@ export default function NewPaymentPage() {
         throw new Error(errorMessage);
       }
 
-      toast.success("Payment recorded", {
-        description: "The payment has been recorded successfully."
+      toast.success("Плащането е записано", {
+        description: "Плащането е записано успешно."
       });
       
       router.push("/payments");
@@ -320,14 +320,14 @@ export default function NewPaymentPage() {
     } catch (error: any) {
       const errorMessage = typeof error === 'object' && error.message 
         ? error.message 
-        : "Unknown error occurred";
+        : "Възникна неизвестна грешка";
         
-      console.error("Error recording payment:", errorMessage);
+      console.error("Грешка при запис на плащането:", errorMessage);
       
       // Only show a toast if it wasn't already shown in the error handling
       if (!errorMessage.includes("Validation Error")) {
-        toast.error("Error", {
-          description: "There was an error recording the payment. Please try again."
+        toast.error("Грешка", {
+          description: "Възникна грешка при запис на плащането. Моля, опитайте отново."
         });
       }
     } finally {
@@ -342,10 +342,10 @@ export default function NewPaymentPage() {
           <Button variant="ghost" size="sm" asChild>
             <Link href="/payments">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
+              Назад
             </Link>
           </Button>
-          <h1 className="text-3xl font-bold">Record Payment</h1>
+          <h1 className="text-3xl font-bold">Запис на плащане</h1>
         </div>
         <Button
           type="submit"
@@ -353,33 +353,33 @@ export default function NewPaymentPage() {
           disabled={isLoading}
         >
           <Save className="w-4 h-4 mr-2" />
-          {isLoading ? "Saving..." : "Save Payment"}
+          {isLoading ? "Запазване..." : "Запази плащането"}
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Payment Details</CardTitle>
+          <CardTitle>Детайли за плащането</CardTitle>
           <CardDescription>
-            Record a payment for an outstanding invoice
+            Запишете плащане за неплатена фактура
           </CardDescription>
         </CardHeader>
         <CardContent>
           {/* Information about payment processing */}
           <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-950 rounded-md">
-            <h3 className="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-2">Payment Methods Information</h3>
+            <h3 className="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-2">Информация за методите за плащане</h3>
             <p className="text-sm text-blue-600 dark:text-blue-400 mb-2">
-              This form is for recording payments that have already been made. Based on your payment method selection:
+              Този формуляр е за записване на вече извършени плащания. В зависимост от избрания метод за плащане:
             </p>
             <ul className="list-disc list-inside text-sm text-blue-600 dark:text-blue-400 ml-2 space-y-1">
-              <li><span className="font-medium">Apple Pay/Google Pay:</span> Share your payment request link with clients to pay via their devices</li>
-              <li><span className="font-medium">Bank Transfer/Wire Transfer:</span> Record payments clients made to your bank account</li>
-              <li><span className="font-medium">Credit Card:</span> Record payments made through your POS system or other card processor</li>
-              <li><span className="font-medium">Cash:</span> Record physical cash payments</li>
+              <li><span className="font-medium">Apple Pay/Google Pay:</span> Споделете връзката за плащане с клиентите, за да платят чрез своите устройства</li>
+              <li><span className="font-medium">Банков превод/Превод:</span> Запишете плащания, които клиентите са направили към вашата банкова сметка</li>
+              <li><span className="font-medium">Кредитна карта:</span> Запишете плащания, направени чрез вашата POS система или друг процесор за карти</li>
+              <li><span className="font-medium">В брой:</span> Запишете плащания в брой</li>
             </ul>
             <div className="mt-3">
               <Link href="/settings/payment-integrations" className="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
-                Set up payment processing integrations →
+                Настройте интеграции за плащания →
               </Link>
             </div>
           </div>
@@ -390,29 +390,29 @@ export default function NewPaymentPage() {
               <CardContent className="p-4">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Client</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Клиент</h3>
                     <p className="font-medium">{selectedInvoice.clientName}</p>
                     {selectedInvoice.clientEmail && (
                       <p className="text-sm text-muted-foreground">{selectedInvoice.clientEmail}</p>
                     )}
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Invoice</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Фактура</h3>
                     <p className="font-medium">#{selectedInvoice.invoiceNumber}</p>
                     {selectedInvoice.dueDate && (
                       <p className="text-sm text-muted-foreground">
-                        Due: {new Date(selectedInvoice.dueDate).toLocaleDateString()}
+                        Падеж: {new Date(selectedInvoice.dueDate).toLocaleDateString('bg-BG')}
                       </p>
                     )}
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Total Amount</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Обща сума</h3>
                     <p className="text-xl font-bold">
                       {formatCurrency(selectedInvoice.total, selectedInvoice.currency)}
                     </p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Amount Due</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Сума за плащане</h3>
                     <p className="text-xl font-bold text-amber-600">
                       {formatCurrency(selectedInvoice.amountDue, selectedInvoice.currency)}
                     </p>
@@ -429,7 +429,7 @@ export default function NewPaymentPage() {
                 name="invoiceId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Invoice</FormLabel>
+                    <FormLabel>Фактура</FormLabel>
                     <Select
                       onValueChange={(value) => {
                         field.onChange(value);
@@ -440,21 +440,21 @@ export default function NewPaymentPage() {
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder={isLoadingInvoices ? "Loading invoices..." : "Select an invoice"} />
+                          <SelectValue placeholder={isLoadingInvoices ? "Зареждане на фактури..." : "Изберете фактура"} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {isLoadingInvoices ? (
                           <SelectItem value="loading" disabled>
-                            Loading invoices...
+                            Зареждане на фактури...
                           </SelectItem>
                         ) : loadingError ? (
                           <SelectItem value="error" disabled>
-                            Error loading invoices
+                            Грешка при зареждане на фактурите
                           </SelectItem>
                         ) : invoices.length === 0 ? (
                           <SelectItem value="none" disabled>
-                            No unpaid invoices found
+                            Няма намерени неплатени фактури
                           </SelectItem>
                         ) : (
                           invoices.map((invoice) => (
@@ -468,7 +468,7 @@ export default function NewPaymentPage() {
                     <FormDescription>
                       {loadingError ? 
                         <span className="text-destructive">{loadingError}</span> : 
-                        "Select an unpaid invoice to record payment against"
+                        "Изберете неплатена фактура, за която да запишете плащането"
                       }
                     </FormDescription>
                     <FormMessage />
@@ -482,7 +482,7 @@ export default function NewPaymentPage() {
                   name="amount"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Amount</FormLabel>
+                      <FormLabel>Сума</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <span className="absolute inset-y-0 left-3 flex items-center text-muted-foreground">
@@ -494,9 +494,7 @@ export default function NewPaymentPage() {
                             className="pl-7"
                             {...field}
                             onChange={(e) => {
-                              // Remove any non-digit characters except decimal point
                               const value = e.target.value.replace(/[^\d.]/g, '');
-                              // Ensure only one decimal point
                               const formatted = value.replace(/(\..*)\./g, '$1');
                               field.onChange(formatted);
                             }}
@@ -505,7 +503,7 @@ export default function NewPaymentPage() {
                       </FormControl>
                       {selectedInvoice && (
                         <FormDescription>
-                          Total due: {formatCurrency(selectedInvoice.amountDue, selectedInvoice.currency)}
+                          Сума за плащане: {formatCurrency(selectedInvoice.amountDue, selectedInvoice.currency)}
                         </FormDescription>
                       )}
                       <FormMessage />
@@ -518,7 +516,7 @@ export default function NewPaymentPage() {
                   name="paymentDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Payment Date</FormLabel>
+                      <FormLabel>Дата на плащане</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -533,24 +531,24 @@ export default function NewPaymentPage() {
                 name="paymentMethod"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Payment Method</FormLabel>
+                    <FormLabel>Метод на плащане</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select payment method" />
+                          <SelectValue placeholder="Изберете метод на плащане" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="BANK_TRANSFER">Bank Transfer</SelectItem>
-                        <SelectItem value="WIRE_TRANSFER">Wire Transfer</SelectItem>
-                        <SelectItem value="CASH">Cash</SelectItem>
-                        <SelectItem value="CREDIT_CARD">Credit Card</SelectItem>
+                        <SelectItem value="BANK_TRANSFER">Банков превод</SelectItem>
+                        <SelectItem value="WIRE_TRANSFER">Превод</SelectItem>
+                        <SelectItem value="CASH">В брой</SelectItem>
+                        <SelectItem value="CREDIT_CARD">Кредитна карта</SelectItem>
                         <SelectItem value="APPLE_PAY">Apple Pay</SelectItem>
                         <SelectItem value="GOOGLE_PAY">Google Pay</SelectItem>
-                        <SelectItem value="OTHER">Other</SelectItem>
+                        <SelectItem value="OTHER">Друг</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -563,12 +561,12 @@ export default function NewPaymentPage() {
                 name="reference"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Reference Number</FormLabel>
+                    <FormLabel>Референция</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Transaction ID, Check Number" {...field} />
+                      <Input placeholder="напр. ID на транзакция, номер на чек" {...field} />
                     </FormControl>
                     <FormDescription>
-                      Optional: Add a reference for this payment
+                      По желание: Добавете референция за това плащане
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -580,10 +578,10 @@ export default function NewPaymentPage() {
                 name="notes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Notes</FormLabel>
+                    <FormLabel>Бележки</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Add any additional information about this payment"
+                        placeholder="Добавете допълнителна информация за това плащане"
                         className="resize-none"
                         {...field}
                       />

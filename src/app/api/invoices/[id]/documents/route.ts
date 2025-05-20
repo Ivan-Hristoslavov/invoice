@@ -3,10 +3,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: Request, context: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions);
     
@@ -14,7 +11,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     
-    const invoiceId = params.id;
+    const invoiceId = context.params.id;
     const userId = (session.user as any).id;
     
     // Check if invoice belongs to user
@@ -49,10 +46,7 @@ export async function GET(
   }
 }
 
-export async function POST(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: Request, context: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions);
     
@@ -60,7 +54,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     
-    const invoiceId = params.id;
+    const invoiceId = context.params.id;
     const userId = (session.user as any).id;
     
     // Check if invoice belongs to user
@@ -100,10 +94,7 @@ export async function POST(
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: Request, context: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions);
     
@@ -111,7 +102,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     
-    const invoiceId = params.id;
+    const invoiceId = context.params.id;
     const userId = (session.user as any).id;
     
     // Get document ID from query parameter

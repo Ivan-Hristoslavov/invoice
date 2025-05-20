@@ -47,8 +47,8 @@ const mockInvoice = {
 
 const paymentSchema = z.object({
   cardNumber: z.string().min(13).max(19),
-  cardName: z.string().min(3, "Name is required"),
-  expiryDate: z.string().regex(/^(0[1-9]|1[0-2])\/\d{2}$/, "Invalid expiry date (MM/YY)"),
+  cardName: z.string().min(3, "Името е задължително"),
+  expiryDate: z.string().regex(/^(0[1-9]|1[0-2])\/\d{2}$/, "Невалидна дата на изтичане (ММ/ГГ)"),
   cvv: z.string().min(3).max(4),
 });
 
@@ -155,31 +155,31 @@ export default function PayInvoicePage({ params }: { params: { id: string } }) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <CardTitle className="text-2xl font-bold">Payment Successful</CardTitle>
+            <CardTitle className="text-2xl font-bold">Плащането е успешно</CardTitle>
             <CardDescription>
-              Thank you for your payment! We have sent a receipt to your email.
+              Благодарим за плащането! Изпратихме разписка на вашия имейл.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="rounded-lg bg-slate-100 p-4">
-              <div className="mb-2 text-sm text-slate-500">Payment Details</div>
+              <div className="mb-2 text-sm text-slate-500">Детайли за плащането</div>
               <div className="flex justify-between mb-1">
-                <span className="text-sm">Invoice</span>
+                <span className="text-sm">Фактура</span>
                 <span className="font-medium">{invoice.number}</span>
               </div>
               <div className="flex justify-between mb-1">
-                <span className="text-sm">Amount</span>
+                <span className="text-sm">Сума</span>
                 <span className="font-medium">{formatCurrency(invoice.total, invoice.currency)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm">Date</span>
-                <span className="font-medium">{new Date().toLocaleDateString()}</span>
+                <span className="text-sm">Дата</span>
+                <span className="font-medium">{new Date().toLocaleDateString('bg-BG')}</span>
               </div>
             </div>
           </CardContent>
           <CardFooter>
             <Button className="w-full" onClick={() => window.print()}>
-              Print Receipt
+              Печат на разписка
             </Button>
           </CardFooter>
         </Card>
@@ -194,31 +194,31 @@ export default function PayInvoicePage({ params }: { params: { id: string } }) {
           <div className="flex items-center justify-between mb-4">
             <div className="w-32 h-12 bg-slate-200 rounded flex items-center justify-center text-sm font-medium">
               {/* This would be your company logo */}
-              COMPANY LOGO
+              ЛОГО НА КОМПАНИЯТА
             </div>
             <div className="text-right">
-              <p className="text-sm text-muted-foreground">Invoice</p>
+              <p className="text-sm text-muted-foreground">Фактура</p>
               <p className="font-medium">{invoice.number}</p>
             </div>
           </div>
-          <CardTitle>Payment Details</CardTitle>
+          <CardTitle>Детайли за плащането</CardTitle>
           <CardDescription>
-            Pay invoice for {invoice.client.name}
+            Плащане на фактура за {invoice.client.name}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="rounded-lg bg-slate-100 p-4">
             <div className="flex justify-between mb-4">
               <div>
-                <div className="text-sm text-slate-500">Amount Due</div>
+                <div className="text-sm text-slate-500">Сума за плащане</div>
                 <div className="text-2xl font-bold">
                   {formatCurrency(invoice.amountDue, invoice.currency)}
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-sm text-slate-500">Due Date</div>
+                <div className="text-sm text-slate-500">Дата на падеж</div>
                 <div className="font-medium">
-                  {new Date(invoice.dueDate).toLocaleDateString()}
+                  {new Date(invoice.dueDate).toLocaleDateString('bg-BG')}
                 </div>
               </div>
             </div>
@@ -229,7 +229,7 @@ export default function PayInvoicePage({ params }: { params: { id: string } }) {
               <TabsTrigger value="card">
                 <span className="flex items-center">
                   <CreditCard className="mr-2 h-4 w-4" />
-                  Card
+                  Карта
                 </span>
               </TabsTrigger>
               <TabsTrigger value="applepay">
@@ -254,15 +254,12 @@ export default function PayInvoicePage({ params }: { params: { id: string } }) {
                     name="cardNumber"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Card Number</FormLabel>
+                        <FormLabel>Номер на карта</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="4242 4242 4242 4242"
+                            placeholder="1234 5678 9012 3456"
                             {...field}
-                            onChange={(e) => {
-                              field.onChange(formatCardNumber(e.target.value));
-                            }}
-                            maxLength={19}
+                            onChange={(e) => field.onChange(formatCardNumber(e.target.value))}
                           />
                         </FormControl>
                         <FormMessage />
@@ -275,9 +272,9 @@ export default function PayInvoicePage({ params }: { params: { id: string } }) {
                     name="cardName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Cardholder Name</FormLabel>
+                        <FormLabel>Име на картата</FormLabel>
                         <FormControl>
-                          <Input placeholder="John Smith" {...field} />
+                          <Input placeholder="Иван Иванов" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -290,15 +287,12 @@ export default function PayInvoicePage({ params }: { params: { id: string } }) {
                       name="expiryDate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Expiry Date</FormLabel>
+                          <FormLabel>Дата на изтичане</FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="MM/YY"
+                              placeholder="ММ/ГГ"
                               {...field}
-                              onChange={(e) => {
-                                field.onChange(formatExpiryDate(e.target.value));
-                              }}
-                              maxLength={5}
+                              onChange={(e) => field.onChange(formatExpiryDate(e.target.value))}
                             />
                           </FormControl>
                           <FormMessage />
@@ -315,9 +309,9 @@ export default function PayInvoicePage({ params }: { params: { id: string } }) {
                           <FormControl>
                             <Input
                               type="password"
-                              placeholder="•••"
-                              {...field}
+                              placeholder="123"
                               maxLength={4}
+                              {...field}
                             />
                           </FormControl>
                           <FormMessage />
@@ -327,52 +321,30 @@ export default function PayInvoicePage({ params }: { params: { id: string } }) {
                   </div>
                   
                   <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Processing..." : `Pay ${formatCurrency(invoice.amountDue, invoice.currency)}`}
+                    {isLoading ? "Обработка..." : "Плати"}
                   </Button>
                 </form>
               </Form>
             </TabsContent>
             
             <TabsContent value="applepay">
-              <div className="space-y-4">
-                <div className="rounded-lg border p-4 text-center">
-                  <p className="text-sm text-slate-500 mb-2">
-                    Click the button below to pay with Apple Pay
-                  </p>
-                  <Button
-                    onClick={handleApplePay}
-                    className="w-full bg-black hover:bg-black/90 text-white"
-                    disabled={isLoading}
-                  >
-                    <ApplePayIcon className="mr-2 h-5 w-5" />
-                    {isLoading ? "Processing..." : `Pay with Apple Pay`}
-                  </Button>
-                </div>
-                <p className="text-xs text-center text-muted-foreground">
-                  You will be redirected to Apple Pay to complete your payment
-                </p>
-              </div>
+              <Button
+                className="w-full bg-black text-white hover:bg-black/90"
+                onClick={handleApplePay}
+                disabled={isLoading}
+              >
+                {isLoading ? "Обработка..." : "Плати с Apple Pay"}
+              </Button>
             </TabsContent>
             
             <TabsContent value="googlepay">
-              <div className="space-y-4">
-                <div className="rounded-lg border p-4 text-center">
-                  <p className="text-sm text-slate-500 mb-2">
-                    Click the button below to pay with Google Pay
-                  </p>
-                  <Button
-                    onClick={handleGooglePay}
-                    className="w-full bg-slate-50 hover:bg-slate-100 text-slate-900 border border-slate-300"
-                    disabled={isLoading}
-                  >
-                    <GooglePayIcon className="mr-2 h-5 w-5" />
-                    {isLoading ? "Processing..." : `Pay with Google Pay`}
-                  </Button>
-                </div>
-                <p className="text-xs text-center text-muted-foreground">
-                  You will be redirected to Google Pay to complete your payment
-                </p>
-              </div>
+              <Button
+                className="w-full bg-white text-black border border-black hover:bg-black/5"
+                onClick={handleGooglePay}
+                disabled={isLoading}
+              >
+                {isLoading ? "Обработка..." : "Плати с Google Pay"}
+              </Button>
             </TabsContent>
           </Tabs>
           

@@ -3,6 +3,25 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { Decimal } from '@prisma/client/runtime/library';
+
+// Helper function to serialize Prisma Decimal objects
+function serializeDecimal(value: any): any {
+  if (value instanceof Decimal) {
+    return value.toString();
+  }
+  if (Array.isArray(value)) {
+    return value.map(serializeDecimal);
+  }
+  if (typeof value === 'object' && value !== null) {
+    const result: any = {};
+    for (const [key, val] of Object.entries(value)) {
+      result[key] = serializeDecimal(val);
+    }
+    return result;
+  }
+  return value;
+}
 
 // Schema for invoice validation
 const invoiceItemSchema = z.object({
@@ -92,7 +111,10 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    return NextResponse.json(invoices);
+    // Serialize the response to handle Decimal objects
+    const serializedInvoices = serializeDecimal(invoices);
+
+    return NextResponse.json(serializedInvoices);
   } catch (error) {
     console.error("Error fetching invoices:", error);
     return NextResponse.json(
@@ -174,7 +196,10 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    return NextResponse.json(invoice, { status: 201 });
+    // Serialize the response to handle Decimal objects
+    const serializedInvoice = serializeDecimal(invoice);
+
+    return NextResponse.json(serializedInvoice, { status: 201 });
   } catch (error) {
     console.error("Error creating invoice:", error);
     

@@ -10,8 +10,8 @@ import { prisma } from "@/lib/db";
 import { Input } from "@/components/ui/input";
 
 export const metadata: Metadata = {
-  title: `Companies | ${APP_NAME}`,
-  description: "Manage your companies",
+  title: `Компании | ${APP_NAME}`,
+  description: "Управлявайте вашите компании",
 };
 
 export default async function CompaniesPage() {
@@ -21,10 +21,10 @@ export default async function CompaniesPage() {
     return (
       <div className="flex items-center justify-center min-h-[80vh]">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
-          <p className="text-muted-foreground mb-6">Please sign in to access companies</p>
+          <h2 className="text-2xl font-bold mb-4">Достъпът е отказан</h2>
+          <p className="text-muted-foreground mb-6">Моля, влезте в системата, за да имате достъп до компаниите</p>
           <Button asChild>
-            <Link href="/signin">Sign In</Link>
+            <Link href="/signin">Вход</Link>
           </Button>
         </div>
       </div>
@@ -40,10 +40,10 @@ export default async function CompaniesPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Companies</h1>
+        <h1 className="text-3xl font-bold">Компании</h1>
         <Button asChild>
           <Link href="/companies/new">
-            <Plus className="mr-2 h-4 w-4" /> Add Company
+            <Plus className="mr-2 h-4 w-4" /> Добавяне на компания
           </Link>
         </Button>
       </div>
@@ -52,7 +52,7 @@ export default async function CompaniesPage() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input 
-            placeholder="Search companies..." 
+            placeholder="Търсене на компании..." 
             className="pl-10"
           />
         </div>
@@ -61,13 +61,13 @@ export default async function CompaniesPage() {
       {companies.length === 0 ? (
         <div className="text-center py-12">
           <Building className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
-          <h3 className="mt-4 text-lg font-semibold">No companies yet</h3>
+          <h3 className="mt-4 text-lg font-semibold">Все още нямате компании</h3>
           <p className="mt-2 text-muted-foreground">
-            Add your first company to start creating invoices
+            Добавете първата си компания, за да започнете да създавате фактури
           </p>
           <Button className="mt-4" asChild>
             <Link href="/companies/new">
-              <Plus className="mr-2 h-4 w-4" /> Add Company
+              <Plus className="mr-2 h-4 w-4" /> Добавяне на компания
             </Link>
           </Button>
         </div>
@@ -92,7 +92,7 @@ export default async function CompaniesPage() {
                         <p className="text-sm text-muted-foreground">{company.phone}</p>
                       )}
                       {company.vatNumber && (
-                        <p className="text-sm text-muted-foreground">VAT: {company.vatNumber}</p>
+                        <p className="text-sm text-muted-foreground">ДДС номер: {company.vatNumber}</p>
                       )}
                       {(company.city || company.country) && (
                         <p className="text-sm text-muted-foreground flex items-center gap-1">

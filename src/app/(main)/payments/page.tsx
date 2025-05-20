@@ -15,10 +15,11 @@ import { Input } from "@/components/ui/input";
 import { APP_NAME } from "@/config/constants";
 import { prisma } from "@/lib/db";
 import { format } from "date-fns";
+import { bg } from "date-fns/locale";
 
 export const metadata: Metadata = {
-  title: `Payments | ${APP_NAME}`,
-  description: "Track and manage invoice payments",
+  title: `Плащания | ${APP_NAME}`,
+  description: "Проследявайте и управлявайте плащанията по фактурите",
 };
 
 export default async function PaymentsPage() {
@@ -28,10 +29,10 @@ export default async function PaymentsPage() {
     return (
       <div className="flex items-center justify-center min-h-[80vh]">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
-          <p className="text-muted-foreground mb-6">Please sign in to access payments</p>
+          <h2 className="text-2xl font-bold mb-4">Достъпът е отказан</h2>
+          <p className="text-muted-foreground mb-6">Моля, влезте в системата, за да имате достъп до плащанията</p>
           <Button asChild>
-            <Link href="/signin">Sign In</Link>
+            <Link href="/signin">Вход</Link>
           </Button>
         </div>
       </div>
@@ -61,11 +62,11 @@ export default async function PaymentsPage() {
     <div>
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Payments</h1>
+          <h1 className="text-3xl font-bold">Плащания</h1>
           <Button asChild>
             <Link href="/payments/new">
               <Plus className="w-4 h-4 mr-2" />
-              Record Payment
+              Запис на плащане
             </Link>
           </Button>
         </div>
@@ -74,32 +75,32 @@ export default async function PaymentsPage() {
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input 
-              placeholder="Search payments..." 
+              placeholder="Търсене на плащания..." 
               className="pl-10"
             />
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
-            <Button variant="outline" size="sm">Filter</Button>
-            <Button variant="outline" size="sm">Export</Button>
+            <Button variant="outline" size="sm">Филтриране</Button>
+            <Button variant="outline" size="sm">Експорт</Button>
           </div>
         </div>
         
         <Card>
           <CardHeader>
-            <CardTitle>Payment History</CardTitle>
-            <CardDescription>Track all invoice payments</CardDescription>
+            <CardTitle>История на плащанията</CardTitle>
+            <CardDescription>Проследявайте всички плащания по фактури</CardDescription>
           </CardHeader>
           <CardContent>
             {payments.length === 0 ? (
               <div className="text-center py-12">
                 <CreditCard className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
-                <h3 className="mt-4 text-lg font-semibold">No payments recorded</h3>
+                <h3 className="mt-4 text-lg font-semibold">Няма записани плащания</h3>
                 <p className="mt-2 text-muted-foreground">
-                  When you receive payments from clients, they will appear here
+                  Когато получите плащания от клиенти, те ще се появят тук
                 </p>
                 <Button className="mt-4" asChild>
                   <Link href="/payments/new">
-                    <Plus className="mr-2 h-4 w-4" /> Record First Payment
+                    <Plus className="mr-2 h-4 w-4" /> Запис на първо плащане
                   </Link>
                 </Button>
               </div>
@@ -108,19 +109,19 @@ export default async function PaymentsPage() {
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="border-b">
-                      <th className="px-4 py-3 text-left font-medium text-xs sm:text-sm">Date</th>
-                      <th className="px-4 py-3 text-left font-medium text-xs sm:text-sm">Invoice</th>
-                      <th className="px-4 py-3 text-left font-medium text-xs sm:text-sm">Client</th>
-                      <th className="px-4 py-3 text-left font-medium text-xs sm:text-sm">Method</th>
-                      <th className="px-4 py-3 text-left font-medium text-xs sm:text-sm">Amount</th>
-                      <th className="px-4 py-3 text-right font-medium text-xs sm:text-sm">Actions</th>
+                      <th className="px-4 py-3 text-left font-medium text-xs sm:text-sm">Дата</th>
+                      <th className="px-4 py-3 text-left font-medium text-xs sm:text-sm">Фактура</th>
+                      <th className="px-4 py-3 text-left font-medium text-xs sm:text-sm">Клиент</th>
+                      <th className="px-4 py-3 text-left font-medium text-xs sm:text-sm">Метод</th>
+                      <th className="px-4 py-3 text-left font-medium text-xs sm:text-sm">Сума</th>
+                      <th className="px-4 py-3 text-right font-medium text-xs sm:text-sm">Действия</th>
                     </tr>
                   </thead>
                   <tbody>
                     {payments.map((payment) => (
                       <tr key={payment.id} className="border-b hover:bg-muted/50">
                         <td className="px-4 py-3 text-xs sm:text-sm">
-                          {format(payment.paymentDate, "MMM d, yyyy")}
+                          {format(payment.paymentDate, "d MMM yyyy", { locale: bg })}
                         </td>
                         <td className="px-4 py-3 text-xs sm:text-sm">
                           <div className="flex items-center gap-2">
@@ -142,13 +143,13 @@ export default async function PaymentsPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-xs sm:text-sm font-medium">
-                          ${Number(payment.amount).toFixed(2)}
+                          {payment.invoice.currency === 'BGN' ? 'лв. ' : payment.invoice.currency === 'EUR' ? '€' : payment.invoice.currency === 'GBP' ? '£' : '$'}{Number(payment.amount).toFixed(2)}
                         </td>
                         <td className="px-4 py-3 text-xs sm:text-sm">
                           <div className="flex justify-end gap-2">
                             <Button variant="ghost" size="sm" asChild>
                               <Link href={`/payments/${payment.id}`}>
-                                View
+                                Преглед
                               </Link>
                             </Button>
                           </div>
@@ -167,7 +168,13 @@ export default async function PaymentsPage() {
 }
 
 function formatPaymentMethod(method: string) {
-  return method.replace('_', ' ').replace(/\w\S*/g, 
+  const translations: Record<string, string> = {
+    'BANK_TRANSFER': 'Банков превод',
+    'CREDIT_CARD': 'Кредитна карта',
+    'PAYPAL': 'PayPal',
+    'CASH': 'В брой'
+  };
+  return translations[method] || method.replace('_', ' ').replace(/\w\S*/g, 
     (txt) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase()
   );
 }

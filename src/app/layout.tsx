@@ -18,8 +18,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: `${APP_NAME} - Invoicing System`,
-  description: "Modern invoicing system for businesses",
+  title: `${APP_NAME} - Система за фактуриране`,
+  description: "Модерна система за фактуриране за бизнеси",
 };
 
 export default function RootLayout({
@@ -28,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="bg" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

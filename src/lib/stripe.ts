@@ -108,4 +108,56 @@ export async function getStripeCustomer(customerId: string) {
 
 export async function getSubscription(subscriptionId: string) {
   return await stripe.subscriptions.retrieve(subscriptionId);
+}
+
+// Create payment link for invoice
+export async function createInvoicePaymentLink(
+  invoiceId: string,
+  amount: number,
+  currency: string,
+  customerEmail?: string
+) {
+  try {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(amount * 100), // Convert to cents
+      currency: currency.toLowerCase(),
+      payment_method_types: ['card'],
+      metadata: {
+        invoiceId,
+      },
+      receipt_email: customerEmail,
+    });
+
+    // Create a payment link
+    const paymentLink = await stripe.paymentLinks.create({
+      line_items: [
+        {
+          price_data: {
+            currency: currency.toLowerCase(),
+            product_data: {
+              name: `Invoice #${invoiceId}`,
+            },
+            unit_amount: Math.round(amount * 100),
+          },
+          quantity: 1,
+        },
+      ],
+      payment_intent_data: {
+        metadata: {
+          invoiceId,
+        },
+      },
+      after_completion: {
+        type: 'redirect',
+        redirect: {
+          url: `${process.env.NEXT_PUBLIC_APP_URL}/invoices/${invoiceId}?payment_status=success`,
+        },
+      },
+    });
+
+    return paymentLink.url;
+  } catch (error) {
+    console.error('Error creating payment link:', error);
+    throw new Error('Failed to create payment link');
+  }
 } 

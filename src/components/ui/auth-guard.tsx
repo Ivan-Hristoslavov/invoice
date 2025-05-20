@@ -91,15 +91,15 @@ export default function AuthGuard({
       <Card className="mx-auto max-w-md my-8">
         <CardHeader className="text-center">
           <ShieldAlert className="h-12 w-12 text-amber-500 mx-auto mb-2" />
-          <CardTitle className="text-xl">Access Denied</CardTitle>
+          <CardTitle className="text-xl">Достъпът е отказан</CardTitle>
         </CardHeader>
         <CardContent className="text-center space-y-4">
           <div className="flex items-center justify-center space-x-2">
             <AlertTriangle className="h-5 w-5 text-amber-500" />
-            <p>You don't have permission to access this page.</p>
+            <p>Нямате права за достъп до тази страница.</p>
           </div>
           <Button onClick={() => router.push("/dashboard")}>
-            Return to Dashboard
+            Връщане към таблото
           </Button>
         </CardContent>
       </Card>

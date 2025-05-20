@@ -26,10 +26,10 @@ export default function HomePage() {
             <div className="flex items-center gap-2">
               <ThemeToggle />
               <Button variant="ghost" size="sm" asChild>
-                <Link href="/signin">Sign in</Link>
+                <Link href="/signin">Вход</Link>
               </Button>
               <Button size="sm" asChild>
-                <Link href="/signup">Sign up</Link>
+                <Link href="/signup">Регистрация</Link>
               </Button>
             </div>
           </div>
@@ -39,22 +39,22 @@ export default function HomePage() {
       <div className="container mx-auto px-4 py-12 md:py-24">
         <div className="flex flex-col items-center text-center mb-16">
           <h1 className="text-4xl md:text-6xl font-bold mb-6">
-            Simplify your invoicing with {APP_NAME}
+            Опростете вашето фактуриране с {APP_NAME}
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mb-8">
-            Professional invoicing solution for businesses of all sizes.
-            Create, manage and track your invoices with ease.
+            Професионално решение за фактуриране за бизнеси от всякакъв размер.
+            Създавайте, управлявайте и проследявайте вашите фактури с лекота.
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
             <Button size="lg" asChild>
               <Link href="/signup">
-                Get Started
+                Започнете сега
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
               <Link href="/dashboard">
-                View Demo
+                Преглед на демо
               </Link>
             </Button>
           </div>
@@ -80,9 +80,9 @@ export default function HomePage() {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Professional Invoices</h3>
+              <h3 className="text-xl font-semibold mb-2">Професионални фактури</h3>
               <p className="text-muted-foreground">
-                Create beautiful, customized invoices that reflect your brand and impress your clients.
+                Създавайте красиви, персонализирани фактури, които отразяват вашата марка и впечатляват вашите клиенти.
               </p>
             </CardContent>
           </Card>
@@ -105,9 +105,9 @@ export default function HomePage() {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Time Saving</h3>
+              <h3 className="text-xl font-semibold mb-2">Спестяване на време</h3>
               <p className="text-muted-foreground">
-                Save time with automated invoice generation, recurring invoices, and payment reminders.
+                Спестете време с автоматично генериране на фактури, повтарящи се фактури и напомняния за плащане.
               </p>
             </CardContent>
           </Card>
@@ -130,9 +130,9 @@ export default function HomePage() {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Financial Insights</h3>
+              <h3 className="text-xl font-semibold mb-2">Финансови анализи</h3>
               <p className="text-muted-foreground">
-                Gain valuable insights into your business finances with detailed reporting and analytics.
+                Получете ценни анализи за финансите на вашия бизнес с подробни отчети и аналитика.
               </p>
             </CardContent>
           </Card>
@@ -140,25 +140,25 @@ export default function HomePage() {
 
         {/* Pricing */}
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">Simple, Transparent Pricing</h2>
+          <h2 className="text-3xl font-bold mb-4">Просто, прозрачно ценообразуване</h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-12">
-            Choose the plan that's right for your business.
+            Изберете плана, който е подходящ за вашия бизнес.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Basic Plan */}
             <Card className="border border-muted">
               <CardContent className="pt-6">
-                <h3 className="text-xl font-semibold mb-2">Basic</h3>
+                <h3 className="text-xl font-semibold mb-2">Базов</h3>
                 <div className="mb-4">
                   <span className="text-4xl font-bold">$10</span>
-                  <span className="text-muted-foreground">/month</span>
+                  <span className="text-muted-foreground">/месец</span>
                 </div>
                 <p className="text-muted-foreground mb-6">
-                  Perfect for freelancers and small businesses just getting started.
+                  Перфектен за фрийлансъри и малки бизнеси, които тепърва започват.
                 </p>
                 <ul className="space-y-3 mb-6">
-                  {["Access to basic invoicing features", "Up to 10 clients", "Up to 50 invoices per month"].map((feature) => (
+                  {["Достъп до основни функции за фактуриране", "До 10 клиента", "До 50 фактури на месец"].map((feature) => (
                     <li key={feature} className="flex items-center">
                       <Check className="text-green-500 mr-2 h-5 w-5" />
                       <span>{feature}</span>
@@ -166,7 +166,7 @@ export default function HomePage() {
                   ))}
                 </ul>
                 <CheckoutButton plan="BASIC" className="w-full" variant="outline">
-                  Subscribe
+                  Абонирай се
                 </CheckoutButton>
               </CardContent>
             </Card>
@@ -174,23 +174,23 @@ export default function HomePage() {
             {/* Pro Plan */}
             <Card className="border-2 border-primary relative">
               <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">
-                Most Popular
+                Най-популярен
               </div>
               <CardContent className="pt-6">
-                <h3 className="text-xl font-semibold mb-2">Pro</h3>
+                <h3 className="text-xl font-semibold mb-2">Про</h3>
                 <div className="mb-4">
                   <span className="text-4xl font-bold">$20</span>
-                  <span className="text-muted-foreground">/month</span>
+                  <span className="text-muted-foreground">/месец</span>
                 </div>
                 <p className="text-muted-foreground mb-6">
-                  Ideal for growing businesses with regular invoicing needs.
+                  Идеален за развиващи се бизнеси с редовни нужди от фактуриране.
                 </p>
                 <ul className="space-y-3 mb-6">
                   {[
-                    "All Basic features",
-                    "Up to 50 clients",
-                    "Unlimited invoices",
-                    "Custom branding"
+                    "Всички функции от Базов план",
+                    "До 50 клиента",
+                    "Неограничени фактури",
+                    "Персонализиран брандинг"
                   ].map((feature) => (
                     <li key={feature} className="flex items-center">
                       <Check className="text-green-500 mr-2 h-5 w-5" />
@@ -199,28 +199,29 @@ export default function HomePage() {
                   ))}
                 </ul>
                 <CheckoutButton plan="PRO" className="w-full">
-                  Subscribe
+                  Абонирай се
                 </CheckoutButton>
               </CardContent>
             </Card>
 
-            {/* VIP Plan */}
+            {/* Enterprise Plan */}
             <Card className="border border-muted">
               <CardContent className="pt-6">
-                <h3 className="text-xl font-semibold mb-2">VIP</h3>
+                <h3 className="text-xl font-semibold mb-2">Ентърпрайз</h3>
                 <div className="mb-4">
-                  <span className="text-4xl font-bold">$30</span>
-                  <span className="text-muted-foreground">/month</span>
+                  <span className="text-4xl font-bold">$50</span>
+                  <span className="text-muted-foreground">/месец</span>
                 </div>
                 <p className="text-muted-foreground mb-6">
-                  For larger businesses with advanced invoicing requirements.
+                  За по-големи организации с комплексни нужди от фактуриране.
                 </p>
                 <ul className="space-y-3 mb-6">
                   {[
-                    "All Pro features",
-                    "Unlimited clients",
-                    "Priority support",
-                    "Advanced analytics"
+                    "Всички функции от Про план",
+                    "Неограничени клиенти",
+                    "Приоритетна поддръжка",
+                    "API достъп",
+                    "Разширена аналитика"
                   ].map((feature) => (
                     <li key={feature} className="flex items-center">
                       <Check className="text-green-500 mr-2 h-5 w-5" />
@@ -228,27 +229,148 @@ export default function HomePage() {
                     </li>
                   ))}
                 </ul>
-                <CheckoutButton plan="VIP" className="w-full" variant="outline">
-                  Subscribe
+                <CheckoutButton plan="ENTERPRISE" className="w-full" variant="outline">
+                  Абонирай се
                 </CheckoutButton>
               </CardContent>
             </Card>
           </div>
         </div>
 
+        {/* Testimonials */}
+        <div className="mb-24">
+          <h2 className="text-3xl font-bold text-center mb-12">Доволни клиенти</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <span className="font-semibold text-primary">ИД</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">Иван Димитров</h4>
+                      <p className="text-sm text-muted-foreground">Фрийлансър</p>
+                    </div>
+                  </div>
+                  <p className="italic">
+                    "{APP_NAME} промени начина, по който управлявам фактурите си. Лесно е за използване и спестява толкова много време!"
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <span className="font-semibold text-primary">МГ</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">Мария Георгиева</h4>
+                      <p className="text-sm text-muted-foreground">Собственик на малък бизнес</p>
+                    </div>
+                  </div>
+                  <p className="italic">
+                    "Професионалните фактури и автоматизираните напомняния подобриха паричния ни поток. Напълно препоръчвам {APP_NAME} на всеки малък бизнес."
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
         {/* CTA */}
-        <div className="text-center bg-muted p-12 rounded-lg">
-          <h2 className="text-3xl font-bold mb-4">Ready to streamline your invoicing?</h2>
+        <div className="text-center">
+          <h2 className="text-3xl font-bold mb-4">Готови ли сте да опитате {APP_NAME}?</h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            Join thousands of businesses that trust {APP_NAME} for their invoicing needs.
+            Започнете безплатно днес и вижте как можем да ви помогнем да управлявате вашите фактури по-ефективно.
           </p>
           <Button size="lg" asChild>
-            <Link href="/signup">
-              Get Started for Free
-            </Link>
+            <Link href="/signup">Започнете безплатен пробен период</Link>
           </Button>
         </div>
       </div>
+
+      {/* Footer for unauthenticated users */}
+      {!isAuthenticated && (
+        <footer className="mt-24 border-t py-12">
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+              <div>
+                <h3 className="font-bold text-lg mb-4">{APP_NAME}</h3>
+                <p className="text-muted-foreground">
+                  Опростяваме фактурирането за бизнеси по целия свят.
+                </p>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-4">Продукт</h4>
+                <ul className="space-y-2">
+                  <li>
+                    <Link href="#" className="text-muted-foreground hover:text-foreground">
+                      Функции
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="#" className="text-muted-foreground hover:text-foreground">
+                      Ценообразуване
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="#" className="text-muted-foreground hover:text-foreground">
+                      Интеграции
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-4">Компания</h4>
+                <ul className="space-y-2">
+                  <li>
+                    <Link href="#" className="text-muted-foreground hover:text-foreground">
+                      За нас
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="#" className="text-muted-foreground hover:text-foreground">
+                      Блог
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="#" className="text-muted-foreground hover:text-foreground">
+                      Кариери
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-4">Правна информация</h4>
+                <ul className="space-y-2">
+                  <li>
+                    <Link href="#" className="text-muted-foreground hover:text-foreground">
+                      Условия за ползване
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="#" className="text-muted-foreground hover:text-foreground">
+                      Политика за поверителност
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="#" className="text-muted-foreground hover:text-foreground">
+                      Бисквитки
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <div className="mt-12 pt-8 border-t text-center text-muted-foreground">
+              <p>© {new Date().getFullYear()} {APP_NAME}. Всички права запазени.</p>
+            </div>
+          </div>
+        </footer>
+      )}
     </div>
   );
 } 

@@ -14,14 +14,14 @@ interface SubscriptionRequiredProps {
 }
 
 export function SubscriptionRequired({
-  title = 'Subscription Required',
-  description = 'This feature requires a higher tier subscription.',
+  title = 'Изисква се абонамент',
+  description = 'Тази функция изисква по-висок абонаментен план.',
   message,
   feature,
 }: SubscriptionRequiredProps) {
   const { subscription } = useSubscription();
   
-  const currentPlan = subscription?.plan || 'FREE';
+  const currentPlan = subscription?.plan || 'БЕЗПЛАТЕН';
   
   return (
     <Card className="mx-auto max-w-md">
@@ -39,10 +39,10 @@ export function SubscriptionRequired({
           )}
           
           <div className="bg-muted p-3 rounded-md">
-            <p className="text-sm font-medium">Your current subscription: <span className="font-bold">{currentPlan}</span></p>
+            <p className="text-sm font-medium">Вашият текущ абонамент: <span className="font-bold">{currentPlan}</span></p>
             {feature && (
               <p className="text-xs text-muted-foreground mt-1">
-                You need to upgrade your subscription to access {feature}.
+                Трябва да надстроите абонамента си, за да имате достъп до {feature}.
               </p>
             )}
           </div>
@@ -50,13 +50,13 @@ export function SubscriptionRequired({
           <div className="space-y-2">
             <h4 className="text-sm font-medium flex items-center gap-1">
               <CheckCheck className="w-4 h-4 text-green-500" />
-              Upgrade to unlock:
+              Надстройте, за да отключите:
             </h4>
             <ul className="text-sm space-y-1 ml-6 list-disc">
-              <li>More clients and invoices</li>
-              <li>Custom branding options</li>
-              <li>Advanced features</li>
-              <li>Priority support</li>
+              <li>Повече клиенти и фактури</li>
+              <li>Персонализирани опции за брандинг</li>
+              <li>Разширени функции</li>
+              <li>Приоритетна поддръжка</li>
             </ul>
           </div>
         </div>
@@ -64,13 +64,13 @@ export function SubscriptionRequired({
       <CardFooter className="flex gap-2 flex-col sm:flex-row">
         <Button asChild className="w-full sm:w-auto">
           <Link href="/settings/subscription">
-            View Subscription Plans
+            Преглед на абонаментните планове
           </Link>
         </Button>
         
         <Button variant="outline" asChild className="w-full sm:w-auto">
           <Link href="/">
-            Go Back
+            Назад
           </Link>
         </Button>
       </CardFooter>
