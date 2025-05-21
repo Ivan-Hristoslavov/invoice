@@ -2,8 +2,13 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { stripe } from '@/lib/stripe';
+import Stripe from 'stripe';
 import { Decimal } from '@prisma/client/runtime/library';
+
+// Инициализиране на Stripe
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2023-10-16'
+});
 
 // Helper function to serialize Prisma Decimal objects
 function serializeDecimal(value: any): any {
@@ -57,7 +62,7 @@ export async function POST() {
       where: { id: subscription.id },
       data: {
         cancelAtPeriodEnd: true,
-        statusHistory: {
+        history: {
           create: {
             status: 'CANCELING',
             event: 'CANCEL_REQUESTED'

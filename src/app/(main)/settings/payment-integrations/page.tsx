@@ -32,8 +32,8 @@ export default function PaymentIntegrationsPage() {
   const [isPaymentLinkEnabled, setIsPaymentLinkEnabled] = useState(false);
   
   const handleSaveSettings = () => {
-    toast.success("Settings saved", {
-      description: "Your payment integration settings have been updated."
+    toast.success("Настройките са запазени", {
+      description: "Вашите настройки за интеграция на плащанията са обновени."
     });
   };
 
@@ -44,30 +44,30 @@ export default function PaymentIntegrationsPage() {
           <Button variant="ghost" size="sm" asChild>
             <Link href="/settings">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Settings
+              Назад към Настройки
             </Link>
           </Button>
-          <h1 className="text-3xl font-bold">Payment Integrations</h1>
+          <h1 className="text-3xl font-bold">Интеграции за плащане</h1>
         </div>
         <Button onClick={handleSaveSettings}>
-          Save Settings
+          Запази настройките
         </Button>
       </div>
 
       <Card className="mb-8">
         <CardHeader>
-          <CardTitle>Payment Processing</CardTitle>
+          <CardTitle>Обработка на плащания</CardTitle>
           <CardDescription>
-            Configure payment gateways to enable clients to pay invoices directly
+            Конфигурирайте платежни портали, за да позволите на клиентите да плащат фактури директно
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="p-4 bg-amber-50 border border-amber-200 rounded-md mb-6">
-            <h3 className="font-medium text-amber-800 mb-2">Coming Soon</h3>
+            <h3 className="font-medium text-amber-800 mb-2">Очаквайте скоро</h3>
             <p className="text-amber-700 text-sm">
-              Integration with payment providers is currently in development. The settings on this page 
-              are placeholders for upcoming functionality. Currently, you can record payments manually
-              that were received through these methods.
+              Интеграцията с платежни доставчици в момента е в разработка. Настройките на тази страница
+              са предварителни за предстояща функционалност. В момента можете да записвате плащания ръчно,
+              които са получени чрез тези методи.
             </p>
           </div>
           
@@ -76,15 +76,15 @@ export default function PaymentIntegrationsPage() {
               <TabsTrigger value="apple-pay">Apple Pay</TabsTrigger>
               <TabsTrigger value="google-pay">Google Pay</TabsTrigger>
               <TabsTrigger value="stripe">Stripe</TabsTrigger>
-              <TabsTrigger value="payment-links">Payment Links</TabsTrigger>
+              <TabsTrigger value="payment-links">Платежни линкове</TabsTrigger>
             </TabsList>
             
             <TabsContent value="apple-pay">
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium text-lg">Enable Apple Pay</h3>
-                    <p className="text-muted-foreground text-sm">Allow clients to pay invoices using Apple Pay</p>
+                    <h3 className="font-medium text-lg">Активиране на Apple Pay</h3>
+                    <p className="text-muted-foreground text-sm">Позволяване на клиентите да плащат фактури чрез Apple Pay</p>
                   </div>
                   <Switch 
                     checked={isApplePayEnabled} 
@@ -101,13 +101,13 @@ export default function PaymentIntegrationsPage() {
                         <Input id="apple-merchant-id" placeholder="merchant.com.yourcompany.app" />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="apple-merchant-cert">Merchant Certificate</Label>
+                        <Label htmlFor="apple-merchant-cert">Сертификат на търговеца</Label>
                         <Input id="apple-merchant-cert" type="file" />
                       </div>
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="apple-domain-verification">Domain Verification File</Label>
+                      <Label htmlFor="apple-domain-verification">Файл за проверка на домейна</Label>
                       <Input id="apple-domain-verification" type="file" />
                     </div>
                     
@@ -120,7 +120,7 @@ export default function PaymentIntegrationsPage() {
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:underline"
                         >
-                          Learn more about Apple Pay integration
+                          Научете повече за интеграцията с Apple Pay
                         </a>
                       </p>
                     </div>
@@ -133,8 +133,8 @@ export default function PaymentIntegrationsPage() {
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium text-lg">Enable Google Pay</h3>
-                    <p className="text-muted-foreground text-sm">Allow clients to pay invoices using Google Pay</p>
+                    <h3 className="font-medium text-lg">Активиране на Google Pay</h3>
+                    <p className="text-muted-foreground text-sm">Позволяване на клиентите да плащат фактури чрез Google Pay</p>
                   </div>
                   <Switch 
                     checked={isGooglePayEnabled} 
@@ -151,13 +151,13 @@ export default function PaymentIntegrationsPage() {
                         <Input id="google-merchant-id" placeholder="1234567890" />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="google-merchant-name">Merchant Name</Label>
-                        <Input id="google-merchant-name" placeholder="Your Business Name" />
+                        <Label htmlFor="google-merchant-name">Име на търговеца</Label>
+                        <Input id="google-merchant-name" placeholder="Името на вашия бизнес" />
                       </div>
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="google-api-key">Google Pay API Key</Label>
+                      <Label htmlFor="google-api-key">Google Pay API ключ</Label>
                       <Input id="google-api-key" type="password" />
                     </div>
                     
@@ -170,7 +170,7 @@ export default function PaymentIntegrationsPage() {
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:underline"
                         >
-                          Learn more about Google Pay integration
+                          Научете повече за интеграцията с Google Pay
                         </a>
                       </p>
                     </div>
@@ -183,8 +183,8 @@ export default function PaymentIntegrationsPage() {
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium text-lg">Enable Stripe</h3>
-                    <p className="text-muted-foreground text-sm">Process credit card payments through Stripe</p>
+                    <h3 className="font-medium text-lg">Активиране на Stripe</h3>
+                    <p className="text-muted-foreground text-sm">Обработка на плащания с кредитни карти чрез Stripe</p>
                   </div>
                   <Switch 
                     checked={isStripeEnabled} 
@@ -197,17 +197,17 @@ export default function PaymentIntegrationsPage() {
                   <div className="space-y-4 mt-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="stripe-public-key">Publishable Key</Label>
+                        <Label htmlFor="stripe-public-key">Публичен ключ</Label>
                         <Input id="stripe-public-key" placeholder="pk_test_..." />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="stripe-secret-key">Secret Key</Label>
+                        <Label htmlFor="stripe-secret-key">Секретен ключ</Label>
                         <Input id="stripe-secret-key" type="password" placeholder="sk_test_..." />
                       </div>
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="stripe-webhook-secret">Webhook Secret</Label>
+                      <Label htmlFor="stripe-webhook-secret">Webhook секрет</Label>
                       <Input id="stripe-webhook-secret" type="password" placeholder="whsec_..." />
                     </div>
                     
@@ -220,7 +220,7 @@ export default function PaymentIntegrationsPage() {
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:underline"
                         >
-                          Learn more about Stripe integration
+                          Научете повече за интеграцията със Stripe
                         </a>
                       </p>
                     </div>
@@ -233,8 +233,8 @@ export default function PaymentIntegrationsPage() {
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium text-lg">Enable Payment Links</h3>
-                    <p className="text-muted-foreground text-sm">Generate shareable links for clients to pay invoices</p>
+                    <h3 className="font-medium text-lg">Активиране на платежни линкове</h3>
+                    <p className="text-muted-foreground text-sm">Генериране на линкове за споделяне, които клиентите могат да използват за плащане на фактури</p>
                   </div>
                   <Switch 
                     checked={isPaymentLinkEnabled} 
@@ -247,26 +247,26 @@ export default function PaymentIntegrationsPage() {
                   <div className="space-y-4 mt-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="link-expiration">Link Expiration</Label>
+                        <Label htmlFor="link-expiration">Валидност на линка</Label>
                         <select 
                           id="link-expiration" 
                           className="w-full px-3 py-2 border border-input bg-background rounded-md"
                         >
-                          <option value="never">Never</option>
-                          <option value="24h">24 hours</option>
-                          <option value="7d">7 days</option>
-                          <option value="30d">30 days</option>
+                          <option value="never">Никога</option>
+                          <option value="24h">24 часа</option>
+                          <option value="7d">7 дни</option>
+                          <option value="30d">30 дни</option>
                         </select>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="link-payments">Allowed Payment Methods</Label>
+                        <Label htmlFor="link-payments">Разрешени методи на плащане</Label>
                         <select 
                           id="link-payments" 
                           className="w-full px-3 py-2 border border-input bg-background rounded-md"
                         >
-                          <option value="all">All Available Methods</option>
-                          <option value="cards">Credit Cards Only</option>
-                          <option value="wallets">Digital Wallets Only</option>
+                          <option value="all">Всички налични методи</option>
+                          <option value="cards">Само кредитни карти</option>
+                          <option value="wallets">Само дигитални портфейли</option>
                         </select>
                       </div>
                     </div>
@@ -274,11 +274,11 @@ export default function PaymentIntegrationsPage() {
                     <div className="p-3 rounded bg-green-50 border border-green-200">
                       <h4 className="font-medium text-green-700 mb-1 flex items-center gap-2">
                         <Check className="w-4 h-4" />
-                        How it works
+                        Как работи
                       </h4>
                       <p className="text-sm text-green-700">
-                        When enabled, a "Pay Now" button will appear on client invoices. 
-                        You can also generate and share payment links directly from invoice details.
+                        Когато е активирано, бутон "Плати сега" ще се появи на фактурите на клиентите.
+                        Можете също да генерирате и споделяте платежни линкове директно от детайлите на фактурата.
                       </p>
                     </div>
                   </div>
@@ -291,30 +291,30 @@ export default function PaymentIntegrationsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Invoice Client-Facing Payment Page</CardTitle>
+          <CardTitle>Страница за плащане, видима от клиентите</CardTitle>
           <CardDescription>
-            Customize the payment experience your clients will see
+            Персонализирайте изживяването при плащане, което вашите клиенти ще виждат
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="payment-page-logo">Company Logo</Label>
+              <Label htmlFor="payment-page-logo">Лого на компанията</Label>
               <Input id="payment-page-logo" type="file" />
-              <p className="text-xs text-muted-foreground mt-1">Recommended size: 200x60px</p>
+              <p className="text-xs text-muted-foreground mt-1">Препоръчителен размер: 200x60px</p>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="payment-page-color">Brand Color</Label>
+              <Label htmlFor="payment-page-color">Цвят на бранда</Label>
               <Input id="payment-page-color" type="color" defaultValue="#4F46E5" className="h-10 w-20" />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="payment-page-message">Thank You Message</Label>
+              <Label htmlFor="payment-page-message">Благодарствено съобщение</Label>
               <Input 
                 id="payment-page-message" 
-                placeholder="Thank you for your payment!" 
-                defaultValue="Thank you for your payment! We appreciate your business."
+                placeholder="Благодарим за плащането!" 
+                defaultValue="Благодарим за плащането! Оценяваме вашия бизнес."
               />
             </div>
             
@@ -322,15 +322,15 @@ export default function PaymentIntegrationsPage() {
             
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-medium">Enable Payment Receipts</h3>
-                <p className="text-sm text-muted-foreground">Automatically send email receipts when payments are received</p>
+                <h3 className="font-medium">Активиране на разписки за плащане</h3>
+                <p className="text-sm text-muted-foreground">Автоматично изпращане на имейл разписки при получаване на плащания</p>
               </div>
               <Switch id="enable-receipts" defaultChecked />
             </div>
           </div>
         </CardContent>
         <CardFooter className="flex justify-end">
-          <Button onClick={handleSaveSettings}>Save Changes</Button>
+          <Button onClick={handleSaveSettings}>Запази промените</Button>
         </CardFooter>
       </Card>
     </div>

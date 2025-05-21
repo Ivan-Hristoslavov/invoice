@@ -96,6 +96,7 @@ model Company {
   bankSwift         String?
   bankIban          String?
   logo              String?
+  stripeAccountId   String?   // Stripe Connect Account ID
   
   // Bulgarian-specific fields
   bulstatNumber     String?   // Bulgarian company identifier (ЕИК/БУЛСТАТ)
@@ -191,6 +192,7 @@ model Invoice {
   issueDate       DateTime
   dueDate         DateTime
   status          InvoiceStatus @default(DRAFT)
+  paidAt          DateTime? // When the invoice was paid
   subtotal        Decimal  @db.Decimal(10, 2)
   taxAmount       Decimal  @db.Decimal(10, 2)
   discount        Decimal? @db.Decimal(10, 2)
@@ -244,8 +246,11 @@ model Payment {
   amount      Decimal      @db.Decimal(10, 2)
   paymentDate DateTime
   paymentMethod PaymentMethod
+  transactionId String?    // Stripe transaction ID or reference
   reference   String?
   notes       String?
+  refundedPaymentId String? // Reference to the original payment if this is a refund
+  status      String?      // Status of the payment: PAID, FAILED, REFUNDED, etc.
   createdAt   DateTime     @default(now())
   
   invoice     Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
@@ -402,4 +407,17 @@ enum PaymentStatus {
   PENDING
   REFUNDED
   VOID
+}
+
+// Webhook Event Logging
+model WebhookEventLog {
+  id          String   @id @default(cuid())
+  eventType   String
+  eventId     String
+  status      String   // SUCCESS or FAILED
+  payload     String   @db.Text // JSON payload
+  processedAt DateTime @default(now())
+  
+  @@index([eventType, status])
+  @@index([eventId])
 }

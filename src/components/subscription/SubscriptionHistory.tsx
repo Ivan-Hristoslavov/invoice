@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from 'react';
-import { useSubscription } from '@/hooks/useSubscription';
+import { useState, useRef, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -14,29 +15,81 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { CreditCard, ReceiptText } from 'lucide-react';
-
-interface PaymentItem {
-  id: string;
-  amount: number;
-  currency: string;
-  status: string;
-  createdAt: string;
-}
-
-interface StatusHistoryItem {
-  id: string;
-  status: string;
-  event: string;
-  createdAt: string;
-}
+import { CreditCard, ReceiptText, Info, ChevronDown, Loader2 } from 'lucide-react';
+import { useSubscriptionHistory } from '@/hooks/useSubscriptionHistory';
 
 export function SubscriptionHistory() {
-  const { subscription, isLoading } = useSubscription();
   const [activeTab, setActiveTab] = useState('payments');
+  const [pageSize, setPageSize] = useState(10);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  
+  const { 
+    subscription, 
+    payments, 
+    statusHistory: history, 
+    pagination, 
+    isLoading, 
+    loadingMore, 
+    error, 
+    loadMore, 
+    refresh,
+    changePageSize 
+  } = useSubscriptionHistory(1, pageSize);
+  
+  // Setup intersection observer for lazy loading
+  useEffect(() => {
+    if (!loadMoreRef.current || isLoading || !pagination.hasMore) return;
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && !loadingMore) {
+          loadMore();
+        }
+      },
+      { threshold: 0.5 }
+    );
+    
+    observer.observe(loadMoreRef.current);
+    
+    return () => {
+      if (loadMoreRef.current) {
+        observer.unobserve(loadMoreRef.current);
+      }
+    };
+  }, [isLoading, loadingMore, pagination.hasMore, loadMore]);
+  
+  // Handle page size change
+  const handlePageSizeChange = (value: string) => {
+    const newSize = parseInt(value, 10);
+    setPageSize(newSize);
+    changePageSize(newSize);
+  };
   
   if (isLoading) {
     return <SubscriptionHistorySkeleton />;
+  }
+  
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>История на абонамента</CardTitle>
+          <CardDescription>
+            Възникна грешка при зареждането на данните
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-2 text-destructive">
+            <Info className="h-4 w-4" />
+            <span>{error}</span>
+          </div>
+          <Button onClick={refresh} className="mt-4" variant="outline">
+            Опитайте отново
+          </Button>
+        </CardContent>
+      </Card>
+    );
   }
   
   if (!subscription) {
@@ -52,8 +105,8 @@ export function SubscriptionHistory() {
     );
   }
   
-  const hasPayments = subscription.paymentHistory && subscription.paymentHistory.length > 0;
-  const hasStatusHistory = subscription.statusHistory && subscription.statusHistory.length > 0;
+  const hasPayments = payments.length > 0;
+  const hasStatusHistory = history.length > 0;
   
   if (!hasPayments && !hasStatusHistory) {
     return (
@@ -71,10 +124,52 @@ export function SubscriptionHistory() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>История на абонамента</CardTitle>
-        <CardDescription>
-          Преглед на историята на плащанията и промените в статуса
-        </CardDescription>
+        <div className="flex justify-between items-center">
+          <div>
+            <CardTitle>История на абонамента</CardTitle>
+            <CardDescription>
+              Преглед на историята на плащанията и промените в статуса
+            </CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Резултати:</span>
+            <Select
+              value={pageSize.toString()}
+              onValueChange={handlePageSizeChange}
+            >
+              <SelectTrigger className="w-20">
+                <SelectValue placeholder="10" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
+        {subscription && (
+          <div className="mt-2 p-3 bg-secondary/20 rounded-md">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <span className="text-muted-foreground">План:</span>
+                <Badge className="ml-2">{subscription.plan}</Badge>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Статус:</span>
+                <SubscriptionStatusBadge status={subscription.status} />
+              </div>
+              <div>
+                <span className="text-muted-foreground">Активен до:</span>
+                <span className="ml-2">
+                  {new Date(subscription.currentPeriodEnd).toLocaleDateString('bg-BG')}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -82,16 +177,22 @@ export function SubscriptionHistory() {
             <TabsTrigger value="payments" className="flex items-center gap-2">
               <CreditCard className="h-4 w-4" />
               <span>Плащания</span>
+              {hasPayments && (
+                <Badge variant="secondary" className="ml-1">{payments.length}</Badge>
+              )}
             </TabsTrigger>
             <TabsTrigger value="status" className="flex items-center gap-2">
               <ReceiptText className="h-4 w-4" />
               <span>Промени в статуса</span>
+              {hasStatusHistory && (
+                <Badge variant="secondary" className="ml-1">{history.length}</Badge>
+              )}
             </TabsTrigger>
           </TabsList>
           
           <TabsContent value="payments" className="mt-4">
             {hasPayments ? (
-              <PaymentsTable payments={subscription.paymentHistory} />
+              <PaymentsTable payments={payments} />
             ) : (
               <div className="text-center py-6 text-muted-foreground">
                 Все още няма история на плащанията
@@ -101,7 +202,7 @@ export function SubscriptionHistory() {
           
           <TabsContent value="status" className="mt-4">
             {hasStatusHistory ? (
-              <StatusHistoryTable history={subscription.statusHistory} />
+              <StatusHistoryTable history={history} />
             ) : (
               <div className="text-center py-6 text-muted-foreground">
                 Все още няма промени в статуса
@@ -109,12 +210,48 @@ export function SubscriptionHistory() {
             )}
           </TabsContent>
         </Tabs>
+        
+        {/* Lazy loading observer element */}
+        {pagination.hasMore && (
+          <div 
+            ref={loadMoreRef} 
+            className="py-4 flex justify-center"
+          >
+            {loadingMore ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" /> 
+                <span>Зареждане...</span>
+              </div>
+            ) : (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="flex items-center gap-1"
+                onClick={loadMore}
+              >
+                <ChevronDown className="h-4 w-4" />
+                <span>Зареди още</span>
+              </Button>
+            )}
+          </div>
+        )}
       </CardContent>
+      <CardFooter className="flex justify-between text-sm text-muted-foreground pt-0">
+        <div>
+          Показани {activeTab === 'payments' ? payments.length : history.length} от{' '}
+          {activeTab === 'payments' ? 
+            pagination.totalItems : 
+            pagination.totalItems} записа
+        </div>
+        <div>
+          Страница {pagination.page} от {pagination.totalPages || 1}
+        </div>
+      </CardFooter>
     </Card>
   );
 }
 
-function PaymentsTable({ payments }: { payments: PaymentItem[] }) {
+function PaymentsTable({ payments }: { payments: any[] }) {
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -139,7 +276,7 @@ function PaymentsTable({ payments }: { payments: PaymentItem[] }) {
                 {new Intl.NumberFormat('bg-BG', {
                   style: 'currency',
                   currency: payment.currency || 'BGN',
-                }).format(payment.amount)}
+                }).format(parseFloat(payment.amount))}
               </TableCell>
               <TableCell className="text-right">
                 <PaymentStatusBadge status={payment.status} />
@@ -152,14 +289,44 @@ function PaymentsTable({ payments }: { payments: PaymentItem[] }) {
   );
 }
 
-function StatusHistoryTable({ history }: { history: StatusHistoryItem[] }) {
+function StatusHistoryTable({ history }: { history: any[] }) {
   const eventTranslations: Record<string, string> = {
     'SUBSCRIPTION_CREATED': 'Създаден абонамент',
     'SUBSCRIPTION_UPDATED': 'Обновен абонамент',
     'SUBSCRIPTION_CANCELED': 'Отменен абонамент',
     'SUBSCRIPTION_RENEWED': 'Подновен абонамент',
     'PAYMENT_FAILED': 'Неуспешно плащане',
-    'PAYMENT_SUCCEEDED': 'Успешно плащане'
+    'PAYMENT_SUCCEEDED': 'Успешно плащане',
+    'New subscription created with plan': 'Създаден нов абонамент с план',
+    'Subscription updated to plan': 'Абонаментът е обновен до план',
+    'Subscription status changed to': 'Статусът на абонамента е променен на',
+    'Subscription updated': 'Абонаментът е обновен',
+    'Subscription canceled': 'Абонаментът е отменен',
+    'Subscription payment succeeded': 'Плащането за абонамента е успешно',
+    'Payment failed for subscription': 'Неуспешно плащане за абонамента'
+  };
+  
+  // Process the event text to match with translations or display original
+  const getEventText = (event: string) => {
+    // Check for direct match in translations
+    if (eventTranslations[event]) {
+      return eventTranslations[event];
+    }
+    
+    // Check for partial matches
+    for (const [key, value] of Object.entries(eventTranslations)) {
+      if (event.includes(key)) {
+        // Get the part after the known key phrase
+        const extraInfo = event.replace(key, '').trim();
+        if (extraInfo) {
+          return `${value} ${extraInfo}`;
+        }
+        return value;
+      }
+    }
+    
+    // Return original if no match
+    return event;
   };
 
   return (
@@ -183,7 +350,7 @@ function StatusHistoryTable({ history }: { history: StatusHistoryItem[] }) {
                 })}
               </TableCell>
               <TableCell>
-                {eventTranslations[item.event] || item.event}
+                {getEventText(item.event)}
               </TableCell>
               <TableCell className="text-right">
                 <SubscriptionStatusBadge status={item.status} />
@@ -200,7 +367,9 @@ function PaymentStatusBadge({ status }: { status: string }) {
   const statusTranslations: Record<string, string> = {
     'PAID': 'Платено',
     'FAILED': 'Неуспешно',
-    'PENDING': 'В изчакване'
+    'PENDING': 'В изчакване',
+    'REFUNDED': 'Възстановено',
+    'VOID': 'Анулирано'
   };
 
   let variant: 'default' | 'destructive' | 'outline' | 'secondary' | null = null;
@@ -214,6 +383,12 @@ function PaymentStatusBadge({ status }: { status: string }) {
       break;
     case 'PENDING':
       variant = 'secondary';
+      break;
+    case 'REFUNDED':
+      variant = 'outline';
+      break;
+    case 'VOID':
+      variant = 'outline';
       break;
     default:
       variant = 'outline';
@@ -232,7 +407,10 @@ function SubscriptionStatusBadge({ status }: { status: string }) {
     'CANCELED': 'Отменен',
     'PAST_DUE': 'Просрочен',
     'UNPAID': 'Неплатен',
-    'TRIALING': 'Пробен период'
+    'TRIALING': 'Пробен период',
+    'INCOMPLETE': 'Незавършен',
+    'INCOMPLETE_EXPIRED': 'Изтекъл незавършен',
+    'PAUSED': 'Паузиран'
   };
 
   let variant: 'default' | 'destructive' | 'outline' | 'secondary' | null = null;
@@ -253,12 +431,19 @@ function SubscriptionStatusBadge({ status }: { status: string }) {
     case 'TRIALING':
       variant = 'secondary';
       break;
+    case 'INCOMPLETE':
+    case 'INCOMPLETE_EXPIRED':
+      variant = 'outline';
+      break;
+    case 'PAUSED':
+      variant = 'secondary';
+      break;
     default:
       variant = 'outline';
   }
   
   return (
-    <Badge variant={variant}>
+    <Badge variant={variant} className="ml-2">
       {statusTranslations[status] || status.charAt(0) + status.slice(1).toLowerCase()}
     </Badge>
   );
@@ -270,6 +455,9 @@ function SubscriptionHistorySkeleton() {
       <CardHeader>
         <Skeleton className="h-5 w-[200px] mb-2" />
         <Skeleton className="h-4 w-[300px]" />
+        <div className="mt-2">
+          <Skeleton className="h-20 w-full" />
+        </div>
       </CardHeader>
       <CardContent>
         <Skeleton className="h-10 w-full mb-6" />
@@ -279,6 +467,9 @@ function SubscriptionHistorySkeleton() {
           <Skeleton className="h-10 w-full" />
         </div>
       </CardContent>
+      <CardFooter>
+        <Skeleton className="h-4 w-full" />
+      </CardFooter>
     </Card>
   );
 } 

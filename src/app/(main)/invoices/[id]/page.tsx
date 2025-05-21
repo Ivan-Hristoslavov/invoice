@@ -1,123 +1,77 @@
-import { Suspense } from "react";
+import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import dynamic from 'next/dynamic';
-import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { getInvoiceWithDetails } from '@/lib/services/invoice-service';
+import { getInvoiceWithDetails } from "@/lib/services/invoice-service";
+import InvoiceDetailClient from "./InvoiceDetailClient";
+import { Decimal } from "@prisma/client/runtime/library";
 
-interface PageParams {
-  params: {
-    id: string;
-  };
+// Helper function to serialize Decimal objects
+function serializeDecimal(obj: any): any {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+
+  // Handle Decimal objects by extracting only the numeric value
+  if (obj instanceof Decimal) {
+    // Convert to a plain number, handling potential precision issues
+    const num = obj.toNumber();
+    // For very large numbers or when precision is crucial, you might want to use toString()
+    return Number.isFinite(num) ? num : parseFloat(obj.toString());
+  }
+
+  // Handle Date objects
+  if (obj instanceof Date) {
+    return obj.toISOString();
+  }
+
+  // Handle arrays
+  if (Array.isArray(obj)) {
+    return obj.map(serializeDecimal);
+  }
+
+  // Handle plain objects
+  if (typeof obj === 'object') {
+    const result: Record<string, any> = {};
+    for (const key in obj) {
+      // Only include own properties and skip constructor
+      if (Object.prototype.hasOwnProperty.call(obj, key) && key !== 'constructor') {
+        result[key] = serializeDecimal(obj[key]);
+      }
+    }
+    return result;
+  }
+
+  // Return primitive values as is
+  return obj;
 }
 
-interface PageProps extends PageParams {}
+export const metadata: Metadata = {
+  title: "Invoice Details",
+  description: "View and manage invoice details",
+};
 
-// Динамично зареждане на компонентите
-const InvoiceDetailClient = dynamic(
-  () => import('./InvoiceDetailClient'),
-  {
-    loading: () => <InvoiceDetailSkeleton />,
-    ssr: false // Изключваме SSR за клиентския компонент
-  }
-);
-
-const DocumentsTab = dynamic(
-  () => import('@/components/invoice/DocumentsTab'),
-  {
-    loading: () => <Skeleton className="h-[200px]" />,
-    ssr: false
-  }
-);
-
-function InvoiceDetailSkeleton() {
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <Skeleton className="h-8 w-64" />
-        <div className="flex gap-2">
-          <Skeleton className="h-10 w-32" />
-          <Skeleton className="h-10 w-32" />
-        </div>
-      </div>
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="md:col-span-2">
-          <Skeleton className="h-[400px] w-full" />
-        </div>
-        <Skeleton className="h-[300px]" />
-      </div>
-    </div>
-  );
+interface PageProps {
+  params: Promise<{ id: string }>;
 }
 
-export async function generateMetadata({ params }: PageProps) {
+export default async function InvoicePage({ params }: PageProps) {
+  const { id } = await params; // Await params as required by Next.js
+
   const session = await getServerSession(authOptions);
 
-  if (!session?.user?.id) {
-    return {
-      title: "Достъпът е отказан",
-      description: "Моля, влезте в системата, за да имате достъп до фактурата.",
-    };
+  if (!session?.user) {
+    return notFound();
   }
 
-  const invoice = await prisma.invoice.findUnique({
-    where: {
-      id: params.id,
-      userId: session.user.id,
-    },
-    select: {
-      invoiceNumber: true,
-      client: {
-        select: {
-          name: true,
-        },
-      },
-    },
-  });
-
-  if (!invoice) {
-    return {
-      title: "Фактурата не е намерена",
-      description: "Фактурата, която търсите, не съществува.",
-    };
-  }
-
-  return {
-    title: `Фактура #${invoice.invoiceNumber} - ${invoice.client.name}`,
-    description: `Детайли за фактура #${invoice.invoiceNumber} за ${invoice.client.name}`,
-  };
-}
-
-export default async function InvoiceDetailPage({ params }: PageProps) {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user?.id) {
-    return (
-      <Card className="max-w-2xl mx-auto">
-        <CardContent className="pt-6">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-2">Достъпът е отказан</h1>
-            <p className="text-muted-foreground mb-4">
-              Моля, влезте в системата, за да имате достъп до фактурата.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const invoice = await getInvoiceWithDetails(params.id, session.user.id);
+  const invoice = await getInvoiceWithDetails(id, session.user.id);
 
   if (!invoice) {
     notFound();
   }
 
-  return (
-    <Suspense fallback={<InvoiceDetailSkeleton />}>
-      <InvoiceDetailClient initialInvoice={invoice} />
-    </Suspense>
-  );
+  // Serialize Decimal objects before passing to client component
+  const serializedInvoice = serializeDecimal(invoice);
+
+  return <InvoiceDetailClient initialInvoice={serializedInvoice} />;
 }

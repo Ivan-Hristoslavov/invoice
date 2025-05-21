@@ -1,35 +1,20 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/db/prisma";
 import { headers } from "next/headers";
 import Stripe from "stripe";
-import {
-  SubscriptionPlan,
-  SubscriptionStatus,
-  PaymentStatus,
-  PrismaClient,
-} from "@prisma/client";
+import { revalidatePath } from "next/cache";
+import { sendPaymentConfirmationEmail } from "@/lib/email";
+import { InvoiceStatus, SubscriptionStatus, PaymentMethod } from "@prisma/client";
 
-// Extended PrismaClient type to include SubscriptionHistory
-interface ExtendedPrismaClient extends PrismaClient {
-  subscriptionHistory: {
-    create: (params: {
-      data: {
-        subscriptionId: string;
-        status: SubscriptionStatus;
-        event: string;
-      };
-    }) => Promise<any>;
-  };
-}
-
-// Cast prisma to include the SubscriptionHistory model
-const extendedPrisma = prisma as unknown as ExtendedPrismaClient;
+// Define custom types for easier use
+type SubscriptionPlan = "BASIC" | "PRO" | "VIP";
+type PaymentStatus = "PAID" | "FAILED" | "REFUNDED" | "COMPLETED";
 
 // Initialize Stripe with the secret key
 const stripe = new Stripe(
   process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY_FIXED || "",
   {
-    apiVersion: "2023-10-16" as any,
+    apiVersion: "2025-04-30.basil" as Stripe.LatestApiVersion,
   }
 );
 
@@ -52,37 +37,246 @@ interface StripeInvoiceWithSubscription extends Stripe.Invoice {
   payment_intent?: string | Stripe.PaymentIntent;
 }
 
+// Function to log webhook event to database
+async function logWebhookEvent(eventType: string, eventId: string, status: "SUCCESS" | "FAILED", data: any) {
+  try {
+    // Use manual SQL insertion if needed due to Prisma client type issues
+    await prisma.$executeRaw`
+      INSERT INTO "WebhookEventLog" ("id", "eventType", "eventId", "status", "payload", "processedAt")
+      VALUES (gen_random_uuid(), ${eventType}, ${eventId}, ${status}, ${JSON.stringify(data)}, now())
+    `;
+    console.log(`Logged webhook event: ${eventType} (${eventId}) - Status: ${status}`);
+  } catch (error) {
+    console.error(`Failed to log webhook event: ${error}`);
+  }
+}
+
+// Create or update subscription history entry
+async function logSubscriptionHistory(subscriptionId: string, status: SubscriptionStatus, event: string) {
+  try {
+    await prisma.subscriptionHistory.create({
+      data: {
+        subscriptionId,
+        status,
+        event
+      }
+    });
+    console.log(`Logged subscription history: ${subscriptionId} - ${event}`);
+  } catch (error) {
+    console.error(`Failed to log subscription history: ${error}`);
+  }
+}
+
 /**
  * Handles Stripe webhook events to maintain subscription data in the database
  */
 export async function POST(req: Request) {
+  let event: Stripe.Event | null = null;
+  
   try {
     const body = await req.text();
-    const signature = (await headers()).get("stripe-signature") || "";
-
-    let event: Stripe.Event;
+    const headersList = headers();
+    const signature = (await headersList).get("stripe-signature") || "";
 
     try {
       // Verify webhook signature
-      if (webhookSecret) {
-        event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-      } else {
-        // For development where signature verification might not be set up
-        event = JSON.parse(body) as Stripe.Event;
-        console.warn("⚠️ Webhook signature verification disabled");
-      }
+      event = webhookSecret
+        ? stripe.webhooks.constructEvent(body, signature, webhookSecret)
+        : JSON.parse(body);
     } catch (err: any) {
-      console.error(`Webhook signature verification failed: ${err.message}`);
-      return NextResponse.json(
-        { error: `Webhook Error: ${err.message}` },
-        { status: 400 }
-      );
+      console.error(`⚠️  Webhook signature verification failed: ${err.message}`);
+      // Try to extract event ID and type from body for logging
+      let eventData;
+      try {
+        eventData = JSON.parse(body);
+        if (eventData.id && eventData.type) {
+          await logWebhookEvent(eventData.type, eventData.id, "FAILED", { error: err.message });
+        }
+      } catch (parseErr) {
+        console.error("Could not parse webhook body", parseErr);
+      }
+      return NextResponse.json({ error: err.message }, { status: 400 });
     }
-
-    console.log(`Webhook received: ${event.type}`);
+    
+    if (!event) {
+      return NextResponse.json({ error: "Invalid event" }, { status: 400 });
+    }
+    
+    // Log the received event immediately
+    await logWebhookEvent(event.type, event.id, "SUCCESS", event.data.object);
 
     // Handle different event types
     switch (event.type) {
+      case "payment_intent.succeeded": {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        const invoiceId = paymentIntent.metadata?.invoiceId;
+
+        if (!invoiceId) {
+          console.error("No invoiceId found in payment intent metadata");
+          await logWebhookEvent(event.type, event.id, "FAILED", { error: "No invoiceId found" });
+          return NextResponse.json({ error: "No invoiceId found" }, { status: 400 });
+        }
+
+        try {
+          // Find invoice with related client and company
+          const invoiceWithRelations = await prisma.invoice.findUnique({
+            where: { id: invoiceId },
+            include: {
+              client: true,
+              company: true
+            }
+          });
+          
+          if (!invoiceWithRelations) {
+            throw new Error(`Invoice with ID ${invoiceId} not found`);
+          }
+          
+          // Update invoice status and create payment record
+          await prisma.invoice.update({
+            where: { id: invoiceId },
+            data: {
+              status: "PAID" as InvoiceStatus,
+              paidAt: new Date(),
+              payments: {
+                create: {
+                  amount: paymentIntent.amount / 100,
+                  paymentDate: new Date(),
+                  paymentMethod: "CREDIT_CARD" as PaymentMethod,
+                  transactionId: paymentIntent.id,
+                  status: "PAID",
+                  notes: "Платено чрез Stripe",
+                  reference: paymentIntent.id
+                }
+              }
+            }
+          });
+
+          // Send confirmation emails
+          try {
+            // Send to client
+            if (invoiceWithRelations.client?.email) {
+              await sendPaymentConfirmationEmail({
+                to: invoiceWithRelations.client.email,
+                invoiceNumber: invoiceWithRelations.invoiceNumber,
+                amount: Number(invoiceWithRelations.total),
+                currency: invoiceWithRelations.currency,
+                clientName: invoiceWithRelations.client.name,
+                companyName: invoiceWithRelations.company.name
+              });
+            }
+
+            // Send to company
+            if (invoiceWithRelations.company?.email) {
+              await sendPaymentConfirmationEmail({
+                to: invoiceWithRelations.company.email,
+                invoiceNumber: invoiceWithRelations.invoiceNumber,
+                amount: Number(invoiceWithRelations.total),
+                currency: invoiceWithRelations.currency,
+                clientName: invoiceWithRelations.client.name,
+                companyName: invoiceWithRelations.company.name
+              });
+            }
+          } catch (error) {
+            console.error("Error sending confirmation emails:", error);
+            // Don't throw error here, just log it
+          }
+
+          // Revalidate pages
+          revalidatePath(`/invoices/${invoiceId}`);
+          revalidatePath("/invoices");
+          revalidatePath("/dashboard");
+        } catch (error) {
+          console.error("Error processing payment_intent.succeeded:", error);
+          await logWebhookEvent(event.type, event.id, "FAILED", { error: String(error) });
+        }
+        break;
+      }
+
+      case "payment_intent.payment_failed": {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        const invoiceId = paymentIntent.metadata?.invoiceId;
+
+        if (!invoiceId) {
+          await logWebhookEvent(event.type, event.id, "FAILED", { error: "No invoiceId found" });
+          return NextResponse.json({ error: "No invoiceId found" }, { status: 400 });
+        }
+
+        try {
+          // Record failed payment attempt
+          await prisma.payment.create({
+            data: {
+              invoiceId,
+              amount: paymentIntent.amount / 100,
+              paymentDate: new Date(),
+              paymentMethod: "CREDIT_CARD" as PaymentMethod,
+              transactionId: paymentIntent.id,
+              status: "FAILED",
+              notes: paymentIntent.last_payment_error?.message || "Неуспешно плащане",
+              reference: paymentIntent.id
+            },
+          });
+
+          // Revalidate pages
+          revalidatePath(`/invoices/${invoiceId}`);
+          revalidatePath("/invoices");
+        } catch (error) {
+          console.error("Error processing payment_intent.payment_failed:", error);
+          await logWebhookEvent(event.type, event.id, "FAILED", { error: String(error) });
+        }
+        break;
+      }
+
+      case "charge.refunded": {
+        const charge = event.data.object as Stripe.Charge;
+        const paymentIntentId = charge.payment_intent as string;
+        
+        try {
+          // Find the payment by transaction ID (payment_intent_id)
+          const payment = await prisma.payment.findFirst({
+            where: { reference: paymentIntentId },
+            include: { invoice: true },
+          });
+  
+          if (payment) {
+            // Create refund record
+            await prisma.payment.create({
+              data: {
+                invoiceId: payment.invoiceId,
+                amount: -(charge.amount_refunded / 100),
+                paymentDate: new Date(),
+                paymentMethod: "CREDIT_CARD" as PaymentMethod,
+                transactionId: charge.id,
+                status: "FAILED",
+                notes: "Възстановена сума",
+                reference: charge.id,
+                refundedPaymentId: payment.id
+              },
+            });
+  
+            // Update invoice status if fully refunded
+            await prisma.invoice.update({
+              where: { id: payment.invoiceId },
+              data: {
+                status: "CANCELLED" as InvoiceStatus, // Use CANCELLED instead of REFUNDED
+                paidAt: null,
+              },
+            });
+  
+            // Revalidate pages
+            revalidatePath(`/invoices/${payment.invoiceId}`);
+            revalidatePath("/invoices");
+            revalidatePath("/dashboard");
+          } else {
+            console.error(`No payment found for payment intent ${paymentIntentId}`);
+            await logWebhookEvent(event.type, event.id, "FAILED", { error: `No payment found for payment intent ${paymentIntentId}` });
+          }
+        } catch (error) {
+          console.error("Error processing charge.refunded:", error);
+          await logWebhookEvent(event.type, event.id, "FAILED", { error: String(error) });
+        }
+        break;
+      }
+      
       // SUBSCRIPTION CREATION VIA CHECKOUT
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
@@ -93,6 +287,7 @@ export async function POST(req: Request) {
         // Check for customer information
         if (!session.customer && !session.customer_email) {
           console.error("No customer email or ID found in checkout session");
+          await logWebhookEvent(event.type, event.id, "FAILED", { error: "No customer email or ID found" });
           return NextResponse.json({ received: true }); // Still return 200 to acknowledge the event
         }
         
@@ -158,6 +353,7 @@ export async function POST(req: Request) {
           
           if (!user) {
             console.error("Could not find or create user from checkout data");
+            await logWebhookEvent(event.type, event.id, "FAILED", { error: "Could not find or create user" });
             return NextResponse.json({ received: true }); // Still acknowledge the event
           }
           
@@ -166,11 +362,11 @@ export async function POST(req: Request) {
           let plan: SubscriptionPlan;
           
           if (amount >= 4999) {
-            plan = SubscriptionPlan.VIP;
+            plan = "VIP";
           } else if (amount >= 1999) {
-            plan = SubscriptionPlan.PRO;
+            plan = "PRO";
           } else {
-            plan = SubscriptionPlan.BASIC;
+            plan = "BASIC";
           }
           
           // Get price info from subscription
@@ -182,11 +378,11 @@ export async function POST(req: Request) {
           });
           
           if (existingSubscription) {
-            await prisma.subscription.update({
+            const updatedSubscription = await prisma.subscription.update({
               where: { id: existingSubscription.id },
               data: {
                 stripeSubscriptionId: subscriptionId,
-                status: SubscriptionStatus.ACTIVE,
+                status: "ACTIVE" as SubscriptionStatus,
                 plan: plan,
                 priceId: priceId,
                 currentPeriodStart: new Date(subscription.current_period_start * 1000),
@@ -197,13 +393,11 @@ export async function POST(req: Request) {
             });
             
             // Record history
-            await extendedPrisma.subscriptionHistory.create({
-              data: {
-                subscriptionId: existingSubscription.id,
-                status: SubscriptionStatus.ACTIVE,
-                event: `Subscription updated to plan ${plan}`
-              }
-            });
+            await logSubscriptionHistory(
+              existingSubscription.id,
+              "ACTIVE" as SubscriptionStatus,
+              `Subscription updated to plan ${plan}`
+            );
             
             console.log(`Updated existing subscription for user ${user.id}`);
           } else {
@@ -211,7 +405,7 @@ export async function POST(req: Request) {
               data: {
                 userId: user.id,
                 stripeSubscriptionId: subscriptionId,
-                status: SubscriptionStatus.ACTIVE,
+                status: "ACTIVE" as SubscriptionStatus,
                 plan: plan,
                 priceId: priceId,
                 currentPeriodStart: new Date(subscription.current_period_start * 1000),
@@ -221,13 +415,11 @@ export async function POST(req: Request) {
             });
             
             // Record history
-            await extendedPrisma.subscriptionHistory.create({
-              data: {
-                subscriptionId: newSubscription.id,
-                status: SubscriptionStatus.ACTIVE,
-                event: `New subscription created with plan ${plan}`
-              }
-            });
+            await logSubscriptionHistory(
+              newSubscription.id,
+              "ACTIVE" as SubscriptionStatus,
+              `New subscription created with plan ${plan}`
+            );
             
             // Record payment
             await prisma.subscriptionPayment.create({
@@ -235,7 +427,7 @@ export async function POST(req: Request) {
                 subscriptionId: newSubscription.id,
                 stripeInvoiceId: `checkout_${session.id}_${Date.now()}`,
                 amount: amount / 100,
-                status: PaymentStatus.PAID,
+                status: "PAID",
                 currency: session.currency || "USD"
               }
             });
@@ -244,6 +436,7 @@ export async function POST(req: Request) {
           }
         } catch (error: any) {
           console.error(`Error processing checkout session: ${error.message}`);
+          await logWebhookEvent(event.type, event.id, "FAILED", { error: error.message });
           // Still return 200 to acknowledge receipt of the webhook
           return NextResponse.json({ received: true });
         }
@@ -271,31 +464,31 @@ export async function POST(req: Request) {
         let status: SubscriptionStatus;
         switch (subscription.status) {
           case "active":
-            status = SubscriptionStatus.ACTIVE;
+            status = "ACTIVE";
             break;
           case "past_due":
-            status = SubscriptionStatus.PAST_DUE;
+            status = "PAST_DUE";
             break;
           case "unpaid":
-            status = SubscriptionStatus.UNPAID;
+            status = "UNPAID";
             break;
           case "canceled":
-            status = SubscriptionStatus.CANCELED;
+            status = "CANCELED";
             break;
           case "incomplete":
-            status = SubscriptionStatus.INCOMPLETE;
+            status = "INCOMPLETE";
             break;
           case "incomplete_expired":
-            status = SubscriptionStatus.INCOMPLETE_EXPIRED;
+            status = "INCOMPLETE_EXPIRED";
             break;
           case "trialing":
-            status = SubscriptionStatus.TRIALING;
+            status = "TRIALING";
             break;
           case "paused":
-            status = SubscriptionStatus.PAUSED;
+            status = "PAUSED";
             break;
           default:
-            status = SubscriptionStatus.ACTIVE;
+            status = "ACTIVE";
         }
         
         // Find existing subscription
@@ -315,11 +508,11 @@ export async function POST(req: Request) {
           let plan = existingSubscription.plan;
           if (priceAmount) {
             if (priceAmount >= 3000) {
-              plan = SubscriptionPlan.VIP;
+              plan = "VIP";
             } else if (priceAmount >= 2000) {
-              plan = SubscriptionPlan.PRO;
+              plan = "PRO";
             } else {
-              plan = SubscriptionPlan.BASIC;
+              plan = "BASIC";
             }
           }
           
@@ -343,33 +536,27 @@ export async function POST(req: Request) {
           
           // Record history for changes
           if (statusChanged) {
-            await extendedPrisma.subscriptionHistory.create({
-              data: {
-                subscriptionId: existingSubscription.id,
-                status,
-                event: `Subscription status changed to ${status}`
-              }
-            });
+            await logSubscriptionHistory(
+              existingSubscription.id,
+              status,
+              `Subscription status changed to ${status}`
+            );
           }
           
           if (planChanged) {
-            await extendedPrisma.subscriptionHistory.create({
-              data: {
-                subscriptionId: existingSubscription.id,
-                status,
-                event: `Subscription plan changed to ${plan}`
-              }
-            });
+            await logSubscriptionHistory(
+              existingSubscription.id,
+              status,
+              `Subscription plan changed to ${plan}`
+            );
           }
           
           if (!statusChanged && !planChanged) {
-            await extendedPrisma.subscriptionHistory.create({
-              data: {
-                subscriptionId: existingSubscription.id,
-                status,
-                event: "Subscription updated"
-              }
-            });
+            await logSubscriptionHistory(
+              existingSubscription.id,
+              status,
+              "Subscription updated"
+            );
           }
         } else {
           console.error(`No subscription found for stripe subscription ID ${subscription.id}`);
@@ -407,20 +594,18 @@ export async function POST(req: Request) {
           await prisma.subscription.update({
             where: { id: existingSubscription.id },
             data: {
-              status: SubscriptionStatus.CANCELED,
+              status: "CANCELED" as SubscriptionStatus,
               cancelAtPeriodEnd: true,
               updatedAt: new Date()
             }
           });
           
           // Record history
-          await extendedPrisma.subscriptionHistory.create({
-            data: {
-              subscriptionId: existingSubscription.id,
-              status: SubscriptionStatus.CANCELED,
-              event: "Subscription canceled"
-            }
-          });
+          await logSubscriptionHistory(
+            existingSubscription.id,
+            "CANCELED" as SubscriptionStatus,
+            "Subscription canceled"
+          );
           
           console.log(`Subscription ${existingSubscription.id} marked as canceled`);
         } else {
@@ -524,7 +709,7 @@ export async function POST(req: Request) {
                 subscriptionId: subscription.id,
                 stripeInvoiceId: uniqueInvoiceId,
                 amount: (invoice.amount_paid || 0) / 100,
-                status: PaymentStatus.PAID,
+                status: "PAID",
                 currency: invoice.currency || "USD",
                 paymentMethod: invoice.payment_method_details?.type || null,
                 paymentIntentId: invoice.payment_intent as string || null
@@ -536,23 +721,21 @@ export async function POST(req: Request) {
           }
           
           // Update subscription if needed
-          if (subscription.status !== SubscriptionStatus.ACTIVE) {
+          if (subscription.status !== "ACTIVE") {
             await prisma.subscription.update({
               where: { id: subscription.id },
               data: {
-                status: SubscriptionStatus.ACTIVE,
+                status: "ACTIVE" as SubscriptionStatus,
                 updatedAt: new Date()
               }
             });
             
             // Record history
-            await extendedPrisma.subscriptionHistory.create({
-              data: {
-                subscriptionId: subscription.id,
-                status: SubscriptionStatus.ACTIVE,
-                event: "Subscription payment succeeded"
-              }
-            });
+            await logSubscriptionHistory(
+              subscription.id,
+              "ACTIVE" as SubscriptionStatus,
+              "Subscription payment succeeded"
+            );
             
             console.log(`Updated subscription ${subscription.id} to ACTIVE status`);
           }
@@ -600,19 +783,17 @@ export async function POST(req: Request) {
           await prisma.subscription.update({
             where: { id: subscription.id },
             data: {
-              status: SubscriptionStatus.PAST_DUE,
+              status: "PAST_DUE" as SubscriptionStatus,
               updatedAt: new Date()
             }
           });
           
           // Record history
-          await extendedPrisma.subscriptionHistory.create({
-            data: {
-              subscriptionId: subscription.id,
-              status: SubscriptionStatus.PAST_DUE,
-              event: "Payment failed for subscription"
-            }
-          });
+          await logSubscriptionHistory(
+            subscription.id,
+            "PAST_DUE" as SubscriptionStatus,
+            "Payment failed for subscription"
+          );
           
           // Record failed payment
           const invoiceId = invoice.id || `inv_failed_${Date.now()}`;
@@ -621,7 +802,7 @@ export async function POST(req: Request) {
               subscriptionId: subscription.id,
               stripeInvoiceId: `${invoiceId}_${Date.now()}`,
               amount: invoice.amount_due / 100,
-              status: PaymentStatus.FAILED,
+              status: "FAILED",
               currency: invoice.currency || "USD"
             }
           });
@@ -717,12 +898,12 @@ export async function POST(req: Request) {
     
     return NextResponse.json({ received: true });
   } catch (error: any) {
-    console.error(`Webhook error: ${error.message}`);
+    console.error("Error processing webhook:", error);
     if (error instanceof Error) {
       console.error(`Error stack: ${error.stack}`);
     }
     return NextResponse.json(
-      { error: `Webhook error: ${error.message}` },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
@@ -747,16 +928,16 @@ async function processSubscriptionForUser(user: any, subscription: StripeSubscri
   let status: SubscriptionStatus;
   switch (subscription.status) {
     case "active":
-      status = SubscriptionStatus.ACTIVE;
+      status = "ACTIVE";
       break;
     case "trialing":
-      status = SubscriptionStatus.TRIALING;
+      status = "TRIALING";
       break;
     case "incomplete":
-      status = SubscriptionStatus.INCOMPLETE;
+      status = "INCOMPLETE";
       break;
     default:
-      status = SubscriptionStatus.ACTIVE;
+      status = "ACTIVE";
   }
   
   // Determine plan from price amount
@@ -764,11 +945,11 @@ async function processSubscriptionForUser(user: any, subscription: StripeSubscri
   let plan: SubscriptionPlan;
   
   if (priceAmount >= 3000) {
-    plan = SubscriptionPlan.VIP;
+    plan = "VIP";
   } else if (priceAmount >= 2000) {
-    plan = SubscriptionPlan.PRO;
+    plan = "PRO";
   } else {
-    plan = SubscriptionPlan.BASIC;
+    plan = "BASIC";
   }
   
   // Get price ID
@@ -789,13 +970,11 @@ async function processSubscriptionForUser(user: any, subscription: StripeSubscri
   });
   
   // Record history
-  await extendedPrisma.subscriptionHistory.create({
-    data: {
-      subscriptionId: newSubscription.id,
-      status: status,
-      event: `New subscription created with plan ${plan}`
-    }
-  });
+  await logSubscriptionHistory(
+    newSubscription.id,
+    status,
+    `New subscription created with plan ${plan}`
+  );
   
   console.log(`Created new subscription for user ${user.id}`);
 }

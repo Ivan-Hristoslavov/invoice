@@ -22,6 +22,21 @@ const stripe = new Stripe(stripeSecretKey, {
   typescript: true,
 });
 
+// Export stripe as an async function to be compatible with 'use server' directive
+export async function getStripe() {
+  return stripe;
+}
+
+// Direct checkout URLs
+const STRIPE_BASIC_URL = 'https://buy.stripe.com/test_7sY28t3Wa97J0IMe3Fb7y08';
+const STRIPE_PRO_URL = 'https://buy.stripe.com/test_5kQeVf64ibfRbnqcZBb7y06';
+const STRIPE_VIP_URL = 'https://buy.stripe.com/test_fZu14p2S683F4Z2cZBb7y07';
+
+// Subscription prices in BGN
+const STRIPE_BASIC_PRICE = 10;
+const STRIPE_PRO_PRICE = 20;
+const STRIPE_VIP_PRICE = 30;
+
 // Fallback price IDs (for development only - should be set in environment variables)
 const FALLBACK_PRICE_IDS = {
   BASIC: 'price_basic_fallback',
@@ -33,8 +48,8 @@ const FALLBACK_PRICE_IDS = {
 const PLANS_DATA = {
   BASIC: {
     name: 'Basic',
-    url: process.env.STRIPE_BASIC,
-    price: Number(process.env.STRIPE_BASIC_PRICE) || 10,
+    url: STRIPE_BASIC_URL,
+    price: STRIPE_BASIC_PRICE,
     priceId: process.env.STRIPE_BASIC_PRICE_ID || FALLBACK_PRICE_IDS.BASIC,
     features: [
       'Access to basic invoicing features',
@@ -44,8 +59,8 @@ const PLANS_DATA = {
   },
   PRO: {
     name: 'Pro',
-    url: process.env.STRIPE_PRO,
-    price: Number(process.env.STRIPE_PRO_PRICE) || 20,
+    url: STRIPE_PRO_URL,
+    price: STRIPE_PRO_PRICE,
     priceId: process.env.STRIPE_PRO_PRICE_ID || FALLBACK_PRICE_IDS.PRO,
     features: [
       'All Basic features',
@@ -56,8 +71,8 @@ const PLANS_DATA = {
   },
   VIP: {
     name: 'VIP',
-    url: process.env.STRIPE_VIP,
-    price: Number(process.env.STRIPE_VIP_PRICE) || 30,
+    url: STRIPE_VIP_URL,
+    price: STRIPE_VIP_PRICE,
     priceId: process.env.STRIPE_VIP_PRICE_ID || FALLBACK_PRICE_IDS.VIP,
     features: [
       'All Pro features',
@@ -71,11 +86,6 @@ const PLANS_DATA = {
 // Server action to fetch subscription plans data
 export async function getSubscriptionPlans() {
   return PLANS_DATA;
-}
-
-// Server function to get Stripe instance
-export async function getStripeInstance() {
-  return stripe;
 }
 
 // Create checkout session
@@ -118,46 +128,46 @@ export async function createInvoicePaymentLink(
   customerEmail?: string
 ) {
   try {
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Convert to cents
-      currency: currency.toLowerCase(),
-      payment_method_types: ['card'],
-      metadata: {
-        invoiceId,
-      },
-      receipt_email: customerEmail,
+    // 1. Create a product for the invoice
+    const product = await stripe.products.create({
+      name: `Invoice #${invoiceId}`,
+      metadata: { invoiceId },
     });
 
-    // Create a payment link
+    // 2. Create a price for the product
+    const price = await stripe.prices.create({
+      product: product.id,
+      unit_amount: Math.round(amount * 100),
+      currency: currency.toLowerCase(),
+    });
+
+    // 3. Create a payment link using the price
     const paymentLink = await stripe.paymentLinks.create({
       line_items: [
         {
-          price_data: {
-            currency: currency.toLowerCase(),
-            product_data: {
-              name: `Invoice #${invoiceId}`,
-            },
-            unit_amount: Math.round(amount * 100),
-          },
+          price: price.id,
           quantity: 1,
         },
       ],
-      payment_intent_data: {
-        metadata: {
-          invoiceId,
-        },
-      },
       after_completion: {
         type: 'redirect',
         redirect: {
           url: `${process.env.NEXT_PUBLIC_APP_URL}/invoices/${invoiceId}?payment_status=success`,
         },
       },
+      metadata: { invoiceId },
     });
 
     return paymentLink.url;
   } catch (error) {
     console.error('Error creating payment link:', error);
+    if (error instanceof Error) {
+      // Log extra details if available
+      // @ts-ignore
+      if (error.response) console.error('Stripe error.response:', error.response);
+      // @ts-ignore
+      if (error.raw) console.error('Stripe error.raw:', error.raw);
+    }
     throw new Error('Failed to create payment link');
   }
 } 

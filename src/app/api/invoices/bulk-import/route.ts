@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         errors.push({
           invoiceNumber: invoiceData.invoiceNumber,
-          error: error.message || "An error occurred while processing this invoice",
+          error: error || "An error occurred while processing this invoice",
         });
       }
     }
@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error in bulk import:", error);
     return NextResponse.json(
-      { error: "Failed to process import", details: error.message },
+      { error: "Failed to process import", details: error },
       { status: 500 }
     );
   }

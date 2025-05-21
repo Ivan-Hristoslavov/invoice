@@ -115,14 +115,13 @@ interface SettingsNavItemProps {
 function SettingsNavItem({ href, icon: Icon, title }: SettingsNavItemProps) {
   // In a client component, we would use usePathname() to get the current path
   // For now, we'll use a simple string includes check
-  const isActive = typeof window !== 'undefined' && window.location.pathname.includes(href);
   
   return (
     <Link
       href={href}
       className={cn(
         "flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors",
-        isActive && "bg-muted font-medium"
+        true && "bg-muted font-medium"
       )}
     >
       <div className="flex items-center gap-3">

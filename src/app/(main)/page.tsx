@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronRight, Check } from "lucide-react";
@@ -9,10 +10,24 @@ import { APP_NAME } from "@/config/constants";
 import { CheckoutButton } from "@/components/subscription/CheckoutButton";
 import { useSession } from "next-auth/react";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { useRouter } from "next/navigation";
 
 export default function HomePage() {
   const { status } = useSession();
   const isAuthenticated = status === "authenticated";
+  const router = useRouter();
+  
+  // Редирект към дашборда ако потребителят е логнат
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [isAuthenticated, router]);
+
+  // Ако потребителят е логнат, показваме само лоудър (редиректът ще се погрижи)
+  if (isAuthenticated) {
+    return null;
+  }
 
   return (
     <div>

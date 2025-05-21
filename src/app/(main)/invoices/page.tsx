@@ -9,7 +9,7 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { FileText, Plus, Search, Upload, Download } from "lucide-react";
+import { FileText, Plus, Search, Upload, Download, CreditCard } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { prisma } from "@/lib/db";
 import { format } from "date-fns";
@@ -23,8 +23,11 @@ interface Invoice {
   dueDate: Date;
   total: number;
   status: string;
+  userId: string;
   client: {
+    id: string;
     name: string;
+    userId: string;
   };
 }
 
@@ -51,7 +54,10 @@ export default async function InvoicesPage() {
   // Fetch invoices from the database
   const invoices = await prisma.invoice.findMany({
     where: {
-      userId: session.user.id
+      OR: [
+        { userId: session.user.id }, // Invoices created by the user
+        { client: { userId: session.user.id } }, // Invoices where user is the client
+      ]
     },
     include: {
       client: true
@@ -158,7 +164,7 @@ export default async function InvoicesPage() {
                   </div>
                   <div>
                     <h3 className="font-medium">Експорт на фактури</h3>
-                    <p className="text-sm text-muted-foreground">Експортирайте фактури във CSV или PDF</p>
+                    <p className="text-sm text-muted-foreground">Експортирайте фактури в CSV формат</p>
                     <ExportDialogWrapper clients={clients} companies={companies} />
                   </div>
                 </div>
@@ -167,13 +173,15 @@ export default async function InvoicesPage() {
           </Card>
         )}
 
+        {/* Invoices List */}
         <Card>
           <CardHeader>
             <CardTitle>Всички фактури</CardTitle>
             <CardDescription>
-              Управлявайте вашите фактури и проследявайте плащанията
+              Преглед на всички фактури в системата
             </CardDescription>
           </CardHeader>
+          
           <CardContent>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -189,34 +197,57 @@ export default async function InvoicesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {invoices.map((invoice: Invoice) => (
-                    <tr key={invoice.id} className="border-b hover:bg-muted/50">
-                      <td className="px-4 py-3 text-xs sm:text-sm">{invoice.invoiceNumber}</td>
-                      <td className="px-4 py-3 text-xs sm:text-sm">{invoice.client.name}</td>
-                      <td className="px-4 py-3 text-xs sm:text-sm">{format(invoice.issueDate, 'dd.MM.yyyy')}</td>
-                      <td className="px-4 py-3 text-xs sm:text-sm">{format(invoice.dueDate, 'dd.MM.yyyy')}</td>
-                      <td className="px-4 py-3 text-xs sm:text-sm">{Number(invoice.total).toFixed(2)} лв.</td>
-                      <td className="px-4 py-3 text-xs sm:text-sm">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusStyles(invoice.status)}`}>
-                          {getStatusText(invoice.status)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-xs sm:text-sm">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link href={`/invoices/${invoice.id}`}>
-                              Преглед
-                            </Link>
-                          </Button>
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link href={`/invoices/${invoice.id}/edit`}>
-                              Редактиране
-                            </Link>
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {invoices.map((invoice) => {
+                    const isClient = invoice.client.userId === session.user.id;
+                    const isUnpaid = ["UNPAID", "OVERDUE"].includes(invoice.status);
+                    
+                    return (
+                      <tr key={invoice.id} className="border-b hover:bg-muted/50">
+                        <td className="px-4 py-3 text-xs sm:text-sm">{invoice.invoiceNumber}</td>
+                        <td className="px-4 py-3 text-xs sm:text-sm">{invoice.client.name}</td>
+                        <td className="px-4 py-3 text-xs sm:text-sm">{format(invoice.issueDate, 'dd.MM.yyyy')}</td>
+                        <td className="px-4 py-3 text-xs sm:text-sm">{format(invoice.dueDate, 'dd.MM.yyyy')}</td>
+                        <td className="px-4 py-3 text-xs sm:text-sm">{Number(invoice.total).toFixed(2)} лв.</td>
+                        <td className="px-4 py-3 text-xs sm:text-sm">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusStyles(invoice.status)}`}>
+                            {getStatusText(invoice.status)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-xs sm:text-sm">
+                          <div className="flex justify-end gap-2">
+                            <Button variant="ghost" size="sm" asChild>
+                              <Link href={`/invoices/${invoice.id}`}>
+                                Преглед
+                              </Link>
+                            </Button>
+                            {isUnpaid && isClient && (
+                              <Button variant="default" size="sm" asChild>
+                                <Link href={`/invoices/${invoice.id}`}>
+                                  <CreditCard className="w-4 h-4 mr-2" />
+                                  Плати
+                                </Link>
+                              </Button>
+                            )}
+                            {isUnpaid && !isClient && (
+                              <Button variant="outline" size="sm" asChild>
+                                <Link href={`/invoices/${invoice.id}`}>
+                                  <CreditCard className="w-4 h-4 mr-2" />
+                                  Очаква плащане
+                                </Link>
+                              </Button>
+                            )}
+                            {invoice.userId === session.user.id && (
+                              <Button variant="ghost" size="sm" asChild>
+                                <Link href={`/invoices/${invoice.id}/edit`}>
+                                  Редактиране
+                                </Link>
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                   {invoices.length === 0 && (
                     <tr>
                       <td colSpan={7} className="px-4 py-6 text-center text-muted-foreground">

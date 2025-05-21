@@ -16,7 +16,7 @@ interface Subscription {
     status: string;
     createdAt: string;
   }[];
-  statusHistory: {
+  history: {
     id: string;
     status: string;
     event: string;
@@ -49,10 +49,16 @@ export function useSubscription(): UseSubscriptionReturn {
 
       try {
         setIsLoading(true);
-        const response = await fetch('/api/subscription');
+        console.log('Fetching subscription data...');
+        const response = await fetch(`/api/subscription?t=${Date.now()}`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch subscription: ${response.status} ${response.statusText}`);
+        }
         const data = await response.json();
+        console.log('Subscription API response:', data);
         setSubscription(data.subscription);
       } catch (err: any) {
+        console.error('Error fetching subscription:', err);
         setError(err.message);
       } finally {
         setIsLoading(false);

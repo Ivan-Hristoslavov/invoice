@@ -59,7 +59,7 @@ export default function PayInvoicePage({ params }: { params: { id: string } }) {
   const [isPaid, setIsPaid] = useState<boolean>(false);
   
   useEffect(() => {
-    // In a real implementation, fetch invoice details from the API
+    // В реалната имплементация, извличаме детайлите за фактурата от API
     // const fetchInvoice = async () => {
     //   const response = await fetch(`/api/public/invoices/${params.id}`);
     //   const data = await response.json();
@@ -67,7 +67,7 @@ export default function PayInvoicePage({ params }: { params: { id: string } }) {
     // };
     // fetchInvoice();
     
-    // For demo, we'll use the mock data
+    // За демонстрация използваме примерни данни
   }, [params.id]);
   
   const form = useForm<z.infer<typeof paymentSchema>>({
@@ -80,7 +80,7 @@ export default function PayInvoicePage({ params }: { params: { id: string } }) {
     },
   });
   
-  // Format card number with spaces
+  // Форматиране на номера на картата с интервали
   const formatCardNumber = (value: string) => {
     const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
     const matches = v.match(/\d{4,16}/g);
@@ -98,7 +98,7 @@ export default function PayInvoicePage({ params }: { params: { id: string } }) {
     }
   };
   
-  // Format expiry date
+  // Форматиране на датата на изтичане
   const formatExpiryDate = (value: string) => {
     const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
     
@@ -112,12 +112,12 @@ export default function PayInvoicePage({ params }: { params: { id: string } }) {
   const onSubmit = async (data: z.infer<typeof paymentSchema>) => {
     setIsLoading(true);
     
-    // Simulate a payment processing delay
+    // Симулиране на забавяне при обработка на плащане
     setTimeout(() => {
-      // In a real implementation, submit payment data to payment processor
-      console.log("Payment data:", data);
+      // В реалната имплементация, изпращаме данните за плащане към платежния процесор
+      console.log("Данни за плащане:", data);
       
-      // Show success state for demo
+      // Показване на успешно състояние за демото
       setIsPaid(true);
       setIsLoading(false);
     }, 2000);
@@ -126,9 +126,9 @@ export default function PayInvoicePage({ params }: { params: { id: string } }) {
   const handleApplePay = () => {
     setIsLoading(true);
     
-    // Simulate a payment processing delay
+    // Симулиране на забавяне при обработка на плащане
     setTimeout(() => {
-      // In a real implementation, handle Apple Pay flow
+      // В реалната имплементация, обработваме Apple Pay
       setIsPaid(true);
       setIsLoading(false);
     }, 2000);
@@ -137,9 +137,9 @@ export default function PayInvoicePage({ params }: { params: { id: string } }) {
   const handleGooglePay = () => {
     setIsLoading(true);
     
-    // Simulate a payment processing delay
+    // Симулиране на забавяне при обработка на плащане
     setTimeout(() => {
-      // In a real implementation, handle Google Pay flow
+      // В реалната имплементация, обработваме Google Pay
       setIsPaid(true);
       setIsLoading(false);
     }, 2000);
@@ -193,7 +193,7 @@ export default function PayInvoicePage({ params }: { params: { id: string } }) {
         <CardHeader>
           <div className="flex items-center justify-between mb-4">
             <div className="w-32 h-12 bg-slate-200 rounded flex items-center justify-center text-sm font-medium">
-              {/* This would be your company logo */}
+              {/* Тук би било логото на вашата компания */}
               ЛОГО НА КОМПАНИЯТА
             </div>
             <div className="text-right">
@@ -356,8 +356,8 @@ export default function PayInvoicePage({ params }: { params: { id: string } }) {
                 </svg>
               </div>
               <div className="text-sm">
-                <p className="font-medium">Payment and billing information</p>
-                <p className="text-muted-foreground">Your payment is secure and encrypted</p>
+                <p className="font-medium">Информация за плащане и таксуване</p>
+                <p className="text-muted-foreground">Вашето плащане е сигурно и криптирано</p>
               </div>
             </div>
           </div>
@@ -365,7 +365,7 @@ export default function PayInvoicePage({ params }: { params: { id: string } }) {
       </Card>
       
       <p className="mt-4 text-xs text-center text-slate-500 max-w-md">
-        By proceeding with this payment, you agree to our terms of service and payment processing policies.
+        С продължаването на това плащане, вие се съгласявате с нашите условия за ползване и политики за обработка на плащания.
       </p>
     </div>
   );

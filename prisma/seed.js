@@ -36,7 +36,7 @@ async function main() {
       city: 'San Francisco',
       state: 'CA',
       zipCode: '94103',
-      country: 'United States',
+      country: 'BG',
       vatNumber: 'US123456789',
       userId: demoUser.id,
     },
@@ -53,7 +53,7 @@ async function main() {
       address: '100 Main St',
       city: 'New York',
       state: 'NY',
-      country: 'United States',
+      country: 'BG',
       userId: demoUser.id,
     },
     {
@@ -63,7 +63,7 @@ async function main() {
       address: '1 Wayne Tower',
       city: 'Gotham',
       state: 'NJ',
-      country: 'United States',
+      country: 'BG',
       userId: demoUser.id,
     },
     {
@@ -73,7 +73,7 @@ async function main() {
       address: '200 Park Ave',
       city: 'New York',
       state: 'NY',
-      country: 'United States',
+      country: 'BG',
       userId: demoUser.id,
     },
   ];

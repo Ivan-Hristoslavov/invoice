@@ -9,117 +9,115 @@ export default function TaxCompliancePage() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Tax Compliance</h1>
+        <h1 className="text-3xl font-bold">Данъчно съответствие</h1>
       </div>
       
       <Tabs defaultValue="bulgaria">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          <TabsTrigger value="bulgaria">Bulgaria (НАП)</TabsTrigger>
-          <TabsTrigger value="eu">European Union</TabsTrigger>
-          <TabsTrigger value="global">Global</TabsTrigger>
-          <TabsTrigger value="setup">Setup Guide</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="bulgaria">България (НАП)</TabsTrigger>
+          <TabsTrigger value="setup">Настройки</TabsTrigger>
         </TabsList>
         
         <TabsContent value="bulgaria" className="space-y-6 pt-4">
           <Alert>
             <InfoIcon className="h-4 w-4" />
-            <AlertTitle>Bulgarian Tax Compliance Information</AlertTitle>
+            <AlertTitle>Информация за данъчно съответствие в България</AlertTitle>
             <AlertDescription>
-              This page explains the compliance requirements for invoices according to the Bulgarian National Revenue Agency (НАП).
+              Тази страница обяснява изискванията за съответствие на фактурите според Националната агенция за приходите (НАП).
             </AlertDescription>
           </Alert>
           
           <Card>
             <CardHeader>
-              <CardTitle>Bulgarian Invoice Requirements (НАП)</CardTitle>
+              <CardTitle>Изисквания за български фактури (НАП)</CardTitle>
               <CardDescription>
-                Legal requirements for invoices issued to Bulgarian customers according to the Value Added Tax Act (ЗДДС)
+                Законови изисквания за фактури, издадени на български клиенти според Закона за данък върху добавената стойност (ЗДДС)
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <h3 className="font-semibold">Mandatory Elements on Invoices:</h3>
+              <h3 className="font-semibold">Задължителни елементи във фактурите:</h3>
               <ul className="list-disc pl-6 space-y-2">
-                <li>Full legal name and address of the seller (company issuing the invoice)</li>
-                <li>BULSTAT/EIK (company registration number) of the seller</li>
-                <li>VAT identification number (if VAT registered) with BG prefix</li>
-                <li>Full legal name and address of the buyer</li>
-                <li>BULSTAT/EIK of the buyer (if applicable)</li>
-                <li>VAT identification number of the buyer (if applicable)</li>
-                <li>Invoice number (sequential and unique within the calendar year)</li>
-                <li>Invoice date</li>
-                <li>Date of tax event (date of supply or service delivery)</li>
-                <li>Place of issue of the invoice</li>
-                <li>Description of the goods or services</li>
-                <li>Unit price, quantity, and net amount</li>
-                <li>VAT rate and VAT amount</li>
-                <li>Total invoice amount</li>
-                <li>Payment terms and method</li>
-                <li>MOL (Материално отговорно лице) - authorized person's name</li>
-                <li>Special clauses for exempt supplies or special taxation regimes (if applicable)</li>
-                <li>Clear indication if it's an original invoice or a duplicate</li>
+                <li>Пълно юридическо име и адрес на продавача (фирмата, издаваща фактурата)</li>
+                <li>БУЛСТАТ/ЕИК (номер на фирмена регистрация) на продавача</li>
+                <li>ДДС идентификационен номер (ако е регистриран по ДДС) с префикс BG</li>
+                <li>Пълно юридическо име и адрес на купувача</li>
+                <li>БУЛСТАТ/ЕИК на купувача (ако е приложимо)</li>
+                <li>ДДС идентификационен номер на купувача (ако е приложимо)</li>
+                <li>Номер на фактурата (последователен и уникален в рамките на календарната година)</li>
+                <li>Дата на фактурата</li>
+                <li>Дата на данъчното събитие (дата на доставка или извършване на услугата)</li>
+                <li>Място на издаване на фактурата</li>
+                <li>Описание на стоките или услугите</li>
+                <li>Единична цена, количество и нетна сума</li>
+                <li>Ставка на ДДС и сума на ДДС</li>
+                <li>Обща сума на фактурата</li>
+                <li>Условия и начин на плащане</li>
+                <li>МОЛ (Материално отговорно лице) - име на упълномощеното лице</li>
+                <li>Специални клаузи за освободени доставки или специални данъчни режими (ако е приложимо)</li>
+                <li>Ясно обозначение дали е оригинална фактура или дубликат</li>
               </ul>
               
-              <h3 className="font-semibold mt-6">Electronic Invoicing Requirements:</h3>
+              <h3 className="font-semibold mt-6">Изисквания за електронно фактуриране:</h3>
               <ul className="list-disc pl-6 space-y-2">
-                <li>Electronic invoices must contain the same information as paper invoices</li>
-                <li>Electronic invoices must ensure authenticity of origin, integrity of content, and legibility</li>
-                <li>For invoices above 10,000 BGN, electronic submission to НАП is required</li>
-                <li>A qualified electronic signature may be required for certain electronic invoices</li>
-                <li>Electronic invoices must be stored in their original format</li>
+                <li>Електронните фактури трябва да съдържат същата информация като хартиените фактури</li>
+                <li>Електронните фактури трябва да гарантират автентичност на произхода, цялост на съдържанието и четливост</li>
+                <li>За фактури над 10 000 лв. се изисква електронно подаване към НАП</li>
+                <li>За определени електронни фактури може да се изисква квалифициран електронен подпис</li>
+                <li>Електронните фактури трябва да се съхраняват в оригиналния им формат</li>
               </ul>
               
-              <h3 className="font-semibold mt-6">Invoice Numbering:</h3>
+              <h3 className="font-semibold mt-6">Номериране на фактури:</h3>
               <p>
-                Bulgarian invoices must follow a specific numbering format that is sequential within each calendar year. Our system automatically generates numbers in the format:
+                Българските фактури трябва да следват специфичен формат на номериране, който е последователен в рамките на календарната година. Нашата система автоматично генерира номера във формата:
               </p>
               <pre className="bg-slate-100 dark:bg-slate-800 p-2 rounded mt-2">
                 YYCCCCNNNNNNИ
               </pre>
               <p className="text-sm mt-2">
-                Where:<br />
-                YY = Last two digits of the year<br />
-                CCCC = Last four digits of your BULSTAT/EIK<br />
-                NNNNNN = Sequential number (reset at the beginning of each year)<br />
-                И = Type letter ("И" for invoices, "К" for credit notes, "Д" for debit notes)
+                Където:<br />
+                YY = Последните две цифри на годината<br />
+                CCCC = Последните четири цифри на вашия БУЛСТАТ/ЕИК<br />
+                NNNNNN = Последователен номер (нулира се в началото на всяка година)<br />
+                И = Буква за тип ("И" за фактури, "К" за кредитни известия, "Д" за дебитни известия)
               </p>
             </CardContent>
           </Card>
           
           <Card>
             <CardHeader>
-              <CardTitle>Reporting Requirements</CardTitle>
+              <CardTitle>Изисквания за отчитане</CardTitle>
               <CardDescription>
-                Key requirements for VAT reporting to НАП (National Revenue Agency)
+                Ключови изисквания за отчитане на ДДС пред НАП (Национална агенция за приходите)
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <h3 className="font-semibold">VAT Returns (Декларация по ДДС):</h3>
+              <h3 className="font-semibold">ДДС декларации:</h3>
               <ul className="list-disc pl-6 space-y-2">
-                <li>Monthly VAT returns must be filed by the 14th of the following month</li>
-                <li>VAT payments must be made by the same deadline</li>
-                <li>VAT returns must be filed electronically through the НАП e-services portal</li>
-                <li>All invoices above 10,000 BGN must be reported in detail</li>
+                <li>Месечните ДДС декларации трябва да се подават до 14-то число на следващия месец</li>
+                <li>Плащанията на ДДС трябва да се извършват в същия срок</li>
+                <li>ДДС декларациите трябва да се подават електронно чрез е-услугите на НАП</li>
+                <li>Всички фактури над 10 000 лв. трябва да се отчитат подробно</li>
               </ul>
               
-              <h3 className="font-semibold mt-6">Sales and Purchase Ledgers:</h3>
+              <h3 className="font-semibold mt-6">Регистри на продажбите и покупките:</h3>
               <ul className="list-disc pl-6 space-y-2">
-                <li>Sales and purchase ledgers must be maintained and submitted with VAT returns</li>
-                <li>Ledgers must include a detailed breakdown of all invoices</li>
-                <li>Electronic submission is mandatory</li>
+                <li>Регистрите на продажбите и покупките трябва да се поддържат и подават с ДДС декларациите</li>
+                <li>Регистрите трябва да включват подробна разбивка на всички фактури</li>
+                <li>Електронното подаване е задължително</li>
               </ul>
               
-              <h3 className="font-semibold mt-6">VIES Declarations:</h3>
+              <h3 className="font-semibold mt-6">VIES декларации:</h3>
               <ul className="list-disc pl-6 space-y-2">
-                <li>VIES declarations for intra-EU supplies must be submitted monthly</li>
-                <li>Declaration deadline is the 14th of the following month</li>
-                <li>Must include details of all supplies to EU VAT-registered customers</li>
+                <li>VIES декларациите за вътрешнообщностни доставки трябва да се подават месечно</li>
+                <li>Срокът за подаване на декларацията е до 14-то число на следващия месец</li>
+                <li>Трябва да включват подробности за всички доставки на клиенти от ЕС, регистрирани по ДДС</li>
               </ul>
               
               <Alert className="mt-6">
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Important Note</AlertTitle>
+                <AlertTitle>Важна забележка</AlertTitle>
                 <AlertDescription>
-                  Late submission of VAT returns or inaccurate reporting can result in significant penalties ranging from 500 to 10,000 BGN. Ensure all documentation is complete and submitted on time.
+                  Закъснялото подаване на ДДС декларации или неточно отчитане може да доведе до значителни глоби в размер от 500 до 10 000 лв. Уверете се, че цялата документация е пълна и подадена навреме.
                 </AlertDescription>
               </Alert>
             </CardContent>
@@ -127,27 +125,27 @@ export default function TaxCompliancePage() {
           
           <Card>
             <CardHeader>
-              <CardTitle>Record Keeping Requirements</CardTitle>
+              <CardTitle>Изисквания за съхранение на документи</CardTitle>
               <CardDescription>
-                Legal requirements for invoice storage and retention
+                Законови изисквания за съхранение и запазване на фактури
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <ul className="list-disc pl-6 space-y-2">
-                <li>All invoices must be kept for at least 10 years from the end of the year of issue</li>
-                <li>Invoices must be stored in their original format (paper or electronic)</li>
-                <li>For electronic invoices, backups must be maintained</li>
-                <li>Storage must allow quick and easy access upon request by tax authorities</li>
-                <li>Documents must be preserved with all original data intact</li>
+                <li>Всички фактури трябва да се съхраняват поне 10 години от края на годината на издаване</li>
+                <li>Фактурите трябва да се съхраняват в оригиналния им формат (хартиен или електронен)</li>
+                <li>За електронните фактури трябва да се поддържат архивни копия</li>
+                <li>Съхранението трябва да позволява бърз и лесен достъп при поискване от данъчните органи</li>
+                <li>Документите трябва да се съхраняват с непокътнати всички оригинални данни</li>
               </ul>
             </CardContent>
           </Card>
           
           <Card>
             <CardHeader>
-              <CardTitle>Official Resources</CardTitle>
+              <CardTitle>Официални ресурси</CardTitle>
               <CardDescription>
-                Links to official Bulgarian tax authorities and regulations
+                Връзки към официални български данъчни органи и разпоредби
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -156,27 +154,27 @@ export default function TaxCompliancePage() {
                   <ExternalLink className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
                   <div>
                     <a href="https://nra.bg/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-medium">
-                      National Revenue Agency (НАП)
+                      Национална агенция за приходите (НАП)
                     </a>
-                    <p className="text-sm text-gray-500">Official website of the Bulgarian tax authority</p>
+                    <p className="text-sm text-gray-500">Официален уебсайт на българския данъчен орган</p>
                   </div>
                 </li>
                 <li className="flex items-start">
                   <ExternalLink className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
                   <div>
                     <a href="https://www.lex.bg/laws/ldoc/2135533201" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-medium">
-                      Value Added Tax Act (ЗДДС)
+                      Закон за данък върху добавената стойност (ЗДДС)
                     </a>
-                    <p className="text-sm text-gray-500">Full text of the Bulgarian VAT legislation</p>
+                    <p className="text-sm text-gray-500">Пълен текст на българското законодателство за ДДС</p>
                   </div>
                 </li>
                 <li className="flex items-start">
                   <ExternalLink className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
                   <div>
                     <a href="https://www.minfin.bg/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-medium">
-                      Ministry of Finance
+                      Министерство на финансите
                     </a>
-                    <p className="text-sm text-gray-500">Official website of the Bulgarian Ministry of Finance</p>
+                    <p className="text-sm text-gray-500">Официален уебсайт на българското Министерство на финансите</p>
                   </div>
                 </li>
               </ul>
@@ -184,89 +182,61 @@ export default function TaxCompliancePage() {
           </Card>
         </TabsContent>
         
-        <TabsContent value="eu" className="space-y-6 pt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>EU VAT Compliance</CardTitle>
-              <CardDescription>
-                Information about EU-wide VAT requirements
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>EU VAT compliance information will be added in a future update.</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="global" className="space-y-6 pt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Global Tax Compliance</CardTitle>
-              <CardDescription>
-                Information about international tax requirements
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Global tax compliance information will be added in a future update.</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
         <TabsContent value="setup" className="space-y-6 pt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Setup Guide</CardTitle>
+              <CardTitle>Ръководство за настройка</CardTitle>
               <CardDescription>
-                Step-by-step guide to configuring tax compliance in the system
+                Ръководство стъпка по стъпка за конфигуриране на данъчното съответствие в системата
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="rounded-lg border p-4">
                 <h3 className="font-semibold flex items-center">
                   <span className="flex h-6 w-6 rounded-full bg-primary text-primary-foreground items-center justify-center text-sm mr-2">1</span>
-                  Set up your company details
+                  Настройте данните за вашата компания
                 </h3>
                 <p className="mt-2 text-sm">
-                  Go to <Link href="/settings/company" className="text-blue-500 hover:underline">Company Settings</Link> and ensure all required fields are completed, especially tax identification numbers.
+                  Отидете в <Link href="/settings/company" className="text-blue-500 hover:underline">Настройки на компанията</Link> и се уверете, че всички задължителни полета са попълнени, особено данъчните идентификационни номера.
                 </p>
               </div>
               
               <div className="rounded-lg border p-4">
                 <h3 className="font-semibold flex items-center">
                   <span className="flex h-6 w-6 rounded-full bg-primary text-primary-foreground items-center justify-center text-sm mr-2">2</span>
-                  Configure Bulgarian tax settings
+                  Конфигурирайте българските данъчни настройки
                 </h3>
                 <p className="mt-2 text-sm">
-                  For Bulgarian invoices, make sure to fill in the Bulgarian-specific fields:
+                  За българските фактури се уверете, че сте попълнили специфичните за България полета:
                 </p>
                 <ul className="list-disc pl-6 mt-2 text-sm space-y-1">
-                  <li>BULSTAT/EIK number</li>
-                  <li>VAT registration number (if applicable)</li>
-                  <li>MOL (Материално отговорно лице)</li>
-                  <li>Default place of issue</li>
+                  <li>БУЛСТАТ/ЕИК номер</li>
+                  <li>ДДС регистрационен номер (ако е приложимо)</li>
+                  <li>МОЛ (Материално отговорно лице)</li>
+                  <li>Място на издаване по подразбиране</li>
                 </ul>
               </div>
               
               <div className="rounded-lg border p-4">
                 <h3 className="font-semibold flex items-center">
                   <span className="flex h-6 w-6 rounded-full bg-primary text-primary-foreground items-center justify-center text-sm mr-2">3</span>
-                  Create invoices with proper tax settings
+                  Създавайте фактури с правилни данъчни настройки
                 </h3>
                 <p className="mt-2 text-sm">
-                  When creating invoices, select BGN as the currency to activate all Bulgarian tax compliance features automatically:
+                  При създаване на фактури изберете BGN като валута, за да активирате автоматично всички функции за съответствие с българските данъчни изисквания:
                 </p>
                 <ul className="list-disc pl-6 mt-2 text-sm space-y-1">
-                  <li>Invoice numbers will follow the НАП-compliant format</li>
-                  <li>All required fields for Bulgarian invoices will be displayed</li>
-                  <li>PDFs will be generated in the correct Bulgarian format</li>
+                  <li>Номерата на фактурите ще следват формата, съответстващ на НАП</li>
+                  <li>Всички задължителни полета за българските фактури ще бъдат показани</li>
+                  <li>PDF файловете ще бъдат генерирани в правилния български формат</li>
                 </ul>
               </div>
               
               <Alert className="mt-4" variant="default">
                 <CheckCircle className="h-4 w-4" />
-                <AlertTitle>Ready for compliance</AlertTitle>
+                <AlertTitle>Готови за съответствие</AlertTitle>
                 <AlertDescription>
-                  Once you've completed these steps, your system will be configured for Bulgarian tax compliance. Remember to keep your invoice records for at least 10 years as required by law.
+                  След като изпълните тези стъпки, вашата система ще бъде конфигурирана за българско данъчно съответствие. Не забравяйте да съхранявате записите на фактурите си поне 10 години, както се изисква от закона.
                 </AlertDescription>
               </Alert>
             </CardContent>

@@ -14,8 +14,8 @@ import {
 import { CompanyForm } from "./CompanyForm";
 
 export const metadata: Metadata = {
-  title: `Company Settings | ${APP_NAME}`,
-  description: "Update your company information",
+  title: `Настройки на компанията | ${APP_NAME}`,
+  description: "Актуализирайте информацията за вашата компания",
 };
 
 export default async function CompanySettingsPage() {
@@ -25,7 +25,7 @@ export default async function CompanySettingsPage() {
     redirect("/signin");
   }
   
-  // Get the user's default company
+  // Вземи компанията по подразбиране на потребителя
   const company = await prisma.company.findFirst({
     where: { 
       userId: session.user.id 
@@ -36,9 +36,9 @@ export default async function CompanySettingsPage() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Company Information</CardTitle>
+          <CardTitle>Информация за компанията</CardTitle>
           <CardDescription>
-            Update your company information for invoices
+            Актуализирайте информацията за вашата компания за фактури
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -64,9 +64,9 @@ export default async function CompanySettingsPage() {
       
       <Card>
         <CardHeader>
-          <CardTitle>Bank Information</CardTitle>
+          <CardTitle>Банкова информация</CardTitle>
           <CardDescription>
-            Add your bank details to be shown on invoices
+            Добавете банковите си детайли, които ще се показват на фактурите
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -86,9 +86,9 @@ export default async function CompanySettingsPage() {
       
       <Card>
         <CardHeader>
-          <CardTitle>Company Logo</CardTitle>
+          <CardTitle>Лого на компанията</CardTitle>
           <CardDescription>
-            Upload your company logo to be displayed on invoices
+            Качете лого на вашата компания, което ще се показва на фактурите
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -102,7 +102,7 @@ export default async function CompanySettingsPage() {
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-muted text-2xl font-semibold uppercase text-muted-foreground">
-                  {company?.name?.charAt(0) || "C"}
+                  {company?.name?.charAt(0) || "К"}
                 </div>
               )}
             </div>
@@ -110,7 +110,7 @@ export default async function CompanySettingsPage() {
               <div className="flex flex-col gap-2 sm:flex-row">
                 <div className="grid w-full max-w-sm items-center gap-1.5">
                   <label htmlFor="logo" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                    Upload a logo
+                    Качване на лого
                   </label>
                   <input
                     id="logo"
@@ -120,7 +120,7 @@ export default async function CompanySettingsPage() {
                 </div>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                JPG, PNG or SVG. Maximum file size 2MB.
+                JPG, PNG или SVG. Максимален размер на файла 2MB.
               </p>
             </div>
           </div>

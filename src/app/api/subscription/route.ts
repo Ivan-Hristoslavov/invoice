@@ -20,7 +20,7 @@ const mockSubscription = {
       createdAt: new Date().toISOString()
     }
   ],
-  statusHistory: [
+  history: [
     {
       id: 'mock-status-id-1',
       status: 'ACTIVE',
@@ -56,6 +56,8 @@ export async function GET() {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
+    console.log('Fetching subscription for user:', session.user.id);
+
     // Get user's subscription from database
     const subscription = await prisma.subscription.findFirst({
       where: {
@@ -70,13 +72,15 @@ export async function GET() {
             createdAt: 'desc'
           }
         },
-        statusHistory: {
+        history: {
           orderBy: {
             createdAt: 'desc'
           }
         }
       }
     });
+
+    console.log('Found subscription:', subscription ? `${subscription.id} (${subscription.plan})` : 'none');
 
     // Serialize the response to handle Decimal objects
     const serializedSubscription = subscription ? serializeDecimal(subscription) : null;

@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from '@/lib/auth';
-import { stripe } from '@/lib/stripe';
+import { getStripe } from '@/lib/stripe';
 import { Decimal } from '@prisma/client/runtime/library';
 
 // Get direct Stripe checkout URLs from environment variables
 const STRIPE_URLS = {
-  BASIC: process.env.STRIPE_BASIC,
-  PRO: process.env.STRIPE_PRO,
-  VIP: process.env.STRIPE_VIP,
+  BASIC: 'https://buy.stripe.com/test_7sY28t3Wa97J0IMe3Fb7y08',
+  PRO: 'https://buy.stripe.com/test_5kQeVf64ibfRbnqcZBb7y06',
+  VIP: 'https://buy.stripe.com/test_fZu14p2S683F4Z2cZBb7y07',
 };
 
 // Helper function to serialize Prisma Decimal objects
@@ -43,11 +43,21 @@ export async function POST(req: Request) {
       return new NextResponse('Invalid plan', { status: 400 });
     }
 
+    // Get the direct URL for the selected plan
+    const directUrl = STRIPE_URLS[plan as keyof typeof STRIPE_URLS];
+    if (directUrl) {
+      return NextResponse.json({ url: directUrl });
+    }
+
+    // Fallback to creating a Checkout session if direct URL is not available
     // Get the price ID for the selected plan
     const priceId = process.env[`STRIPE_${plan}_PRICE_ID`];
     if (!priceId) {
       return new NextResponse('Price ID not configured', { status: 500 });
     }
+
+    // Get the Stripe instance
+    const stripe = await getStripe();
 
     // Create a Stripe Checkout Session
     const checkoutSession = await stripe.checkout.sessions.create({
@@ -61,7 +71,7 @@ export async function POST(req: Request) {
       ],
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings/subscription?success=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings/subscription?canceled=true`,
-      customer_email: session.user.email,
+      customer_email: session.user.email || undefined,
       metadata: {
         userId: session.user.id,
         plan: plan,

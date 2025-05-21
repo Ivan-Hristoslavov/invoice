@@ -53,7 +53,6 @@ export async function GET(request: NextRequest) {
         subtotal: invoice.subtotal.toString(),
         taxAmount: invoice.taxAmount.toString(),
         total: invoice.total.toString(),
-        amountDue: invoice.amountDue?.toString() || invoice.total.toString(),
         items: invoice.items.map(item => ({
           ...item,
           quantity: item.quantity.toString(),

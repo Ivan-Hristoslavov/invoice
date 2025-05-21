@@ -33,3 +33,44 @@ export function getCurrencySymbol(currency: string = "USD"): string {
   
   return currencySymbols[currency] || "$";
 }
+
+// Function to convert country names to ISO 3166-1 alpha-2 codes
+export function getCountryCode(countryName: string | null | undefined): string {
+  if (!countryName) return 'BG'; // Default to Bulgaria if no country
+
+  // Common country name mappings
+  const countryMap: Record<string, string> = {
+    'United States': 'US',
+    'USA': 'US',
+    'United States of America': 'US',
+    'Bulgaria': 'BG',
+    'United Kingdom': 'GB',
+    'UK': 'GB',
+    'Germany': 'DE',
+    'France': 'FR',
+    'Italy': 'IT',
+    'Spain': 'ES',
+    'Canada': 'CA',
+    'Australia': 'AU',
+    'Japan': 'JP',
+    'China': 'CN',
+    'India': 'IN',
+    'Brazil': 'BR',
+    'Russia': 'RU',
+    'Netherlands': 'NL',
+    'Greece': 'GR',
+    'Turkey': 'TR',
+  };
+  
+  // Try to find the country code in our map
+  const countryCode = countryMap[countryName.trim()];
+  if (countryCode) return countryCode;
+  
+  // If we have an exact 2-letter code already, use it
+  if (countryName.length === 2 && /^[A-Z]{2}$/.test(countryName.toUpperCase())) {
+    return countryName.toUpperCase();
+  }
+  
+  // Default fallback
+  return 'BG';
+}

@@ -13,17 +13,19 @@ export function MainLayout({ children }: MainLayoutProps) {
   const { status } = useSession();
   const pathname = usePathname();
   const isAuthenticated = status === "authenticated";
+  const isAuthPage = pathname.includes("/signin") || pathname.includes("/signup");
 
-  // On homepage with unauthenticated user, render without navigation
+  // Skip rendering layout on auth pages
+  if (isAuthPage) {
+    return <main className="min-h-screen">{children}</main>;
+  }
+
+  // Ако сме на началната страница и потребителят не е автентикиран
   if (pathname === "/" && !isAuthenticated) {
     return <main className="min-h-screen">{children}</main>;
   }
 
-  // Skip rendering layout on auth pages
-  if (pathname.includes("/signin") || pathname.includes("/signup")) {
-    return <main className="min-h-screen">{children}</main>;
-  }
-
+  // За всички останали случаи, показваме layout-а с навигацията
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />

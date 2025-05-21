@@ -31,8 +31,8 @@ export async function useSubscriptionPlans(): Promise<SubscriptionPlans> {
 
 // Helper function to format price
 export function formatPrice(price: number): string {
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('bg-BG', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'BGN',
   }).format(price);
 } 
