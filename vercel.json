@@ -2,9 +2,6 @@
   "buildCommand": "npm run build",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "routes": [
-    { "src": "/(.*)", "dest": "/src/$1" }
-  ],
   "outputDirectory": ".next",
   "regions": ["iad1"],
   "env": {
