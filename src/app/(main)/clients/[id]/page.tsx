@@ -43,10 +43,8 @@ interface InvoiceWithClient extends Invoice {
 }
 
 // Generate dynamic metadata
-export async function generateMetadata(
-  { params }: { params: { id: string } }
-): Promise<Metadata> {
-  const client = await getClient(params.id);
+export async function generateMetadata(props: { params: { id: string } }): Promise<Metadata> {
+  const client = await getClient(props.params.id);
   
   if (!client) {
     return {
@@ -78,7 +76,8 @@ async function getClient(id: string) {
   return client;
 }
 
-export default async function ClientDetailPage({ params }: { params: { id: string } }) {
+export default async function ClientDetailPage(props: { params: { id: string } }) {
+  const { params } = props;
   const session = await getServerSession(authOptions);
   
   if (!session) {

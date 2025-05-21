@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Users, BarChart, Tag, Settings, FileImport } from "lucide-react";
+import { BarChart, FileText, Settings, Tag, Users, Upload } from "lucide-react";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -32,7 +32,7 @@ export default function HelpPage() {
     {
       title: "Import & Export",
       description: "Import and export invoices, clients, and products",
-      icon: <FileImport className="h-6 w-6 text-primary" />,
+      icon: <Upload className="h-6 w-6 text-primary" />,
       url: "/docs/features/import-export.md",
     },
     {

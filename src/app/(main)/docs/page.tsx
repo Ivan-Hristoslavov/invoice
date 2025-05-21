@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronRightIcon, BookOpenIcon, QuestionMarkCircleIcon, RocketIcon } from 'lucide-react';
+import { BookOpenIcon, ChevronRightIcon, HelpCircleIcon, RocketIcon } from 'lucide-react';
 
 export default function DocumentationPage() {
   return (
@@ -63,7 +63,7 @@ export default function DocumentationPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center">
-              <QuestionMarkCircleIcon className="mr-2 h-5 w-5 text-primary" />
+              <HelpCircleIcon className="mr-2 h-5 w-5 text-primary" />
               Често задавани въпроси
             </CardTitle>
             <CardDescription>

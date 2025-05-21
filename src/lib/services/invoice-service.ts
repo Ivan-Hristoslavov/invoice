@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db/prisma';
 import { cache } from 'react';
+import { InvoiceStatus } from '@prisma/client';
 
 // Кеширане на заявката за един invoice с всички related данни
 export const getInvoiceWithDetails = cache(async (invoiceId: string, userId: string) => {
@@ -43,7 +44,7 @@ export const getInvoicesList = cache(async (
   userId: string,
   page = 1,
   limit = 10,
-  status?: string,
+  status?: InvoiceStatus,
   searchTerm?: string
 ) => {
   const skip = (page - 1) * limit;

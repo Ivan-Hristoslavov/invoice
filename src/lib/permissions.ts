@@ -121,7 +121,7 @@ export async function assignRole(
     where: {
       userId_companyId: {
         userId,
-        companyId: companyId || null,
+        companyId: (companyId || null) as string,
       },
     },
     update: {

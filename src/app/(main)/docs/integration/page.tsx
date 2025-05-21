@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ArrowLeftIcon, FileTextIcon, UsersIcon, QuestionMarkCircleIcon, BookIcon } from 'lucide-react';
+import { ArrowLeftIcon, FileTextIcon, UsersIcon, HelpCircleIcon, BookIcon } from 'lucide-react';
 import { ContextHelp, HelpSection } from '@/components/ui/context-help';
 import { DocOnboarding, TaskProgress } from '@/components/ui/doc-onboarding';
 
@@ -19,18 +19,18 @@ export default function DocumentationIntegrationPage() {
     {
       title: 'Изпробвайте контекстната помощ',
       completed: false,
-      icon: QuestionMarkCircleIcon
+      icon: HelpCircleIcon
     },
     {
       title: 'Стартирайте onboarding',
       completed: false,
       icon: UsersIcon
     },
-         {
-       title: 'Прегледайте ръководството за интеграция',
-       completed: false,
-       icon: FileTextIcon
-     }
+    {
+      title: 'Прегледайте提醒大家 за интеграция',
+      completed: false,
+      icon: FileTextIcon
+    }
   ]);
   
   const completeTask = (index: number) => {

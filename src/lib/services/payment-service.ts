@@ -1,7 +1,6 @@
 import Stripe from 'stripe';
 import { prisma } from '@/lib/db/prisma';
-import { Prisma } from '@prisma/client';
-import { Payment } from '.prisma/client';
+import { Prisma, Payment, PaymentMethod, InvoiceStatus } from '@prisma/client';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2025-04-30.basil" as Stripe.LatestApiVersion,
@@ -28,9 +27,9 @@ export async function createPaymentLink(invoiceId: string) {
     }
 
     // Calculate amount due
-    const totalPaid = invoice.payments.reduce((sum: number, payment: { amount: number | string }) => 
-      sum + Number(payment.amount), 0);
-    const amountDue = Number(invoice.total) - totalPaid;
+    const totalPaid = invoice.payments.reduce((sum, payment) => 
+      sum + Number(payment.amount.toString()), 0);
+    const amountDue = Number(invoice.total.toString()) - totalPaid;
 
     if (amountDue <= 0) {
       throw new Error("Invoice is already paid in full");
@@ -98,10 +97,14 @@ export async function getPaymentStatus(invoiceId: string) {
       throw new Error("Invoice not found");
     }
 
+    const totalPaid = invoice.payments.reduce((sum, payment) => 
+      sum + Number(payment.amount.toString()), 0);
+    const amountDue = Number(invoice.total.toString()) - totalPaid;
+
     return {
       status: invoice.status,
       lastPayment: invoice.payments[0] || null,
-      amountDue: invoice.amountDue,
+      amountDue,
       paidAt: invoice.paidAt,
     };
   } catch (error) {
@@ -127,6 +130,10 @@ export async function refundPayment(paymentId: string, amount?: number) {
       throw new Error("Payment cannot be refunded");
     }
 
+    if (!payment.transactionId) {
+      throw new Error("Payment has no transaction ID");
+    }
+
     // Create refund in Stripe
     const refund = await stripe.refunds.create({
       payment_intent: payment.transactionId,
@@ -137,23 +144,30 @@ export async function refundPayment(paymentId: string, amount?: number) {
     const refundPayment = await prisma.payment.create({
       data: {
         invoiceId: payment.invoiceId,
-        amount: -(amount || payment.amount),
-        currency: payment.currency,
+        amount: new Prisma.Decimal(amount || Number(payment.amount.toString())),
         paymentDate: new Date(),
-        paymentMethod: "STRIPE",
+        paymentMethod: PaymentMethod.CREDIT_CARD,
         transactionId: refund.id,
         status: "REFUNDED",
         notes: "Възстановена сума",
         refundedPaymentId: payment.id,
       },
     });
+    
+    // Update the original payment status
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: { 
+        status: "REFUNDED" 
+      },
+    });
 
     // Update invoice status if fully refunded
-    if (!amount || amount === payment.amount) {
+    if (!amount || amount === Number(payment.amount.toString())) {
       await prisma.invoice.update({
         where: { id: payment.invoiceId },
         data: {
-          status: "REFUNDED",
+          status: InvoiceStatus.CANCELLED,
           paidAt: null,
         },
       });
