@@ -4,6 +4,8 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { PageTransition } from "@/components/animation/PageTransition";
+import { AnimatePresence } from "framer-motion";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -17,12 +19,24 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   // Skip rendering layout on auth pages
   if (isAuthPage) {
-    return <main className="min-h-screen">{children}</main>;
+    return (
+      <AnimatePresence mode="wait">
+        <PageTransition key={pathname}>
+          <main className="min-h-screen">{children}</main>
+        </PageTransition>
+      </AnimatePresence>
+    );
   }
 
   // Ако сме на началната страница и потребителят не е автентикиран
   if (pathname === "/" && !isAuthenticated) {
-    return <main className="min-h-screen">{children}</main>;
+    return (
+      <AnimatePresence mode="wait">
+        <PageTransition key={pathname}>
+          <main className="min-h-screen">{children}</main>
+        </PageTransition>
+      </AnimatePresence>
+    );
   }
 
   // За всички останали случаи, показваме layout-а с навигацията
@@ -31,7 +45,11 @@ export function MainLayout({ children }: MainLayoutProps) {
       <Sidebar />
       <div className="flex-1 md:ml-64">
         <Navbar />
-        <main className="p-4 md:p-6">{children}</main>
+        <AnimatePresence mode="wait">
+          <PageTransition key={pathname}>
+            <main className="p-4 md:p-6">{children}</main>
+          </PageTransition>
+        </AnimatePresence>
       </div>
     </div>
   );
