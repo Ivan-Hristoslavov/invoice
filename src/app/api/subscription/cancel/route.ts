@@ -1,31 +1,17 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { createAdminClient } from '@/lib/supabase/server';
 import Stripe from 'stripe';
-import { Decimal } from '@prisma/client/runtime/library';
 
-// Инициализиране на Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16'
-});
-
-// Helper function to serialize Prisma Decimal objects
-function serializeDecimal(value: any): any {
-  if (value instanceof Decimal) {
-    return value.toString();
+// Lazy initialization helper to avoid build-time errors
+function getStripe() {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error('STRIPE_SECRET_KEY is not configured');
   }
-  if (Array.isArray(value)) {
-    return value.map(serializeDecimal);
-  }
-  if (typeof value === 'object' && value !== null) {
-    const result: any = {};
-    for (const [key, val] of Object.entries(value)) {
-      result[key] = serializeDecimal(val);
-    }
-    return result;
-  }
-  return value;
+  return new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2023-10-16'
+  });
 }
 
 export async function POST() {
@@ -37,20 +23,20 @@ export async function POST() {
     }
 
     // Get user's active subscription
-    const subscription = await prisma.subscription.findFirst({
-      where: {
-        userId: session.user.id,
-        status: {
-          in: ['ACTIVE', 'TRIALING', 'PAST_DUE']
-        }
-      }
-    });
+    const supabase = createAdminClient();
+    const { data: subscription, error: subError } = await supabase
+      .from('Subscription')
+      .select('*')
+      .eq('userId', session.user.id)
+      .in('status', ['ACTIVE', 'TRIALING', 'PAST_DUE'])
+      .single();
 
-    if (!subscription) {
+    if (subError || !subscription) {
       return new NextResponse('No active subscription found', { status: 404 });
     }
 
     // Cancel the subscription in Stripe
+    const stripe = getStripe();
     if (subscription.stripeSubscriptionId) {
       await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
         cancel_at_period_end: true
@@ -58,26 +44,32 @@ export async function POST() {
     }
 
     // Update subscription in database
-    const updatedSubscription = await prisma.subscription.update({
-      where: { id: subscription.id },
-      data: {
+    const { data: updatedSubscription, error: updateError } = await supabase
+      .from('Subscription')
+      .update({
         cancelAtPeriodEnd: true,
-        history: {
-          create: {
-            status: 'CANCELING',
-            event: 'CANCEL_REQUESTED'
-          }
-        }
-      }
+        updatedAt: new Date().toISOString(),
+      })
+      .eq('id', subscription.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Error updating subscription:', updateError);
+      return new NextResponse('Internal Server Error', { status: 500 });
+    }
+
+    // Create history entry
+    await supabase.from('SubscriptionHistory').insert({
+      subscriptionId: subscription.id,
+      status: 'CANCELING',
+      event: 'CANCEL_REQUESTED',
     });
 
-    // Serialize the response to handle Decimal objects
-    const serializedResponse = serializeDecimal({
+    return NextResponse.json({
       message: 'Subscription will be canceled at the end of the billing period',
       subscription: updatedSubscription
     });
-
-    return NextResponse.json(serializedResponse);
   } catch (error) {
     console.error('Error canceling subscription:', error);
     return new NextResponse('Internal Server Error', { status: 500 });

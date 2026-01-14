@@ -18,7 +18,7 @@ DB_USERNAME=postgres
 DB_PASSWORD=postgres
 DB_SCHEMA=invoice
 DB=postgres
-DATABASE_URL=postgresql://postgres:postgres@localhost:5433/postgres?schema=invoice
+NEXT_PUBLIC_SUPABASE_URL=postgresql://postgres:postgres@localhost:5433/postgres?schema=invoice
 ```
 
 ## Setup and Management

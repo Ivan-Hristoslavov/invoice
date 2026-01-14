@@ -1,8 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { createAdminClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { Role } from "@prisma/client";
 import { checkPermission } from "@/lib/permissions";
 import Link from "next/link";
 
@@ -30,6 +29,8 @@ export const metadata = {
   title: "User Management - InvoiceNinja",
   description: "Manage users and their roles in your organization",
 };
+
+type Role = "ADMIN" | "OWNER" | "MANAGER" | "ACCOUNTANT" | "VIEWER";
 
 function getRoleBadgeColor(role: Role) {
   switch (role) {
@@ -89,18 +90,15 @@ export default async function UsersPage() {
     );
   }
   
-  // Get all companies the user belongs to
-  const companies = await prisma.company.findMany({
-    where: {
-      userId: session.user.id,
-    },
-    select: {
-      id: true,
-      name: true,
-    },
-  });
+  const supabase = createAdminClient();
   
-  if (companies.length === 0) {
+  // Get all companies the user belongs to
+  const { data: companies } = await supabase
+    .from("Company")
+    .select("id, name")
+    .eq("userId", session.user.id);
+  
+  if (!companies || companies.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] max-w-md mx-auto text-center">
         <h1 className="text-2xl font-bold mb-2">No Companies Found</h1>
@@ -118,21 +116,24 @@ export default async function UsersPage() {
   const company = companies[0];
   
   // Get all users with their roles for this company
-  const usersWithRoles = await prisma.userRole.findMany({
-    where: {
-      companyId: company.id,
-    },
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          image: true,
-        },
-      },
-    },
-  });
+  const { data: userRoles } = await supabase
+    .from("UserRole")
+    .select("id, role, userId")
+    .eq("companyId", company.id);
+  
+  // Get user details for each role
+  const userIds = (userRoles || []).map(ur => ur.userId);
+  const { data: users } = await supabase
+    .from("User")
+    .select("id, name, email, image")
+    .in("id", userIds.length > 0 ? userIds : ['']);
+  
+  const usersMap = new Map((users || []).map(u => [u.id, u]));
+  
+  const usersWithRoles = (userRoles || []).map(userRole => ({
+    ...userRole,
+    user: usersMap.get(userRole.userId) || { id: userRole.userId, name: null, email: '', image: null }
+  }));
   
   return (
     <div>
@@ -181,20 +182,20 @@ export default async function UsersPage() {
                   <TableCell>
                     <Badge
                       variant="outline"
-                      className={getRoleBadgeColor(userRole.role)}
+                      className={getRoleBadgeColor(userRole.role as Role)}
                     >
                       {userRole.role}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <span className="text-sm text-muted-foreground">
-                      {getRoleDescription(userRole.role)}
+                      {getRoleDescription(userRole.role as Role)}
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
                     <UserRoleActions
                       userId={userRole.user.id}
-                      currentRole={userRole.role}
+                      currentRole={userRole.role as Role}
                       companyId={company.id}
                       isCurrentUser={userRole.user.id === session.user.id}
                     />
@@ -207,4 +208,4 @@ export default async function UsersPage() {
       </Card>
     </div>
   );
-} 
+}

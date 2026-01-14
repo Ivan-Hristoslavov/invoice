@@ -1,11 +1,9 @@
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import db from "@/lib/db";
+import { createAdminClient } from "@/lib/supabase/server";
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(db),
   secret: process.env.NEXTAUTH_SECRET,
   session: {
     strategy: "jwt",
@@ -25,11 +23,15 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const user = await db.user.findUnique({
-          where: { email: credentials.email },
-        });
+        const supabase = createAdminClient();
 
-        if (!user || !user.password) {
+        const { data: user, error } = await supabase
+          .from("User")
+          .select("id, email, name, password, image")
+          .eq("email", credentials.email)
+          .single();
+
+        if (error || !user || !user.password) {
           return null;
         }
 

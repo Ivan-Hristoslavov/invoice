@@ -69,6 +69,8 @@ export const invoiceSchema = z.object({
   issueDate: z.string().refine(str => !isNaN(Date.parse(str)), "Невалидна дата"),
   dueDate: z.string().refine(str => !isNaN(Date.parse(str)), "Невалидна дата"),
   status: z.enum(['DRAFT', 'UNPAID', 'PAID', 'OVERDUE', 'CANCELLED']).default('DRAFT'),
+  currency: z.string().optional().default('EUR'),
+  locale: z.string().optional().default('bg'),
   items: z.array(invoiceItemSchema).min(1, "Фактурата трябва да има поне един артикул"),
   notes: z.string().optional(),
   termsAndConditions: z.string().optional(),

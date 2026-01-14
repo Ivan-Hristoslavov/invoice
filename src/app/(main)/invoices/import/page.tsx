@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Metadata } from "next";
 import InvoiceImportClient from "./InvoiceImportClient";
-import { prisma } from "@/lib/db";
+import { createAdminClient } from "@/lib/supabase/server";
 import { checkPermission } from "@/lib/permissions";
 
 export const metadata: Metadata = {
@@ -24,50 +24,28 @@ export default async function InvoiceImportPage() {
     redirect("/dashboard");
   }
 
+  const supabase = createAdminClient();
+
   // Get clients for this user to populate the dropdown
-  const clients = await prisma.client.findMany({
-    where: {
-      userId: session.user.id,
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-    },
-    orderBy: {
-      name: "asc",
-    },
-  });
+  const { data: clients } = await supabase
+    .from("Client")
+    .select("id, name, email")
+    .eq("userId", session.user.id)
+    .order("name", { ascending: true });
 
   // Get companies for this user to populate the dropdown
-  const companies = await prisma.company.findMany({
-    where: {
-      userId: session.user.id,
-    },
-    select: {
-      id: true,
-      name: true,
-    },
-    orderBy: {
-      name: "asc",
-    },
-  });
+  const { data: companies } = await supabase
+    .from("Company")
+    .select("id, name")
+    .eq("userId", session.user.id)
+    .order("name", { ascending: true });
 
   // Get products for this user to populate the dropdown
-  const products = await prisma.product.findMany({
-    where: {
-      userId: session.user.id,
-    },
-    select: {
-      id: true,
-      name: true,
-      price: true,
-      taxRate: true,
-    },
-    orderBy: {
-      name: "asc",
-    },
-  });
+  const { data: products } = await supabase
+    .from("Product")
+    .select("id, name, price, taxRate")
+    .eq("userId", session.user.id)
+    .order("name", { ascending: true });
 
   return (
     <div className="container mx-auto p-6">
@@ -79,10 +57,10 @@ export default async function InvoiceImportPage() {
       </div>
       
       <InvoiceImportClient 
-        clients={clients}
-        companies={companies}
-        products={products}
+        clients={clients || []}
+        companies={companies || []}
+        products={products || []}
       />
     </div>
   );
-} 
+}

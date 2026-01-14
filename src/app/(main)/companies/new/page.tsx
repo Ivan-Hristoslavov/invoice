@@ -390,7 +390,7 @@ export default function NewCompanyPage() {
                             <FormLabel>Тип идентификатор</FormLabel>
                             <Select 
                               onValueChange={field.onChange} 
-                              defaultValue={field.value}
+                              value={field.value}
                             >
                               <FormControl>
                                 <SelectTrigger>

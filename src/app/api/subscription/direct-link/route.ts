@@ -6,9 +6,9 @@ import { Decimal } from '@prisma/client/runtime/library';
 
 // Get direct Stripe checkout URLs from environment variables
 const STRIPE_URLS = {
-  BASIC: 'https://buy.stripe.com/test_7sY28t3Wa97J0IMe3Fb7y08',
-  PRO: 'https://buy.stripe.com/test_5kQeVf64ibfRbnqcZBb7y06',
-  VIP: 'https://buy.stripe.com/test_fZu14p2S683F4Z2cZBb7y07',
+  FREE: null, // Free plan doesn't need Stripe
+  PRO: process.env.STRIPE_PRO_MONTHLY_URL || 'https://buy.stripe.com/test_pro_monthly',
+  BUSINESS: process.env.STRIPE_BUSINESS_MONTHLY_URL || 'https://buy.stripe.com/test_business_monthly',
 };
 
 // Helper function to serialize Prisma Decimal objects
@@ -39,8 +39,13 @@ export async function POST(req: Request) {
 
     const { plan } = await req.json();
 
-    if (!plan || !['BASIC', 'PRO', 'VIP'].includes(plan)) {
+    if (!plan || !['FREE', 'PRO', 'BUSINESS'].includes(plan)) {
       return new NextResponse('Invalid plan', { status: 400 });
+    }
+
+    // FREE plan doesn't need checkout
+    if (plan === 'FREE') {
+      return new NextResponse('FREE plan does not require checkout', { status: 400 });
     }
 
     // Get the direct URL for the selected plan

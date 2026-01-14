@@ -1,26 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/db';
+import { createAdminClient } from '@/lib/supabase/server';
 
 // Plan feature limits
 export const PLAN_LIMITS = {
-  BASIC: {
-    maxClients: 10,
-    maxInvoicesPerMonth: 50,
-    allowCustomBranding: false,
-    allowUnlimitedProducts: false,
+  FREE: {
+    maxInvoicesPerMonth: 3,
+    maxCompanies: 1,
+    allowCustomBranding: false, // No logo
+    allowExport: false, // No export
+    allowCreditNotes: false, // No credit notes
+    allowEmailSending: false, // No email sending
+    maxUsers: 1,
+    allowApiAccess: false,
   },
   PRO: {
-    maxClients: 50,
     maxInvoicesPerMonth: Infinity,
-    allowCustomBranding: true,
-    allowUnlimitedProducts: true,
+    maxCompanies: 1,
+    allowCustomBranding: true, // With logo
+    allowExport: true, // PDF/CSV export
+    allowCreditNotes: true, // Credit notes
+    allowEmailSending: true, // Email sending
+    maxUsers: 1,
+    allowApiAccess: false,
   },
-  VIP: {
-    maxClients: Infinity,
+  BUSINESS: {
     maxInvoicesPerMonth: Infinity,
-    allowCustomBranding: true,
-    allowUnlimitedProducts: true,
+    maxCompanies: 5,
+    allowCustomBranding: true, // With logo
+    allowExport: true, // PDF/CSV export
+    allowCreditNotes: true, // Credit notes
+    allowEmailSending: true, // Email sending
+    maxUsers: 5, // Multiple users with roles
+    allowApiAccess: true, // Read-only API
   },
 };
 
@@ -35,14 +47,15 @@ export async function checkSubscription(req: NextRequest) {
   }
 
   // Get the user's active subscription
-  const subscription = await prisma.subscription.findFirst({
-    where: {
-      userId: session.user.id as string,
-      status: {
-        in: ['ACTIVE', 'TRIALING', 'PAST_DUE'],
-      },
-    },
-  });
+  const supabase = createAdminClient();
+  const { data: subscriptions } = await supabase
+    .from('Subscription')
+    .select('*')
+    .eq('userId', session.user.id as string)
+    .in('status', ['ACTIVE', 'TRIALING', 'PAST_DUE'])
+    .limit(1);
+  
+  const subscription = subscriptions && subscriptions.length > 0 ? subscriptions[0] : null;
 
   // If no active subscription, store that info in request headers
   if (!subscription) {
@@ -71,63 +84,57 @@ export async function checkSubscription(req: NextRequest) {
 // Check if user is allowed to perform an action based on their subscription
 export async function checkSubscriptionLimits(
   userId: string, 
-  feature: 'clients' | 'invoices' | 'products' | 'customBranding'
+  feature: 'invoices' | 'companies' | 'customBranding' | 'export' | 'creditNotes' | 'emailSending' | 'apiAccess' | 'users'
 ): Promise<{ allowed: boolean; message?: string }> {
-  // Get active subscription
-  const subscription = await prisma.subscription.findFirst({
-    where: {
-      userId: userId,
-      status: {
-        in: ['ACTIVE', 'TRIALING', 'PAST_DUE'],
-      },
-    },
-  });
+  // Get active subscription (or FREE if no subscription)
+  const supabase = createAdminClient();
+  const { data: subscriptions } = await supabase
+    .from('Subscription')
+    .select('*')
+    .eq('userId', userId)
+    .in('status', ['ACTIVE', 'TRIALING', 'PAST_DUE'])
+    .limit(1);
+  
+  const subscription = subscriptions && subscriptions.length > 0 ? subscriptions[0] : null;
 
-  // No subscription = basic features only
-  if (!subscription) {
-    return {
-      allowed: feature === 'clients' || feature === 'invoices',
-      message: 'You need a subscription to access this feature.',
-    };
-  }
-
-  const plan = subscription.plan as keyof typeof PLAN_LIMITS;
+  // No subscription = FREE plan
+  const plan = (subscription?.plan || 'FREE') as keyof typeof PLAN_LIMITS;
   const limits = PLAN_LIMITS[plan];
 
   switch (feature) {
-    case 'clients':
-      // Check client count
-      const clientCount = await prisma.client.count({
-        where: { userId: userId },
-      });
-      
-      if (clientCount >= limits.maxClients) {
-        return {
-          allowed: false,
-          message: `Your ${plan} plan allows a maximum of ${limits.maxClients} clients.`,
-        };
+    case 'invoices':
+      // Check invoice count for current month
+      if (limits.maxInvoicesPerMonth !== Infinity) {
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+        
+      const { count: invoiceCount } = await supabase
+        .from('Invoice')
+        .select('*', { count: 'exact', head: true })
+        .eq('userId', userId)
+        .gte('createdAt', startOfMonth.toISOString());
+        
+        if (invoiceCount >= limits.maxInvoicesPerMonth) {
+          return {
+            allowed: false,
+            message: `Вашият ${plan} план позволява максимум ${limits.maxInvoicesPerMonth} фактури на месец. Надградете до PRO за неограничени фактури.`,
+          };
+        }
       }
       break;
 
-    case 'invoices':
-      // Check invoice count for current month
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
+    case 'companies':
+      // Check company count
+      const { count: companyCount } = await supabase
+        .from('Company')
+        .select('*', { count: 'exact', head: true })
+        .eq('userId', userId);
       
-      const invoiceCount = await prisma.invoice.count({
-        where: {
-          userId: userId,
-          createdAt: {
-            gte: startOfMonth,
-          },
-        },
-      });
-      
-      if (invoiceCount >= limits.maxInvoicesPerMonth) {
+      if (companyCount && companyCount >= limits.maxCompanies) {
         return {
           allowed: false,
-          message: `Your ${plan} plan allows a maximum of ${limits.maxInvoicesPerMonth} invoices per month.`,
+          message: `Вашият ${plan} план позволява максимум ${limits.maxCompanies} ${limits.maxCompanies === 1 ? 'фирма' : 'фирми'}. Надградете до BUSINESS за повече фирми.`,
         };
       }
       break;
@@ -136,24 +143,60 @@ export async function checkSubscriptionLimits(
       if (!limits.allowCustomBranding) {
         return {
           allowed: false,
-          message: `Custom branding is not available in your ${plan} plan.`,
+          message: `Собствено лого е налично само в PRO и BUSINESS плановете. Надградете за да добавите вашето лого.`,
         };
       }
       break;
 
-    case 'products':
-      if (!limits.allowUnlimitedProducts) {
-        // Check if user has more than 20 products (free tier limit)
-        const productCount = await prisma.product.count({
-          where: { userId: userId },
-        });
-        
-        if (productCount >= 20) {
-          return {
-            allowed: false,
-            message: `Your ${plan} plan allows a maximum of 20 products.`,
-          };
-        }
+    case 'export':
+      if (!limits.allowExport) {
+        return {
+          allowed: false,
+          message: `Експорт на фактури е наличен само в PRO и BUSINESS плановете. Надградете за да експортирате вашите фактури.`,
+        };
+      }
+      break;
+
+    case 'creditNotes':
+      if (!limits.allowCreditNotes) {
+        return {
+          allowed: false,
+          message: `Кредитни известия са налични само в PRO и BUSINESS плановете. Надградете за да създавате кредитни известия.`,
+        };
+      }
+      break;
+
+    case 'emailSending':
+      if (!limits.allowEmailSending) {
+        return {
+          allowed: false,
+          message: `Изпращане на фактури по имейл е налично само в PRO и BUSINESS плановете. Надградете за да изпращате фактури по имейл.`,
+        };
+      }
+      break;
+
+    case 'apiAccess':
+      if (!limits.allowApiAccess) {
+        return {
+          allowed: false,
+          message: `API достъп е наличен само в BUSINESS плана. Надградете до BUSINESS за API достъп.`,
+        };
+      }
+      break;
+
+    case 'users':
+      // Check user count (team members)
+      const { count: userCount } = await supabase
+        .from('UserRole')
+        .select('*', { count: 'exact', head: true })
+        .eq('userId', userId)
+        .neq('role', 'OWNER'); // Count team members, not owner
+      
+      if (userCount && userCount >= limits.maxUsers) {
+        return {
+          allowed: false,
+          message: `Вашият ${plan} план позволява максимум ${limits.maxUsers} ${limits.maxUsers === 1 ? 'потребител' : 'потребителя'}. Надградете до BUSINESS за повече потребители.`,
+        };
       }
       break;
   }

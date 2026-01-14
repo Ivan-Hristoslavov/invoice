@@ -39,7 +39,7 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
     issueDate: "",
     dueDate: "",
     companyId: "",
-    currency: "BGN",
+    currency: "EUR",
     notes: "",
     termsAndConditions: "",
     status: ""
@@ -210,9 +210,9 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Don't allow editing paid invoices
-    if (invoice.status === "PAID") {
-      toast.error("Платените фактури не могат да бъдат редактирани");
+    // Only allow editing DRAFT invoices
+    if (invoice.status !== "DRAFT") {
+      toast.error("Можете да редактирате само фактури в статус DRAFT. За отмяна на издадена фактура използвайте функцията за създаване на кредитно известие.");
       return;
     }
     
@@ -304,11 +304,11 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
     );
   }
   
-  // Don't allow editing paid invoices
-  if (invoice.status === "PAID") {
+  // Only allow editing DRAFT invoices
+  if (invoice.status !== "DRAFT") {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
-        <p className="text-lg text-muted-foreground">Платените фактури не могат да бъдат редактирани</p>
+        <p className="text-lg text-muted-foreground">Можете да редактирате само фактури в статус DRAFT. За отмяна на издадена фактура използвайте функцията за създаване на кредитно известие.</p>
         <Button asChild>
           <Link href={`/invoices/${invoiceId}`}>Назад към детайли на фактурата</Link>
         </Button>
@@ -395,7 +395,7 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                   <div className="space-y-2">
                     <Label htmlFor="company">Компания</Label>
                     <Select 
-                      value={invoiceData.companyId}
+                      value={invoiceData.companyId || undefined}
                       onValueChange={(value) => handleInputChange('companyId', value)}
                     >
                       <SelectTrigger id="company">

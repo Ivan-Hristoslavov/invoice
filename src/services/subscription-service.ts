@@ -5,9 +5,9 @@ import { Stripe } from 'stripe';
 
 // Define enums that match the Prisma schema
 enum SubscriptionPlan {
-  BASIC = 'BASIC',
+  FREE = 'FREE',
   PRO = 'PRO',
-  VIP = 'VIP',
+  BUSINESS = 'BUSINESS',
 }
 
 enum SubscriptionStatus {
@@ -120,7 +120,7 @@ export async function createCheckoutSession(
   userId: string,
   email: string,
   name: string | undefined,
-  plan: 'BASIC' | 'PRO' | 'VIP',
+  plan: 'FREE' | 'PRO' | 'BUSINESS',
   redirectUrl: string,
 ) {
   if (!userId || !email || !plan || !redirectUrl) {
@@ -190,10 +190,9 @@ export async function createCheckoutSession(
     return session;
   } catch (error: any) {
     console.error('Error creating checkout session:', error);
-    if (error.message.includes('price_basic_fallback') || 
-        error.message.includes('price_pro_fallback') || 
-        error.message.includes('price_vip_fallback')) {
-      throw new Error('Missing Stripe price IDs. Please configure STRIPE_BASIC_PRICE_ID, STRIPE_PRO_PRICE_ID, and STRIPE_VIP_PRICE_ID in your environment variables.');
+    if (error.message.includes('price_pro_fallback') || 
+        error.message.includes('price_business_fallback')) {
+      throw new Error('Missing Stripe price IDs. Please configure STRIPE_PRO_MONTHLY_PRICE_ID, STRIPE_PRO_YEARLY_PRICE_ID, STRIPE_BUSINESS_MONTHLY_PRICE_ID, and STRIPE_BUSINESS_YEARLY_PRICE_ID in your environment variables.');
     }
     throw error;
   }
@@ -260,17 +259,15 @@ export async function handleSubscriptionUpdated(
     const priceId = stripeSubscription.items.data[0].price.id;
     let plan: SubscriptionPlan;
     
-    // Determine the plan based on price ID
-    if (priceId === SUBSCRIPTION_PLANS.BASIC.priceId) {
-      plan = SubscriptionPlan.BASIC;
-    } else if (priceId === SUBSCRIPTION_PLANS.PRO.priceId) {
+    // Determine the plan based on price ID (FREE plan doesn't have a price ID)
+    if (priceId === SUBSCRIPTION_PLANS.PRO.priceIdMonthly || priceId === SUBSCRIPTION_PLANS.PRO.priceIdYearly) {
       plan = SubscriptionPlan.PRO;
-    } else if (priceId === SUBSCRIPTION_PLANS.VIP.priceId) {
-      plan = SubscriptionPlan.VIP;
+    } else if (priceId === SUBSCRIPTION_PLANS.BUSINESS.priceIdMonthly || priceId === SUBSCRIPTION_PLANS.BUSINESS.priceIdYearly) {
+      plan = SubscriptionPlan.BUSINESS;
     } else {
-      // Default to BASIC if we can't determine the plan (fallback)
-      console.warn(`Unknown price ID: ${priceId}, defaulting to BASIC plan`);
-      plan = SubscriptionPlan.BASIC;
+      // Default to FREE if we can't determine the plan (fallback)
+      console.warn(`Unknown price ID: ${priceId}, defaulting to FREE plan`);
+      plan = SubscriptionPlan.FREE;
     }
 
     // Map Stripe status to our database status

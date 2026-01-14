@@ -156,12 +156,12 @@ export function formatBulgarianDate(date: Date | string): string {
  * Format a Bulgarian currency amount according to local requirements
  * 
  * @param amount The amount to format
- * @returns Formatted amount string (e.g., "1 234,56 лв.")
+ * @returns Formatted amount string (e.g., "1 234,56 €")
  */
 export function formatBulgarianCurrency(amount: number): string {
   return new Intl.NumberFormat('bg-BG', { 
     style: 'currency', 
-    currency: 'BGN',
+    currency: 'EUR',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2 
   }).format(amount);

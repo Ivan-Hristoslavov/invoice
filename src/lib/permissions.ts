@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { Session } from "next-auth";
 import { Role } from "@prisma/client";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { createAdminClient } from "@/lib/supabase/server";
 
 export type UserSession = Session & {
   user: {
@@ -19,37 +19,53 @@ const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
 
 // Get all permissions for a user
 export async function getUserPermissions(userId: string, companyId?: string): Promise<string[]> {
+  const supabase = createAdminClient();
+  
   // Get all user roles
-  const userRoles = await prisma.userRole.findMany({
-    where: {
-      userId,
-      OR: [
-        { companyId: companyId },
-        { companyId: null }, // Global roles
-      ],
-    },
-    select: {
-      role: true,
-    },
-  });
+  let query = supabase
+    .from("UserRole")
+    .select("role")
+    .eq("userId", userId);
+  
+  if (companyId) {
+    query = query.or(`companyId.eq.${companyId},companyId.is.null`);
+  } else {
+    query = query.is("companyId", null);
+  }
+  
+  const { data: userRoles, error: rolesError } = await query;
+  
+  if (rolesError || !userRoles || userRoles.length === 0) {
+    return [];
+  }
 
-  const roles = userRoles.map((userRole) => userRole.role);
-
-  // If no roles found, return empty array
-  if (roles.length === 0) return [];
+  const roles = userRoles.map((ur: any) => ur.role);
 
   // Get all permissions for these roles
-  const rolePermissions = await prisma.rolePermission.findMany({
-    where: {
-      role: { in: roles },
-    },
-    include: {
-      permission: true,
-    },
-  });
+  const { data: rolePermissions, error: permissionsError } = await supabase
+    .from("RolePermission")
+    .select("permissionId")
+    .in("role", roles);
+
+  if (permissionsError || !rolePermissions || rolePermissions.length === 0) {
+    return [];
+  }
+
+  // Get unique permission IDs
+  const permissionIds = [...new Set(rolePermissions.map((rp: any) => rp.permissionId))];
+
+  // Get permission names
+  const { data: permissions, error: permError } = await supabase
+    .from("Permission")
+    .select("name")
+    .in("id", permissionIds);
+
+  if (permError || !permissions) {
+    return [];
+  }
 
   // Return unique permission names
-  return [...new Set(rolePermissions.map((rp) => rp.permission.name))];
+  return [...new Set(permissions.map((p: any) => p.name))];
 }
 
 // Check if a user has a specific permission
@@ -81,17 +97,21 @@ export async function hasPermission(
 
 // Get all roles for a user across all companies
 export async function getUserRoles(userId: string): Promise<{ role: Role, companyId: string | null }[]> {
-  const userRoles = await prisma.userRole.findMany({
-    where: {
-      userId,
-    },
-    select: {
-      role: true,
-      companyId: true,
-    },
-  });
+  const supabase = createAdminClient();
   
-  return userRoles;
+  const { data: userRoles, error } = await supabase
+    .from("UserRole")
+    .select("role, companyId")
+    .eq("userId", userId);
+  
+  if (error || !userRoles) {
+    return [];
+  }
+  
+  return userRoles.map((ur: any) => ({
+    role: ur.role as Role,
+    companyId: ur.companyId
+  }));
 }
 
 // Check if a user has a specific role in a company
@@ -100,15 +120,23 @@ export async function hasRole(
   role: Role,
   companyId?: string
 ): Promise<boolean> {
-  const count = await prisma.userRole.count({
-    where: {
-      userId,
-      role,
-      ...(companyId ? { companyId } : { companyId: null }),
-    },
-  });
+  const supabase = createAdminClient();
   
-  return count > 0;
+  let query = supabase
+    .from("UserRole")
+    .select("*", { count: "exact", head: true })
+    .eq("userId", userId)
+    .eq("role", role);
+  
+  if (companyId) {
+    query = query.eq("companyId", companyId);
+  } else {
+    query = query.is("companyId", null);
+  }
+  
+  const { count, error } = await query;
+  
+  return !error && (count || 0) > 0;
 }
 
 // Assign a role to a user
@@ -117,22 +145,41 @@ export async function assignRole(
   role: Role,
   companyId?: string
 ): Promise<void> {
-  await prisma.userRole.upsert({
-    where: {
-      userId_companyId: {
+  const supabase = createAdminClient();
+  
+  // Check if role already exists
+  let query = supabase
+    .from("UserRole")
+    .select("id")
+    .eq("userId", userId);
+  
+  if (companyId) {
+    query = query.eq("companyId", companyId);
+  } else {
+    query = query.is("companyId", null);
+  }
+  
+  const { data: existing, error: checkError } = await query.single();
+  
+  if (existing) {
+    // Update existing role
+    await supabase
+      .from("UserRole")
+      .update({ role, updatedAt: new Date().toISOString() })
+      .eq("id", existing.id);
+  } else {
+    // Create new role
+    const cuid = require("cuid");
+    await supabase
+      .from("UserRole")
+      .insert({
+        id: cuid(),
         userId,
-        companyId: (companyId || null) as string,
-      },
-    },
-    update: {
-      role,
-    },
-    create: {
-      userId,
-      role,
-      companyId,
-    },
-  });
+        role,
+        companyId: companyId || null,
+        updatedAt: new Date().toISOString(),
+      });
+  }
   
   // Clear cache for this user
   clearUserPermissionCache(userId);
@@ -143,12 +190,20 @@ export async function removeRole(
   userId: string,
   companyId?: string
 ): Promise<void> {
-  await prisma.userRole.deleteMany({
-    where: {
-      userId,
-      ...(companyId ? { companyId } : { companyId: null }),
-    },
-  });
+  const supabase = createAdminClient();
+  
+  let query = supabase
+    .from("UserRole")
+    .delete()
+    .eq("userId", userId);
+  
+  if (companyId) {
+    query = query.eq("companyId", companyId);
+  } else {
+    query = query.is("companyId", null);
+  }
+  
+  await query;
   
   // Clear cache for this user
   clearUserPermissionCache(userId);

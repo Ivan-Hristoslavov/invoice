@@ -1,8 +1,14 @@
 import { Resend } from 'resend';
 import { generateInvoicePdfBuffer } from './invoice-export';
-import { prisma } from './db';
+import { createAdminClient } from './supabase/server';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy initialization helper to avoid build-time errors
+function getResend() {
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error('RESEND_API_KEY is not configured');
+  }
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 interface SendInvoiceEmailParams {
   to: string;
@@ -60,19 +66,24 @@ export async function sendInvoiceEmail({ to, invoiceNumber, type, paymentLink }:
 
     let attachments = [];
     try {
-      let invoice = await prisma.invoice.findFirst({
-        where: {
-          invoiceNumber,
-          ...(typeof arguments[0].userId === 'string' ? { userId: arguments[0].userId } : {})
-        },
-        include: {
-          client: true,
-          company: true,
-          items: true,
-          payments: true,
-        },
-      });
-      if (!invoice) throw new Error('Invoice not found or access denied');
+      const supabase = createAdminClient();
+      const userId = typeof arguments[0].userId === 'string' ? arguments[0].userId : undefined;
+      
+      let query = supabase
+        .from('Invoice')
+        .select('*, client:Client(*), company:Company(*), items:InvoiceItem(*)')
+        .eq('invoiceNumber', invoiceNumber);
+      
+      if (userId) {
+        query = query.eq('userId', userId);
+      }
+      
+      const { data: invoice, error } = await query.single();
+      
+      if (error || !invoice) {
+        throw new Error('Invoice not found or access denied');
+      }
+      
       const pdf = await generateInvoicePdfBuffer(invoice);
       attachments.push({
         filename: pdf.filename,
@@ -82,6 +93,7 @@ export async function sendInvoiceEmail({ to, invoiceNumber, type, paymentLink }:
       console.error('PDF not attached:', err);
     }
 
+    const resend = getResend();
     const data = await resend.emails.send({
       from: process.env.EMAIL_FROM_ADDRESS!,
       to,
@@ -113,8 +125,9 @@ export async function sendPaymentConfirmationEmail({
   companyName: string;
 }) {
   try {
-    const currencySymbol = currency === 'BGN' ? 'лв.' : currency;
+    const currencySymbol = currency === 'EUR' ? '€' : currency === 'BGN' ? 'лв.' : currency === 'USD' ? '$' : currency === 'GBP' ? '£' : currency;
     
+    const resend = getResend();
     await resend.emails.send({
       from: `${process.env.NEXT_PUBLIC_APP_NAME} <invoices@${process.env.NEXT_PUBLIC_APP_DOMAIN}>`,
       to,
@@ -153,8 +166,9 @@ export async function sendInvoiceWithoutPaymentLink({
   companyName,
 }: Omit<SendInvoiceEmailParams, 'paymentLink' | 'createAccountUrl' | 'bankDetails'>) {
   try {
-    const currencySymbol = currency === 'BGN' ? 'лв.' : currency;
+    const currencySymbol = currency === 'EUR' ? '€' : currency === 'BGN' ? 'лв.' : currency === 'USD' ? '$' : currency === 'GBP' ? '£' : currency;
     
+    const resend = getResend();
     await resend.emails.send({
       from: `${process.env.NEXT_PUBLIC_APP_NAME} <invoices@${process.env.NEXT_PUBLIC_APP_DOMAIN}>`,
       to,
@@ -197,8 +211,9 @@ export async function sendInvoiceWithPaymentDetails({
   bankDetails,
 }: Omit<SendInvoiceEmailParams, 'createAccountUrl'> & { bankDetails: NonNullable<SendInvoiceEmailParams['bankDetails']> }) {
   try {
-    const currencySymbol = currency === 'BGN' ? 'лв.' : currency;
+    const currencySymbol = currency === 'EUR' ? '€' : currency === 'BGN' ? 'лв.' : currency === 'USD' ? '$' : currency === 'GBP' ? '£' : currency;
     
+    const resend = getResend();
     await resend.emails.send({
       from: `${process.env.NEXT_PUBLIC_APP_NAME} <invoices@${process.env.NEXT_PUBLIC_APP_DOMAIN}>`,
       to,

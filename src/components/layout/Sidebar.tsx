@@ -8,256 +8,259 @@ import {
   Users,
   Building,
   Package,
-  CreditCard,
   Settings,
   Menu,
   X,
-  FileCheck,
-  CreditCard as CreditCardIcon
+  CreditCard,
+  HelpCircle,
+  LogOut,
+  ChevronRight
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { APP_NAME } from "@/config/constants";
-import { useSession } from "next-auth/react";
-import { motion } from "framer-motion";
+import { useSession, signOut } from "next-auth/react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+const mainNavItems = [
+  { 
+    name: "Табло", 
+    href: "/dashboard", 
+    icon: LayoutDashboard,
+    gradient: "from-blue-500 to-indigo-600"
+  },
+  { 
+    name: "Фактури", 
+    href: "/invoices", 
+    icon: FileText,
+    gradient: "from-emerald-500 to-teal-600"
+  },
+  { 
+    name: "Клиенти", 
+    href: "/clients", 
+    icon: Users,
+    gradient: "from-amber-500 to-orange-600"
+  },
+  { 
+    name: "Компании", 
+    href: "/companies", 
+    icon: Building,
+    gradient: "from-slate-500 to-slate-600"
+  },
+  { 
+    name: "Продукти", 
+    href: "/products", 
+    icon: Package,
+    gradient: "from-cyan-500 to-blue-600"
+  },
+];
+
+const bottomNavItems = [
+  { 
+    name: "Абонамент", 
+    href: "/settings/subscription", 
+    icon: CreditCard,
+  },
+  { 
+    name: "Настройки", 
+    href: "/settings", 
+    icon: Settings,
+  },
+  { 
+    name: "Помощ", 
+    href: "/settings/help", 
+    icon: HelpCircle,
+  },
+];
 
 export function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const isAuthenticated = status === "authenticated";
 
-  // Detect mobile view
   useEffect(() => {
     const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      setIsMobile(window.innerWidth < 1024);
+      if (window.innerWidth >= 1024) {
+        setIsOpen(false);
+      }
     };
     
-    // Initial check
     checkIsMobile();
-    
-    // Add event listener
     window.addEventListener('resize', checkIsMobile);
-    
-    // Cleanup
     return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
 
-  // Skip rendering sidebar completely on auth pages
+  // Close sidebar on route change (mobile)
+  useEffect(() => {
+    if (isMobile) {
+      setIsOpen(false);
+    }
+  }, [pathname, isMobile]);
+
+  // Skip rendering sidebar on auth pages or home page when not authenticated
   if (pathname.includes("/signin") || pathname.includes("/signup")) {
     return null;
   }
 
-  const toggleSidebar = () => {
-    setIsOpen(!isOpen);
-  };
-
-  // Navigation items only shown to authenticated users
-  const navItems = [
-    { name: "Табло", href: "/dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
-    { name: "Фактури", href: "/invoices", icon: <FileText className="w-5 h-5" /> },
-    { name: "Клиенти", href: "/clients", icon: <Users className="w-5 h-5" /> },
-    { name: "Компании", href: "/companies", icon: <Building className="w-5 h-5" /> },
-    { name: "Продукти", href: "/products", icon: <Package className="w-5 h-5" /> },
-    { name: "Плащания", href: "/payments", icon: <CreditCard className="w-5 h-5" /> },
-    { name: "Настройки", href: "/settings", icon: <Settings className="w-5 h-5" /> },
-    { name: "Данъчно съответствие", href: "/settings/tax-compliance", icon: <FileCheck className="w-5 h-5" /> },
-    { name: "Абонамент", href: "/settings/subscription", icon: <CreditCardIcon className="w-5 h-5" /> },
-  ];
-  
-  // Public navigation items shown to everyone
-  const publicNavItems = [
-    { name: "Функции", href: "/#features", icon: <Package className="w-5 h-5" /> },
-    { name: "Ценообразуване", href: "/#pricing", icon: <CreditCardIcon className="w-5 h-5" /> },
-  ];
-
-  // If we're on the home page but not authenticated, don't show the sidebar at all
   if (pathname === "/" && !isAuthenticated) {
     return null;
   }
 
-  // Determine which navigation items to show based on authentication status
-  const displayNavItems = isAuthenticated ? navItems : publicNavItems;
+  if (!isAuthenticated) {
+    return null;
+  }
 
-  // Animation variants
-  const sidebarVariants = {
-    open: { 
-      x: 0,
-      transition: {
-        type: "spring",
-        stiffness: 300,
-        damping: 30
-      }
-    },
-    closed: { 
-      x: "-100%",
-      transition: {
-        type: "spring",
-        stiffness: 300,
-        damping: 30
-      }
+  const isActive = (href: string) => {
+    if (href === "/settings") {
+      return pathname === "/settings";
     }
-  };
-
-  const navItemVariants = {
-    initial: { 
-      opacity: 0,
-      x: -20
-    },
-    animate: (i: number) => ({ 
-      opacity: 1,
-      x: 0,
-      transition: {
-        delay: i * 0.05,
-        duration: 0.3
-      }
-    }),
-    exit: { 
-      opacity: 0,
-      x: -20,
-      transition: {
-        duration: 0.2
-      }
-    },
-    hover: {
-      scale: 1.03,
-      transition: {
-        type: "spring",
-        stiffness: 400,
-        damping: 10
-      }
-    },
-    tap: {
-      scale: 0.97
-    }
-  };
-
-  const activeIndicatorVariants = {
-    initial: {
-      opacity: 0,
-      width: 0
-    },
-    animate: {
-      opacity: 1,
-      width: "100%",
-      transition: {
-        type: "spring",
-        stiffness: 300,
-        damping: 20
-      }
-    }
+    return pathname === href || pathname.startsWith(href + "/");
   };
 
   return (
     <>
-      {/* Mobile toggle - only show if there are nav items to display */}
-      {displayNavItems.length > 0 && (
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="fixed top-4 left-4 z-40 md:hidden"
-          onClick={toggleSidebar}
-        >
-          {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </Button>
-      )}
+      {/* Mobile Menu Button */}
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        className="fixed top-4 left-4 z-50 lg:hidden bg-background/80 backdrop-blur shadow-lg"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+      </Button>
+
+      {/* Backdrop */}
+      <AnimatePresence>
+        {isOpen && isMobile && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+            onClick={() => setIsOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Sidebar */}
       <motion.aside 
-        className="fixed top-0 left-0 z-30 h-full w-64 bg-background border-r"
-        variants={sidebarVariants}
-        initial={isMobile ? "closed" : "open"}
-        animate={isMobile ? (isOpen ? "open" : "closed") : "open"}
+        className={cn(
+          "fixed top-0 left-0 z-40 h-full w-72 bg-card border-r flex flex-col",
+          "lg:translate-x-0",
+          isMobile && !isOpen && "-translate-x-full"
+        )}
+        initial={false}
+        animate={{ x: isMobile && !isOpen ? "-100%" : 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
-        <div className="flex flex-col h-full">
-          <motion.div 
-            className="p-6"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Link href={isAuthenticated ? "/dashboard" : "/"} className="flex items-center">
-              <motion.span 
-                className="text-xl font-bold"
-                initial={{ scale: 0.9 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              >
-                {APP_NAME}
-              </motion.span>
-            </Link>
-          </motion.div>
-
-          {displayNavItems.length > 0 && (
-            <nav className="flex-grow px-4 pb-4">
-              <ul className="space-y-1">
-                {displayNavItems.map((item, index) => {
-                  const isActive = pathname === item.href;
-                  
-                  return (
-                    <motion.li 
-                      key={item.name}
-                      custom={index}
-                      variants={navItemVariants}
-                      initial="initial"
-                      animate="animate"
-                      exit="exit"
-                      whileHover="hover"
-                      whileTap="tap"
-                    >
-                      <Link 
-                        href={item.href}
-                        className={`
-                          relative flex items-center px-3 py-2 rounded-md text-sm font-medium 
-                          ${isActive 
-                            ? 'bg-primary/5 text-primary' 
-                            : 'text-muted-foreground hover:text-foreground'
-                          }
-                        `}
-                        onClick={() => setIsOpen(false)}
-                      >
-                        <motion.span
-                          initial={{ rotate: 0 }}
-                          animate={isActive ? { rotate: [0, -10, 10, -5, 5, 0] } : { rotate: 0 }}
-                          transition={{ duration: 0.5, delay: 0.1 }}
-                          className="mr-3"
-                        >
-                          {item.icon}
-                        </motion.span>
-                        
-                        <span className="relative">
-                          {item.name}
-                          {isActive && (
-                            <motion.span 
-                              className="absolute -bottom-1 left-0 h-0.5 bg-primary rounded-full"
-                              variants={activeIndicatorVariants}
-                              initial="initial"
-                              animate="animate"
-                            />
-                          )}
-                        </span>
-                      </Link>
-                    </motion.li>
-                  );
-                })}
-              </ul>
-            </nav>
-          )}
-
-          <motion.div 
-            className="p-4 border-t"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <div className="text-xs text-muted-foreground">
-              <p>{APP_NAME} v1.0.0</p>
+        {/* Logo */}
+        <div className="p-6 border-b">
+          <Link href="/dashboard" className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-600/25">
+              <FileText className="h-5 w-5 text-white" />
             </div>
-          </motion.div>
+            <span className="text-xl font-bold tracking-tight">{APP_NAME}</span>
+          </Link>
+        </div>
+
+        {/* Main Navigation */}
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
+            Меню
+          </p>
+          {mainNavItems.map((item) => {
+            const active = isActive(item.href);
+            return (
+              <Link 
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
+                  active 
+                    ? "bg-primary/10 text-primary" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                )}
+              >
+                <div className={cn(
+                  "h-9 w-9 rounded-lg flex items-center justify-center transition-all",
+                  active 
+                    ? `bg-gradient-to-br ${item.gradient} shadow-lg`
+                    : "bg-muted group-hover:bg-muted"
+                )}>
+                  <item.icon className={cn(
+                    "h-5 w-5",
+                    active ? "text-white" : "text-muted-foreground"
+                  )} />
+                </div>
+                <span>{item.name}</span>
+                {active && (
+                  <ChevronRight className="h-4 w-4 ml-auto" />
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Bottom Navigation */}
+        <div className="p-4 border-t space-y-1">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
+            Настройки
+          </p>
+          {bottomNavItems.map((item) => {
+            const active = isActive(item.href);
+            return (
+              <Link 
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200",
+                  active 
+                    ? "bg-primary/10 text-primary" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                )}
+              >
+                <item.icon className="h-5 w-5" />
+                <span>{item.name}</span>
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* User Section */}
+        <div className="p-4 border-t">
+          <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-muted/50">
+            <div className="h-10 w-10 rounded-full bg-emerald-600 flex items-center justify-center text-white font-semibold text-sm">
+              {session?.user?.name?.charAt(0).toUpperCase() || 'U'}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">
+                {session?.user?.name || 'Потребител'}
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {session?.user?.email}
+              </p>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => signOut({ callbackUrl: "/" })}
+              title="Изход"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Version */}
+        <div className="px-6 py-3 text-xs text-muted-foreground">
+          {APP_NAME} v1.0.0
         </div>
       </motion.aside>
     </>
   );
-} 
+}

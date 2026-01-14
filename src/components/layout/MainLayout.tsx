@@ -4,8 +4,7 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Sidebar } from "@/components/layout/Sidebar";
-import { PageTransition } from "@/components/animation/PageTransition";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -20,37 +19,38 @@ export function MainLayout({ children }: MainLayoutProps) {
   // Skip rendering layout on auth pages
   if (isAuthPage) {
     return (
-      <AnimatePresence mode="wait">
-        <PageTransition key={pathname}>
-          <main className="min-h-screen">{children}</main>
-        </PageTransition>
-      </AnimatePresence>
+      <main className="min-h-screen">{children}</main>
     );
   }
 
-  // Ако сме на началната страница и потребителят не е автентикиран
+  // If on home page and not authenticated
   if (pathname === "/" && !isAuthenticated) {
     return (
-      <AnimatePresence mode="wait">
-        <PageTransition key={pathname}>
-          <main className="min-h-screen">{children}</main>
-        </PageTransition>
-      </AnimatePresence>
+      <main className="min-h-screen">{children}</main>
     );
   }
 
-  // За всички останали случаи, показваме layout-а с навигацията
+  // Standard layout with navigation
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-muted/30">
       <Sidebar />
-      <div className="flex-1 md:ml-64">
+      <div className="flex-1 lg:ml-72 flex flex-col min-h-screen">
         <Navbar />
         <AnimatePresence mode="wait">
-          <PageTransition key={pathname}>
-            <main className="p-4 md:p-6">{children}</main>
-          </PageTransition>
+          <motion.main 
+            key={pathname}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="flex-1 p-4 md:p-6 lg:p-8"
+          >
+            <div className="max-w-7xl mx-auto w-full">
+              {children}
+            </div>
+          </motion.main>
         </AnimatePresence>
       </div>
     </div>
   );
-} 
+}

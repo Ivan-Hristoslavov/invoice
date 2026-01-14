@@ -1,9 +1,36 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Save, Plus, Trash2, Search, X, Check, Edit, User } from "lucide-react";
+import { 
+  ArrowLeft, 
+  ArrowRight,
+  Save, 
+  Plus, 
+  Trash2, 
+  Search, 
+  X, 
+  Check, 
+  Edit, 
+  User, 
+  Calendar, 
+  Building2, 
+  DollarSign, 
+  FileText, 
+  CheckCircle2,
+  Package,
+  Receipt,
+  Sparkles,
+  ShoppingCart,
+  CreditCard,
+  Mail,
+  Phone,
+  MapPin,
+  Hash,
+  Clock,
+  AlertCircle
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
   Card, 
@@ -22,35 +49,286 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { generateBulgarianInvoiceNumber } from "@/lib/bulgarian-invoice";
 import { DEFAULT_VAT_RATE } from "@/config/constants";
+
+// Step indicator component
+function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { title: string; icon: React.ReactNode }[] }) {
+  return (
+    <div className="flex items-center justify-center mb-8 gap-2">
+      {steps.map((step, index) => (
+        <div key={index} className="flex items-center gap-2">
+          <div className="flex flex-col items-center gap-2">
+            <div className={`
+              flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300 relative
+              ${index < currentStep 
+                ? 'bg-emerald-500 border-emerald-500 text-white' 
+                : index === currentStep 
+                  ? 'bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/25' 
+                  : 'bg-muted border-muted-foreground/20 text-muted-foreground'}
+            `}>
+              <div className="absolute inset-0 flex items-center justify-center">
+                {index < currentStep ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <div className="flex items-center justify-center h-4 w-4">
+                    {step.icon}
+                  </div>
+                )}
+              </div>
+            </div>
+            <p className={`text-xs font-medium whitespace-nowrap text-center ${index === currentStep ? 'text-foreground' : 'text-muted-foreground'}`}>
+              {step.title}
+            </p>
+          </div>
+          {index < steps.length - 1 && (
+            <div className={`w-8 sm:w-12 md:w-16 h-0.5 transition-all duration-300 ${index < currentStep ? 'bg-emerald-500' : 'bg-muted-foreground/20'}`} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Product card component
+function ProductCard({ 
+  product, 
+  currency, 
+  onAdd 
+}: { 
+  product: any; 
+  currency: string; 
+  onAdd: () => void;
+}) {
+  return (
+    <div
+      onClick={onAdd}
+      className="group relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-card to-card/50 p-5 cursor-pointer transition-all duration-300 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1"
+    >
+      {/* Gradient overlay on hover */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      
+      <div className="relative">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex-1 min-w-0">
+            <h4 className="font-semibold text-base truncate group-hover:text-primary transition-colors">
+              {product.name}
+            </h4>
+            {product.description && (
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                {product.description}
+              </p>
+            )}
+          </div>
+          <div className="flex-shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 group-hover:bg-primary group-hover:scale-110 flex items-center justify-center transition-all duration-300">
+              <Plus className="h-5 w-5 text-primary group-hover:text-primary-foreground transition-colors" />
+            </div>
+          </div>
+        </div>
+        
+        {/* Price and tax */}
+        <div className="flex items-end justify-between mt-4 pt-3 border-t border-border/50">
+          <div>
+            <p className="text-2xl font-bold text-foreground">
+              {Number(product.price).toFixed(2)}
+              <span className="text-sm font-normal text-muted-foreground ml-1">{currency}</span>
+            </p>
+          </div>
+          {product.taxRate && (
+            <Badge variant="secondary" className="text-xs">
+              ДДС {Number(product.taxRate)}%
+            </Badge>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Client card component
+function ClientCard({ 
+  client, 
+  onSelect, 
+  isSelected 
+}: { 
+  client: any; 
+  onSelect: () => void;
+  isSelected?: boolean;
+}) {
+  return (
+    <div
+      onClick={onSelect}
+      className={`
+        group relative overflow-hidden rounded-xl border-2 p-5 cursor-pointer transition-all duration-300
+        ${isSelected 
+          ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10' 
+          : 'border-border hover:border-primary/50 hover:shadow-lg hover:-translate-y-1 bg-card'}
+      `}
+    >
+      <div className="flex items-start gap-4">
+        {/* Avatar */}
+        <div className={`
+          w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold transition-colors
+          ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground'}
+        `}>
+          {client.name.charAt(0).toUpperCase()}
+        </div>
+        
+        <div className="flex-1 min-w-0">
+          <h4 className="font-semibold text-base truncate">{client.name}</h4>
+          
+          <div className="mt-2 space-y-1">
+            {client.email && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Mail className="h-3.5 w-3.5" />
+                <span className="truncate">{client.email}</span>
+              </div>
+            )}
+            {client.phone && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Phone className="h-3.5 w-3.5" />
+                <span>{client.phone}</span>
+              </div>
+            )}
+            {(client.city || client.country) && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <MapPin className="h-3.5 w-3.5" />
+                <span className="truncate">{[client.city, client.country].filter(Boolean).join(", ")}</span>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {isSelected && (
+          <div className="absolute top-3 right-3">
+            <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+              <Check className="h-4 w-4 text-primary-foreground" />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Invoice item row component
+function InvoiceItemRow({
+  item,
+  index,
+  onUpdate,
+  onRemove,
+  canRemove,
+  currency
+}: {
+  item: any;
+  index: number;
+  onUpdate: (field: string, value: string | number) => void;
+  onRemove: () => void;
+  canRemove: boolean;
+  currency: string;
+}) {
+  const itemTotal = item.quantity * item.unitPrice * (1 + item.taxRate / 100);
+  
+  return (
+    <div className="group relative bg-card rounded-xl border border-border p-4 hover:border-primary/30 transition-all duration-200">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary">
+          {index + 1}
+        </div>
+        <Input
+          value={item.description}
+          onChange={(e) => onUpdate("description", e.target.value)}
+          placeholder="Описание на артикула..."
+          className="flex-1 border-0 bg-transparent text-base font-medium focus-visible:ring-0 px-0"
+        />
+        {canRemove && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10 transition-all"
+            onClick={onRemove}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+      
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Количество</Label>
+          <Input
+            type="number"
+            min="1"
+            value={item.quantity}
+            onChange={(e) => onUpdate("quantity", parseInt(e.target.value) || 1)}
+            className="h-9"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Ед. цена ({currency})</Label>
+          <Input
+            type="number"
+            min="0"
+            step="0.01"
+            value={item.unitPrice}
+            onChange={(e) => onUpdate("unitPrice", parseFloat(e.target.value) || 0)}
+            className="h-9"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">ДДС (%)</Label>
+          <Input
+            type="number"
+            min="0"
+            step="0.01"
+            value={item.taxRate}
+            onChange={(e) => onUpdate("taxRate", parseFloat(e.target.value) || 0)}
+            className="h-9"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Общо</Label>
+          <div className="h-9 flex items-center px-3 rounded-md bg-muted font-semibold">
+            {itemTotal.toFixed(2)} {currency}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function NewInvoicePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedClientId = searchParams.get("client");
   
+  // State
+  const [currentStep, setCurrentStep] = useState(preselectedClientId ? 1 : 0);
   const [isLoading, setIsLoading] = useState(false);
-  const [isClientSelectionStep, setIsClientSelectionStep] = useState(!preselectedClientId);
+  const [isLoadingData, setIsLoadingData] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(preselectedClientId);
   const [selectedClient, setSelectedClient] = useState<any>(null);
+  const [clients, setClients] = useState<any[]>([]);
+  const [companies, setCompanies] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [productSearchQuery, setProductSearchQuery] = useState("");
   
   const [items, setItems] = useState([
     { id: 1, description: "", quantity: 1, unitPrice: 0, taxRate: DEFAULT_VAT_RATE }
   ]);
-  const [clients, setClients] = useState<any[]>([]);
-  const [filteredClients, setFilteredClients] = useState<any[]>([]);
-  const [companies, setCompanies] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
+  
   const [invoiceData, setInvoiceData] = useState({
     invoiceNumber: "",
     issueDate: new Date().toISOString().substr(0, 10),
     dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().substr(0, 10),
     companyId: "",
-    currency: "BGN",
+    currency: "EUR",
     bulstatNumber: "",
     isOriginal: true,
     placeOfIssue: "София",
@@ -58,51 +336,58 @@ export default function NewInvoicePage() {
     supplyDate: new Date().toISOString().substr(0, 10),
     isEInvoice: false
   });
-  const [isLoadingData, setIsLoadingData] = useState(true);
 
-  // Fetch data from API
+  const steps = [
+    { title: "Клиент", icon: <User className="h-5 w-5" /> },
+    { title: "Детайли", icon: <FileText className="h-5 w-5" /> },
+    { title: "Продукти", icon: <Package className="h-5 w-5" /> },
+    { title: "Преглед", icon: <Receipt className="h-5 w-5" /> },
+  ];
+
+  // Fetch data
   useEffect(() => {
     async function fetchData() {
       try {
         setIsLoadingData(true);
         
-        const clientsResponse = await fetch('/api/clients');
-        if (!clientsResponse.ok) throw new Error('Грешка при зареждане на клиенти');
-        const clientsData = await clientsResponse.json();
-        setClients(clientsData);
-        setFilteredClients(clientsData);
+        // Fetch all data in parallel
+        const [clientsRes, companiesRes, productsRes] = await Promise.allSettled([
+          fetch('/api/clients'),
+          fetch('/api/companies'),
+          fetch('/api/products')
+        ]);
         
-        const companiesResponse = await fetch('/api/companies');
-        if (!companiesResponse.ok) throw new Error('Грешка при зареждане на компании');
-        const companiesData = await companiesResponse.json();
-        setCompanies(companiesData);
-        
-        if (companiesData.length > 0) {
-          setInvoiceData(prev => ({
-            ...prev,
-            companyId: companiesData[0].id
-          }));
-        }
-        
-        const productsResponse = await fetch('/api/products');
-        if (!productsResponse.ok) throw new Error('Грешка при зареждане на продукти');
-        const productsData = await productsResponse.json();
-        setProducts(productsData);
-        
-        if (preselectedClientId) {
-          const foundClient = clientsData.find((c: any) => c.id === preselectedClientId);
-          if (foundClient) {
-            setSelectedClient(foundClient);
-            setSelectedClientId(foundClient.id);
-            setIsClientSelectionStep(false);
+        // Process clients
+        if (clientsRes.status === 'fulfilled' && clientsRes.value.ok) {
+          const clientsData = await clientsRes.value.json();
+          setClients(clientsData);
+          
+          if (preselectedClientId) {
+            const foundClient = clientsData.find((c: any) => c.id === preselectedClientId);
+            if (foundClient) {
+              setSelectedClient(foundClient);
+              setCurrentStep(1);
+            }
           }
         }
         
+        // Process companies
+        if (companiesRes.status === 'fulfilled' && companiesRes.value.ok) {
+          const companiesData = await companiesRes.value.json();
+          setCompanies(companiesData);
+          if (companiesData.length > 0) {
+            setInvoiceData(prev => ({ ...prev, companyId: companiesData[0].id }));
+          }
+        }
+        
+        // Process products
+        if (productsRes.status === 'fulfilled' && productsRes.value.ok) {
+          const productsData = await productsRes.value.json();
+          setProducts(productsData);
+        }
+        
       } catch (error) {
-        console.error('Грешка при зареждане на данни:', error);
-        toast.error('Грешка при зареждане', {
-          description: 'Възникна проблем при зареждането на данните. Моля, опитайте отново.'
-        });
+        console.error('Error loading data:', error);
       } finally {
         setIsLoadingData(false);
       }
@@ -111,94 +396,71 @@ export default function NewInvoicePage() {
     fetchData();
   }, [preselectedClientId]);
 
-  useEffect(() => {
-    if (searchQuery.trim() === "") {
-      setFilteredClients(clients);
-    } else {
-      const lowercaseQuery = searchQuery.toLowerCase();
-      const filtered = clients.filter(client => 
-        client.name.toLowerCase().includes(lowercaseQuery) ||
-        (client.email && client.email.toLowerCase().includes(lowercaseQuery)) ||
-        (client.city && client.city.toLowerCase().includes(lowercaseQuery)) ||
-        (client.country && client.country.toLowerCase().includes(lowercaseQuery))
-      );
-      setFilteredClients(filtered);
-    }
-  }, [searchQuery, clients]);
-
-  const selectClient = useCallback((client: any) => {
-    setSelectedClient(client);
-    setSelectedClientId(client.id);
-    setIsClientSelectionStep(false);
-  }, []);
-
-  const changeClient = useCallback(() => {
-    setSearchQuery("");
-    setIsClientSelectionStep(true);
-  }, []);
-
-  const addItem = useCallback(() => {
-    const newItem = {
-      id: items.length + 1,
-      description: "",
-      quantity: 1,
-      unitPrice: 0,
-      taxRate: DEFAULT_VAT_RATE // Use default VAT rate
-    };
-    setItems([...items, newItem]);
-  }, [items]);
-
-  const removeItem = useCallback((id: number) => {
-    setItems(items.filter(item => item.id !== id));
-  }, [items]);
-
-  const updateItem = useCallback((id: number, field: string, value: string | number) => {
-    setItems(items.map(item => 
-      item.id === id ? { ...item, [field]: value } : item
-    ));
-  }, [items]);
-
-  // Add effect to generate invoice number when company is selected
+  // Generate invoice number when company changes
   useEffect(() => {
     async function generateInvoiceNumber() {
       if (!invoiceData.companyId) return;
 
       try {
         const response = await fetch(`/api/invoices/next-number?companyId=${invoiceData.companyId}`);
-        if (!response.ok) throw new Error('Failed to generate invoice number');
-        
         const data = await response.json();
-        setInvoiceData(prev => ({
-          ...prev,
-          invoiceNumber: data.invoiceNumber
-        }));
+        
+        if (data.invoiceNumber) {
+          setInvoiceData(prev => ({ ...prev, invoiceNumber: data.invoiceNumber }));
+        }
       } catch (error) {
-        console.error('Error generating invoice number:', error);
-        toast.error('Грешка при генериране на номер', {
-          description: 'Възникна проблем при генерирането на номер на фактурата.'
-        });
+        const currentYear = new Date().getFullYear();
+        setInvoiceData(prev => ({ ...prev, invoiceNumber: `${currentYear}000001` }));
       }
     }
 
     generateInvoiceNumber();
   }, [invoiceData.companyId]);
 
-  // Update the company selection handler
-  const handleInputChange = useCallback((field: string, value: string) => {
+  // Filtered data
+  const filteredClients = useMemo(() => {
+    if (!searchQuery.trim()) return clients;
+    const query = searchQuery.toLowerCase();
+    return clients.filter(client =>
+      client.name.toLowerCase().includes(query) ||
+      client.email?.toLowerCase().includes(query) ||
+      client.city?.toLowerCase().includes(query)
+    );
+  }, [clients, searchQuery]);
+
+  const filteredProducts = useMemo(() => {
+    if (!productSearchQuery.trim()) return products;
+    const query = productSearchQuery.toLowerCase();
+    return products.filter(product =>
+      product.name.toLowerCase().includes(query) ||
+      product.description?.toLowerCase().includes(query)
+    );
+  }, [products, productSearchQuery]);
+
+  // Calculations
+  const totals = useMemo(() => {
+    const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    const tax = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice * item.taxRate / 100), 0);
+    const total = subtotal + tax;
+    return { subtotal, tax, total };
+  }, [items]);
+
+  // Handlers
+  const selectClient = useCallback((client: any) => {
+    setSelectedClient(client);
+    setCurrentStep(1);
+  }, []);
+
+  const handleInputChange = useCallback((field: string, value: string | boolean) => {
     setInvoiceData(prev => {
-      const newData = {
-        ...prev,
-        [field]: value
-      };
+      const newData = { ...prev, [field]: value };
       
       if (field === 'companyId') {
-        const selectedCompany = companies.find(c => c.id === value);
-        const bulstatNumber = selectedCompany?.bulstatNumber || selectedCompany?.vatNumber?.replace(/^BG/, '') || '';
-        
+        const company = companies.find(c => c.id === value);
         return {
           ...newData,
-          bulstatNumber: bulstatNumber,
-          placeOfIssue: selectedCompany?.city || "София",
+          bulstatNumber: company?.bulstatNumber || company?.vatNumber?.replace(/^BG/, '') || '',
+          placeOfIssue: company?.city || "София",
         };
       }
       
@@ -206,120 +468,127 @@ export default function NewInvoicePage() {
     });
   }, [companies]);
 
-  const calculateTotal = useCallback(() => {
-    return items.reduce((sum, item) => sum + (item.quantity * item.unitPrice * (1 + item.taxRate/100)), 0);
-  }, [items]);
+  const addItem = useCallback(() => {
+    setItems(prev => [...prev, {
+      id: Math.max(...prev.map(i => i.id)) + 1,
+      description: "",
+      quantity: 1,
+      unitPrice: 0,
+      taxRate: DEFAULT_VAT_RATE
+    }]);
+  }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const removeItem = useCallback((id: number) => {
+    setItems(prev => prev.filter(item => item.id !== id));
+  }, []);
+
+  const updateItem = useCallback((id: number, field: string, value: string | number) => {
+    setItems(prev => prev.map(item =>
+      item.id === id ? { ...item, [field]: value } : item
+    ));
+  }, []);
+
+  const addProduct = useCallback((product: any) => {
+    const newItem = {
+      id: Math.max(0, ...items.map(i => i.id)) + 1,
+      description: product.name,
+      quantity: 1,
+      unitPrice: Number(product.price),
+      taxRate: Number(product.taxRate) || DEFAULT_VAT_RATE
+    };
+    setItems(prev => [...prev, newItem]);
+    toast.success(`"${product.name}" добавен`, {
+      description: `${Number(product.price).toFixed(2)} ${invoiceData.currency}`
+    });
+  }, [items, invoiceData.currency]);
+
+  const handleSubmit = async () => {
     setIsLoading(true);
     
     try {
-      if (!selectedClientId) {
+      if (!selectedClient) {
         toast.error("Моля, изберете клиент");
-        setIsLoading(false);
+        setCurrentStep(0);
         return;
       }
       
       if (!invoiceData.companyId) {
         toast.error("Моля, изберете фирма");
-        setIsLoading(false);
+        setCurrentStep(1);
         return;
       }
       
-      if (!invoiceData.invoiceNumber) {
-        toast.error("Номерът на фактурата е задължителен");
-        setIsLoading(false);
+      const validItems = items.filter(item => item.description.trim());
+      if (validItems.length === 0) {
+        toast.error("Добавете поне един артикул");
+        setCurrentStep(2);
         return;
       }
-      
-      const hasEmptyItems = items.some(item => !item.description);
-      if (hasEmptyItems) {
-        toast.error("Всички артикули трябва да имат описание");
-        setIsLoading(false);
-        return;
-      }
-      
-      const data = {
-        invoiceNumber: invoiceData.invoiceNumber,
-        clientId: selectedClientId,
-        companyId: invoiceData.companyId,
-        issueDate: invoiceData.issueDate,
-        dueDate: invoiceData.dueDate,
-        currency: invoiceData.currency,
-        items: items.map(item => ({
-          id: item.id,
-          description: item.description,
-          quantity: Number(item.quantity),
-          unitPrice: Number(item.unitPrice),
-          taxRate: Number(item.taxRate)
-        }))
-      };
       
       const response = await fetch("/api/invoices", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId: selectedClient.id,
+          companyId: invoiceData.companyId,
+          issueDate: invoiceData.issueDate,
+          dueDate: invoiceData.dueDate,
+          currency: invoiceData.currency,
+          items: validItems.map(item => ({
+            description: item.description,
+            quantity: Number(item.quantity),
+            price: Number(item.unitPrice), // API expects 'price', not 'unitPrice'
+            taxRate: Number(item.taxRate)
+          }))
+        }),
       });
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Грешка при създаване на фактура");
+        throw new Error(errorData.error || "Грешка при създаване");
       }
       
-      toast.success("Фактурата е създадена", { 
-        description: "Вашата фактура беше създадена успешно."
-      });
+      toast.success("Фактурата е създадена успешно!");
       router.push("/invoices");
-    } catch (error) {
-      console.error('Грешка при създаване на фактура:', error);
-      toast.error('Грешка при създаване на фактура', {
-        description: 'Възникна проблем при създаването на фактурата. Моля, опитайте отново.'
-      });
+    } catch (error: any) {
+      toast.error(error.message || "Грешка при създаване на фактура");
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (isClientSelectionStep) {
-    return (
-      <div>
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/invoices">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Назад
-              </Link>
-            </Button>
-            <h1 className="text-3xl font-bold">Нова фактура</h1>
-          </div>
-        </div>
-        
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Избор на клиент</CardTitle>
-            <CardDescription>
-              Изберете клиент за тази фактура или <Link href="/clients/new" className="text-primary hover:underline">създайте нов</Link>
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="relative mb-6">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+  const getCurrencySymbol = (currency: string) => {
+    const symbols: Record<string, string> = { BGN: 'лв', EUR: '€', USD: '$', GBP: '£' };
+    return symbols[currency] || currency;
+  };
+
+  // Render step content
+  const renderStepContent = () => {
+    switch (currentStep) {
+      // Step 0: Client Selection
+      case 0:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold mb-2">Изберете клиент</h2>
+              <p className="text-muted-foreground">Изберете съществуващ клиент или създайте нов</p>
+            </div>
+            
+            {/* Search */}
+            <div className="relative max-w-md mx-auto">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
               <Input
                 type="search"
-                placeholder="Търсете по име, имейл, град..."
-                className="pl-9"
+                placeholder="Търсене по име, имейл или град..."
+                className="pl-12 pr-10 h-12 text-base rounded-xl"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               {searchQuery && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="absolute right-1 top-1 h-7 w-7 p-0" 
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 z-10"
                   onClick={() => setSearchQuery("")}
                 >
                   <X className="h-4 w-4" />
@@ -327,12 +596,15 @@ export default function NewInvoicePage() {
               )}
             </div>
             
+            {/* Client grid */}
             {isLoadingData ? (
-              <div className="py-8 text-center">
+              <div className="text-center py-12">
+                <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4" />
                 <p className="text-muted-foreground">Зареждане на клиенти...</p>
               </div>
             ) : filteredClients.length === 0 ? (
-              <div className="py-8 text-center">
+              <div className="text-center py-12">
+                <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground mb-4">Няма намерени клиенти</p>
                 <Button asChild>
                   <Link href="/clients/new">
@@ -344,387 +616,481 @@ export default function NewInvoicePage() {
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredClients.map((client) => (
-                  <Card key={client.id} className="overflow-hidden cursor-pointer hover:border-primary transition-colors" onClick={() => selectClient(client)}>
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start">
-                        <div className="font-medium truncate flex-1">{client.name}</div>
-                      </div>
-                      
-                      <div className="mt-2 text-sm text-muted-foreground space-y-1">
-                        {client.email && (
-                          <div className="truncate">
-                            {client.email}
-                          </div>
-                        )}
-                        {client.phone && (
-                          <div className="truncate">
-                            {client.phone}
-                          </div>
-                        )}
-                        {client.country && (
-                          <div className="truncate">
-                            {[client.city, client.country].filter(Boolean).join(", ")}
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <ClientCard
+                    key={client.id}
+                    client={client}
+                    onSelect={() => selectClient(client)}
+                    isSelected={selectedClient?.id === client.id}
+                  />
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+          </div>
+        );
 
-  return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/invoices">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Назад
-            </Link>
-          </Button>
-          <h1 className="text-3xl font-bold">Нова фактура</h1>
-        </div>
-        <Button type="submit" form="invoice-form" disabled={isLoading || isLoadingData}>
-          <Save className="mr-2 h-4 w-4" />
-          {isLoading ? "Запазване..." : "Запази фактура"}
-        </Button>
-      </div>
-
-      {selectedClient && (
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <div className="inline-flex items-center mb-1">
-                  <User className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <h3 className="font-medium">Фактура за</h3>
-                </div>
-                <div className="text-xl font-bold">{selectedClient.name}</div>
-                <div className="text-sm text-muted-foreground mt-1">
-                  {[
-                    selectedClient.email,
-                    selectedClient.phone,
-                    [selectedClient.city, selectedClient.country].filter(Boolean).join(", ")
-                  ].filter(Boolean).join(" • ")}
-                </div>
-              </div>
-              <Button variant="outline" size="sm" onClick={changeClient}>
-                <Edit className="h-4 w-4 mr-2" />
-                Промяна на клиент
-              </Button>
+      // Step 1: Invoice Details
+      case 1:
+        return (
+          <div className="max-w-2xl mx-auto space-y-6">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold mb-2">Детайли на фактурата</h2>
+              <p className="text-muted-foreground">Настройте основните данни за фактурата</p>
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <form id="invoice-form" onSubmit={handleSubmit}>
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Детайли на фактурата</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="invoiceNumber">Номер на фактура</Label>
-                <Input 
-                  id="invoiceNumber" 
+            
+            {/* Selected client summary */}
+            {selectedClient && (
+              <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold">
+                      {selectedClient.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-medium">{selectedClient.name}</p>
+                      <p className="text-sm text-muted-foreground">{selectedClient.email}</p>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setCurrentStep(0)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Промяна
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* Invoice number */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Hash className="h-4 w-4" />
+                Номер на фактура
+              </Label>
+              <div className="relative">
+                <Input
                   value={invoiceData.invoiceNumber}
                   readOnly
-                  className="bg-muted"
+                  className="font-mono text-lg h-12 bg-muted"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Номерът на фактурата се генерира автоматично според изискванията на НАП
-                </p>
+                <Badge className="absolute right-3 top-1/2 -translate-y-1/2" variant="secondary">
+                  Автоматичен
+                </Badge>
               </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="issueDate">Дата на издаване</Label>
-                  <Input 
-                    id="issueDate" 
-                    type="date" 
-                    value={invoiceData.issueDate}
-                    onChange={(e) => handleInputChange('issueDate', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dueDate">Краен срок</Label>
-                  <Input 
-                    id="dueDate" 
-                    type="date" 
-                    value={invoiceData.dueDate}
-                    onChange={(e) => handleInputChange('dueDate', e.target.value)}
-                  />
-                </div>
-              </div>
+            </div>
+            
+            {/* Company and Currency */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="company">Вашата фирма</Label>
-                <Select 
+                <Label className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Вашата фирма
+                </Label>
+                <Select
                   value={invoiceData.companyId}
                   onValueChange={(value) => handleInputChange('companyId', value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-12">
                     <SelectValue placeholder="Изберете фирма" />
                   </SelectTrigger>
                   <SelectContent>
-                    {isLoadingData ? (
-                      <SelectItem value="loading" disabled>Зареждане на фирми...</SelectItem>
-                    ) : companies.length > 0 ? (
-                      companies.map(company => (
-                        <SelectItem key={company.id} value={company.id}>
-                          {company.name}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="none" disabled>Няма намерени фирми</SelectItem>
-                    )}
+                    {companies.map(company => (
+                      <SelectItem key={company.id} value={company.id}>
+                        {company.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="currency">Валута</Label>
-                <Select 
+                <Label className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  Валута
+                </Label>
+                <Select
                   value={invoiceData.currency}
                   onValueChange={(value) => handleInputChange('currency', value)}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Изберете валута" />
+                  <SelectTrigger className="h-12">
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="BGN">BGN - Български лев</SelectItem>
-                    <SelectItem value="EUR">EUR - Евро</SelectItem>
-                    <SelectItem value="USD">USD - Щатски долар</SelectItem>
-                    <SelectItem value="GBP">GBP - Британска лира</SelectItem>
+                    <SelectItem value="BGN">🇧🇬 BGN - Български лев</SelectItem>
+                    <SelectItem value="EUR">🇪🇺 EUR - Евро</SelectItem>
+                    <SelectItem value="USD">🇺🇸 USD - Щатски долар</SelectItem>
+                    <SelectItem value="GBP">🇬🇧 GBP - Британска лира</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              
-              {invoiceData.currency === 'BGN' && (
-                <div className="border-t pt-4 mt-4">
-                  <h3 className="text-base font-medium mb-4">Съответствие с изискванията на НАП</h3>
-                  
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="bulstatNumber">БУЛСТАТ/ЕИК</Label>
-                      <Input 
-                        id="bulstatNumber" 
-                        placeholder="Пример: 123456789" 
-                        value={invoiceData.bulstatNumber}
-                        onChange={(e) => handleInputChange('bulstatNumber', e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="placeOfIssue">Място на издаване</Label>
-                      <Input 
-                        id="placeOfIssue" 
-                        placeholder="Пример: София" 
-                        value={invoiceData.placeOfIssue}
-                        onChange={(e) => handleInputChange('placeOfIssue', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mt-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="supplyDate">Дата на данъчно събитие</Label>
-                      <Input 
-                        id="supplyDate" 
-                        type="date" 
-                        value={invoiceData.supplyDate}
-                        onChange={(e) => handleInputChange('supplyDate', e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="paymentMethod">Начин на плащане</Label>
-                      <Select 
-                        value={invoiceData.paymentMethod}
-                        onValueChange={(value) => handleInputChange('paymentMethod', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Изберете начин на плащане" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="BANK_TRANSFER">Банков превод</SelectItem>
-                          <SelectItem value="CASH">В брой</SelectItem>
-                          <SelectItem value="CREDIT_CARD">Кредитна/дебитна карта</SelectItem>
-                          <SelectItem value="WIRE_TRANSFER">Нареждане за превод</SelectItem>
-                          <SelectItem value="OTHER">Друго</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mt-4">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="isOriginal"
-                        checked={invoiceData.isOriginal}
-                        onChange={(e) => handleInputChange('isOriginal', e.target.checked.toString())}
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                      />
-                      <Label htmlFor="isOriginal">Оригинал (не е дубликат)</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="isEInvoice"
-                        checked={invoiceData.isEInvoice}
-                        onChange={(e) => handleInputChange('isEInvoice', e.target.checked.toString())}
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                      />
-                      <Label htmlFor="isEInvoice">Електронна фактура</Label>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Избор на продукти</CardTitle>
-              <CardDescription>
-                Изберете продукти от каталога или добавете ръчно артикули по-долу
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-muted-foreground mb-4">
-                Можете да изберете продукти от вашия каталог, за да ги добавите бързо към фактурата.
+            </div>
+            
+            {/* Dates */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Дата на издаване
+                </Label>
+                <Input
+                  type="date"
+                  value={invoiceData.issueDate}
+                  onChange={(e) => handleInputChange('issueDate', e.target.value)}
+                  className="h-12"
+                />
               </div>
-              <div className="flex flex-wrap gap-2">
-                {products.slice(0, 5).map(product => (
-                  <Badge 
-                    key={product.id} 
-                    variant="outline" 
-                    className="cursor-pointer hover:bg-secondary transition-colors py-2"
-                    onClick={() => {
-                      const newItem = {
-                        id: items.length + 1,
-                        description: product.name,
-                        quantity: 1,
-                        unitPrice: Number(product.price),
-                        taxRate: Number(product.taxRate)
-                      };
-                      setItems([...items, newItem]);
-                    }}
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    {product.name}
-                  </Badge>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Краен срок за плащане
+                </Label>
+                <Input
+                  type="date"
+                  value={invoiceData.dueDate}
+                  onChange={(e) => handleInputChange('dueDate', e.target.value)}
+                  className="h-12"
+                />
+              </div>
+            </div>
+            
+            {/* Payment method */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />
+                Начин на плащане
+              </Label>
+              <Select
+                value={invoiceData.paymentMethod}
+                onValueChange={(value) => handleInputChange('paymentMethod', value)}
+              >
+                <SelectTrigger className="h-12">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="BANK_TRANSFER">Банков превод</SelectItem>
+                  <SelectItem value="CASH">В брой</SelectItem>
+                  <SelectItem value="CREDIT_CARD">Кредитна/дебитна карта</SelectItem>
+                  <SelectItem value="OTHER">Друго</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        );
+
+      // Step 2: Products
+      case 2:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold mb-2">Добавете продукти</h2>
+              <p className="text-muted-foreground">Изберете от каталога или добавете ръчно</p>
+            </div>
+            
+            {/* Products catalog */}
+            {products.length > 0 && (
+              <Card>
+                <CardHeader className="pb-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-primary" />
+                        Каталог с продукти
+                      </CardTitle>
+                      <CardDescription>Кликнете върху продукт за да го добавите</CardDescription>
+                    </div>
+                    <div className="relative w-full sm:w-64">
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
+                      <Input
+                        type="search"
+                        placeholder="Търсене..."
+                        className="pl-12 pr-3"
+                        value={productSearchQuery}
+                        onChange={(e) => setProductSearchQuery(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {filteredProducts.map((product) => (
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        currency={invoiceData.currency}
+                        onAdd={() => addProduct(product)}
+                      />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* Invoice items */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <ShoppingCart className="h-5 w-5" />
+                      Артикули във фактурата
+                    </CardTitle>
+                    <CardDescription>{items.length} артикул(а)</CardDescription>
+                  </div>
+                  <Button variant="outline" onClick={addItem}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Добави ред
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {items.map((item, index) => (
+                  <InvoiceItemRow
+                    key={item.id}
+                    item={item}
+                    index={index}
+                    onUpdate={(field, value) => updateItem(item.id, field, value)}
+                    onRemove={() => removeItem(item.id)}
+                    canRemove={items.length > 1}
+                    currency={invoiceData.currency}
+                  />
                 ))}
-                {products.length > 5 && (
-                  <Badge variant="outline" className="cursor-pointer hover:bg-secondary transition-colors py-2">
-                    +{products.length - 5} още
-                  </Badge>
-                )}
-                {products.length === 0 && (
-                  <div className="text-sm text-muted-foreground">Няма намерени продукти. Можете да добавите артикули ръчно по-долу.</div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
 
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Артикули във фактурата</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {items.map((item, index) => (
-                <div key={item.id} className="grid grid-cols-12 gap-4 border-b pb-4">
-                  <div className="col-span-12 sm:col-span-5">
-                    <Label htmlFor={`item-${item.id}-description`}>Описание</Label>
-                    <div className="mt-1">
-                      <Input
-                        id={`item-${item.id}-description`}
-                        value={item.description}
-                        onChange={(e) => updateItem(item.id, "description", e.target.value)}
-                        placeholder="Описание на артикула"
-                      />
+      // Step 3: Review
+      case 3:
+        return (
+          <div className="max-w-3xl mx-auto space-y-6">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold mb-2">Преглед на фактурата</h2>
+              <p className="text-muted-foreground">Проверете данните преди създаване</p>
+            </div>
+            
+            {/* Invoice preview */}
+            <Card className="overflow-hidden border-2">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div>
+                    <p className="text-sm opacity-90 mb-1">Фактура №</p>
+                    <p className="text-3xl font-bold font-mono">{invoiceData.invoiceNumber}</p>
+                  </div>
+                  <Badge variant="secondary" className="bg-white/20 text-white border-0 text-base px-4 py-2">
+                    {invoiceData.currency}
+                  </Badge>
+                </div>
+              </div>
+              
+              <CardContent className="p-6 lg:p-8">
+                <div className="space-y-8">
+                  {/* Client & Company */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">От</p>
+                      </div>
+                      <p className="text-lg font-semibold">{companies.find(c => c.id === invoiceData.companyId)?.name || '-'}</p>
+                      {companies.find(c => c.id === invoiceData.companyId)?.email && (
+                        <p className="text-sm text-muted-foreground">{companies.find(c => c.id === invoiceData.companyId)?.email}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 mb-3">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">До</p>
+                      </div>
+                      <p className="text-lg font-semibold">{selectedClient?.name || '-'}</p>
+                      {selectedClient?.email && (
+                        <p className="text-sm text-muted-foreground">{selectedClient.email}</p>
+                      )}
+                      {selectedClient?.phone && (
+                        <p className="text-sm text-muted-foreground">{selectedClient.phone}</p>
+                      )}
                     </div>
                   </div>
-                  <div className="col-span-4 sm:col-span-2">
-                    <Label htmlFor={`item-${item.id}-quantity`}>Количество</Label>
-                    <div className="mt-1">
-                      <Input
-                        id={`item-${item.id}-quantity`}
-                        type="number"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e) => updateItem(item.id, "quantity", parseInt(e.target.value))}
-                      />
+                  
+                  <Separator />
+                  
+                  {/* Dates & Payment */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Дата на издаване</p>
+                      </div>
+                      <p className="text-base font-semibold">{new Date(invoiceData.issueDate).toLocaleDateString('bg-BG', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Краен срок</p>
+                      </div>
+                      <p className="text-base font-semibold">{new Date(invoiceData.dueDate).toLocaleDateString('bg-BG', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Начин на плащане</p>
+                      </div>
+                      <p className="text-base font-semibold">
+                        {invoiceData.paymentMethod === 'BANK_TRANSFER' ? 'Банков превод' :
+                         invoiceData.paymentMethod === 'CASH' ? 'В брой' :
+                         invoiceData.paymentMethod === 'CREDIT_CARD' ? 'Кредитна/дебитна карта' : 'Друго'}
+                      </p>
                     </div>
                   </div>
-                  <div className="col-span-4 sm:col-span-2">
-                    <Label htmlFor={`item-${item.id}-price`}>Ед. цена</Label>
-                    <div className="mt-1">
-                      <Input
-                        id={`item-${item.id}-price`}
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={item.unitPrice}
-                        onChange={(e) => updateItem(item.id, "unitPrice", parseFloat(e.target.value))}
-                      />
+                  
+                  <Separator />
+                  
+                  {/* Items Table */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <ShoppingCart className="h-5 w-5 text-muted-foreground" />
+                      <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Артикули</p>
+                    </div>
+                    <div className="border rounded-lg overflow-hidden">
+                      <div className="bg-muted/50 px-4 py-3 grid grid-cols-12 gap-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b">
+                        <div className="col-span-1 text-center">№</div>
+                        <div className="col-span-6">Описание</div>
+                        <div className="col-span-2 text-right">Количество</div>
+                        <div className="col-span-3 text-right">Общо</div>
+                      </div>
+                      <div className="divide-y">
+                        {items.filter(i => i.description).map((item, index) => {
+                          const itemTotal = item.quantity * item.unitPrice * (1 + item.taxRate / 100);
+                          return (
+                            <div key={item.id} className="px-4 py-4 grid grid-cols-12 gap-4 hover:bg-muted/30 transition-colors">
+                              <div className="col-span-1 text-center text-sm font-medium text-muted-foreground">
+                                {index + 1}
+                              </div>
+                              <div className="col-span-6">
+                                <p className="font-semibold mb-1">{item.description}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {item.unitPrice.toFixed(2)} {invoiceData.currency} × {item.quantity} (ДДС {item.taxRate}%)
+                                </p>
+                              </div>
+                              <div className="col-span-2 text-right text-sm font-medium">
+                                {item.quantity}
+                              </div>
+                              <div className="col-span-3 text-right">
+                                <p className="font-semibold">
+                                  {itemTotal.toFixed(2)} {invoiceData.currency}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
-                  <div className="col-span-3 sm:col-span-2">
-                    <Label htmlFor={`item-${item.id}-tax`}>ДДС (%)</Label>
-                    <div className="mt-1">
-                      <Input
-                        id={`item-${item.id}-tax`}
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={item.taxRate}
-                        onChange={(e) => updateItem(item.id, "taxRate", parseFloat(e.target.value))}
-                      />
+                  
+                  {/* Totals */}
+                  <div className="bg-gradient-to-br from-muted/50 to-muted/30 rounded-xl p-6 space-y-3 border">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground font-medium">Подсума</span>
+                      <span className="font-semibold">{totals.subtotal.toFixed(2)} {invoiceData.currency}</span>
                     </div>
-                  </div>
-                  <div className="col-span-1 mt-6">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-500 hover:text-red-700"
-                      onClick={() => removeItem(item.id)}
-                      disabled={items.length === 1}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground font-medium">ДДС</span>
+                      <span className="font-semibold">{totals.tax.toFixed(2)} {invoiceData.currency}</span>
+                    </div>
+                    <Separator className="my-3" />
+                    <div className="flex justify-between items-center pt-2">
+                      <span className="text-lg font-bold">Общо</span>
+                      <span className="text-2xl font-bold text-primary">
+                        {getCurrencySymbol(invoiceData.currency)} {totals.total.toFixed(2)}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-            <Button type="button" variant="outline" className="mt-4" onClick={addItem}>
-              <Plus className="mr-2 h-4 w-4" />
-              Добави артикул
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen">
+      {/* Header */}
+      <div className="mb-8 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" asChild className="rounded-full">
+            <Link href="/invoices">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Нова фактура</h1>
+            <p className="text-muted-foreground">Създайте нова фактура за вашите клиенти</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Step indicator */}
+      <StepIndicator currentStep={currentStep} steps={steps} />
+
+      {/* Step content */}
+      <div className="mb-8">
+        {renderStepContent()}
+      </div>
+
+      {/* Navigation */}
+      <div className="flex items-center justify-between pt-6 border-t">
+        <Button
+          variant="outline"
+          onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+          disabled={currentStep === 0}
+          className="gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Назад
+        </Button>
+        
+        <div className="flex gap-3">
+          {currentStep < 3 ? (
+            <Button
+              onClick={() => setCurrentStep(currentStep + 1)}
+              disabled={
+                (currentStep === 0 && !selectedClient) ||
+                (currentStep === 1 && !invoiceData.companyId)
+              }
+              className="gap-2"
+            >
+              Напред
+              <ArrowRight className="h-4 w-4" />
             </Button>
-          </CardContent>
-          <CardFooter className="flex flex-col sm:flex-row justify-between border-t p-6 space-y-4 sm:space-y-0">
-            <div>
-              <Button type="button" variant="ghost" className="mb-2">
-                Запази като чернова
-              </Button>
-            </div>
-            <div className="text-right bg-secondary/10 p-4 rounded-lg">
-              <div className="text-lg font-semibold mb-1">
-                Общо: {invoiceData.currency === 'USD' ? '$' : invoiceData.currency === 'EUR' ? '€' : invoiceData.currency === 'GBP' ? '£' : invoiceData.currency === 'BGN' ? 'лв ' : ''}{calculateTotal().toFixed(2)}
-              </div>
-              <div className="text-sm text-muted-foreground font-medium">
-                Включително ДДС
-              </div>
-            </div>
-          </CardFooter>
-        </Card>
-      </form>
+          ) : (
+            <Button
+              onClick={handleSubmit}
+              disabled={isLoading}
+              className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+            >
+              {isLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Създаване...
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4" />
+                  Създай фактура
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+      </div>
     </div>
   );
-} 
+}

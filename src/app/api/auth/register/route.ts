@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import db from "@/lib/db";
+import cuid from "cuid";
+import { createAdminClient } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
   try {
@@ -13,10 +14,14 @@ export async function POST(req: Request) {
       );
     }
 
+    const supabase = createAdminClient();
+
     // Check if user already exists
-    const existingUser = await db.user.findUnique({
-      where: { email },
-    });
+    const { data: existingUser, error: checkError } = await supabase
+      .from("User")
+      .select("id, email")
+      .eq("email", email)
+      .single();
 
     if (existingUser) {
       return NextResponse.json(
@@ -28,22 +33,34 @@ export async function POST(req: Request) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Generate CUID for user ID
+    const userId = cuid();
+
     // Create new user
-    const user = await db.user.create({
-      data: {
+    const { data: user, error: createError } = await supabase
+      .from("User")
+      .insert({
+        id: userId,
         name,
         email,
         password: hashedPassword,
-      },
-    });
+        updatedAt: new Date().toISOString(),
+      })
+      .select("id, name, email, createdAt, updatedAt, defaultLocale, defaultVatRate")
+      .single();
 
-    // Remove password from response
-    const { password: _, ...userWithoutPassword } = user;
+    if (createError) {
+      console.error("Registration error:", createError);
+      return NextResponse.json(
+        { message: "An error occurred during registration", error: createError.message },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json(
       { 
         message: "User registered successfully", 
-        user: userWithoutPassword 
+        user 
       },
       { status: 201 }
     );

@@ -2,9 +2,8 @@ import { Suspense } from "react";
 import EditInvoiceForm from "./EditInvoiceForm";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default async function EditInvoicePage(props: { params: { id: string } }) {
-  const { params } = props;
-  const id = params.id;
+export default async function EditInvoicePage(props: { params: Promise<{ id: string }> }) {
+  const { id } = await props.params;
   
   return (
     <Suspense fallback={<EditInvoiceSkeleton />}>

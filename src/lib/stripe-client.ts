@@ -7,16 +7,20 @@ type Feature = string;
 
 interface Plan {
   name: string;
-  url: string | undefined;
   price: number;
-  priceId: string;
+  priceMonthly: number;
+  priceYearly: number;
+  priceIdMonthly: string | null;
+  priceIdYearly: string | null;
   features: Feature[];
+  limitations?: Feature[];
+  popular?: boolean;
 }
 
 interface SubscriptionPlans {
-  BASIC: Plan;
+  FREE: Plan;
   PRO: Plan;
-  VIP: Plan;
+  BUSINESS: Plan;
 }
 
 // Client-side function to get subscription plans
@@ -33,6 +37,6 @@ export async function useSubscriptionPlans(): Promise<SubscriptionPlans> {
 export function formatPrice(price: number): string {
   return new Intl.NumberFormat('bg-BG', {
     style: 'currency',
-    currency: 'BGN',
+    currency: 'EUR',
   }).format(price);
 } 

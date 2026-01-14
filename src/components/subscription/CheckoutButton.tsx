@@ -3,10 +3,9 @@
 import { useState } from 'react';
 import { Button, ButtonProps } from '@/components/ui/button';
 import { useSubscription } from '@/hooks/useSubscription';
-import { SUBSCRIPTION_PLANS } from '@/lib/stripe';
 
 interface CheckoutButtonProps extends ButtonProps {
-  plan: keyof typeof SUBSCRIPTION_PLANS;
+  plan: 'FREE' | 'PRO' | 'BUSINESS';
   children: React.ReactNode;
 }
 

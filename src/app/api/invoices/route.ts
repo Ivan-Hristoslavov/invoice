@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { createAdminClient } from "@/lib/supabase/server";
 import { withErrorHandling } from "@/middleware/error-handler";
 import { withRateLimit } from "@/middleware/rate-limiter";
 import { withAuthorization } from "@/middleware/authorization";
@@ -9,7 +9,8 @@ import { formatApiResponse, formatPaginationParams } from "@/lib/api-utils";
 import { z } from "zod";
 import { invoiceSchema, invoiceItemSchema } from "@/lib/validations/forms";
 import { ApiStatusCode } from "@/types/api";
-import { InvoiceStatus } from "@prisma/client";
+import { checkSubscriptionLimits } from "@/middleware/subscription";
+import cuid from "cuid";
 
 // Schema для валидация на заявката
 const InvoiceQuerySchema = z.object({
@@ -104,52 +105,63 @@ export async function GET(request: NextRequest) {
         // Изчисляване на skip за пагинация
         const skip = (page - 1) * pageSize;
         
-        // Заявка към базата данни за общ брой записи
-        const totalItems = await prisma.invoice.count({
-          where: filters,
-        });
+        const supabase = createAdminClient();
+        
+        // Build Supabase query
+        let query = supabase
+          .from("Invoice")
+          .select(`
+            *,
+            client:Client(id, name, email),
+            company:Company(id, name),
+            items:InvoiceItem(*)
+          `, { count: 'exact' })
+          .eq("userId", session.user.id);
+        
+        // Apply filters
+        if (params.status) {
+          query = query.eq("status", params.status);
+        }
+        
+        if (params.clientId) {
+          query = query.eq("clientId", params.clientId);
+        }
+        
+        if (params.fromDate) {
+          query = query.gte("issueDate", params.fromDate);
+        }
+        
+        if (params.toDate) {
+          query = query.lte("issueDate", params.toDate);
+        }
+        
+        // Apply sorting
+        query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+        
+        // Apply pagination
+        query = query.range(skip, skip + pageSize - 1);
+        
+        const { data: invoices, count: totalItems, error } = await query;
+        
+        if (error) {
+          throw error;
+        }
         
         // Изчисляване на общ брой страници
-        const totalPages = Math.ceil(totalItems / pageSize);
-        
-        // Заявка към базата данни за фактури
-        const invoices = await prisma.invoice.findMany({
-          where: filters,
-          include: {
-            client: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
-            company: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            items: true,
-          },
-          orderBy: {
-            [sortBy]: sortOrder,
-          },
-          skip,
-          take: pageSize,
-        });
+        const totalPages = Math.ceil((totalItems || 0) / pageSize);
         
         // Конвертиране на Decimal стойности към числа
-        const serializedInvoices: InvoiceResponse[] = invoices.map(invoice => ({
+        const serializedInvoices: InvoiceResponse[] = (invoices || []).map((invoice: any) => ({
           ...invoice,
-          subtotal: Number(invoice.subtotal),
-          taxAmount: Number(invoice.taxAmount),
-          total: Number(invoice.total),
-          items: invoice.items.map(item => ({
+          subtotal: Number(invoice.subtotal || 0),
+          taxAmount: Number(invoice.taxAmount || 0),
+          total: Number(invoice.total || 0),
+          items: (invoice.items || []).map((item: any) => ({
             ...item,
-            quantity: Number(item.quantity),
-            price: Number(item.unitPrice), // Използваме unitPrice вместо price
-            taxRate: Number(item.taxRate),
-            total: Number(item.total),
+            quantity: Number(item.quantity || 0),
+            price: Number(item.unitPrice || 0), // Използваме unitPrice вместо price
+            taxRate: Number(item.taxRate || 0),
+            total: Number(item.total || 0),
           })),
         }));
         
@@ -184,21 +196,48 @@ export async function POST(request: NextRequest) {
         // Използваме валидационните схеми от нашата нова библиотека
         const validatedData = invoiceSchema.parse(body);
         
-        // Генериране на уникален номер на фактура
-        const invoiceCount = await prisma.invoice.count({
-          where: {
-            userId: session.user.id,
-            companyId: validatedData.companyId,
-          },
-        });
+        // Проверка за subscription limits - брой фактури
+        const invoiceLimitCheck = await checkSubscriptionLimits(
+          session.user.id as string,
+          'invoices'
+        );
         
-        const invoiceNumber = `INV-${new Date().getFullYear()}-${(invoiceCount + 1).toString().padStart(5, '0')}`;
+        if (!invoiceLimitCheck.allowed) {
+          return NextResponse.json(
+            { error: invoiceLimitCheck.message || "Достигнат е лимитът за фактури за вашия план" },
+            { status: 403 }
+          );
+        }
+        
+        const supabase = createAdminClient();
+        
+        // Get company for EIK (needed for invoice number)
+        const { data: company } = await supabase
+          .from("Company")
+          .select("bulstatNumber")
+          .eq("id", validatedData.companyId)
+          .eq("userId", session.user.id)
+          .single();
+        
+        if (!company) {
+          return NextResponse.json(
+            { error: "Компанията не е намерена" },
+            { status: 404 }
+          );
+        }
+        
+        // Get next invoice number using InvoiceSequence
+        const { getNextInvoiceSequence } = await import("@/lib/invoice-sequence");
+        const { invoiceNumber, sequence } = await getNextInvoiceSequence(
+          validatedData.companyId,
+          company.bulstatNumber || undefined
+        );
         
         // Изчисляване на суми
         let subtotal = 0;
         let taxAmount = 0;
         
-        const preparedItems = validatedData.items.map(item => {
+        const preparedItems = validatedData.items.map((item: any) => {
           const itemPrice = Number(item.price);
           const itemQuantity = Number(item.quantity);
           const itemTaxRate = item.taxRate !== undefined ? Number(item.taxRate) : 0;
@@ -210,6 +249,7 @@ export async function POST(request: NextRequest) {
           taxAmount += lineTax;
           
           return {
+            id: cuid(),
             description: item.description,
             quantity: itemQuantity,
             unitPrice: itemPrice,
@@ -222,53 +262,89 @@ export async function POST(request: NextRequest) {
         });
         
         const total = subtotal + taxAmount;
+        const invoiceId = cuid();
         
         // Създаване на фактура в базата данни
-        const invoice = await prisma.invoice.create({
-          data: {
-            invoiceNumber,
-            clientId: validatedData.clientId,
-            companyId: validatedData.companyId,
-            userId: session.user.id,
-            issueDate: new Date(validatedData.issueDate),
-            dueDate: new Date(validatedData.dueDate),
-            status: validatedData.status || "DRAFT" as InvoiceStatus,
-            subtotal,
-            taxAmount,
-            total,
-            notes: validatedData.notes || null,
-            termsAndConditions: validatedData.termsAndConditions || null,
-            items: {
-              create: preparedItems,
-            },
-          },
-          include: {
-            client: true,
-            company: true,
-            items: true,
-          },
-        });
-        
-        // Конвертиране на Decimal към числа за отговора
-        const serializedInvoice = {
-          ...invoice,
-          subtotal: Number(invoice.subtotal),
-          taxAmount: Number(invoice.taxAmount),
-          total: Number(invoice.total),
-          items: invoice.items.map(item => ({
-            ...item,
-            quantity: Number(item.quantity),
-            unitPrice: Number(item.unitPrice),
-            taxRate: Number(item.taxRate),
-            subtotal: Number(item.subtotal),
-            taxAmount: Number(item.taxAmount),
-            total: Number(item.total),
-          })),
+        const invoiceData = {
+          id: invoiceId,
+          invoiceNumber,
+          clientId: validatedData.clientId,
+          companyId: validatedData.companyId,
+          userId: session.user.id,
+          issueDate: new Date(validatedData.issueDate).toISOString(),
+          dueDate: new Date(validatedData.dueDate).toISOString(),
+          status: "DRAFT", // Always DRAFT when created
+          subtotal: subtotal.toString(),
+          taxAmount: taxAmount.toString(),
+          total: total.toString(),
+          notes: validatedData.notes || null,
+          termsAndConditions: validatedData.termsAndConditions || null,
+          currency: validatedData.currency || "EUR",
+          locale: validatedData.locale || "bg",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         };
+        
+        const { data: invoice, error: invoiceError } = await supabase
+          .from("Invoice")
+          .insert(invoiceData)
+          .select()
+          .single();
+        
+        if (invoiceError) {
+          throw invoiceError;
+        }
+        
+        // Create invoice items
+        const itemsData = preparedItems.map(item => ({
+          id: item.id,
+          invoiceId: invoiceId,
+          productId: item.productId,
+          description: item.description,
+          quantity: item.quantity.toString(),
+          unitPrice: item.unitPrice.toString(),
+          taxRate: item.taxRate.toString(),
+          subtotal: item.subtotal.toString(),
+          taxAmount: item.taxAmount.toString(),
+          total: item.total.toString(),
+        }));
+        
+        const { error: itemsError } = await supabase
+          .from("InvoiceItem")
+          .insert(itemsData);
+        
+        if (itemsError) {
+          throw itemsError;
+        }
+        
+        // Get full invoice with relations
+        const { data: fullInvoice } = await supabase
+          .from("Invoice")
+          .select(`
+            *,
+            client:Client(*),
+            company:Company(*),
+            items:InvoiceItem(*)
+          `)
+          .eq("id", invoiceId)
+          .single();
+        
+        // Log audit action
+        const { logAction } = await import("@/lib/audit-log");
+        const headers = request.headers;
+        await logAction({
+          userId: session.user.id as string,
+          action: 'CREATE',
+          entityType: 'INVOICE',
+          entityId: invoiceId,
+          invoiceId: invoiceId,
+          ipAddress: headers.get('x-forwarded-for') || headers.get('x-real-ip') || undefined,
+          userAgent: headers.get('user-agent') || undefined,
+        });
         
         // Връщане на форматиран отговор
         return NextResponse.json(
-          formatApiResponse(serializedInvoice), 
+          formatApiResponse(fullInvoice), 
           { status: ApiStatusCode.CREATED }
         );
       })

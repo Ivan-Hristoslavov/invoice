@@ -35,7 +35,7 @@ DB_PASSWORD=mysecretpassword
 DB=postgres
 
 # Prisma database URL
-DATABASE_URL="postgresql://root:mysecretpassword@localhost:5432/postgres?schema=invoice"
+NEXT_PUBLIC_SUPABASE_URL="postgresql://root:mysecretpassword@localhost:5432/postgres?schema=invoice"
 ```
 
 3. Create the database schema:
@@ -91,7 +91,7 @@ It also creates sample companies, clients, products and invoices.
 
 Required environment variables:
 
-- `DATABASE_URL`: PostgreSQL connection string
+- `NEXT_PUBLIC_SUPABASE_URL`: PostgreSQL connection string
 - `NEXTAUTH_SECRET`: Secret for NextAuth
 - `NEXTAUTH_URL`: URL for NextAuth
 - `NEXT_PUBLIC_APP_URL`: Public URL of the application

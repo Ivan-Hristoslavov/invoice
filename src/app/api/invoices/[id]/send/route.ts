@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { createAdminClient } from "@/lib/supabase/server";
+import { checkSubscriptionLimits } from "@/middleware/subscription";
 import { sendInvoiceEmail } from "@/lib/email";
+import { logAction } from "@/lib/audit-log";
 
 export async function POST(
   request: NextRequest,
@@ -17,20 +19,42 @@ export async function POST(
         { status: 401 }
       );
     }
+    
+    // Check subscription limits - изпращане по имейл
+    const emailLimitCheck = await checkSubscriptionLimits(
+      session.user.id as string,
+      'emailSending'
+    );
+    
+    if (!emailLimitCheck.allowed) {
+      return NextResponse.json(
+        { error: emailLimitCheck.message || "Изпращането по имейл не е налично за вашия план" },
+        { status: 403 }
+      );
+    }
 
-    const { type, paymentLink } = await request.json();
+    const { type } = await request.json();
     const { id } = await params;
 
+    const supabase = createAdminClient();
+    
     // Get invoice with client details
-    const invoice = await prisma.invoice.findFirst({
-      where: {
-        id: id,
-        userId: session.user.id,
-      },
-      include: {
-        client: true,
-      },
-    });
+    const { data: invoice, error: invoiceError } = await supabase
+      .from("Invoice")
+      .select(`
+        *,
+        client:Client(*)
+      `)
+      .eq("id", id)
+      .eq("userId", session.user.id)
+      .single();
+    
+    if (invoiceError || !invoice) {
+      return NextResponse.json(
+        { error: "Invoice not found" },
+        { status: 404 }
+      );
+    }
 
     if (!invoice) {
       return NextResponse.json(
@@ -46,13 +70,40 @@ export async function POST(
       );
     }
 
-    // Send email using simplified function
+    if (!invoice.client?.email) {
+      return NextResponse.json(
+        { error: "Client email not found" },
+        { status: 400 }
+      );
+    }
+    
+    // Update invoice status to ISSUED when sent
+    await supabase
+      .from("Invoice")
+      .update({ 
+        status: "ISSUED",
+        updatedAt: new Date().toISOString()
+      })
+      .eq("id", id);
+    
+    // Send email (без payment link - не приемаме плащания)
     await sendInvoiceEmail({
       to: invoice.client.email,
       invoiceNumber: invoice.invoiceNumber,
-      type: type as 'invoice_only' | 'invoice_with_payment',
-      paymentLink,
+      type: 'invoice_only', // Винаги само фактура, без payment link
       userId: session.user.id,
+    });
+    
+    // Log audit action
+    const headers = request.headers;
+    await logAction({
+      userId: session.user.id as string,
+      action: 'SEND',
+      entityType: 'INVOICE',
+      entityId: id,
+      invoiceId: id,
+      ipAddress: headers.get('x-forwarded-for') || headers.get('x-real-ip') || undefined,
+      userAgent: headers.get('user-agent') || undefined,
     });
 
     return NextResponse.json({ success: true });

@@ -31,31 +31,20 @@ const preferencesSchema = z.object({
     .max(100, "ДДС не може да бъде повече от 100%")
     .default(DEFAULT_VAT_RATE),
   
-  // Настройки за срокове
-  defaultPaymentTerm: z.number().min(0).default(30),
-  defaultDueDateType: z.enum(["fixed", "after_issue"]).default("after_issue"),
-  
   // Настройки за номерация
   invoicePrefix: z.string().max(10).optional(),
   resetNumberingYearly: z.boolean().default(true),
   
   // Настройки за валута
-  defaultCurrency: z.string().default("BGN"),
+  defaultCurrency: z.string().default("EUR"),
   showAmountInWords: z.boolean().default(true),
   
   // Текстове по подразбиране
-  defaultPaymentInstructions: z.string().max(500).optional(),
   defaultTermsAndConditions: z.string().max(1000).optional(),
   defaultNotes: z.string().max(500).optional(),
   
   // Визуални настройки
   showCompanyLogo: z.boolean().default(true),
-  showQRCode: z.boolean().default(true),
-  
-  // Известия
-  sendPaymentReminders: z.boolean().default(false),
-  reminderDaysBeforeDue: z.number().min(1).default(7),
-  sendThankYouEmails: z.boolean().default(false),
   
   // Архивиране
   autoArchiveAfterDays: z.number().min(0).default(365),
@@ -72,16 +61,10 @@ export function InvoicePreferencesForm() {
     resolver: zodResolver(preferencesSchema),
     defaultValues: {
       defaultVatRate: DEFAULT_VAT_RATE,
-      defaultPaymentTerm: 30,
-      defaultDueDateType: "after_issue",
       resetNumberingYearly: true,
-      defaultCurrency: "BGN",
+      defaultCurrency: "EUR",
       showAmountInWords: true,
       showCompanyLogo: true,
-      showQRCode: true,
-      sendPaymentReminders: false,
-      reminderDaysBeforeDue: 7,
-      sendThankYouEmails: false,
       autoArchiveAfterDays: 365,
       keepDraftDays: 30,
     },
@@ -182,63 +165,6 @@ export function InvoicePreferencesForm() {
 
         <Separator />
 
-        {/* Настройки за срокове */}
-        <div>
-          <h3 className="text-lg font-medium">Срокове за плащане</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Настройте сроковете за плащане по подразбиране
-          </p>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="defaultPaymentTerm"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Срок за плащане (дни)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min={0}
-                      {...field}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Брой дни за плащане по подразбиране
-                  </FormDescription>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="defaultDueDateType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Тип на падежа</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Изберете тип" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="after_issue">След датата на издаване</SelectItem>
-                      <SelectItem value="fixed">Фиксирана дата</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    Как да се изчислява падежната дата
-                  </FormDescription>
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
-
-        <Separator />
-
         {/* Настройки за номерация */}
         <div>
           <h3 className="text-lg font-medium">Номерация на фактурите</h3>
@@ -298,22 +224,6 @@ export function InvoicePreferencesForm() {
           </p>
 
           <div className="space-y-4">
-            <FormField
-              control={form.control}
-              name="defaultPaymentInstructions"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Инструкции за плащане</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      {...field}
-                      placeholder="Въведете стандартни инструкции за плащане"
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
             <FormField
               control={form.control}
               name="defaultTermsAndConditions"
@@ -383,29 +293,6 @@ export function InvoicePreferencesForm() {
 
             <FormField
               control={form.control}
-              name="showQRCode"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base">
-                      QR код за плащане
-                    </FormLabel>
-                    <FormDescription>
-                      Добавяне на QR код за лесно плащане
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
               name="showAmountInWords"
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
@@ -415,87 +302,6 @@ export function InvoicePreferencesForm() {
                     </FormLabel>
                     <FormDescription>
                       Показване на сумата, изписана с думи
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* Настройки за известия */}
-        <div>
-          <h3 className="text-lg font-medium">Известия</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Управлявайте автоматичните известия за фактурите
-          </p>
-
-          <div className="space-y-4">
-            <FormField
-              control={form.control}
-              name="sendPaymentReminders"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base">
-                      Напомняния за плащане
-                    </FormLabel>
-                    <FormDescription>
-                      Автоматично изпращане на напомняния преди падежа
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            {form.watch("sendPaymentReminders") && (
-              <FormField
-                control={form.control}
-                name="reminderDaysBeforeDue"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Дни преди падежа</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={1}
-                        {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Колко дни преди падежа да се изпрати напомняне
-                    </FormDescription>
-                  </FormItem>
-                )}
-              />
-            )}
-
-            <FormField
-              control={form.control}
-              name="sendThankYouEmails"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base">
-                      Благодарствени имейли
-                    </FormLabel>
-                    <FormDescription>
-                      Изпращане на благодарствен имейл след плащане
                     </FormDescription>
                   </div>
                   <FormControl>
@@ -535,7 +341,7 @@ export function InvoicePreferencesForm() {
                     />
                   </FormControl>
                   <FormDescription>
-                    Брой дни след плащане, преди фактурата да се архивира
+                    Брой дни след издаване, преди фактурата да се архивира
                   </FormDescription>
                 </FormItem>
               )}

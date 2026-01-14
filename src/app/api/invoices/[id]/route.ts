@@ -1,28 +1,13 @@
 import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db/prisma";
+import { createAdminClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { Decimal } from '@prisma/client/runtime/library';
 import { z } from "zod";
+import { logAction } from "@/lib/audit-log";
+import cuid from "cuid";
 
-// Helper function to serialize Prisma Decimal objects
-function serializeDecimal(value: any): any {
-  if (value instanceof Decimal) {
-    return value.toString();
-  }
-  if (Array.isArray(value)) {
-    return value.map(serializeDecimal);
-  }
-  if (typeof value === 'object' && value !== null) {
-    const result: any = {};
-    for (const [key, val] of Object.entries(value)) {
-      result[key] = serializeDecimal(val);
-    }
-    return result;
-  }
-  return value;
-}
+// Helper function removed - no longer needed with Supabase
 
 // Schema for invoice update validation
 const invoiceItemSchema = z.object({
@@ -47,50 +32,32 @@ const invoiceUpdateSchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const invoice = await prisma.invoice.findFirst({
-      where: {
-        id: params.id,
-        userId: session.user.id,
-      },
-      include: {
-        client: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-            address: true,
-            city: true,
-            country: true,
-          },
-        },
-        company: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-          },
-        },
-        items: true,
-        payments: {
-          orderBy: {
-            paymentDate: "desc",
-          },
-        },
-      },
-    });
+    const supabase = createAdminClient();
+    
+    const { data: invoice, error } = await supabase
+      .from("Invoice")
+      .select(`
+        *,
+        client:Client(id, name, email, phone, address, city, country),
+        company:Company(id, name, email, phone),
+        items:InvoiceItem(*),
+        creditNote:CreditNote(*)
+      `)
+      .eq("id", id)
+      .eq("userId", session.user.id)
+      .single();
 
-    if (!invoice) {
+    if (error || !invoice) {
       return Response.json({ error: "Invoice not found" }, { status: 404 });
     }
 
@@ -106,98 +73,116 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const invoice = await prisma.invoice.findFirst({
-      where: {
-        id: params.id,
-        userId: session.user.id,
-      },
-    });
+    const supabase = createAdminClient();
+    
+    const { data: invoice, error: invoiceError } = await supabase
+      .from("Invoice")
+      .select("*")
+      .eq("id", id)
+      .eq("userId", session.user.id)
+      .single();
 
-    if (!invoice) {
+    if (invoiceError || !invoice) {
       return Response.json({ error: "Invoice not found" }, { status: 404 });
     }
 
-    if (invoice.status === "PAID") {
+    // Invoices are immutable after ISSUED - only DRAFT can be edited
+    if (invoice.status !== "DRAFT") {
       return Response.json(
-        { error: "Cannot edit paid invoice" },
+        { error: "Фактурите могат да се редактират само в статус DRAFT. За отмяна на издадена фактура използвайте функцията за създаване на кредитно известие." },
         { status: 400 }
       );
     }
 
     const data = await request.json();
 
-    // Update invoice
-    const updatedInvoice = await prisma.invoice.update({
-      where: {
-        id: params.id,
-      },
-      data: {
-        clientId: data.clientId,
-        companyId: data.companyId,
-        issueDate: new Date(data.issueDate),
-        dueDate: new Date(data.dueDate),
-        currency: data.currency,
-        notes: data.notes,
-        termsAndConditions: data.termsAndConditions,
-      },
+    // Calculate totals from items
+    let subtotal = 0;
+    let taxAmount = 0;
+    
+    const items = data.items.map((item: any) => {
+      const itemSubtotal = item.quantity * item.unitPrice;
+      const itemTax = itemSubtotal * (item.taxRate / 100);
+      const itemTotal = itemSubtotal + itemTax;
+      
+      subtotal += itemSubtotal;
+      taxAmount += itemTax;
+      
+      return {
+        id: cuid(),
+        invoiceId: id,
+        description: item.description,
+        quantity: item.quantity.toString(),
+        unitPrice: item.unitPrice.toString(),
+        taxRate: item.taxRate.toString(),
+        subtotal: itemSubtotal.toString(),
+        taxAmount: itemTax.toString(),
+        total: itemTotal.toString(),
+        productId: item.productId || null,
+      };
     });
+    
+    const total = subtotal + taxAmount;
 
     // Delete existing items
-    await prisma.invoiceItem.deleteMany({
-      where: {
-        invoiceId: params.id,
-      },
-    });
+    await supabase
+      .from("InvoiceItem")
+      .delete()
+      .eq("invoiceId", id);
 
     // Create new items
-    const items = data.items.map((item: any) => ({
-      invoiceId: params.id,
-      description: item.description,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      taxRate: item.taxRate,
-      subtotal: item.quantity * item.unitPrice,
-      taxAmount: (item.quantity * item.unitPrice * item.taxRate) / 100,
-      total: item.quantity * item.unitPrice * (1 + item.taxRate / 100),
-    }));
+    await supabase
+      .from("InvoiceItem")
+      .insert(items);
 
-    await prisma.invoiceItem.createMany({
-      data: items,
+    // Update invoice
+    const { data: updatedInvoice, error: updateError } = await supabase
+      .from("Invoice")
+      .update({
+        clientId: data.clientId,
+        companyId: data.companyId,
+        issueDate: new Date(data.issueDate).toISOString(),
+        dueDate: new Date(data.dueDate).toISOString(),
+        currency: data.currency,
+        notes: data.notes || null,
+        termsAndConditions: data.termsAndConditions || null,
+        subtotal: subtotal.toString(),
+        taxAmount: taxAmount.toString(),
+        total: total.toString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .select()
+      .single();
+    
+    if (updateError) {
+      throw updateError;
+    }
+    
+    // Log audit action
+    const headers = request.headers;
+    await logAction({
+      userId: session.user.id as string,
+      action: 'UPDATE',
+      entityType: 'INVOICE',
+      entityId: id,
+      invoiceId: id,
+      changes: { updatedFields: Object.keys(data) },
+      ipAddress: headers.get('x-forwarded-for') || headers.get('x-real-ip') || undefined,
+      userAgent: headers.get('user-agent') || undefined,
     });
 
-    // Recalculate invoice totals
-    const totals = items.reduce(
-      (acc: any, item: any) => {
-        acc.subtotal += item.subtotal;
-        acc.taxAmount += item.taxAmount;
-        acc.total += item.total;
-        return acc;
-      },
-      { subtotal: 0, taxAmount: 0, total: 0 }
-    );
-
-    // Update invoice totals
-    await prisma.invoice.update({
-      where: {
-        id: params.id,
-      },
-      data: {
-        subtotal: totals.subtotal,
-        taxAmount: totals.taxAmount,
-        total: totals.total,
-      },
-    });
-
-    revalidatePath(`/invoices/${params.id}`);
+    revalidatePath(`/invoices/${id}`);
     revalidatePath("/invoices");
     revalidatePath("/dashboard");
 
@@ -211,8 +196,9 @@ export async function PUT(
   }
 }
 
-export async function DELETE(request: NextRequest, context: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
+    const { id: invoiceId } = await context.params;
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
@@ -221,50 +207,59 @@ export async function DELETE(request: NextRequest, context: { params: { id: stri
         { status: 401 }
       );
     }
-
-    const invoiceId = context.params.id;
+    const supabase = createAdminClient();
     
     // Check if invoice exists and belongs to user
-    const existingInvoice = await prisma.invoice.findUnique({
-      where: {
-        id: invoiceId,
-        userId: session.user.id,
-      },
-    });
+    const { data: existingInvoice, error: invoiceError } = await supabase
+      .from("Invoice")
+      .select("*")
+      .eq("id", invoiceId)
+      .eq("userId", session.user.id)
+      .single();
 
-    if (!existingInvoice) {
+    if (invoiceError || !existingInvoice) {
       return NextResponse.json(
         { error: "Invoice not found" },
         { status: 404 }
       );
     }
     
-    // Delete related payments first
-    await prisma.payment.deleteMany({
-      where: {
-        invoiceId,
-      },
-    });
+    // Only allow deletion of DRAFT invoices
+    if (existingInvoice.status !== "DRAFT") {
+      return NextResponse.json(
+        { error: "Можете да изтриете само фактури в статус DRAFT. За отмяна на издадена фактура използвайте функцията за създаване на кредитно известие." },
+        { status: 400 }
+      );
+    }
     
-    // Delete related invoice items
-    await prisma.invoiceItem.deleteMany({
-      where: {
-        invoiceId,
-      },
-    });
+    // Delete related invoice items (cascade should handle this, but we do it explicitly)
+    await supabase
+      .from("InvoiceItem")
+      .delete()
+      .eq("invoiceId", invoiceId);
     
     // Delete related documents
-    await prisma.document.deleteMany({
-      where: {
-        invoiceId,
-      },
-    });
+    await supabase
+      .from("Document")
+      .delete()
+      .eq("invoiceId", invoiceId);
     
     // Delete the invoice
-    await prisma.invoice.delete({
-      where: {
-        id: invoiceId,
-      },
+    await supabase
+      .from("Invoice")
+      .delete()
+      .eq("id", invoiceId);
+    
+    // Log audit action
+    const headers = request.headers;
+    await logAction({
+      userId: session.user.id as string,
+      action: 'DELETE',
+      entityType: 'INVOICE',
+      entityId: invoiceId,
+      invoiceId: invoiceId,
+      ipAddress: headers.get('x-forwarded-for') || headers.get('x-real-ip') || undefined,
+      userAgent: headers.get('user-agent') || undefined,
     });
 
     return NextResponse.json({ success: true });

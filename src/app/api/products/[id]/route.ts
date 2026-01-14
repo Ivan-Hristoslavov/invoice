@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { createAdminClient } from "@/lib/supabase/server";
 import { z } from "zod";
 
 const productSchema = z.object({
@@ -30,12 +30,20 @@ export async function GET(
     // Получаване на ID параметър по правилния асинхронен начин
     const productId = context.params.id;
 
-    const product = await prisma.product.findUnique({
-      where: {
-        id: productId,
-        userId: session.user.id,
-      },
-    });
+    const supabase = createAdminClient();
+    const { data: product, error } = await supabase
+      .from("Product")
+      .select("*")
+      .eq("id", productId)
+      .eq("userId", session.user.id)
+      .single();
+    
+    if (error || !product) {
+      return NextResponse.json(
+        { error: "Продуктът не е намерен" },
+        { status: 404 }
+      );
+    }
 
     if (!product) {
       return NextResponse.json(
@@ -76,15 +84,17 @@ export async function PUT(
     // Валидиране на данните
     const validated = productSchema.parse(json);
 
+    const supabase = createAdminClient();
+    
     // Проверка дали продуктът съществува и принадлежи на потребителя
-    const existingProduct = await prisma.product.findUnique({
-      where: {
-        id: productId,
-        userId: session.user.id,
-      },
-    });
+    const { data: existingProduct, error: checkError } = await supabase
+      .from("Product")
+      .select("*")
+      .eq("id", productId)
+      .eq("userId", session.user.id)
+      .single();
 
-    if (!existingProduct) {
+    if (checkError || !existingProduct) {
       return NextResponse.json(
         { error: "Продуктът не е намерен" },
         { status: 404 }
@@ -92,18 +102,23 @@ export async function PUT(
     }
 
     // Обновяване на продукта
-    const updatedProduct = await prisma.product.update({
-      where: {
-        id: productId,
-      },
-      data: {
+    const { data: updatedProduct, error: updateError } = await supabase
+      .from("Product")
+      .update({
         name: validated.name,
-        description: validated.description || "",
+        description: validated.description || null,
         price: validated.price,
         unit: validated.unit,
         taxRate: validated.taxRate,
-      },
-    });
+        updatedAt: new Date().toISOString(),
+      })
+      .eq("id", productId)
+      .select()
+      .single();
+    
+    if (updateError || !updatedProduct) {
+      throw updateError;
+    }
 
     return NextResponse.json(updatedProduct);
   } catch (error) {
@@ -140,15 +155,17 @@ export async function DELETE(
     // Получаване на ID параметър по правилния асинхронен начин
     const productId = context.params.id;
 
+    const supabase = createAdminClient();
+    
     // Проверка дали продуктът съществува и принадлежи на потребителя
-    const existingProduct = await prisma.product.findUnique({
-      where: {
-        id: productId,
-        userId: session.user.id,
-      },
-    });
+    const { data: existingProduct, error: checkError } = await supabase
+      .from("Product")
+      .select("*")
+      .eq("id", productId)
+      .eq("userId", session.user.id)
+      .single();
 
-    if (!existingProduct) {
+    if (checkError || !existingProduct) {
       return NextResponse.json(
         { error: "Продуктът не е намерен" },
         { status: 404 }
@@ -156,11 +173,14 @@ export async function DELETE(
     }
 
     // Изтриване на продукта
-    await prisma.product.delete({
-      where: {
-        id: productId,
-      },
-    });
+    const { error: deleteError } = await supabase
+      .from("Product")
+      .delete()
+      .eq("id", productId);
+    
+    if (deleteError) {
+      throw deleteError;
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

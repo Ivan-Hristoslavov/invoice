@@ -20,7 +20,7 @@ export async function GET(req: Request) {
     }
     
     // Validate feature parameter
-    const validFeatures = ['clients', 'invoices', 'products', 'customBranding'];
+    const validFeatures = ['invoices', 'companies', 'customBranding', 'export', 'creditNotes', 'emailSending', 'apiAccess', 'users'];
     if (!validFeatures.includes(feature)) {
       return new NextResponse('Invalid feature parameter', { status: 400 });
     }
@@ -28,7 +28,7 @@ export async function GET(req: Request) {
     // Check subscription limits
     const checkResult = await checkSubscriptionLimits(
       session.user.id as string,
-      feature as 'clients' | 'invoices' | 'products' | 'customBranding'
+      feature as 'invoices' | 'companies' | 'customBranding' | 'export' | 'creditNotes' | 'emailSending' | 'apiAccess' | 'users'
     );
 
     return NextResponse.json(checkResult);

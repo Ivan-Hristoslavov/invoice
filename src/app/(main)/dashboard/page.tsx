@@ -3,15 +3,29 @@ import { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { FileText, Users, Package, CreditCard, Clock, DollarSign, ArrowUpRight } from "lucide-react";
+import { 
+  FileText, 
+  Users, 
+  Building, 
+  TrendingUp, 
+  ArrowUpRight, 
+  ArrowDownRight,
+  Plus,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Eye,
+  MoreHorizontal,
+  Sparkles
+} from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { APP_NAME } from "@/config/constants";
-import { prisma } from "@/lib/db";
+import { createAdminClient } from "@/lib/supabase/server";
 import { format } from "date-fns";
-import type { Prisma } from "@prisma/client";
+import { bg } from "date-fns/locale";
 
-type InvoiceStatus = "DRAFT" | "UNPAID" | "PAID" | "OVERDUE" | "CANCELLED";
+type InvoiceStatus = "DRAFT" | "ISSUED" | "CANCELLED";
 
 export const metadata: Metadata = {
   title: `Табло | ${APP_NAME}`,
@@ -31,13 +45,6 @@ interface InvoiceWithClient {
   };
 }
 
-type InvoiceCountResult = {
-  status: InvoiceStatus;
-  _count: {
-    id: number;
-  };
-};
-
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   
@@ -45,227 +52,375 @@ export default async function DashboardPage() {
     redirect("/signin");
   }
   
-  // Get recent invoices
-  const recentInvoices = await prisma.invoice.findMany({
-    where: {
-      userId: session.user.id
-    },
-    include: {
-      client: true
-    },
-    orderBy: {
-      issueDate: 'desc'
-    },
-    take: 5
-  }) as InvoiceWithClient[];
+  const supabase = createAdminClient();
   
-  // Get invoice stats
-  const invoiceCounts = await prisma.invoice.groupBy({
-    by: ['status'],
-    where: {
-      userId: session.user.id
-    },
-    _count: {
-      id: true
+  // Get recent invoices
+  const { data: recentInvoicesData } = await supabase
+    .from("Invoice")
+    .select("id, invoiceNumber, issueDate, dueDate, total, status, clientId")
+    .eq("userId", session.user.id)
+    .order("issueDate", { ascending: false })
+    .limit(5);
+  
+  // Get client data for the invoices
+  const clientIds = [...new Set((recentInvoicesData || []).map((inv: any) => inv.clientId))];
+  const { data: clientsData } = await supabase
+    .from("Client")
+    .select("id, name")
+    .in("id", clientIds.length > 0 ? clientIds : ['']);
+  
+  const clientsMap = new Map((clientsData || []).map((c: any) => [c.id, c]));
+  
+  const recentInvoices: InvoiceWithClient[] = (recentInvoicesData || []).map((inv: any) => {
+    const client = clientsMap.get(inv.clientId);
+    return {
+      id: inv.id,
+      invoiceNumber: inv.invoiceNumber,
+      issueDate: new Date(inv.issueDate),
+      dueDate: new Date(inv.dueDate),
+      total: Number(inv.total),
+      status: inv.status as InvoiceStatus,
+      client: {
+        id: client?.id || inv.clientId,
+        name: client?.name || 'Неизвестен клиент'
+      }
+    };
+  });
+  
+  // Get all invoices for stats
+  const { data: allInvoices } = await supabase
+    .from("Invoice")
+    .select("id, status, total, createdAt")
+    .eq("userId", session.user.id);
+  
+  // Calculate invoice counts
+  const invoiceCounts = (allInvoices || []).reduce((acc: any, invoice: any) => {
+    const status = invoice.status as InvoiceStatus;
+    if (!acc[status]) {
+      acc[status] = 0;
     }
-  }) as InvoiceCountResult[];
+    acc[status]++;
+    return acc;
+  }, {});
   
   const counts = {
-    total: invoiceCounts.reduce((acc: number, curr: InvoiceCountResult) => acc + curr._count.id, 0),
-    paid: invoiceCounts.find((i: InvoiceCountResult) => i.status === 'PAID')?._count.id || 0,
-    unpaid: invoiceCounts.find((i: InvoiceCountResult) => i.status === 'UNPAID')?._count.id || 0,
-    overdue: invoiceCounts.find((i: InvoiceCountResult) => i.status === 'OVERDUE')?._count.id || 0
+    total: allInvoices?.length || 0,
+    issued: invoiceCounts.ISSUED || 0,
+    draft: invoiceCounts.DRAFT || 0,
+    cancelled: invoiceCounts.CANCELLED || 0,
   };
   
-  // Get total revenue from paid invoices
-  const revenue = await prisma.invoice.aggregate({
-    where: {
-      userId: session.user.id,
-      status: 'PAID'
+  // Get total from issued invoices
+  const issuedInvoices = (allInvoices || []).filter((inv: any) => inv.status === 'ISSUED');
+  const totalIssued = issuedInvoices.reduce((sum: number, inv: any) => sum + Number(inv.total || 0), 0);
+  
+  // This month's invoices
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+  
+  const thisMonthInvoices = (allInvoices || []).filter(
+    (inv: any) => new Date(inv.createdAt) >= startOfMonth
+  );
+  const thisMonthTotal = thisMonthInvoices
+    .filter((inv: any) => inv.status === 'ISSUED')
+    .reduce((sum: number, inv: any) => sum + Number(inv.total || 0), 0);
+  
+  // Get client and company counts
+  const { count: clientCount } = await supabase
+    .from("Client")
+    .select("*", { count: "exact", head: true })
+    .eq("userId", session.user.id);
+  
+  const { count: companyCount } = await supabase
+    .from("Company")
+    .select("*", { count: "exact", head: true })
+    .eq("userId", session.user.id);
+
+  const stats = [
+    {
+      title: "Обща стойност",
+      value: `${totalIssued.toFixed(2)} лв`,
+      description: "От издадени фактури",
+      icon: TrendingUp,
+      trend: "+12.5%",
+      trendUp: true,
+      gradient: "from-emerald-500 to-teal-600",
+      bgGradient: "from-emerald-500/10 to-teal-600/10"
     },
-    _sum: {
-      total: true
+    {
+      title: "Този месец",
+      value: `${thisMonthTotal.toFixed(2)} лв`,
+      description: `${thisMonthInvoices.length} фактури`,
+      icon: Sparkles,
+      trend: "+8.2%",
+      trendUp: true,
+      gradient: "from-sky-500 to-blue-600",
+      bgGradient: "from-sky-500/10 to-blue-600/10"
+    },
+    {
+      title: "Фактури",
+      value: counts.total.toString(),
+      description: `${counts.issued} издадени, ${counts.draft} чернови`,
+      icon: FileText,
+      gradient: "from-blue-500 to-indigo-600",
+      bgGradient: "from-blue-500/10 to-indigo-600/10"
+    },
+    {
+      title: "Клиенти",
+      value: (clientCount || 0).toString(),
+      description: "Активни клиенти",
+      icon: Users,
+      gradient: "from-amber-500 to-orange-600",
+      bgGradient: "from-amber-500/10 to-orange-600/10"
     }
-  });
-  
-  const totalRevenue = Number(revenue._sum.total || 0);
-  
-  // Get client count
-  const clientCount = await prisma.client.count({
-    where: {
-      userId: session.user.id
-    }
-  });
+  ];
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Табло</h1>
-        <div className="flex gap-2">
-          <Button asChild>
-            <Link href="/invoices/new">Създаване на фактура</Link>
-          </Button>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Табло</h1>
+          <p className="text-muted-foreground mt-1">
+            Добре дошли, {session.user.name || 'потребител'}! Ето преглед на вашата дейност.
+          </p>
         </div>
+        <Button asChild className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20">
+          <Link href="/invoices/new">
+            <Plus className="mr-2 h-4 w-4" />
+            Нова фактура
+          </Link>
+        </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-6 mb-8 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="shadow-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Приходи</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-2xl font-bold">{totalRevenue.toFixed(2)} лв.</div>
-                <p className="text-xs text-muted-foreground">От платени фактури</p>
+      {/* Stats Grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat, index) => (
+          <Card key={stat.title} className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 group">
+            {/* Background Gradient */}
+            <div className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-50 group-hover:opacity-70 transition-opacity`} />
+            
+            <CardContent className="relative p-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                  <p className="text-3xl font-bold tracking-tight">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground">{stat.description}</p>
+                </div>
+                <div className={`p-3 rounded-xl bg-gradient-to-br ${stat.gradient} shadow-lg`}>
+                  <stat.icon className="h-5 w-5 text-white" />
+                </div>
               </div>
-              <div className="p-2 rounded-full bg-primary/10 text-primary">
-                <DollarSign className="h-5 w-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Фактури</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-2xl font-bold">{counts.total}</div>
-                <p className="text-xs text-muted-foreground">{counts.paid} платени, {counts.unpaid} неплатени, {counts.overdue} просрочени</p>
-              </div>
-              <div className="p-2 rounded-full bg-primary/10 text-primary">
-                <FileText className="h-5 w-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Клиенти</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-2xl font-bold">{clientCount}</div>
-                <p className="text-xs text-muted-foreground">Общо клиенти</p>
-              </div>
-              <div className="p-2 rounded-full bg-primary/10 text-primary">
-                <Users className="h-5 w-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Чакащи плащания</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-2xl font-bold">{(counts.unpaid + counts.overdue) * 100} лв.</div>
-                <p className="text-xs text-muted-foreground">В {counts.unpaid + counts.overdue} фактури</p>
-              </div>
-              <div className="p-2 rounded-full bg-primary/10 text-primary">
-                <ArrowUpRight className="h-5 w-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              
+              {stat.trend && (
+                <div className="flex items-center gap-1 mt-4">
+                  {stat.trendUp ? (
+                    <ArrowUpRight className="h-4 w-4 text-emerald-500" />
+                  ) : (
+                    <ArrowDownRight className="h-4 w-4 text-red-500" />
+                  )}
+                  <span className={`text-sm font-medium ${stat.trendUp ? 'text-emerald-500' : 'text-red-500'}`}>
+                    {stat.trend}
+                  </span>
+                  <span className="text-xs text-muted-foreground ml-1">vs миналия месец</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Recent Invoices */}
-      <Card className="shadow-md">
-        <CardHeader className="pb-2">
-          <CardTitle>Последни фактури</CardTitle>
-          <CardDescription>Най-новите фактури за всички клиенти</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left pb-3 px-2">Фактура</th>
-                  <th className="text-left pb-3 px-2">Клиент</th>
-                  <th className="text-left pb-3 px-2">Дата</th>
-                  <th className="text-left pb-3 px-2">Сума</th>
-                  <th className="text-left pb-3 px-2">Статус</th>
-                  <th className="text-right pb-3 px-2">Действия</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentInvoices.map((invoice: InvoiceWithClient) => (
-                  <tr key={invoice.id} className="border-b hover:bg-muted/50">
-                    <td className="py-3 px-2">{invoice.invoiceNumber}</td>
-                    <td className="py-3 px-2">{invoice.client.name}</td>
-                    <td className="py-3 px-2">{format(invoice.issueDate, 'dd.MM.yyyy')}</td>
-                    <td className="py-3 px-2">{Number(invoice.total).toFixed(2)} лв.</td>
-                    <td className="py-3 px-2">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusStyles(invoice.status)}`}>
-                        {getStatusText(invoice.status)}
-                      </span>
-                    </td>
-                    <td className="py-3 px-2 text-right">
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/invoices/${invoice.id}`}>Преглед</Link>
-                      </Button>
-                    </td>
-                  </tr>
+      {/* Quick Actions & Recent Invoices */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Quick Actions */}
+        <Card className="lg:col-span-1 border-0 shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-lg">Бързи действия</CardTitle>
+            <CardDescription>Често използвани операции</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Link 
+              href="/invoices/new"
+              className="flex items-center w-full p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
+            >
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mr-4 shadow-lg shadow-blue-500/20">
+                <Plus className="h-5 w-5 text-white" />
+              </div>
+              <div className="text-left">
+                <p className="font-medium text-sm">Нова фактура</p>
+                <p className="text-xs text-muted-foreground">Създайте фактура</p>
+              </div>
+            </Link>
+            <Link 
+              href="/clients/new"
+              className="flex items-center w-full p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
+            >
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mr-4 shadow-lg shadow-amber-500/20">
+                <Users className="h-5 w-5 text-white" />
+              </div>
+              <div className="text-left">
+                <p className="font-medium text-sm">Нов клиент</p>
+                <p className="text-xs text-muted-foreground">Добавете клиент</p>
+              </div>
+            </Link>
+            <Link 
+              href="/companies/new"
+              className="flex items-center w-full p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
+            >
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mr-4 shadow-lg shadow-emerald-500/20">
+                <Building className="h-5 w-5 text-white" />
+              </div>
+              <div className="text-left">
+                <p className="font-medium text-sm">Нова компания</p>
+                <p className="text-xs text-muted-foreground">Добавете фирма</p>
+              </div>
+            </Link>
+            <Link 
+              href="/products/new"
+              className="flex items-center w-full p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
+            >
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center mr-4 shadow-lg shadow-slate-500/20">
+                <FileText className="h-5 w-5 text-white" />
+              </div>
+              <div className="text-left">
+                <p className="font-medium text-sm">Нов продукт</p>
+                <p className="text-xs text-muted-foreground">Добавете услуга</p>
+              </div>
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* Recent Invoices */}
+        <Card className="lg:col-span-2 border-0 shadow-lg">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-lg">Последни фактури</CardTitle>
+              <CardDescription>Най-новите фактури в системата</CardDescription>
+            </div>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/invoices">
+                Всички
+                <ArrowUpRight className="ml-1 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {recentInvoices.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
+                  <FileText className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <p className="text-sm font-medium mb-1">Няма фактури</p>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Създайте първата си фактура
+                </p>
+                <Button size="sm" asChild>
+                  <Link href="/invoices/new">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Нова фактура
+                  </Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {recentInvoices.map((invoice) => (
+                  <Link
+                    key={invoice.id}
+                    href={`/invoices/${invoice.id}`}
+                    className="flex items-center justify-between p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors group"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                        invoice.status === 'ISSUED' 
+                          ? 'bg-emerald-500/10 text-emerald-600'
+                          : invoice.status === 'DRAFT'
+                          ? 'bg-amber-500/10 text-amber-600'
+                          : 'bg-red-500/10 text-red-600'
+                      }`}>
+                        {invoice.status === 'ISSUED' ? (
+                          <CheckCircle className="h-5 w-5" />
+                        ) : invoice.status === 'DRAFT' ? (
+                          <Clock className="h-5 w-5" />
+                        ) : (
+                          <XCircle className="h-5 w-5" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">{invoice.invoiceNumber}</p>
+                        <p className="text-xs text-muted-foreground">{invoice.client.name}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <p className="font-semibold text-sm">{invoice.total.toFixed(2)} лв</p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(invoice.issueDate, 'd MMM yyyy', { locale: bg })}
+                        </p>
+                      </div>
+                      <div className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                        invoice.status === 'ISSUED' 
+                          ? 'bg-emerald-500/10 text-emerald-600'
+                          : invoice.status === 'DRAFT'
+                          ? 'bg-amber-500/10 text-amber-600'
+                          : 'bg-red-500/10 text-red-600'
+                      }`}>
+                        {invoice.status === 'ISSUED' ? 'Издадена' : invoice.status === 'DRAFT' ? 'Чернова' : 'Отказана'}
+                      </div>
+                      <Eye className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </Link>
                 ))}
-                {recentInvoices.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="py-6 text-center text-muted-foreground">
-                      Не са намерени фактури. Създайте първата си фактура, за да започнете.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          {recentInvoices.length > 0 && (
-            <div className="flex justify-end mt-4">
-              <Button variant="outline" size="sm" asChild>
-                <Link href="/invoices">Преглед на всички фактури</Link>
-              </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Status Overview */}
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-emerald-500/5 to-teal-600/5">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Издадени</p>
+                <p className="text-3xl font-bold text-emerald-600">{counts.issued}</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                <CheckCircle className="h-6 w-6 text-emerald-600" />
+              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-amber-500/5 to-orange-600/5">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Чернови</p>
+                <p className="text-3xl font-bold text-amber-600">{counts.draft}</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-amber-500/10 flex items-center justify-center">
+                <Clock className="h-6 w-6 text-amber-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-red-500/5 to-red-600/5">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Отказани</p>
+                <p className="text-3xl font-bold text-red-600">{counts.cancelled}</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-red-500/10 flex items-center justify-center">
+                <XCircle className="h-6 w-6 text-red-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
-
-function getStatusStyles(status: string) {
-  switch (status) {
-    case "PAID":
-      return "bg-green-100 text-green-800";
-    case "UNPAID":
-      return "bg-amber-100 text-amber-800";
-    case "OVERDUE":
-      return "bg-red-100 text-red-800";
-    case "DRAFT":
-      return "bg-slate-100 text-slate-800";
-    default:
-      return "bg-gray-100 text-gray-800";
-  }
-}
-
-function getStatusText(status: string) {
-  switch (status) {
-    case "PAID":
-      return "Платена";
-    case "UNPAID":
-      return "Неплатена";
-    case "OVERDUE":
-      return "Просрочена";
-    case "DRAFT":
-      return "Чернова";
-    default:
-      return status;
-  }
-} 

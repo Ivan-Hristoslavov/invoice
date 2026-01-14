@@ -2,24 +2,25 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { Package, Plus, Search, Tag } from "lucide-react";
+import { Package, Plus, Search, Tag, ArrowUpRight, Euro, Percent } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { APP_NAME } from "@/config/constants";
-import { prisma } from "@/lib/db";
+import { createAdminClient } from "@/lib/supabase/server";
 import { Input } from "@/components/ui/input";
-import { Decimal } from "@prisma/client/runtime/library";
+import { redirect } from "next/navigation";
 
 interface Product {
   id: string;
   name: string;
   description: string | null;
-  price: Decimal;
+  price: number;
   unit: string;
-  taxRate: Decimal;
+  taxRate: number;
   userId: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export const metadata: Metadata = {
@@ -31,103 +32,189 @@ export default async function ProductsPage() {
   const session = await getServerSession(authOptions);
 
   if (!session) {
-    return (
-      <div className="flex items-center justify-center min-h-[80vh]">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Достъпът е отказан</h2>
-          <p className="text-muted-foreground mb-6">
-            Моля, влезте в системата, за да имате достъп до продуктите
-          </p>
-          <Button asChild>
-            <Link href="/signin">Вход</Link>
-          </Button>
-        </div>
-      </div>
-    );
+    redirect("/signin");
   }
 
-  // Fetch products from database
-  const products = await prisma.product.findMany({
-    where: { userId: session.user.id },
-    orderBy: { name: "asc" },
-  });
+  const supabase = createAdminClient();
+  const { data: products, error } = await supabase
+    .from("Product")
+    .select("*")
+    .eq("userId", session.user.id)
+    .order("name", { ascending: true });
+  
+  if (error) {
+    console.error("Error fetching products:", error);
+  }
+  
+  const productsList = (products || []).map((p: any) => ({
+    ...p,
+    price: Number(p.price),
+    taxRate: Number(p.taxRate),
+  }));
 
-  // Default currency for all products
-  const defaultCurrency = "BGN";
+  // Calculate stats
+  const totalProducts = productsList.length;
+  const avgPrice = totalProducts > 0 
+    ? productsList.reduce((sum: number, p: Product) => sum + p.price, 0) / totalProducts 
+    : 0;
+  const withTax = productsList.filter((p: Product) => p.taxRate > 0).length;
+
+  // Generate gradient based on product name
+  const getGradient = (name: string) => {
+    const gradients = [
+      "from-emerald-500 to-teal-600",
+      "from-blue-500 to-indigo-600",
+      "from-slate-500 to-slate-600",
+      "from-amber-500 to-orange-600",
+      "from-cyan-500 to-teal-600",
+      "from-cyan-500 to-blue-600",
+    ];
+    const index = name.charCodeAt(0) % gradients.length;
+    return gradients[index];
+  };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Продукти</h1>
-        <Button asChild>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Продукти</h1>
+          <p className="text-muted-foreground mt-1">
+            Управлявайте вашите продукти и услуги
+          </p>
+        </div>
+        <Button asChild className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20">
           <Link href="/products/new">
-            <Plus className="mr-2 h-4 w-4" /> Добавяне на продукт
+            <Plus className="mr-2 h-4 w-4" />
+            Нов продукт
           </Link>
         </Button>
       </div>
 
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Търсене на продукти..." className="pl-10" />
-        </div>
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-emerald-500/5 to-teal-600/5">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Общо продукти</p>
+                <p className="text-2xl font-bold">{totalProducts}</p>
+              </div>
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                <Package className="h-5 w-5 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500/5 to-indigo-600/5">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Средна цена</p>
+                <p className="text-2xl font-bold">{avgPrice.toFixed(2)} лв</p>
+              </div>
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                <Euro className="h-5 w-5 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-slate-500/5 to-slate-600/5">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">С ДДС</p>
+                <p className="text-2xl font-bold text-violet-600">{withTax}</p>
+              </div>
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center">
+                <Percent className="h-5 w-5 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {products.length === 0 ? (
-        <div className="text-center py-12">
-          <Package className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
-          <h3 className="mt-4 text-lg font-semibold">
-            Все още нямате продукти
-          </h3>
-          <p className="mt-2 text-muted-foreground">
-            Добавете първия си продукт, за да започнете да създавате фактури
-          </p>
-          <Button className="mt-4" asChild>
-            <Link href="/products/new">
-              <Plus className="mr-2 h-4 w-4" /> Добавяне на продукт
-            </Link>
-          </Button>
-        </div>
+      {/* Search */}
+      <Card className="border-0 shadow-lg">
+        <CardContent className="p-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input 
+              placeholder="Търсене по име или описание..." 
+              className="pl-10 h-11 border-border"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Products Grid */}
+      {productsList.length === 0 ? (
+        <Card className="border-0 shadow-lg">
+          <CardContent className="py-16">
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                <Package className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold mb-1">Все още нямате продукти</h3>
+              <p className="text-sm text-muted-foreground mb-6 max-w-sm">
+                Добавете първия си продукт или услуга, за да ги използвате във фактурите
+              </p>
+              <Button asChild>
+                <Link href="/products/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Добави първия продукт
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {products.map((product: Product) => (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {productsList.map((product: Product) => (
             <Link key={product.id} href={`/products/${product.id}`}>
-              <Card className="h-full hover:shadow-md transition-shadow cursor-pointer">
+              <Card className="h-full border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group cursor-pointer">
                 <CardContent className="p-6">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-1">
-                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                        <Package className="h-5 w-5" />
-                      </span>
+                  <div className="flex items-start gap-4">
+                    <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${getGradient(product.name)} flex items-center justify-center shadow-lg`}>
+                      <Package className="h-6 w-6 text-white" />
                     </div>
-                    <div className="space-y-1">
-                      <h3 className="font-medium">{product.name}</h3>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="font-semibold truncate group-hover:text-primary transition-colors">
+                            {product.name}
+                          </h3>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="outline" className="text-xs">
+                              <Tag className="h-3 w-3 mr-1" />
+                              {product.unit}
+                            </Badge>
+                          </div>
+                        </div>
+                        <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                      
                       {product.description && (
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
                           {product.description}
                         </p>
                       )}
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium">
-                          {defaultCurrency === "BGN"
-                            ? "лв. "
-                            : defaultCurrency === "EUR"
-                            ? "€"
-                            : defaultCurrency === "GBP"
-                            ? "£"
-                            : "$"}
-                          {Number(product.price).toFixed(2)}
-                        </p>
-                        {product.taxRate && Number(product.taxRate) > 0 && (
-                          <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
-                            +{Number(product.taxRate)}% данък
+                      
+                      <div className="mt-4 pt-3 border-t flex items-center justify-between">
+                        <div>
+                          <span className="text-xl font-bold">
+                            {product.price.toFixed(2)}
                           </span>
+                          <span className="text-sm text-muted-foreground ml-1">лв</span>
+                        </div>
+                        {product.taxRate > 0 && (
+                          <Badge variant="secondary" className="text-xs">
+                            +{product.taxRate}% ДДС
+                          </Badge>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                        <Tag className="h-3 w-3" />
-                        За {product.unit}
-                      </p>
                     </div>
                   </div>
                 </CardContent>

@@ -39,6 +39,8 @@ model User {
   documents     Document[]
   userRoles     UserRole[]
   subscriptions Subscription[]
+  creditNotes   CreditNote[]
+  auditLogs     AuditLog[]
 }
 
 model Account {
@@ -118,6 +120,8 @@ model Company {
   
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   invoices          Invoice[]
+  creditNotes       CreditNote[]
+  invoiceSequences  InvoiceSequence[]
   userRoles         UserRole[]
 }
 
@@ -150,6 +154,7 @@ model Client {
   
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   invoices          Invoice[]
+  creditNotes       CreditNote[]
 }
 
 model Product {
@@ -192,14 +197,13 @@ model Invoice {
   issueDate       DateTime
   dueDate         DateTime
   status          InvoiceStatus @default(DRAFT)
-  paidAt          DateTime? // When the invoice was paid
   subtotal        Decimal  @db.Decimal(10, 2)
   taxAmount       Decimal  @db.Decimal(10, 2)
   discount        Decimal? @db.Decimal(10, 2)
   total           Decimal  @db.Decimal(10, 2)
   notes           String?
   termsAndConditions String?
-  currency        String   @default("USD")
+  currency        String   @default("EUR")
   locale          String   @default("en") // Invoice language
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -209,17 +213,25 @@ model Invoice {
   isOriginal      Boolean  @default(true) // Whether this is the original or a copy
   uniqueNapId     String?  // Unique identifier for НАП
   placeOfIssue    String?  // Required place where invoice was issued
-  paymentMethod   String?  // For tracking payment method as per Bulgarian requirements
+  paymentMethod   String?  // Начин на плащане (информативно поле): банков превод, по договор, и т.н.
   supplyDate      DateTime? // Date of supply/service delivery (дата на данъчно събитие)
   isEInvoice      Boolean  @default(false) // Whether this is an electronic invoice
   napStatus       String?  // Status of the invoice in the НАП system
+  
+  // Immutable: invoices cannot be edited after creation, only cancelled → credit note
+  cancelledAt     DateTime? // When invoice was cancelled
+  cancelledBy     String?   // User ID who cancelled
+  creditNoteId    String?   @unique // Reference to credit note if cancelled
+  invoiceSequenceId String? @unique // Reference to the sequence used for numbering
   
   client          Client   @relation(fields: [clientId], references: [id])
   company         Company  @relation(fields: [companyId], references: [id])
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   items           InvoiceItem[]
-  payments        Payment[]
   documents       Document[]
+  sequence        InvoiceSequence? @relation(fields: [invoiceSequenceId], references: [id]) // Sequence used for numbering
+  creditNote      CreditNote? // Credit note created from this invoice
+  auditLogs       AuditLog[]
   
   @@unique([invoiceNumber, companyId])
 }
@@ -240,39 +252,87 @@ model InvoiceItem {
   product     Product? @relation(fields: [productId], references: [id])
 }
 
-model Payment {
-  id          String       @id @default(cuid())
-  invoiceId   String
-  amount      Decimal      @db.Decimal(10, 2)
-  paymentDate DateTime
-  paymentMethod PaymentMethod
-  transactionId String?    // Stripe transaction ID or reference
-  reference   String?
-  notes       String?
-  refundedPaymentId String? // Reference to the original payment if this is a refund
-  status      String?      // Status of the payment: PAID, FAILED, REFUNDED, etc.
-  createdAt   DateTime     @default(now())
+// InvoiceSequence: Manages sequential numbering per company/year
+model InvoiceSequence {
+  id          String   @id @default(cuid())
+  companyId   String
+  year        Int      // Calendar year (e.g., 2026)
+  sequence    Int      @default(1) // Current sequence number
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   
-  invoice     Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invoice     Invoice? @relation // The invoice using this sequence
+  
+  @@unique([companyId, year])
+}
+
+// CreditNote: Created when an invoice is cancelled
+model CreditNote {
+  id              String   @id @default(cuid())
+  creditNoteNumber String   @unique
+  invoiceId       String   @unique // Reference to cancelled invoice
+  companyId       String
+  clientId        String
+  userId           String
+  issueDate        DateTime
+  reason           String?  // Reason for credit note
+  subtotal         Decimal  @db.Decimal(10, 2)
+  taxAmount        Decimal  @db.Decimal(10, 2)
+  total            Decimal  @db.Decimal(10, 2)
+  currency         String   @default("EUR")
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  invoice          Invoice  @relation(fields: [invoiceId], references: [id])
+  company          Company  @relation(fields: [companyId], references: [id])
+  client           Client   @relation(fields: [clientId], references: [id])
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items            CreditNoteItem[]
+  
+  @@unique([creditNoteNumber, companyId])
+}
+
+model CreditNoteItem {
+  id            String   @id @default(cuid())
+  creditNoteId  String
+  description   String
+  quantity      Decimal  @db.Decimal(10, 2)
+  unitPrice     Decimal  @db.Decimal(10, 2)
+  taxRate       Decimal  @default(0) @db.Decimal(5, 2)
+  subtotal      Decimal  @db.Decimal(10, 2)
+  taxAmount     Decimal  @db.Decimal(10, 2)
+  total         Decimal  @db.Decimal(10, 2)
+  
+  creditNote    CreditNote @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
+}
+
+// AuditLog: Tracks all changes to invoices and system events
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String
+  invoiceId   String?
+  action      String   // CREATE, UPDATE, CANCEL, SEND, EXPORT, etc.
+  entityType  String   // INVOICE, CREDIT_NOTE, CLIENT, COMPANY, etc.
+  entityId    String?
+  changes     String?  @db.Text // JSON string of changes
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invoice     Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
 }
 
 enum InvoiceStatus {
-  DRAFT
-  UNPAID
-  PAID
-  OVERDUE
-  CANCELLED
+  DRAFT      // Draft invoice, can be edited
+  ISSUED     // Invoice issued (immutable, cannot be edited)
+  CANCELLED  // Invoice cancelled, credit note created
 }
 
-enum PaymentMethod {
-  BANK_TRANSFER
-  CASH
-  CREDIT_CARD
-  APPLE_PAY
-  GOOGLE_PAY
-  WIRE_TRANSFER
-  OTHER
-}
+// PaymentMethod enum removed - payment method is now just a text field in Invoice
+// Allowed values: "Банков превод", "По договор", etc. (informative only, no logic)
 
 model Document {
   id        String   @id @default(cuid())
@@ -395,9 +455,9 @@ enum SubscriptionStatus {
 }
 
 enum SubscriptionPlan {
-  BASIC
-  PRO
-  VIP
+  FREE      // Free plan: 3 invoices/month, 1 company, no logo, basic PDF, no export
+  PRO       // Pro plan: unlimited invoices, 1 company, logo, pro PDF, export, credit notes
+  BUSINESS  // Business plan: unlimited invoices, 5 companies, logo, pro PDF, export, credit notes, users, API
 }
 
 enum PaymentStatus {

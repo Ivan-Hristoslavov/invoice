@@ -1,15 +1,15 @@
-import { cn } from "@/lib/utils";
+"use client";
+
+import * as React from "react";
+import { Skeleton as RadixSkeleton } from "@radix-ui/themes";
 
 interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export function Skeleton({ className, ...props }: SkeletonProps) {
   return (
-    <div
-      className={cn(
-        "animate-pulse rounded-md bg-muted",
-        className
-      )}
+    <RadixSkeleton
+      className={className}
       {...props}
     />
   );
-} 
+}

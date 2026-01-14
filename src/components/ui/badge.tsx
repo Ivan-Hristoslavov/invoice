@@ -1,39 +1,39 @@
-import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
+"use client";
 
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { Badge as RadixBadge } from "@radix-ui/themes";
+import type { BadgeProps as RadixBadgeProps } from "@radix-ui/themes";
 
-const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-  {
-    variants: {
-      variant: {
-        default:
-          "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
-        secondary:
-          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        destructive:
-          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-        outline: "text-foreground",
-        success: "border-transparent bg-green-100 text-green-800 hover:bg-green-200/80",
-        warning: "border-transparent bg-amber-100 text-amber-800 hover:bg-amber-200/80",
-        info: "border-transparent bg-blue-100 text-blue-800 hover:bg-blue-200/80",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-    },
-  }
-)
-
-export interface BadgeProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof badgeVariants> {}
-
-function Badge({ className, variant, ...props }: BadgeProps) {
-  return (
-    <div className={cn(badgeVariants({ variant }), className)} {...props} />
-  )
+export interface BadgeProps extends Omit<RadixBadgeProps, "variant"> {
+  variant?: "default" | "secondary" | "destructive" | "outline" | "success" | "warning" | "info";
 }
 
-export { Badge, badgeVariants } 
+function Badge({ variant = "default", className, ...props }: BadgeProps) {
+  // Map shadcn variants to Radix variants
+  const radixVariant = 
+    variant === "secondary" ? "soft" :
+    variant === "destructive" ? "solid" :
+    variant === "outline" ? "outline" :
+    variant === "success" ? "solid" :
+    variant === "warning" ? "solid" :
+    variant === "info" ? "solid" :
+    "solid";
+
+  const color = 
+    variant === "destructive" ? "red" :
+    variant === "success" ? "green" :
+    variant === "warning" ? "amber" :
+    variant === "info" ? "blue" :
+    undefined;
+
+  return (
+    <RadixBadge
+      variant={radixVariant}
+      color={color}
+      className={className}
+      {...props}
+    />
+  );
+}
+
+export { Badge };

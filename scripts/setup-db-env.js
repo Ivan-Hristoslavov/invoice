@@ -22,7 +22,7 @@ const defaults = {
 function generateEnvFile() {
   console.log(`Setting up ${APP_NAME} environment variables...`);
   
-  // Construct the DATABASE_URL
+  // Construct the NEXT_PUBLIC_SUPABASE_URL
   const databaseUrl = `postgresql://${defaults.DB_USERNAME}:${defaults.DB_PASSWORD}@${defaults.DB_HOST}:${defaults.DB_PORT}/${defaults.DB}?schema=${defaults.DB_SCHEMA}`;
   
   // Create environment variables content
@@ -39,7 +39,7 @@ DB_SCHEMA=${defaults.DB_SCHEMA}
 DB=${defaults.DB}
 
 # Prisma database URL
-DATABASE_URL="${databaseUrl}"
+NEXT_PUBLIC_SUPABASE_URL="${databaseUrl}"
 
 # Authentication
 NEXTAUTH_SECRET="${defaults.NEXTAUTH_SECRET}"

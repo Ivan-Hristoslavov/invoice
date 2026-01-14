@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { createAdminClient } from "@/lib/supabase/server";
 import { z } from "zod";
 import Stripe from 'stripe';
 import { getStripeInstance } from '@/lib/stripe';
+import cuid from "cuid";
 
 // Define validation schema for company data
 const companySchema = z.object({
@@ -46,22 +47,23 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const companies = await prisma.company.findMany({
-      where: {
-        userId: session.user.id
-      },
-      orderBy: {
-        name: 'asc'
-      }
-    });
+    const supabase = createAdminClient();
+    
+    const { data: companies, error } = await supabase
+      .from("Company")
+      .select("*")
+      .eq("userId", session.user.id)
+      .order("name", { ascending: true });
+    
+    if (error) {
+      throw error;
+    }
 
     return NextResponse.json(companies);
   } catch (error) {
     console.error("Грешка при извличане на компании:", error);
-    return NextResponse.json(
-      { error: "Неуспешно извличане на компании" },
-      { status: 500 }
-    );
+    // Return empty array instead of error to allow graceful degradation
+    return NextResponse.json([]);
   }
 }
 
@@ -81,12 +83,37 @@ export async function POST(request: NextRequest) {
     // Validate incoming data
     const validatedData = companySchema.parse(json);
     
-    const company = await prisma.company.create({
-      data: {
+    // Check subscription limits - брой фирми
+    const { checkSubscriptionLimits } = await import("@/middleware/subscription");
+    const companyLimitCheck = await checkSubscriptionLimits(
+      session.user.id as string,
+      'companies'
+    );
+    
+    if (!companyLimitCheck.allowed) {
+      return NextResponse.json(
+        { error: companyLimitCheck.message || "Достигнат е лимитът за фирми за вашия план" },
+        { status: 403 }
+      );
+    }
+    
+    const supabase = createAdminClient();
+    const companyId = cuid();
+    
+    const { data: company, error } = await supabase
+      .from("Company")
+      .insert({
+        id: companyId,
         ...validatedData,
-        userId: session.user.id
-      }
-    });
+        userId: session.user.id,
+        updatedAt: new Date().toISOString(),
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      throw error;
+    }
 
     return NextResponse.json(company);
   } catch (error) {
@@ -116,9 +143,14 @@ export async function POST_STRIPE_CONNECT_ONBOARDING(request: NextRequest) {
     }
 
     // Find the user's company (assume one company per user for now)
-    const company = await prisma.company.findFirst({
-      where: { userId: session.user.id },
-    });
+    const supabase = createAdminClient();
+    const { data: companies, error: findError } = await supabase
+      .from("Company")
+      .select("*")
+      .eq("userId", session.user.id)
+      .limit(1);
+    
+    const company = companies?.[0];
     if (!company) {
       return NextResponse.json({ error: 'Company not found' }, { status: 404 });
     }
@@ -143,10 +175,10 @@ export async function POST_STRIPE_CONNECT_ONBOARDING(request: NextRequest) {
         },
       });
       stripeAccountId = account.id;
-      await prisma.company.update({
-        where: { id: company.id },
-        data: { stripeAccountId },
-      });
+      await supabase
+        .from("Company")
+        .update({ stripeAccountId, updatedAt: new Date().toISOString() })
+        .eq("id", company.id);
     }
 
     // Create onboarding link

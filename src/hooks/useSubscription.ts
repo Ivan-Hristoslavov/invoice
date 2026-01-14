@@ -5,7 +5,7 @@ import { loadStripe } from '@stripe/stripe-js';
 
 interface Subscription {
   id: string;
-  plan: 'BASIC' | 'PRO' | 'VIP';
+  plan: 'FREE' | 'PRO' | 'BUSINESS';
   status: string;
   cancelAtPeriodEnd: boolean;
   currentPeriodEnd: string;

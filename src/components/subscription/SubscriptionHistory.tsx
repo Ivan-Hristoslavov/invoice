@@ -275,7 +275,7 @@ function PaymentsTable({ payments }: { payments: any[] }) {
               <TableCell>
                 {new Intl.NumberFormat('bg-BG', {
                   style: 'currency',
-                  currency: payment.currency || 'BGN',
+                  currency: payment.currency || 'EUR',
                 }).format(parseFloat(payment.amount))}
               </TableCell>
               <TableCell className="text-right">

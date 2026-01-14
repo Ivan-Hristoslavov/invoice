@@ -2,83 +2,116 @@
 
 import Stripe from 'stripe';
 
-// Check if required environment variables are set
-if (!process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY_FIXED) {
-  console.warn('Warning: Neither STRIPE_SECRET_KEY nor STRIPE_SECRET_KEY_FIXED is set in environment variables');
-}
+// Lazy initialization helper to avoid build-time errors
+let stripeInstance: Stripe | null = null;
 
-// Create a new Stripe instance with the secret key
-// Use the fixed key if available, otherwise use the original key with escape characters removed
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY_FIXED || 
-  (process.env.STRIPE_SECRET_KEY ? process.env.STRIPE_SECRET_KEY.replace(/%/g, '') : '');
-
-// Verify we have a valid API key before initializing Stripe
-if (!stripeSecretKey) {
-  throw new Error('Stripe API key is missing. Please check your environment variables.');
-}
-
-const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: '2023-10-16' as any, // Type cast to avoid version mismatch
-  typescript: true,
-});
-
-// Export stripe as an async function to be compatible with 'use server' directive
 export async function getStripe() {
-  return stripe;
+  if (stripeInstance) {
+    return stripeInstance;
+  }
+  
+  // Check if required environment variables are set
+  if (!process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY_FIXED) {
+    throw new Error('Neither STRIPE_SECRET_KEY nor STRIPE_SECRET_KEY_FIXED is set in environment variables');
+  }
+
+  // Create a new Stripe instance with the secret key
+  // Use the fixed key if available, otherwise use the original key with escape characters removed
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY_FIXED || 
+    (process.env.STRIPE_SECRET_KEY ? process.env.STRIPE_SECRET_KEY.replace(/%/g, '') : '');
+
+  // Verify we have a valid API key before initializing Stripe
+  if (!stripeSecretKey) {
+    throw new Error('Stripe API key is missing. Please check your environment variables.');
+  }
+
+  stripeInstance = new Stripe(stripeSecretKey, {
+    apiVersion: '2023-10-16' as any, // Type cast to avoid version mismatch
+    typescript: true,
+  });
+  
+  return stripeInstance;
 }
 
-// Direct checkout URLs
-const STRIPE_BASIC_URL = 'https://buy.stripe.com/test_7sY28t3Wa97J0IMe3Fb7y08';
-const STRIPE_PRO_URL = 'https://buy.stripe.com/test_5kQeVf64ibfRbnqcZBb7y06';
-const STRIPE_VIP_URL = 'https://buy.stripe.com/test_fZu14p2S683F4Z2cZBb7y07';
+// Direct checkout URLs (to be updated with actual Stripe Payment Links)
+// FREE plan doesn't need a checkout URL
+const STRIPE_PRO_MONTHLY_URL = process.env.STRIPE_PRO_MONTHLY_URL || 'https://buy.stripe.com/test_pro_monthly';
+const STRIPE_PRO_YEARLY_URL = process.env.STRIPE_PRO_YEARLY_URL || 'https://buy.stripe.com/test_pro_yearly';
+const STRIPE_BUSINESS_MONTHLY_URL = process.env.STRIPE_BUSINESS_MONTHLY_URL || 'https://buy.stripe.com/test_business_monthly';
+const STRIPE_BUSINESS_YEARLY_URL = process.env.STRIPE_BUSINESS_YEARLY_URL || 'https://buy.stripe.com/test_business_yearly';
 
-// Subscription prices in BGN
-const STRIPE_BASIC_PRICE = 10;
-const STRIPE_PRO_PRICE = 20;
-const STRIPE_VIP_PRICE = 30;
+// Subscription prices in EUR (BGN equivalent: 1 EUR ≈ 1.96 BGN)
+// FREE: 0 EUR (free forever)
+// PRO: 12-15 EUR/month or 120-150 EUR/year (20% discount)
+// BUSINESS: 25-30 EUR/month or 250-300 EUR/year (20% discount)
+
+const STRIPE_FREE_PRICE = 0; // Free plan
+const STRIPE_PRO_MONTHLY_PRICE = 13; // 13 EUR/month (≈ 25 BGN)
+const STRIPE_PRO_YEARLY_PRICE = 130; // 130 EUR/year (≈ 255 BGN, 20% discount)
+const STRIPE_BUSINESS_MONTHLY_PRICE = 28; // 28 EUR/month (≈ 55 BGN)
+const STRIPE_BUSINESS_YEARLY_PRICE = 280; // 280 EUR/year (≈ 550 BGN, 20% discount)
 
 // Fallback price IDs (for development only - should be set in environment variables)
 const FALLBACK_PRICE_IDS = {
-  BASIC: 'price_basic_fallback',
-  PRO: 'price_pro_fallback',
-  VIP: 'price_vip_fallback'
+  PRO_MONTHLY: 'price_pro_monthly_fallback',
+  PRO_YEARLY: 'price_pro_yearly_fallback',
+  BUSINESS_MONTHLY: 'price_business_monthly_fallback',
+  BUSINESS_YEARLY: 'price_business_yearly_fallback',
 };
 
 // Subscription plan data structure - safe to expose to client
 const PLANS_DATA = {
-  BASIC: {
-    name: 'Basic',
-    url: STRIPE_BASIC_URL,
-    price: STRIPE_BASIC_PRICE,
-    priceId: process.env.STRIPE_BASIC_PRICE_ID || FALLBACK_PRICE_IDS.BASIC,
+  FREE: {
+    name: 'Free',
+    price: STRIPE_FREE_PRICE,
+    priceMonthly: STRIPE_FREE_PRICE,
+    priceYearly: STRIPE_FREE_PRICE,
+    priceIdMonthly: null, // Free plan doesn't need Stripe
+    priceIdYearly: null,
     features: [
-      'Access to basic invoicing features',
-      'Up to 10 clients',
-      'Up to 50 invoices per month'
+      'До 3 фактури на месец',
+      '1 фирма',
+      'Basic PDF (с воден знак)',
+      'Без експорт',
+      'Без лого',
+    ],
+    limitations: [
+      'Без кредитни известия',
+      'Без изпращане по имейл',
     ],
   },
   PRO: {
     name: 'Pro',
-    url: STRIPE_PRO_URL,
-    price: STRIPE_PRO_PRICE,
-    priceId: process.env.STRIPE_PRO_PRICE_ID || FALLBACK_PRICE_IDS.PRO,
+    price: STRIPE_PRO_MONTHLY_PRICE,
+    priceMonthly: STRIPE_PRO_MONTHLY_PRICE,
+    priceYearly: STRIPE_PRO_YEARLY_PRICE,
+    priceIdMonthly: process.env.STRIPE_PRO_MONTHLY_PRICE_ID || FALLBACK_PRICE_IDS.PRO_MONTHLY,
+    priceIdYearly: process.env.STRIPE_PRO_YEARLY_PRICE_ID || FALLBACK_PRICE_IDS.PRO_YEARLY,
     features: [
-      'All Basic features',
-      'Up to 50 clients',
-      'Unlimited invoices',
-      'Custom branding'
+      'Неограничени фактури',
+      '1 фирма',
+      'Собствено лого',
+      'Професионален PDF',
+      'Кредитни известия',
+      'Експорт PDF / CSV',
+      'Изпращане по имейл',
     ],
+    popular: true, // Mark as popular plan
   },
-  VIP: {
-    name: 'VIP',
-    url: STRIPE_VIP_URL,
-    price: STRIPE_VIP_PRICE,
-    priceId: process.env.STRIPE_VIP_PRICE_ID || FALLBACK_PRICE_IDS.VIP,
+  BUSINESS: {
+    name: 'Business',
+    price: STRIPE_BUSINESS_MONTHLY_PRICE,
+    priceMonthly: STRIPE_BUSINESS_MONTHLY_PRICE,
+    priceYearly: STRIPE_BUSINESS_YEARLY_PRICE,
+    priceIdMonthly: process.env.STRIPE_BUSINESS_MONTHLY_PRICE_ID || FALLBACK_PRICE_IDS.BUSINESS_MONTHLY,
+    priceIdYearly: process.env.STRIPE_BUSINESS_YEARLY_PRICE_ID || FALLBACK_PRICE_IDS.BUSINESS_YEARLY,
     features: [
-      'All Pro features',
-      'Unlimited clients',
-      'Priority support',
-      'Advanced analytics'
+      'Всичко от Pro',
+      'До 5 фирми',
+      'Потребители с роли',
+      'Експорт за счетоводство',
+      'API достъп (read-only)',
+      'Приоритетна поддръжка',
     ],
   },
 };
@@ -91,6 +124,7 @@ export async function getSubscriptionPlans() {
 // Create checkout session
 export async function createCheckoutSession(priceId: string) {
   try {
+    const stripe = await getStripe();
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -113,64 +147,16 @@ export async function createCheckoutSession(priceId: string) {
 
 // Additional Stripe helper functions
 export async function getStripeCustomer(customerId: string) {
+  const stripe = await getStripe();
   return await stripe.customers.retrieve(customerId);
 }
 
 export async function getSubscription(subscriptionId: string) {
+  const stripe = await getStripe();
   return await stripe.subscriptions.retrieve(subscriptionId);
 }
 
-// Create payment link for invoice
-export async function createInvoicePaymentLink(
-  invoiceId: string,
-  amount: number,
-  currency: string,
-  customerEmail?: string
-) {
-  try {
-    // 1. Create a product for the invoice
-    const product = await stripe.products.create({
-      name: `Invoice #${invoiceId}`,
-      metadata: { invoiceId },
-    });
-
-    // 2. Create a price for the product
-    const price = await stripe.prices.create({
-      product: product.id,
-      unit_amount: Math.round(amount * 100),
-      currency: currency.toLowerCase(),
-    });
-
-    // 3. Create a payment link using the price
-    const paymentLink = await stripe.paymentLinks.create({
-      line_items: [
-        {
-          price: price.id,
-          quantity: 1,
-        },
-      ],
-      after_completion: {
-        type: 'redirect',
-        redirect: {
-          url: `${process.env.NEXT_PUBLIC_APP_URL}/invoices/${invoiceId}?payment_status=success`,
-        },
-      },
-      metadata: { invoiceId },
-    });
-
-    return paymentLink.url;
-  } catch (error) {
-    console.error('Error creating payment link:', error);
-    if (error instanceof Error) {
-      // Log extra details if available
-      // @ts-ignore
-      if (error.response) console.error('Stripe error.response:', error.response);
-      // @ts-ignore
-      if (error.raw) console.error('Stripe error.raw:', error.raw);
-    }
-    throw new Error('Failed to create payment link');
-  }
-}
+// Payment link functionality removed - invoices are for issuance only, not payment processing
 
 export async function getStripeInstance() {
   if (!process.env.STRIPE_SECRET_KEY) {

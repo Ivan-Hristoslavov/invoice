@@ -3,11 +3,13 @@ import { CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default function PaymentSuccessPage({
+export default async function PaymentSuccessPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
+  
   return (
     <div className="container max-w-lg mx-auto py-12">
       <Card>
@@ -26,7 +28,7 @@ export default function PaymentSuccessPage({
           </p>
           <div className="flex justify-center gap-4">
             <Button asChild>
-              <Link href={`/invoices/${params.id}`}>
+              <Link href={`/invoices/${id}`}>
                 Виж фактурата
               </Link>
             </Button>

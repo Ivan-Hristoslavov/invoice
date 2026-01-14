@@ -64,14 +64,20 @@ export default async function InvoicePage({ params }: PageProps) {
     return notFound();
   }
 
-  const invoice = await getInvoiceWithDetails(id, session.user.id);
+  try {
+    const invoice = await getInvoiceWithDetails(id, session.user.id);
 
-  if (!invoice) {
-    notFound();
+    if (!invoice) {
+      return notFound();
+    }
+
+    // Serialize Decimal objects before passing to client component
+    const serializedInvoice = serializeDecimal(invoice);
+
+    return <InvoiceDetailClient initialInvoice={serializedInvoice} />;
+  } catch (error) {
+    console.error('Error loading invoice:', error);
+    // Return 404 if database is unavailable or invoice not found
+    return notFound();
   }
-
-  // Serialize Decimal objects before passing to client component
-  const serializedInvoice = serializeDecimal(invoice);
-
-  return <InvoiceDetailClient initialInvoice={serializedInvoice} />;
 }

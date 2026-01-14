@@ -7,16 +7,19 @@ import { sendPaymentConfirmationEmail } from "@/lib/email";
 import { InvoiceStatus, SubscriptionStatus, PaymentMethod } from "@prisma/client";
 
 // Define custom types for easier use
-type SubscriptionPlan = "BASIC" | "PRO" | "VIP";
+type SubscriptionPlan = "FREE" | "PRO" | "BUSINESS";
 type PaymentStatus = "PAID" | "FAILED" | "REFUNDED" | "COMPLETED";
 
-// Initialize Stripe with the secret key
-const stripe = new Stripe(
-  process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY_FIXED || "",
-  {
-    apiVersion: "2025-04-30.basil" as Stripe.LatestApiVersion,
+// Lazy initialization helper to avoid build-time errors
+function getStripe() {
+  const stripeKey = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY_FIXED;
+  if (!stripeKey) {
+    throw new Error('STRIPE_SECRET_KEY is not configured');
   }
-);
+  return new Stripe(stripeKey, {
+    apiVersion: "2025-04-30.basil" as Stripe.LatestApiVersion,
+  });
+}
 
 // Webhook secret for validating events
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -107,92 +110,22 @@ export async function POST(req: Request) {
 
     // Handle different event types
     switch (event.type) {
+      // Invoice payment processing removed - invoices are for issuance only
+      // Only subscription payments are processed here
       case "payment_intent.succeeded": {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        const invoiceId = paymentIntent.metadata?.invoiceId;
-
-        if (!invoiceId) {
-          console.error("No invoiceId found in payment intent metadata");
-          await logWebhookEvent(event.type, event.id, "FAILED", { error: "No invoiceId found" });
-          return NextResponse.json({ error: "No invoiceId found" }, { status: 400 });
-        }
-
-        try {
-          // Find invoice with related client and company
-          const invoiceWithRelations = await prisma.invoice.findUnique({
-            where: { id: invoiceId },
-            include: {
-              client: true,
-              company: true
-            }
-          });
-          
-          if (!invoiceWithRelations) {
-            throw new Error(`Invoice with ID ${invoiceId} not found`);
-          }
-          
-          // Update invoice status and create payment record
-          await prisma.invoice.update({
-            where: { id: invoiceId },
-            data: {
-              status: "PAID" as InvoiceStatus,
-              paidAt: new Date(),
-              payments: {
-                create: {
-                  amount: paymentIntent.amount / 100,
-                  paymentDate: new Date(),
-                  paymentMethod: "CREDIT_CARD" as PaymentMethod,
-                  transactionId: paymentIntent.id,
-                  status: "PAID",
-                  notes: "Платено чрез Stripe",
-                  reference: paymentIntent.id
-                }
-              }
-            }
-          });
-
-          // Send confirmation emails
-          try {
-            // Send to client
-            if (invoiceWithRelations.client?.email) {
-              await sendPaymentConfirmationEmail({
-                to: invoiceWithRelations.client.email,
-                invoiceNumber: invoiceWithRelations.invoiceNumber,
-                amount: Number(invoiceWithRelations.total),
-                currency: invoiceWithRelations.currency,
-                clientName: invoiceWithRelations.client.name,
-                companyName: invoiceWithRelations.company.name
-              });
-            }
-
-            // Send to company
-            if (invoiceWithRelations.company?.email) {
-              await sendPaymentConfirmationEmail({
-                to: invoiceWithRelations.company.email,
-                invoiceNumber: invoiceWithRelations.invoiceNumber,
-                amount: Number(invoiceWithRelations.total),
-                currency: invoiceWithRelations.currency,
-                clientName: invoiceWithRelations.client.name,
-                companyName: invoiceWithRelations.company.name
-              });
-            }
-          } catch (error) {
-            console.error("Error sending confirmation emails:", error);
-            // Don't throw error here, just log it
-          }
-
-          // Revalidate pages
-          revalidatePath(`/invoices/${invoiceId}`);
-          revalidatePath("/invoices");
-          revalidatePath("/dashboard");
-        } catch (error) {
-          console.error("Error processing payment_intent.succeeded:", error);
-          await logWebhookEvent(event.type, event.id, "FAILED", { error: String(error) });
-        }
+        // Only handle subscription payments, not invoice payments
+        // Invoice payments should not be processed through this system
+        console.log("Payment intent succeeded (subscription only)");
         break;
       }
 
       case "payment_intent.payment_failed": {
+        // Only handle subscription payments, not invoice payments
+        console.log("Payment intent failed (subscription only)");
+        break;
+      }
+
+      case "payment_intent.payment_failed_old": {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         const invoiceId = paymentIntent.metadata?.invoiceId;
 
@@ -312,6 +245,7 @@ export async function POST(req: Request) {
         
         try {
           // Get full subscription details from Stripe
+          const stripe = getStripe();
           const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId);
           const subscription = stripeSubscription as unknown as StripeSubscriptionWithDetails;
           
@@ -361,12 +295,16 @@ export async function POST(req: Request) {
           const amount = session.amount_total || 0;
           let plan: SubscriptionPlan;
           
-          if (amount >= 4999) {
-            plan = "VIP";
-          } else if (amount >= 1999) {
+          // Plan determination based on EUR prices:
+          // FREE: 0 EUR
+          // PRO: 13 EUR/month (130 EUR/year) = 1300 cents
+          // BUSINESS: 28 EUR/month (280 EUR/year) = 2800 cents
+          if (amount >= 2800) {
+            plan = "BUSINESS";
+          } else if (amount >= 1300) {
             plan = "PRO";
           } else {
-            plan = "BASIC";
+            plan = "FREE";
           }
           
           // Get price info from subscription
@@ -505,14 +443,18 @@ export async function POST(req: Request) {
           const priceAmount = subscription.items.data[0]?.price.unit_amount || 0;
           
           // Determine plan from price amount
+          // Plan determination based on EUR prices (in cents):
+          // FREE: 0 EUR
+          // PRO: 13 EUR/month (130 EUR/year) = 1300 cents
+          // BUSINESS: 28 EUR/month (280 EUR/year) = 2800 cents
           let plan = existingSubscription.plan;
           if (priceAmount) {
-            if (priceAmount >= 3000) {
-              plan = "VIP";
-            } else if (priceAmount >= 2000) {
+            if (priceAmount >= 2800) {
+              plan = "BUSINESS";
+            } else if (priceAmount >= 1300) {
               plan = "PRO";
             } else {
-              plan = "BASIC";
+              plan = "FREE";
             }
           }
           
@@ -672,6 +614,7 @@ export async function POST(req: Request) {
             
             // Try to retrieve the subscription details from Stripe
             try {
+              const stripe = getStripe();
               const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId);
               
               if (stripeSubscription && stripeSubscription.status === 'active') {
@@ -845,6 +788,7 @@ export async function POST(req: Request) {
             
             // Try to get customer email from Stripe
             try {
+              const stripe = getStripe();
               const stripeCustomer = await stripe.customers.retrieve(customerId);
               if (stripeCustomer && !stripeCustomer.deleted && stripeCustomer.email) {
                 // Try to find user by email
@@ -944,12 +888,16 @@ async function processSubscriptionForUser(user: any, subscription: StripeSubscri
   const priceAmount = subscription.items.data[0]?.price.unit_amount || 0;
   let plan: SubscriptionPlan;
   
-  if (priceAmount >= 3000) {
-    plan = "VIP";
-  } else if (priceAmount >= 2000) {
+  // Plan determination based on EUR prices (in cents):
+  // FREE: 0 EUR
+  // PRO: 13 EUR/month (130 EUR/year) = 1300 cents
+  // BUSINESS: 28 EUR/month (280 EUR/year) = 2800 cents
+  if (priceAmount >= 2800) {
+    plan = "BUSINESS";
+  } else if (priceAmount >= 1300) {
     plan = "PRO";
   } else {
-    plan = "BASIC";
+    plan = "FREE";
   }
   
   // Get price ID

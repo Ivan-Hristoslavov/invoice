@@ -2,12 +2,13 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { Building, Plus, Search, Users } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Building, Plus, Search, Users, Mail, Phone, MapPin, ArrowUpRight, MoreHorizontal } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { APP_NAME } from "@/config/constants";
-import { prisma } from "@/lib/db";
+import { createAdminClient } from "@/lib/supabase/server";
 import { Input } from "@/components/ui/input";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: `Клиенти | ${APP_NAME}`,
@@ -18,89 +19,186 @@ export default async function ClientsPage() {
   const session = await getServerSession(authOptions);
 
   if (!session) {
-    return (
-      <div className="flex items-center justify-center min-h-[80vh]">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Достъпът е отказан</h2>
-          <p className="text-muted-foreground mb-6">
-            Моля, влезте в системата, за да имате достъп до клиентите
-          </p>
-          <Button asChild>
-            <Link href="/signin">Вход</Link>
-          </Button>
-        </div>
-      </div>
-    );
+    redirect("/signin");
   }
 
-  // Fetch clients from database
-  const clients = await prisma.client.findMany({
-    where: { userId: session.user.id },
-    orderBy: { name: "asc" },
-  });
+  const supabase = createAdminClient();
+  
+  // Fetch clients
+  const { data: clients, error } = await supabase
+    .from("Client")
+    .select("*")
+    .eq("userId", session.user.id)
+    .order("name", { ascending: true });
+  
+  if (error) {
+    console.error("Error fetching clients:", error);
+  }
+  
+  const clientsList = clients || [];
+
+  // Get invoice counts per client
+  const { data: invoiceCounts } = await supabase
+    .from("Invoice")
+    .select("clientId")
+    .eq("userId", session.user.id);
+  
+  const clientInvoiceCounts = (invoiceCounts || []).reduce((acc: Record<string, number>, inv: any) => {
+    acc[inv.clientId] = (acc[inv.clientId] || 0) + 1;
+    return acc;
+  }, {});
+
+  // Generate avatar colors based on client name
+  const getAvatarGradient = (name: string) => {
+    const gradients = [
+      "from-blue-500 to-indigo-600",
+      "from-emerald-500 to-teal-600",
+      "from-amber-500 to-orange-600",
+      "from-slate-500 to-slate-600",
+      "from-cyan-500 to-teal-600",
+      "from-cyan-500 to-blue-600",
+    ];
+    const index = name.charCodeAt(0) % gradients.length;
+    return gradients[index];
+  };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Клиенти</h1>
-        <Button asChild>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Клиенти</h1>
+          <p className="text-muted-foreground mt-1">
+            Управлявайте вашите клиенти и контакти
+          </p>
+        </div>
+        <Button asChild className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20">
           <Link href="/clients/new">
-            <Plus className="mr-2 h-4 w-4" /> Добавяне на клиент
+            <Plus className="mr-2 h-4 w-4" />
+            Нов клиент
           </Link>
         </Button>
       </div>
 
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Търсене на клиенти..." className="pl-10" />
-        </div>
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-amber-500/5 to-orange-600/5">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Общо клиенти</p>
+                <p className="text-2xl font-bold">{clientsList.length}</p>
+              </div>
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                <Users className="h-5 w-5 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500/5 to-indigo-600/5">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">С фактури</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {Object.keys(clientInvoiceCounts).length}
+                </p>
+              </div>
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                <Building className="h-5 w-5 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {clients.length === 0 ? (
-        <div className="text-center py-12">
-          <Users className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
-          <h3 className="mt-4 text-lg font-semibold">Все още нямате клиенти</h3>
-          <p className="mt-2 text-muted-foreground">
-            Добавете първия си клиент, за да започнете да създавате фактури
-          </p>
-          <Button className="mt-4" asChild>
-            <Link href="/clients/new">
-              <Plus className="mr-2 h-4 w-4" /> Добавяне на клиент
-            </Link>
-          </Button>
-        </div>
+      {/* Search */}
+      <Card className="border-0 shadow-lg">
+        <CardContent className="p-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input 
+              placeholder="Търсене по име, имейл или телефон..." 
+              className="pl-10 h-11 border-border"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Clients Grid */}
+      {clientsList.length === 0 ? (
+        <Card className="border-0 shadow-lg">
+          <CardContent className="py-16">
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                <Users className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold mb-1">Все още нямате клиенти</h3>
+              <p className="text-sm text-muted-foreground mb-6 max-w-sm">
+                Добавете първия си клиент, за да започнете да създавате фактури
+              </p>
+              <Button asChild>
+                <Link href="/clients/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Добави първия клиент
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {clients.map((client: any) => (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {clientsList.map((client: any) => (
             <Link key={client.id} href={`/clients/${client.id}`}>
-              <Card className="h-full hover:shadow-md transition-shadow cursor-pointer">
+              <Card className="h-full border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group cursor-pointer">
                 <CardContent className="p-6">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-1">
-                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                        {client.name.charAt(0).toUpperCase()}
-                      </span>
+                  <div className="flex items-start gap-4">
+                    <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${getAvatarGradient(client.name)} flex items-center justify-center text-white font-bold text-lg shadow-lg`}>
+                      {client.name.charAt(0).toUpperCase()}
                     </div>
-                    <div className="space-y-1">
-                      <h3 className="font-medium">{client.name}</h3>
-                      {client.email && (
-                        <p className="text-sm text-muted-foreground">
-                          {client.email}
-                        </p>
-                      )}
-                      {client.phone && (
-                        <p className="text-sm text-muted-foreground">
-                          {client.phone}
-                        </p>
-                      )}
-                      {(client.city || client.country) && (
-                        <p className="text-sm text-muted-foreground flex items-center gap-1">
-                          <Building className="h-3 w-3" />
-                          {[client.city, client.country]
-                            .filter(Boolean)
-                            .join(", ")}
-                        </p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="font-semibold truncate group-hover:text-primary transition-colors">
+                            {client.name}
+                          </h3>
+                          {client.bulstatNumber && (
+                            <p className="text-xs text-muted-foreground">
+                              ЕИК: {client.bulstatNumber}
+                            </p>
+                          )}
+                        </div>
+                        <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                      
+                      <div className="mt-3 space-y-1.5">
+                        {client.email && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Mail className="h-3.5 w-3.5" />
+                            <span className="truncate">{client.email}</span>
+                          </div>
+                        )}
+                        {client.phone && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Phone className="h-3.5 w-3.5" />
+                            <span>{client.phone}</span>
+                          </div>
+                        )}
+                        {(client.city || client.country) && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <MapPin className="h-3.5 w-3.5" />
+                            <span>{[client.city, client.country].filter(Boolean).join(", ")}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {clientInvoiceCounts[client.id] > 0 && (
+                        <div className="mt-4 pt-3 border-t">
+                          <span className="text-xs font-medium text-muted-foreground">
+                            {clientInvoiceCounts[client.id]} {clientInvoiceCounts[client.id] === 1 ? 'фактура' : 'фактури'}
+                          </span>
+                        </div>
                       )}
                     </div>
                   </div>

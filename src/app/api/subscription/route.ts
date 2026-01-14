@@ -3,11 +3,12 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { Decimal } from '@prisma/client/runtime/library';
+import { PrismaClientInitializationError } from '@prisma/client/runtime/library';
 
 // Mock subscription data for development when database is unavailable
 const mockSubscription = {
   id: 'mock-subscription-id',
-  plan: 'BASIC',
+  plan: 'FREE',
   status: 'ACTIVE',
   cancelAtPeriodEnd: false,
   currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
@@ -58,34 +59,55 @@ export async function GET() {
 
     console.log('Fetching subscription for user:', session.user.id);
 
-    // Get user's subscription from database
-    const subscription = await prisma.subscription.findFirst({
-      where: {
-        userId: session.user.id,
-        status: {
-          in: ['ACTIVE', 'TRIALING', 'PAST_DUE']
-        }
-      },
-      include: {
-        paymentHistory: {
-          orderBy: {
-            createdAt: 'desc'
+    try {
+      // Get user's subscription from database
+      const subscription = await prisma.subscription.findFirst({
+        where: {
+          userId: session.user.id,
+          status: {
+            in: ['ACTIVE', 'TRIALING', 'PAST_DUE']
           }
         },
-        history: {
-          orderBy: {
-            createdAt: 'desc'
+        include: {
+          paymentHistory: {
+            orderBy: {
+              createdAt: 'desc'
+            }
+          },
+          history: {
+            orderBy: {
+              createdAt: 'desc'
+            }
           }
         }
+      });
+
+      console.log('Found subscription:', subscription ? `${subscription.id} (${subscription.plan})` : 'none');
+
+      // Serialize the response to handle Decimal objects
+      const serializedSubscription = subscription ? serializeDecimal(subscription) : null;
+
+      return NextResponse.json({ subscription: serializedSubscription });
+    } catch (dbError: any) {
+      // Check if it's a database connection error
+      if (
+        dbError instanceof PrismaClientInitializationError ||
+        dbError?.name === 'PrismaClientInitializationError' ||
+        dbError?.message?.includes("Can't reach database server") ||
+        dbError?.message?.includes("P1001")
+      ) {
+        console.warn('Database connection unavailable, using mock subscription data:', dbError.message);
+        
+        // Return mock data when database is unavailable
+        return NextResponse.json({ 
+          subscription: mockSubscription,
+          _mock: true // Flag to indicate this is mock data
+        });
       }
-    });
-
-    console.log('Found subscription:', subscription ? `${subscription.id} (${subscription.plan})` : 'none');
-
-    // Serialize the response to handle Decimal objects
-    const serializedSubscription = subscription ? serializeDecimal(subscription) : null;
-
-    return NextResponse.json({ subscription: serializedSubscription });
+      
+      // Re-throw other database errors
+      throw dbError;
+    }
   } catch (error) {
     console.error('Error fetching subscription:', error);
     return new NextResponse('Internal Server Error', { status: 500 });

@@ -1,8 +1,9 @@
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/db";
+import { createAdminClient } from "@/lib/supabase/server";
 import { authOptions } from "@/lib/auth";
+import cuid from "cuid";
 
 const productSchema = z.object({
   name: z.string().min(1),
@@ -26,16 +27,27 @@ export async function POST(request: NextRequest) {
     const json = await request.json();
     const validated = productSchema.parse(json);
 
-    const product = await prisma.product.create({
-      data: {
+    const supabase = createAdminClient();
+    const productId = cuid();
+    
+    const { data: product, error } = await supabase
+      .from("Product")
+      .insert({
+        id: productId,
         name: validated.name,
-        description: validated.description,
+        description: validated.description || null,
         price: validated.price,
         unit: validated.unit,
         taxRate: validated.taxRate,
         userId: session.user.id,
-      },
-    });
+        updatedAt: new Date().toISOString(),
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      throw error;
+    }
 
     return NextResponse.json(product, { status: 201 });
   } catch (error) {
@@ -65,21 +77,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const products = await prisma.product.findMany({
-      where: {
-        userId: session.user.id
-      },
-      orderBy: {
-        name: 'asc'
-      }
-    });
+    const supabase = createAdminClient();
+    
+    const { data: products, error } = await supabase
+      .from("Product")
+      .select("*")
+      .eq("userId", session.user.id)
+      .order("name", { ascending: true });
+    
+    if (error) {
+      throw error;
+    }
 
     return NextResponse.json(products);
   } catch (error) {
     console.error("Грешка при извличане на продукти:", error);
-    return NextResponse.json(
-      { error: "Неуспешно извличане на продукти" },
-      { status: 500 }
-    );
+    // Return empty array instead of error to allow graceful degradation
+    return NextResponse.json([]);
   }
 } 

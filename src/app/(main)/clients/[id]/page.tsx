@@ -5,20 +5,20 @@ import { authOptions } from "@/lib/auth";
 import { ArrowLeft, Building, Mail, Phone, Globe, FileText, Edit, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { prisma } from "@/lib/db";
+import { createAdminClient } from "@/lib/supabase/server";
 import { format } from "date-fns";
 import { Metadata } from "next";
 import { APP_NAME } from "@/config/constants";
 
-// Define the invoice status type based on the Prisma schema
-type InvoiceStatus = 'DRAFT' | 'UNPAID' | 'PAID' | 'OVERDUE' | 'CANCELLED';
+// Define the invoice status type
+type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'CANCELLED';
 
-// Define the invoice type based on the Prisma schema
+// Define the invoice type
 interface Invoice {
   id: string;
   invoiceNumber: string;
-  issueDate: Date;
-  dueDate: Date;
+  issueDate: string;
+  dueDate: string;
   status: InvoiceStatus;
   total: number;
   clientId: string;
@@ -31,15 +31,8 @@ interface Invoice {
   termsAndConditions?: string;
   currency: string;
   locale: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface InvoiceWithClient extends Invoice {
-  client: {
-    id: string;
-    name: string;
-  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Generate dynamic metadata
@@ -66,12 +59,17 @@ async function getClient(id: string) {
     return null;
   }
   
-  const client = await prisma.client.findUnique({
-    where: {
-      id,
-      userId: session.user.id,
-    }
-  });
+  const supabase = createAdminClient();
+  const { data: client, error } = await supabase
+    .from("Client")
+    .select("*")
+    .eq("id", id)
+    .eq("userId", session.user.id)
+    .single();
+  
+  if (error || !client) {
+    return null;
+  }
   
   return client;
 }
@@ -100,25 +98,26 @@ export default async function ClientDetailPage(props: { params: { id: string } }
     notFound();
   }
   
+  const supabase = createAdminClient();
+  
   // Get client's invoices
-  const invoices = await prisma.invoice.findMany({
-    where: {
-      clientId: client.id,
-      userId: session.user.id,
-    },
-    orderBy: {
-      issueDate: 'desc',
-    },
-    take: 5,
-  }) as InvoiceWithClient[];
+  const { data: invoices } = await supabase
+    .from("Invoice")
+    .select("*")
+    .eq("clientId", client.id)
+    .eq("userId", session.user.id)
+    .order("issueDate", { ascending: false })
+    .limit(5);
+  
+  const invoiceList = (invoices || []) as Invoice[];
   
   // Calculate stats
-  const totalInvoices = invoices.length;
-  const paidInvoices = invoices.filter((inv: InvoiceWithClient) => inv.status === 'PAID').length;
-  const totalAmount = invoices.reduce((sum: number, inv: InvoiceWithClient) => sum + Number(inv.total), 0);
-  const paidAmount = invoices
-    .filter((inv: InvoiceWithClient) => inv.status === 'PAID')
-    .reduce((sum: number, inv: InvoiceWithClient) => sum + Number(inv.total), 0);
+  const totalInvoices = invoiceList.length;
+  const issuedInvoices = invoiceList.filter((inv) => inv.status === 'ISSUED').length;
+  const totalAmount = invoiceList.reduce((sum, inv) => sum + Number(inv.total), 0);
+  const issuedAmount = invoiceList
+    .filter((inv) => inv.status === 'ISSUED')
+    .reduce((sum, inv) => sum + Number(inv.total), 0);
   
   return (
     <div>
@@ -230,7 +229,7 @@ export default async function ClientDetailPage(props: { params: { id: string } }
               <CardDescription>Най-новите фактури за този клиент</CardDescription>
             </CardHeader>
             <CardContent>
-              {invoices.length === 0 ? (
+              {invoiceList.length === 0 ? (
                 <div className="py-6 text-center">
                   <p className="text-muted-foreground">Все още няма фактури</p>
                   <Button size="sm" asChild className="mt-4">
@@ -252,15 +251,15 @@ export default async function ClientDetailPage(props: { params: { id: string } }
                       </tr>
                     </thead>
                     <tbody>
-                      {invoices.map((invoice: InvoiceWithClient) => (
+                      {invoiceList.map((invoice) => (
                         <tr key={invoice.id} className="border-b hover:bg-muted/50">
                           <td className="py-3 px-2">
                             <Link href={`/invoices/${invoice.id}`} className="text-primary hover:underline">
                               {invoice.invoiceNumber}
                             </Link>
                           </td>
-                          <td className="py-3 px-2">{format(invoice.issueDate, "dd.MM.yyyy")}</td>
-                          <td className="py-3 px-2">{Number(invoice.total).toFixed(2)} лв.</td>
+                          <td className="py-3 px-2">{format(new Date(invoice.issueDate), "dd.MM.yyyy")}</td>
+                          <td className="py-3 px-2">{Number(invoice.total).toFixed(2)} лв</td>
                           <td className="py-3 px-2">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusStyles(invoice.status)}`}>
                               {getStatusText(invoice.status)}
@@ -272,7 +271,7 @@ export default async function ClientDetailPage(props: { params: { id: string } }
                   </table>
                 </div>
               )}
-              {invoices.length > 0 && (
+              {invoiceList.length > 0 && (
                 <div className="flex justify-end mt-4">
                   <Button size="sm" variant="outline" asChild>
                     <Link href={`/invoices?client=${client.id}`}>Преглед на всички</Link>
@@ -296,18 +295,18 @@ export default async function ClientDetailPage(props: { params: { id: string } }
               </div>
               
               <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Платени фактури</p>
-                <p className="text-3xl font-bold text-green-600">{paidInvoices}</p>
+                <p className="text-sm font-medium text-muted-foreground">Издадени фактури</p>
+                <p className="text-3xl font-bold text-emerald-600">{issuedInvoices}</p>
               </div>
               
               <div className="space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">Общо сума</p>
-                <p className="text-3xl font-bold">{totalAmount.toFixed(2)} лв.</p>
+                <p className="text-3xl font-bold">{totalAmount.toFixed(2)} лв</p>
               </div>
               
               <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Общо платено</p>
-                <p className="text-3xl font-bold text-green-600">{paidAmount.toFixed(2)} лв.</p>
+                <p className="text-sm font-medium text-muted-foreground">Издадена стойност</p>
+                <p className="text-3xl font-bold text-emerald-600">{issuedAmount.toFixed(2)} лв</p>
               </div>
             </CardContent>
           </Card>
@@ -339,16 +338,12 @@ export default async function ClientDetailPage(props: { params: { id: string } }
 
 function getStatusStyles(status: InvoiceStatus) {
   switch (status) {
-    case "PAID":
-      return "bg-green-100 text-green-800";
-    case "UNPAID":
-      return "bg-amber-100 text-amber-800";
-    case "OVERDUE":
-      return "bg-red-100 text-red-800";
+    case "ISSUED":
+      return "bg-emerald-100 text-emerald-800";
     case "DRAFT":
-      return "bg-slate-100 text-slate-800";
+      return "bg-amber-100 text-amber-800";
     case "CANCELLED":
-      return "bg-gray-100 text-gray-800";
+      return "bg-red-100 text-red-800";
     default:
       return "bg-gray-100 text-gray-800";
   }
@@ -356,12 +351,8 @@ function getStatusStyles(status: InvoiceStatus) {
 
 function getStatusText(status: InvoiceStatus) {
   switch (status) {
-    case "PAID":
-      return "Платена";
-    case "UNPAID":
-      return "Неплатена";
-    case "OVERDUE":
-      return "Просрочена";
+    case "ISSUED":
+      return "Издадена";
     case "DRAFT":
       return "Чернова";
     case "CANCELLED":

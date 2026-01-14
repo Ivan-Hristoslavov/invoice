@@ -25,7 +25,7 @@ import { formatCurrency } from "@/lib/utils";
 import DocumentsTab from "@/components/invoice/DocumentsTab";
 import { getDocuments } from "@/lib/services/document-service";
 import { exportInvoiceAsPdf } from "@/lib/invoice-export";
-import { createInvoicePaymentLink } from "@/lib/stripe";
+// Payment link functionality removed - invoices are for issuance only
 
 type InvoiceItem = {
   id: string;
@@ -38,15 +38,7 @@ type InvoiceItem = {
   total: number;
 };
 
-type Payment = {
-  id: string;
-  amount: number;
-  paymentDate: string;
-  paymentMethod: string;
-  reference?: string;
-  notes?: string;
-  createdAt: string;
-};
+// Payment type removed - invoices are for issuance only
 
 type Document = {
   id: string;
@@ -67,11 +59,11 @@ type Invoice = {
   taxAmount: number;
   discount?: number;
   total: number;
-  amountDue: number;
-  totalPaid: number;
+  // Payment fields removed - invoices are for issuance only
   notes?: string;
   termsAndConditions?: string;
   currency: string;
+  paymentMethod?: string;
   client: {
     id: string;
     name: string;
@@ -88,7 +80,12 @@ type Invoice = {
     phone?: string;
   };
   items: InvoiceItem[];
-  payments: Payment[];
+  creditNote?: {
+    id: string;
+    creditNoteNumber: string;
+    issueDate: string;
+    reason?: string;
+  };
 };
 
 interface InvoiceDetailClientProps {
@@ -143,33 +140,35 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
     }
   };
 
-  const handleSendInvoiceWithPayment = async () => {
+  const handleCancelInvoice = async () => {
+    const reason = prompt("Моля, въведете причина за отмяна на фактурата:");
+    if (!reason || reason.trim() === "") {
+      toast.error("Причината за отмяна е задължителна");
+      return;
+    }
+    
     try {
       setIsSendingEmail(true);
-      const paymentLink = await createInvoicePaymentLink(
-        invoice.id,
-        Number(invoice.total),
-        invoice.currency,
-        invoice.client.email || ''
-      );
-      
-      await fetch(`/api/invoices/${invoice.id}/send`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: 'invoice_with_payment',
-          paymentLink,
-        }),
+      const response = await fetch(`/api/invoices/${invoice.id}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: reason.trim() }),
       });
       
-      toast.success("Фактурата е изпратена успешно", {
-        description: `Фактурата с информация за плащане е изпратена на ${invoice.client.email}`,
-      });
+      if (response.ok) {
+        const data = await response.json();
+        toast.success("Фактурата е отменена", {
+          description: "Кредитното известие е създадено успешно",
+        });
+        router.refresh();
+        router.push(`/invoices/${invoice.id}`);
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Грешка при отмяна на фактурата");
+      }
     } catch (error) {
-      console.error('Error sending invoice with payment:', error);
-      toast.error("Грешка при изпращане на фактурата");
+      console.error('Error cancelling invoice:', error);
+      toast.error("Грешка при отмяна на фактурата");
     } finally {
       setIsSendingEmail(false);
     }
@@ -177,14 +176,12 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "PAID":
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case "UNPAID":
-        return <Clock className="h-4 w-4 text-amber-500" />;
-      case "OVERDUE":
-        return <AlertTriangle className="h-4 w-4 text-red-500" />;
       case "DRAFT":
         return <AlertTriangle className="h-4 w-4 text-slate-500" />;
+      case "ISSUED":
+        return <CheckCircle className="h-4 w-4 text-blue-500" />;
+      case "CANCELLED":
+        return <AlertTriangle className="h-4 w-4 text-red-500" />;
       default:
         return null;
     }
@@ -207,18 +204,32 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case "PAID":
-        return "Платена";
-      case "UNPAID":
-        return "Неплатена";
-      case "OVERDUE":
-        return "Просрочена";
       case "DRAFT":
         return "Чернова";
+      case "ISSUED":
+        return "Издадена";
       case "CANCELLED":
         return "Отказана";
       default:
         return status;
+    }
+  };
+
+  const getPaymentMethodText = (paymentMethod?: string) => {
+    if (!paymentMethod) return "Не е посочен";
+    switch (paymentMethod) {
+      case "BANK_TRANSFER":
+        return "Банков превод";
+      case "CASH":
+        return "В брой";
+      case "CREDIT_CARD":
+        return "Кредитна/дебитна карта";
+      case "WIRE_TRANSFER":
+        return "Нареждане за превод";
+      case "OTHER":
+        return "Друго";
+      default:
+        return paymentMethod;
     }
   };
 
@@ -249,32 +260,33 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
               </div>
             </Button>
             
-            {(invoice.status === "UNPAID" || invoice.status === "OVERDUE") && (
+            {invoice.status === "ISSUED" && (
               <Button
-                variant="default"
-                className="w-full justify-start text-left h-auto py-3 bg-primary hover:bg-primary/90"
-                onClick={handleSendInvoiceWithPayment}
+                variant="destructive"
+                className="w-full justify-start text-left h-auto py-3"
+                onClick={handleCancelInvoice}
                 disabled={isSendingEmail}
               >
                 <div className="flex items-center gap-4">
-                  <CreditCard className="w-5 h-5 flex-shrink-0" />
+                  <AlertTriangle className="w-5 h-5 flex-shrink-0" />
                   <span className="font-medium">
-                    {isSendingEmail ? "Изпращане..." : "Изпрати с опции за плащане"}
+                    {isSendingEmail ? "Отмяна..." : "Отмени фактура"}
                   </span>
                 </div>
               </Button>
             )}
             
-            {invoice.status === "PAID" && (
-              <Button 
-                variant="outline"
-                className="w-full justify-start text-left h-auto py-3"
-              >
-                <div className="flex items-center gap-4">
-                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <span className="font-medium">Изпрати разписка</span>
-                </div>
-              </Button>
+            {invoice.creditNote && (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm font-medium text-blue-900">
+                  Кредитно известие: {invoice.creditNote.creditNoteNumber}
+                </p>
+                {invoice.creditNote.reason && (
+                  <p className="text-xs text-blue-700 mt-1">
+                    Причина: {invoice.creditNote.reason}
+                  </p>
+                )}
+              </div>
             )}
           </div>
         </CardContent>
@@ -311,7 +323,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
             <Download className="w-5 h-5 mr-2" />
             Изтегли PDF
           </Button>
-          {invoice.status !== "PAID" && (
+          {invoice.status === "DRAFT" && (
             <Button variant="outline" size="lg" asChild>
               <Link href={`/invoices/${invoice.id}/edit`}>
                 Редактирай
@@ -336,7 +348,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
                 <TabsList className="grid w-full grid-cols-4 mb-2">
                   <TabsTrigger value="details" className="text-base">Детайли</TabsTrigger>
                   <TabsTrigger value="items" className="text-base">Артикули</TabsTrigger>
-                  <TabsTrigger value="payments" className="text-base">Плащания</TabsTrigger>
+                  {/* Payments tab removed - invoices are for issuance only */}
                   <TabsTrigger value="documents" className="text-base">
                     <span className="flex items-center">
                       <Paperclip className="mr-2 h-4 w-4" />
@@ -378,10 +390,6 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
                     <h3 className="font-medium mb-4 text-base">Детайли на фактурата</h3>
                     <div className="space-y-3 text-base">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Номер на фактура</span>
-                        <span>{invoice.invoiceNumber}</span>
-                      </div>
-                      <div className="flex justify-between">
                         <span className="text-muted-foreground">Дата на издаване</span>
                         <span>{format(new Date(invoice.issueDate), "dd.MM.yyyy")}</span>
                       </div>
@@ -393,6 +401,12 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
                         <span className="text-muted-foreground">Валута</span>
                         <span>{invoice.currency}</span>
                       </div>
+                      {invoice.paymentMethod && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Начин на плащане</span>
+                          <span>{getPaymentMethodText(invoice.paymentMethod)}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -509,83 +523,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
                 </div>
               </TabsContent>
 
-              <TabsContent value="payments" className="p-6 pt-2">
-                {invoice.payments.length > 0 ? (
-                  <div className="space-y-6">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="py-3 text-left font-medium">Дата</th>
-                          <th className="py-3 text-left font-medium">Сума</th>
-                          <th className="py-3 text-left font-medium">Метод</th>
-                          <th className="py-3 text-left font-medium">
-                            Референция
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {invoice.payments.map((payment) => (
-                          <tr key={payment.id} className="border-b">
-                            <td className="py-3">
-                              {format(
-                                new Date(payment.paymentDate),
-                                "dd.MM.yyyy"
-                              )}
-                            </td>
-                            <td className="py-3">
-                              {formatCurrency(
-                                Number(payment.amount),
-                                invoice.currency
-                              )}
-                            </td>
-                            <td className="py-3">
-                              {payment.paymentMethod.replace(/_/g, " ")}
-                            </td>
-                            <td className="py-3">{payment.reference || "-"}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                      <tfoot>
-                        <tr>
-                          <td
-                            colSpan={1}
-                            className="py-3 text-right font-medium"
-                          >
-                            Общо платено
-                          </td>
-                          <td className="py-3 font-medium">
-                            {formatCurrency(
-                              Number(invoice.totalPaid),
-                              invoice.currency
-                            )}
-                          </td>
-                          <td colSpan={2}></td>
-                        </tr>
-                      </tfoot>
-                    </table>
-
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={`/payments/new?invoice=${invoice.id}`}>
-                        <CreditCard className="w-4 h-4 mr-2" />
-                        Запиши ново плащане
-                      </Link>
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <h3 className="font-medium mb-2">Няма записани плащания</h3>
-                    <p className="text-muted-foreground text-sm mb-4">
-                      Все още няма записани плащания за тази фактура.
-                    </p>
-                    <Button asChild>
-                      <Link href={`/payments/new?invoice=${invoice.id}`}>
-                        <CreditCard className="w-4 h-4 mr-2" />
-                        Запиши плащане
-                      </Link>
-                    </Button>
-                  </div>
-                )}
-              </TabsContent>
+              {/* Payments tab removed - invoices are for issuance only */}
 
               <TabsContent value="documents" className="p-6 pt-2">
                 <DocumentsTab invoiceId={invoice.id} documents={documents} />
@@ -598,28 +536,21 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
               <CardTitle>Действия</CardTitle>
             </CardHeader>
             <CardContent className="space-x-3">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                disabled={invoice.status === "PAID"}
-                asChild={invoice.status !== "PAID"}
-              >
-                {invoice.status !== "PAID" ? (
+              {invoice.status === "DRAFT" && (
+                <Button variant="outline" size="sm" asChild>
                   <Link href={`/invoices/${invoice.id}/edit`}>Редактиране на фактура</Link>
-                ) : (
-                  <span>Редактиране на фактура</span>
-                )}
-              </Button>
-              <Button variant="outline" size="sm">
-                Маркирай като платена
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={invoice.status === "PAID"}
-              >
-                Изпрати напомняне
-              </Button>
+                </Button>
+              )}
+              {invoice.status === "ISSUED" && (
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={handleCancelInvoice}
+                  disabled={isSendingEmail}
+                >
+                  Отмени фактура
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -627,7 +558,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Обобщение на плащането</CardTitle>
+              <CardTitle>Обобщение</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -664,41 +595,21 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
                     {formatCurrency(Number(invoice.total), invoice.currency)}
                   </span>
                 </div>
-                <div className="flex justify-between items-center pb-2">
-                  <span className="text-muted-foreground">Платена сума</span>
-                  <span>
-                    {formatCurrency(
-                      invoice.status === "PAID" 
-                        ? (Number(invoice.total) || 0) 
-                        : (Number(invoice.totalPaid) || 0),
-                      invoice.currency
-                    )}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center pt-2 border-t">
-                  <span className="font-medium">Дължима сума</span>
-                  <span className="font-bold text-lg">
-                    {formatCurrency(
-                      (invoice.status === "UNPAID" || invoice.status === "OVERDUE" || invoice.status === "DRAFT") 
-                        ? (Number(invoice.total) || 0)
-                        : (Number(invoice.amountDue) || 0),
-                      invoice.currency
-                    )}
-                  </span>
-                </div>
+                {/* Payment summary removed - invoices are for issuance only */}
               </div>
-
-              {(invoice.status === "UNPAID" || invoice.status === "OVERDUE") &&
-                invoice.amountDue > 0 && (
-                  <div className="mt-6">
-                    <Button className="w-full" asChild>
-                      <Link href={`/payments/new?invoice=${invoice.id}`}>
-                        <CreditCard className="w-4 h-4 mr-2" />
-                        Запиши плащане
-                      </Link>
-                    </Button>
-                  </div>
-                )}
+              
+              {invoice.creditNote && (
+                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm font-medium text-blue-900 mb-1">
+                    Кредитно известие: {invoice.creditNote.creditNoteNumber}
+                  </p>
+                  {invoice.creditNote.reason && (
+                    <p className="text-xs text-blue-700">
+                      Причина: {invoice.creditNote.reason}
+                    </p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 

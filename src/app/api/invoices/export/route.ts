@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { createAdminClient } from "@/lib/supabase/server";
+import { checkSubscriptionLimits } from "@/middleware/subscription";
 import { format } from "date-fns";
 import Papa from "papaparse";
 
@@ -11,6 +12,19 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    
+    // Check subscription limits - експорт
+    const exportLimitCheck = await checkSubscriptionLimits(
+      session.user.id as string,
+      'export'
+    );
+    
+    if (!exportLimitCheck.allowed) {
+      return NextResponse.json(
+        { error: exportLimitCheck.message || "Експортът не е наличен за вашия план" },
+        { status: 403 }
+      );
     }
 
     // Get user ID
@@ -25,59 +39,46 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
 
-    // Build the query
-    const query: any = {
-      userId: session.user.id,
-    };
-
+    const supabase = createAdminClient();
+    
+    // Build Supabase query
+    let query = supabase
+      .from("Invoice")
+      .select(`
+        *,
+        client:Client(id, name, email),
+        company:Company(id, name),
+        items:InvoiceItem(*)
+      `)
+      .eq("userId", session.user.id);
+    
     if (companyId) {
-      query.companyId = companyId;
+      query = query.eq("companyId", companyId);
     }
-
+    
     if (clientId) {
-      query.clientId = clientId;
+      query = query.eq("clientId", clientId);
     }
-
+    
     if (status) {
-      query.status = status;
+      query = query.eq("status", status);
     }
-
-    if (startDate && endDate) {
-      query.issueDate = {
-        gte: new Date(startDate),
-        lte: new Date(endDate),
-      };
-    } else if (startDate) {
-      query.issueDate = {
-        gte: new Date(startDate),
-      };
-    } else if (endDate) {
-      query.issueDate = {
-        lte: new Date(endDate),
-      };
+    
+    if (startDate) {
+      query = query.gte("issueDate", startDate);
     }
-
-    // Fetch invoices
-    const invoices = await prisma.invoice.findMany({
-      where: query,
-      include: {
-        client: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
-        company: {
-          select: {
-            name: true,
-          },
-        },
-        items: true,
-      },
-      orderBy: {
-        issueDate: "desc",
-      },
-    });
+    
+    if (endDate) {
+      query = query.lte("issueDate", endDate);
+    }
+    
+    query = query.order("issueDate", { ascending: false });
+    
+    const { data: invoices, error } = await query;
+    
+    if (error) {
+      throw error;
+    }
 
     if (format === "csv") {
       // Format data for CSV export

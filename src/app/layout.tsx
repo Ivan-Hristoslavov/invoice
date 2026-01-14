@@ -5,6 +5,8 @@ import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner-toaster";
 import { APP_NAME } from "@/config/constants";
+import { Theme } from "@radix-ui/themes";
+import "@radix-ui/themes/styles.css";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -38,10 +40,12 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
-            {children}
-            <Toaster />
-          </AuthProvider>
+          <Theme appearance="inherit" accentColor="blue" grayColor="slate" radius="medium">
+            <AuthProvider>
+              {children}
+              <Toaster />
+            </AuthProvider>
+          </Theme>
         </ThemeProvider>
       </body>
     </html>

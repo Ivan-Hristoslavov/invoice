@@ -64,14 +64,14 @@ async function testConnection() {
     } else if (error.code === 'P1003') {
       console.log('\nDatabase does not exist:');
       console.log('- Create the database first');
-      console.log('- Check DATABASE_URL environment variable');
+      console.log('- Check NEXT_PUBLIC_SUPABASE_URL environment variable');
     } else if (error.code === 'P1017') {
       console.log('\nServer rejected the connection:');
       console.log('- Check your database username and password');
       console.log('- Verify database user permissions');
     }
     
-    console.log('\nCheck your .env file and make sure the DATABASE_URL is correctly set.');
+    console.log('\nCheck your .env file and make sure the NEXT_PUBLIC_SUPABASE_URL is correctly set.');
     process.exit(1);
   } finally {
     await prisma.$disconnect();

@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { APP_NAME } from "@/config/constants";
-import { prisma } from "@/lib/db";
+import { createAdminClient } from "@/lib/supabase/server";
 import { 
   Card, 
   CardContent, 
@@ -26,11 +26,22 @@ export default async function CompanySettingsPage() {
   }
   
   // Вземи компанията по подразбиране на потребителя
-  const company = await prisma.company.findFirst({
-    where: { 
-      userId: session.user.id 
+  let company = null;
+  try {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from("Company")
+      .select("*")
+      .eq("userId", session.user.id)
+      .single();
+    
+    if (!error && data) {
+      company = data;
     }
-  });
+  } catch (error) {
+    console.error("Database connection error:", error);
+    // Continue with null company - the form will handle creating a new one
+  }
   
   return (
     <div className="space-y-6">
@@ -128,4 +139,4 @@ export default async function CompanySettingsPage() {
       </Card>
     </div>
   );
-} 
+}

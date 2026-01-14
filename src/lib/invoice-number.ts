@@ -5,32 +5,39 @@ import { prisma } from "@/lib/db";
  * Invoice numbers reset at the start of each year and increment from 1.
  */
 export async function generateNextInvoiceNumber(companyId: string): Promise<string> {
-  const currentYear = new Date().getFullYear();
-  const startOfYear = new Date(currentYear, 0, 1); // January 1st of current year
-  
-  // Find the last invoice for this company in the current year
-  const lastInvoice = await prisma.invoice.findFirst({
-    where: {
-      companyId,
-      createdAt: {
-        gte: startOfYear
+  try {
+    const currentYear = new Date().getFullYear();
+    const startOfYear = new Date(currentYear, 0, 1); // January 1st of current year
+    
+    // Find the last invoice for this company in the current year
+    const lastInvoice = await prisma.invoice.findFirst({
+      where: {
+        companyId,
+        createdAt: {
+          gte: startOfYear
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
       }
-    },
-    orderBy: {
-      createdAt: 'desc'
-    }
-  });
+    });
 
-  // If no invoice exists for this year, start from 1
-  if (!lastInvoice) {
+    // If no invoice exists for this year, start from 1
+    if (!lastInvoice) {
+      return formatInvoiceNumber(1, currentYear);
+    }
+
+    // Extract the number from the last invoice number
+    const lastNumber = extractNumberFromInvoiceNumber(lastInvoice.invoiceNumber);
+    
+    // Increment the number
+    return formatInvoiceNumber(lastNumber + 1, currentYear);
+  } catch (error) {
+    // If database is unavailable, return a default number
+    console.error("Error generating invoice number:", error);
+    const currentYear = new Date().getFullYear();
     return formatInvoiceNumber(1, currentYear);
   }
-
-  // Extract the number from the last invoice number
-  const lastNumber = extractNumberFromInvoiceNumber(lastInvoice.invoiceNumber);
-  
-  // Increment the number
-  return formatInvoiceNumber(lastNumber + 1, currentYear);
 }
 
 /**

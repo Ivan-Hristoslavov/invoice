@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/db";
+import { createAdminClient } from "@/lib/supabase/server";
 import { authOptions } from "@/lib/auth";
 
 const profileSchema = z.object({
@@ -23,13 +23,15 @@ export async function PUT(request: NextRequest) {
     const json = await request.json();
     const validated = profileSchema.parse(json);
 
+    const supabase = createAdminClient();
+    
     // Check if email is being changed and if it's already taken
     if (validated.email !== session.user.email) {
-      const existingUser = await prisma.user.findUnique({
-        where: {
-          email: validated.email,
-        },
-      });
+      const { data: existingUser } = await supabase
+        .from("User")
+        .select("id")
+        .eq("email", validated.email)
+        .single();
 
       if (existingUser && existingUser.id !== session.user.id) {
         return NextResponse.json(
@@ -40,15 +42,20 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update user profile
-    const updatedUser = await prisma.user.update({
-      where: {
-        id: session.user.id,
-      },
-      data: {
+    const { data: updatedUser, error: updateError } = await supabase
+      .from("User")
+      .update({
         name: validated.name,
         email: validated.email,
-      },
-    });
+        updatedAt: new Date().toISOString(),
+      })
+      .eq("id", session.user.id)
+      .select("id, name, email")
+      .single();
+    
+    if (updateError || !updatedUser) {
+      throw updateError;
+    }
 
     // Return sanitized user data
     return NextResponse.json({
@@ -83,18 +90,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: {
-        id: session.user.id,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        image: true,
-        defaultLocale: true,
-      },
-    });
+    const supabase = createAdminClient();
+    const { data: user, error } = await supabase
+      .from("User")
+      .select("id, name, email, image, defaultLocale")
+      .eq("id", session.user.id)
+      .single();
 
     if (!user) {
       return NextResponse.json(

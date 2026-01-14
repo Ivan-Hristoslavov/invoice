@@ -271,22 +271,25 @@ export async function exportInvoiceAsPdf(invoiceId: string): Promise<void> {
   
   doc.setFont('Roboto', 'normal');
   doc.text('Сума без ДДС:', summaryStartX, yPos);
-  doc.text(`${parseFloat(result.invoice.subtotal).toFixed(2)} лв.`, pageWidth - margin - 15, yPos, { align: 'right' });
+  const currency = result.invoice.currency || 'EUR';
+  const currencySymbol = currency === 'EUR' ? '€' : currency === 'BGN' ? 'лв.' : currency === 'USD' ? '$' : currency === 'GBP' ? '£' : currency;
+  doc.text(`${parseFloat(result.invoice.subtotal).toFixed(2)} ${currencySymbol}`, pageWidth - margin - 15, yPos, { align: 'right' });
   
   yPos += 7;
   doc.text('ДДС:', summaryStartX, yPos);
-  doc.text(`${parseFloat(result.invoice.taxAmount).toFixed(2)} лв.`, pageWidth - margin - 15, yPos, { align: 'right' });
+  doc.text(`${parseFloat(result.invoice.taxAmount).toFixed(2)} ${currencySymbol}`, pageWidth - margin - 15, yPos, { align: 'right' });
   
   yPos += 7;
   doc.setFont('Roboto', 'bold');
   doc.text('Обща сума:', summaryStartX, yPos);
-  doc.text(`${parseFloat(result.invoice.total).toFixed(2)} лв.`, pageWidth - margin - 15, yPos, { align: 'right' });
+  doc.text(`${parseFloat(result.invoice.total).toFixed(2)} ${currencySymbol}`, pageWidth - margin - 15, yPos, { align: 'right' });
 
   // Словом
   yPos += 15;
   doc.setFont('Roboto', 'normal');
   doc.setFontSize(9);
-  doc.text('Словом: ' + numberToWords(parseFloat(result.invoice.total)) + ' лева', margin, yPos);
+  const currencyWord = currency === 'EUR' ? 'евро' : currency === 'BGN' ? 'лева' : currency;
+  doc.text('Словом: ' + numberToWords(parseFloat(result.invoice.total)) + ' ' + currencyWord, margin, yPos);
 
   // Начин на плащане
   yPos += 10;
@@ -357,9 +360,9 @@ export async function exportInvoiceAsPdf(invoiceId: string): Promise<void> {
   }
 
   // Добавяме валутен курс, ако е приложимо
-  if (result.invoice.currency && result.invoice.currency !== 'BGN') {
+  if (result.invoice.currency && result.invoice.currency !== 'EUR') {
     yPos += 7;
-    doc.text(`Валутен курс: 1 ${result.invoice.currency} = ${result.invoice.exchangeRate || '1.95583'} BGN`, margin, yPos);
+    doc.text(`Валутен курс: 1 ${result.invoice.currency} = ${result.invoice.exchangeRate || '1.00'} EUR`, margin, yPos);
   }
 
   // Актуализираме правното основание
@@ -580,22 +583,25 @@ export async function exportInvoicePdfBuffer(invoiceId: string): Promise<{ buffe
   
   doc.setFont('Roboto', 'normal');
   doc.text('Сума без ДДС:', summaryStartX, yPos);
-  doc.text(`${parseFloat(result.invoice.subtotal).toFixed(2)} лв.`, pageWidth - margin - 15, yPos, { align: 'right' });
+  const currency = result.invoice.currency || 'EUR';
+  const currencySymbol = currency === 'EUR' ? '€' : currency === 'BGN' ? 'лв.' : currency === 'USD' ? '$' : currency === 'GBP' ? '£' : currency;
+  doc.text(`${parseFloat(result.invoice.subtotal).toFixed(2)} ${currencySymbol}`, pageWidth - margin - 15, yPos, { align: 'right' });
   
   yPos += 7;
   doc.text('ДДС:', summaryStartX, yPos);
-  doc.text(`${parseFloat(result.invoice.taxAmount).toFixed(2)} лв.`, pageWidth - margin - 15, yPos, { align: 'right' });
+  doc.text(`${parseFloat(result.invoice.taxAmount).toFixed(2)} ${currencySymbol}`, pageWidth - margin - 15, yPos, { align: 'right' });
   
   yPos += 7;
   doc.setFont('Roboto', 'bold');
   doc.text('Обща сума:', summaryStartX, yPos);
-  doc.text(`${parseFloat(result.invoice.total).toFixed(2)} лв.`, pageWidth - margin - 15, yPos, { align: 'right' });
+  doc.text(`${parseFloat(result.invoice.total).toFixed(2)} ${currencySymbol}`, pageWidth - margin - 15, yPos, { align: 'right' });
 
   // Словом
   yPos += 15;
   doc.setFont('Roboto', 'normal');
   doc.setFontSize(9);
-  doc.text('Словом: ' + numberToWords(parseFloat(result.invoice.total)) + ' лева', margin, yPos);
+  const currencyWord = currency === 'EUR' ? 'евро' : currency === 'BGN' ? 'лева' : currency;
+  doc.text('Словом: ' + numberToWords(parseFloat(result.invoice.total)) + ' ' + currencyWord, margin, yPos);
 
   // Начин на плащане
   yPos += 10;
@@ -666,9 +672,9 @@ export async function exportInvoicePdfBuffer(invoiceId: string): Promise<{ buffe
   }
 
   // Добавяме валутен курс, ако е приложимо
-  if (result.invoice.currency && result.invoice.currency !== 'BGN') {
+  if (result.invoice.currency && result.invoice.currency !== 'EUR') {
     yPos += 7;
-    doc.text(`Валутен курс: 1 ${result.invoice.currency} = ${result.invoice.exchangeRate || '1.95583'} BGN`, margin, yPos);
+    doc.text(`Валутен курс: 1 ${result.invoice.currency} = ${result.invoice.exchangeRate || '1.00'} EUR`, margin, yPos);
   }
 
   // Актуализираме правното основание
@@ -855,18 +861,21 @@ export async function generateInvoicePdfBuffer(invoice: any): Promise<{ buffer: 
   const summaryStartX = pageWidth - margin - 80;
   doc.setFont('Roboto', 'normal');
   doc.text('Сума без ДДС:', summaryStartX, yPos);
-  doc.text(`${parseFloat(invoice.subtotal).toFixed(2)} лв.`, pageWidth - margin - 15, yPos, { align: 'right' });
+  const currency = invoice.currency || 'EUR';
+  const currencySymbol = currency === 'EUR' ? '€' : currency === 'BGN' ? 'лв.' : currency === 'USD' ? '$' : currency === 'GBP' ? '£' : currency;
+  doc.text(`${parseFloat(invoice.subtotal).toFixed(2)} ${currencySymbol}`, pageWidth - margin - 15, yPos, { align: 'right' });
   yPos += 7;
   doc.text('ДДС:', summaryStartX, yPos);
-  doc.text(`${parseFloat(invoice.taxAmount).toFixed(2)} лв.`, pageWidth - margin - 15, yPos, { align: 'right' });
+  doc.text(`${parseFloat(invoice.taxAmount).toFixed(2)} ${currencySymbol}`, pageWidth - margin - 15, yPos, { align: 'right' });
   yPos += 7;
   doc.setFont('Roboto', 'bold');
   doc.text('Обща сума:', summaryStartX, yPos);
-  doc.text(`${parseFloat(invoice.total).toFixed(2)} лв.`, pageWidth - margin - 15, yPos, { align: 'right' });
+  doc.text(`${parseFloat(invoice.total).toFixed(2)} ${currencySymbol}`, pageWidth - margin - 15, yPos, { align: 'right' });
   yPos += 15;
   doc.setFont('Roboto', 'normal');
   doc.setFontSize(9);
-  doc.text('Словом: ' + numberToWords(parseFloat(invoice.total)) + ' лева', margin, yPos);
+  const currencyWord = currency === 'EUR' ? 'евро' : currency === 'BGN' ? 'лева' : currency;
+  doc.text('Словом: ' + numberToWords(parseFloat(invoice.total)) + ' ' + currencyWord, margin, yPos);
   yPos += 10;
   doc.text(`Начин на плащане: ${invoice.paymentMethod || 'Банков превод'}`, margin, yPos);
   if (invoice.company?.bankAccount) {
@@ -919,9 +928,9 @@ export async function generateInvoicePdfBuffer(invoice: any): Promise<{ buffer: 
     doc.text(`IBAN: ${bank.iban || ''}`, margin + contentWidth/2, yPos + 15);
     doc.text(`BIC: ${bank.bic || ''}`, margin + 2, yPos + 23);
   }
-  if (invoice.currency && invoice.currency !== 'BGN') {
+  if (invoice.currency && invoice.currency !== 'EUR') {
     yPos += 7;
-    doc.text(`Валутен курс: 1 ${invoice.currency} = ${invoice.exchangeRate || '1.95583'} BGN`, margin, yPos);
+    doc.text(`Валутен курс: 1 ${invoice.currency} = ${invoice.exchangeRate || '1.00'} EUR`, margin, yPos);
   }
   yPos = pageHeight - margin - 45;
   doc.setFontSize(8);

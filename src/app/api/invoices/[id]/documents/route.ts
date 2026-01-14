@@ -3,15 +3,14 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
 
-export async function GET(request: Request, context: { params: { id: string } }) {
+export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
+    const { id: invoiceId } = await context.params;
     const session = await getServerSession(authOptions);
     
     if (!session || !session.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    
-    const invoiceId = context.params.id;
     const userId = (session.user as any).id;
     
     // Check if invoice belongs to user
@@ -46,15 +45,14 @@ export async function GET(request: Request, context: { params: { id: string } })
   }
 }
 
-export async function POST(request: Request, context: { params: { id: string } }) {
+export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
+    const { id: invoiceId } = await context.params;
     const session = await getServerSession(authOptions);
     
     if (!session || !session.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    
-    const invoiceId = context.params.id;
     const userId = (session.user as any).id;
     
     // Check if invoice belongs to user
@@ -94,15 +92,14 @@ export async function POST(request: Request, context: { params: { id: string } }
   }
 }
 
-export async function DELETE(request: Request, context: { params: { id: string } }) {
+export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
+    const { id: invoiceId } = await context.params;
     const session = await getServerSession(authOptions);
     
     if (!session || !session.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    
-    const invoiceId = context.params.id;
     const userId = (session.user as any).id;
     
     // Get document ID from query parameter
