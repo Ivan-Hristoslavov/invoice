@@ -4,8 +4,8 @@ import { BarChart, FileText, Settings, Tag, Users, Upload } from "lucide-react";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Help & Documentation - InvoiceNinja",
-  description: "Get help and documentation for InvoiceNinja",
+  title: "Help & Documentation - FacturaPro",
+  description: "Get help and documentation for FacturaPro",
 };
 
 interface HelpTopic {
@@ -60,7 +60,7 @@ export default function HelpPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Help & Documentation</h1>
         <p className="text-muted-foreground">
-          Find help and learn how to use all the features of InvoiceNinja
+          Find help and learn how to use all the features of FacturaPro
         </p>
       </div>
 

@@ -7,7 +7,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { checkPermission } from "@/lib/permissions";
 
 export const metadata: Metadata = {
-  title: "Import Invoices - InvoiceNinja",
+  title: "Import Invoices - FacturaPro",
   description: "Import multiple invoices from a CSV file",
 };
 

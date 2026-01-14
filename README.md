@@ -1,117 +1,93 @@
-# InvoiceNinja
+# FacturaPro
 
-A Next.js application for creating and managing invoices.
+Професионална система за фактуриране за български бизнеси. Създавайте фактури, управлявайте клиенти и проследявайте плащания с пълна НАП съвместимост.
 
-## Features
+## 🚀 Основни функции
 
-- 🧾 Invoice management with multi-currency support
-- 👥 Client management
-- 🏢 Company profile management
-- 📊 Dashboard with key metrics
-- 📝 Product catalog
-- 🔒 Authentication and user management
-- 📱 Responsive design for all devices
+- 🧾 **Управление на фактури** - Създавайте професионални фактури с автоматично номериране
+- 👥 **Управление на клиенти** - Централизирана база данни с клиенти
+- 🏢 **Управление на компании** - Мулти-компании поддръжка
+- 📊 **Dashboard** - Статистики и анализи в реално време
+- 📝 **Каталог продукти** - Управление на продукти и услуги
+- 🔒 **Сигурност** - Пълна аутентификация и управление на потребители
+- 📱 **Responsive дизайн** - Работи перфектно на всички устройства
+- 🇧🇬 **НАП съвместимост** - Пълна съвместимост с българското законодателство
 
-## Database Setup
+## 🛠 Технологии
 
-The application uses PostgreSQL as the database. Follow these steps to set up the database:
+- **Next.js 15** - React framework
+- **TypeScript** - Type safety
+- **Supabase** - Database и Backend
+- **Tailwind CSS** - Styling
+- **Framer Motion** - Анимации
+- **NextAuth.js** - Аутентификация
+- **Shadcn UI** - UI компоненти
 
-1. Make sure you have PostgreSQL installed and running on your system
-2. Set up your environment variables:
+## 📦 Инсталация
 
+1. Клонирайте репозитория:
 ```bash
-npm run db:setup
+git clone <repository-url>
+cd invoice
 ```
 
-This will create a `.env` file with the following configuration:
-
-```
-DB_CLIENT=postgres
-DB_HOST=localhost
-DB_SCHEMA=invoice
-DB_PORT=5432
-DB_USERNAME=root
-DB_PASSWORD=mysecretpassword
-DB=postgres
-
-# Prisma database URL
-NEXT_PUBLIC_SUPABASE_URL="postgresql://root:mysecretpassword@localhost:5432/postgres?schema=invoice"
-```
-
-3. Create the database schema:
-
+2. Инсталирайте зависимостите:
 ```bash
-npm run db:push
+npm install
 ```
 
-4. Populate the database with sample data:
-
+3. Настройте environment variables:
 ```bash
-npm run db:seed
+cp .env.example .env.local
 ```
 
-## Development
+4. Попълнете `.env.local` с вашите данни:
+```env
+NEXT_PUBLIC_APP_URL=https://facturapro.bg
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+NEXTAUTH_SECRET=your-nextauth-secret
+NEXTAUTH_URL=http://localhost:3000
+```
 
-Run the development server:
-
+5. Стартирайте development сървъра:
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Отворете [http://localhost:3000](http://localhost:3000) в браузъра.
 
-## Data Models
+## 🗄 Database Setup
 
-The system includes the following data models:
+Приложението използва Supabase (PostgreSQL). Следвайте тези стъпки:
 
-- **User**: Authentication and user data
-- **Company**: Company information for invoice issuer
-- **Client**: Client information
-- **Product**: Product catalog
-- **Invoice**: Complete invoice with metadata, items, and payments
-- **InvoiceItem**: Line items within invoices
-- **Payment**: Payments associated with invoices
+1. Създайте Supabase проект на [supabase.com](https://supabase.com)
+2. Изпълнете SQL схемата от `supabase-schema.sql`
+3. Добавете connection strings в `.env.local`
 
-## Seed Data
+## 🚢 Production Build
 
-The seed script creates a demo account with sample data:
+```bash
+npm run build
+npm start
+```
 
-- **Email**: demo@example.com
-- **Password**: password123
+## 📝 SEO Оптимизация
 
-It also creates sample companies, clients, products and invoices.
+Приложението е напълно оптимизирано за SEO:
+- ✅ Пълни metadata и Open Graph tags
+- ✅ Structured Data (JSON-LD)
+- ✅ Sitemap.xml автоматично генериране
+- ✅ Robots.txt конфигурация
+- ✅ Оптимизирани за българския пазар
 
-## Database Tools
+Вижте [SEO.md](./SEO.md) за повече детайли.
 
-- `npm run db:studio` - Open Prisma Studio to manage data
-- `npm run db:migrate` - Run database migrations
-- `npm run db:push` - Push schema changes to the database
+## 📄 Лиценз
 
-## Environment Variables
+Всички права запазени © 2026 FacturaPro
 
-Required environment variables:
+## 🤝 Поддръжка
 
-- `NEXT_PUBLIC_SUPABASE_URL`: PostgreSQL connection string
-- `NEXTAUTH_SECRET`: Secret for NextAuth
-- `NEXTAUTH_URL`: URL for NextAuth
-- `NEXT_PUBLIC_APP_URL`: Public URL of the application
-
-## License
-
-MIT
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-"# InvoiceNinja" 
+За въпроси и поддръжка, моля свържете се с нас.

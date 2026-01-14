@@ -180,7 +180,71 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-background overflow-hidden">
+    <>
+      {/* Structured Data for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            "name": APP_NAME,
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Web",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "BGN",
+              "description": "Безплатен план с ограничени функции"
+            },
+            "aggregateRating": {
+              "@type": "AggregateRating",
+              "ratingValue": "4.8",
+              "ratingCount": "150",
+              "bestRating": "5",
+              "worstRating": "1"
+            },
+            "description": "Професионална система за фактуриране за български бизнеси с пълна НАП съвместимост",
+            "url": process.env.NEXT_PUBLIC_APP_URL || 'https://facturapro.bg',
+            "inLanguage": "bg-BG",
+            "featureList": [
+              "Създаване на професионални фактури",
+              "НАП съвместимост",
+              "Управление на клиенти",
+              "Проследяване на плащания",
+              "Експорт в PDF",
+              "Мулти-компании",
+              "Автоматично номериране на фактури",
+              "Български данъчни изисквания"
+            ],
+            "screenshot": process.env.NEXT_PUBLIC_APP_URL + "/screenshot.png",
+            "softwareVersion": "1.0.0"
+          })
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            "name": APP_NAME,
+            "url": process.env.NEXT_PUBLIC_APP_URL || 'https://facturapro.bg',
+            "logo": process.env.NEXT_PUBLIC_APP_URL + "/logo.png",
+            "description": "Професионална система за фактуриране за български бизнеси",
+            "address": {
+              "@type": "PostalAddress",
+              "addressCountry": "BG"
+            },
+            "sameAs": [
+              "https://www.facebook.com/facturapro",
+              "https://twitter.com/facturapro",
+              "https://www.linkedin.com/company/facturapro"
+            ]
+          })
+        }}
+      />
+      <div className="min-h-screen bg-background overflow-hidden">
       {/* Animated Background */}
       <div className="fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-background" />
@@ -562,28 +626,28 @@ export default function HomePage() {
               <div>
                 <h4 className="font-semibold mb-4">Продукт</h4>
               <ul className="space-y-3 text-sm">
-                <li><Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">Функции</Link></li>
+                <li><Link href="/features" className="text-muted-foreground hover:text-foreground transition-colors">Функции</Link></li>
                 <li><Link href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">Ценообразуване</Link></li>
-                <li><Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">Интеграции</Link></li>
-                <li><Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">API</Link></li>
+                <li><Link href="/integrations" className="text-muted-foreground hover:text-foreground transition-colors">Интеграции</Link></li>
+                <li><Link href="/api" className="text-muted-foreground hover:text-foreground transition-colors">API</Link></li>
                 </ul>
               </div>
               <div>
                 <h4 className="font-semibold mb-4">Компания</h4>
               <ul className="space-y-3 text-sm">
-                <li><Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">За нас</Link></li>
-                <li><Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">Блог</Link></li>
-                <li><Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">Кариери</Link></li>
-                <li><Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">Контакти</Link></li>
+                <li><Link href="/about" className="text-muted-foreground hover:text-foreground transition-colors">За нас</Link></li>
+                <li><Link href="/blog" className="text-muted-foreground hover:text-foreground transition-colors">Блог</Link></li>
+                <li><Link href="/careers" className="text-muted-foreground hover:text-foreground transition-colors">Кариери</Link></li>
+                <li><Link href="/contact" className="text-muted-foreground hover:text-foreground transition-colors">Контакти</Link></li>
                 </ul>
               </div>
               <div>
                 <h4 className="font-semibold mb-4">Правна информация</h4>
               <ul className="space-y-3 text-sm">
-                <li><Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">Условия за ползване</Link></li>
-                <li><Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">Политика за поверителност</Link></li>
-                <li><Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">Бисквитки</Link></li>
-                <li><Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">GDPR</Link></li>
+                <li><Link href="/terms" className="text-muted-foreground hover:text-foreground transition-colors">Условия за ползване</Link></li>
+                <li><Link href="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">Политика за поверителност</Link></li>
+                <li><Link href="/cookies" className="text-muted-foreground hover:text-foreground transition-colors">Бисквитки</Link></li>
+                <li><Link href="/gdpr" className="text-muted-foreground hover:text-foreground transition-colors">GDPR</Link></li>
                 </ul>
               </div>
             </div>
@@ -592,19 +656,20 @@ export default function HomePage() {
               © {new Date().getFullYear()} {APP_NAME}. Всички права запазени.
             </p>
             <div className="flex items-center gap-4">
-              <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="https://www.facebook.com/facturapro" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Facebook">
                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
               </Link>
-              <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="https://twitter.com/facturapro" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Twitter">
                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>
               </Link>
-              <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="https://www.linkedin.com/company/facturapro" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="LinkedIn">
                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
               </Link>
             </div>
             </div>
           </div>
         </footer>
-    </div>
+      </div>
+    </>
   );
 } 

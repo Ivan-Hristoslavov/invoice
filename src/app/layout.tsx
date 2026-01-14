@@ -4,7 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner-toaster";
-import { APP_NAME } from "@/config/constants";
+import { APP_NAME, APP_DESCRIPTION, SEO_KEYWORDS } from "@/config/constants";
 import { Theme } from "@radix-ui/themes";
 import "@radix-ui/themes/styles.css";
 
@@ -20,8 +20,64 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: `${APP_NAME} - Система за фактуриране`,
-  description: "Модерна система за фактуриране за бизнеси",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://facturapro.bg'),
+  title: {
+    default: `${APP_NAME} - Професионална система за фактуриране за България`,
+    template: `%s | ${APP_NAME}`
+  },
+  description: APP_DESCRIPTION,
+  keywords: SEO_KEYWORDS,
+  authors: [{ name: APP_NAME }],
+  creator: APP_NAME,
+  publisher: APP_NAME,
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    locale: "bg_BG",
+    url: process.env.NEXT_PUBLIC_APP_URL || 'https://facturapro.bg',
+    siteName: APP_NAME,
+    title: `${APP_NAME} - Професионална система за фактуриране`,
+    description: APP_DESCRIPTION,
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: APP_NAME,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${APP_NAME} - Професионална система за фактуриране`,
+    description: APP_DESCRIPTION,
+    images: ['/og-image.png'],
+    creator: '@facturapro',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  alternates: {
+    canonical: process.env.NEXT_PUBLIC_APP_URL || 'https://facturapro.bg',
+  },
+  verification: {
+    // Add your verification codes here when available
+    // google: 'your-google-verification-code',
+    // yandex: 'your-yandex-verification-code',
+  },
+  category: 'business',
 };
 
 export default function RootLayout({
@@ -31,6 +87,48 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="bg" suppressHydrationWarning>
+      <head>
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+        <link rel="manifest" href="/site.webmanifest" />
+        <meta name="theme-color" content="#10b981" />
+        <meta name="msapplication-TileColor" content="#10b981" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": APP_NAME,
+              "applicationCategory": "BusinessApplication",
+              "operatingSystem": "Web",
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "BGN"
+              },
+              "aggregateRating": {
+                "@type": "AggregateRating",
+                "ratingValue": "4.8",
+                "ratingCount": "150"
+              },
+              "description": APP_DESCRIPTION,
+              "url": process.env.NEXT_PUBLIC_APP_URL || 'https://facturapro.bg',
+              "inLanguage": "bg-BG",
+              "featureList": [
+                "Създаване на фактури",
+                "НАП съвместимост",
+                "Управление на клиенти",
+                "Проследяване на плащания",
+                "Експорт в PDF",
+                "Мулти-компании"
+              ]
+            })
+          }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

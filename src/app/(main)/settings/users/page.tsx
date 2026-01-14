@@ -26,7 +26,7 @@ import { UserCog, UserPlus, ShieldAlert } from "lucide-react";
 import UserRoleActions from "./user-role-actions";
 
 export const metadata = {
-  title: "User Management - InvoiceNinja",
+  title: "User Management - FacturaPro",
   description: "Manage users and their roles in your organization",
 };
 
