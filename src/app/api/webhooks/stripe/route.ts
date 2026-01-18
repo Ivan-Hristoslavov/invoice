@@ -8,11 +8,10 @@ import cuid from "cuid";
 
 // Define types locally since we're not using Prisma
 type SubscriptionStatus = "ACTIVE" | "PAST_DUE" | "UNPAID" | "CANCELED" | "INCOMPLETE" | "INCOMPLETE_EXPIRED" | "TRIALING" | "PAUSED";
-type PaymentStatus = "PAID" | "UNPAID" | "FAILED" | "PENDING" | "REFUNDED" | "VOID";
+type PaymentStatus = "PAID" | "FAILED" | "REFUNDED" | "COMPLETED";
 
 // Define custom types for easier use
 type SubscriptionPlan = "FREE" | "PRO" | "BUSINESS";
-type PaymentStatus = "PAID" | "FAILED" | "REFUNDED" | "COMPLETED";
 
 // Lazy initialization helper to avoid build-time errors
 function getStripe() {

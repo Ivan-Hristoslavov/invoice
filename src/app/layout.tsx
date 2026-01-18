@@ -19,8 +19,27 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
+function getAppUrl(): string {
+  const rawUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.VERCEL_URL ||
+    "";
+
+  if (!rawUrl || rawUrl.startsWith("${")) {
+    return "https://facturapro.bg";
+  }
+
+  if (rawUrl.startsWith("http://") || rawUrl.startsWith("https://")) {
+    return rawUrl;
+  }
+
+  return `https://${rawUrl}`;
+}
+
+const appUrl = getAppUrl();
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://facturapro.bg'),
+  metadataBase: new URL(appUrl),
   title: {
     default: `${APP_NAME} - Професионална система за фактуриране за България`,
     template: `%s | ${APP_NAME}`
@@ -38,7 +57,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "bg_BG",
-    url: process.env.NEXT_PUBLIC_APP_URL || 'https://facturapro.bg',
+    url: appUrl,
     siteName: APP_NAME,
     title: `${APP_NAME} - Професионална система за фактуриране`,
     description: APP_DESCRIPTION,
@@ -70,7 +89,7 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: process.env.NEXT_PUBLIC_APP_URL || 'https://facturapro.bg',
+    canonical: appUrl,
   },
   verification: {
     // Add your verification codes here when available
@@ -115,7 +134,7 @@ export default function RootLayout({
                 "ratingCount": "150"
               },
               "description": APP_DESCRIPTION,
-              "url": process.env.NEXT_PUBLIC_APP_URL || 'https://facturapro.bg',
+              "url": appUrl,
               "inLanguage": "bg-BG",
               "featureList": [
                 "Създаване на фактури",
