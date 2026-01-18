@@ -855,21 +855,22 @@ function NewInvoiceContent() {
             {/* Invoice items */}
             <Card>
               <CardHeader>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
                   <div className="flex-1 min-w-0">
-                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                      <ShoppingCart className="h-5 w-5 flex-shrink-0" />
-                      <span className="truncate">Артикули във фактурата</span>
+                    <CardTitle className="card-title flex items-center gap-2">
+                      <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                      <span className="truncate">Артикули</span>
                     </CardTitle>
-                    <CardDescription className="text-sm mt-1">{items.length} артикул(а)</CardDescription>
+                    <CardDescription className="card-description mt-1">{items.length} артикул(а)</CardDescription>
                   </div>
                   <Button 
                     variant="outline" 
                     onClick={addItem}
-                    className="w-full sm:w-auto flex-shrink-0"
+                    className="btn-responsive btn-text"
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Добави ред
+                    <span className="hidden sm:inline">Добави ред</span>
+                    <span className="sm:hidden">Добави</span>
                   </Button>
                 </div>
               </CardHeader>
@@ -1067,16 +1068,16 @@ function NewInvoiceContent() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <div className="mb-6 sm:mb-8">
-        <div className="flex items-center gap-3 sm:gap-4 mb-2">
-          <Button variant="ghost" size="icon" asChild className="flex-shrink-0 h-9 w-9 rounded-full">
+      <div className="mb-4 sm:mb-6">
+        <div className="flex items-center gap-2 sm:gap-3 mb-2">
+          <Button variant="ghost" size="icon" asChild className="back-btn h-8 w-8 rounded-full">
             <Link href="/invoices">
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold truncate">Нова фактура</h1>
-            <p className="text-sm sm:text-base text-muted-foreground hidden sm:block">Създайте нова фактура за вашите клиенти</p>
+            <h1 className="page-title truncate">Нова фактура</h1>
+            <p className="card-description hidden sm:block">Създайте нова фактура за вашите клиенти</p>
           </div>
         </div>
       </div>

@@ -144,38 +144,36 @@ export default function NewCompanyPage() {
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <Button variant="ghost" size="sm" asChild className="flex-shrink-0">
+      <div className="page-header">
+        <div className="page-header-left">
+          <Button variant="ghost" size="sm" asChild className="back-btn">
             <Link href="/companies">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Назад</span>
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline ml-2">Назад</span>
             </Link>
           </Button>
-          <h1 className="text-2xl sm:text-3xl font-bold truncate">Нова компания</h1>
+          <h1 className="page-title truncate">Нова компания</h1>
         </div>
-        <Button 
-          type="submit" 
-          form="company-form" 
-          disabled={isLoading}
-          className="w-full sm:w-auto flex-shrink-0"
-        >
-          <Save className="w-4 h-4 mr-2" />
-          <span className="hidden sm:inline">{isLoading ? "Запазване..." : "Запази компания"}</span>
-          <span className="sm:hidden">{isLoading ? "Запазване..." : "Запази"}</span>
-        </Button>
+        <div className="page-header-actions">
+          <Button 
+            type="submit" 
+            form="company-form" 
+            disabled={isLoading}
+            className="btn-responsive btn-text"
+          >
+            <Save className="w-4 h-4 mr-2" />
+            <span className="hidden sm:inline">{isLoading ? "Запазване..." : "Запази"}</span>
+            <span className="sm:hidden">{isLoading ? "..." : "Запази"}</span>
+          </Button>
+        </div>
       </div>
 
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle>Данни за компанията</CardTitle>
-              <CardDescription>
-                Добавете информацията за вашата компания за фактури
-              </CardDescription>
-            </div>
-          </div>
+          <CardTitle className="card-title">Данни за компанията</CardTitle>
+          <CardDescription className="card-description">
+            Добавете информацията за вашата компания за фактури
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>

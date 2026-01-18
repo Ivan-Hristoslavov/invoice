@@ -123,11 +123,11 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile Menu Button */}
+      {/* Mobile Menu Button - Aligned with navbar center (navbar h-16 = 64px, center at 32px; button h-10 = 40px, so top = 32px - 20px = 12px = top-3) */}
       <Button 
         variant="ghost" 
         size="icon" 
-        className="fixed top-16 left-4 z-50 lg:hidden h-10 w-10 bg-background/95 backdrop-blur-md border border-border shadow-lg hover:bg-muted"
+        className="fixed top-3 left-4 z-50 lg:hidden h-10 w-10 bg-background/95 backdrop-blur-md border border-border shadow-lg hover:bg-muted"
         onClick={() => setIsOpen(!isOpen)}
       >
         {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}

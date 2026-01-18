@@ -238,22 +238,23 @@ export default function ProductPage({ params }: { params: { id: string } }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" asChild>
+      <div className="page-header">
+        <div className="page-header-left">
+          <Button variant="ghost" size="sm" asChild className="back-btn">
             <Link href="/products">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Назад
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline ml-2">Назад</span>
             </Link>
           </Button>
-          <h1 className="text-3xl font-bold">Редактиране на продукт</h1>
+          <h1 className="page-title truncate">Редактиране на продукт</h1>
         </div>
-        <div className="flex gap-2">
+        <div className="page-header-actions">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" disabled={isDeleting}>
+              <Button variant="destructive" disabled={isDeleting} className="btn-responsive btn-text">
                 <Trash2 className="w-4 h-4 mr-2" />
-                {isDeleting ? "Изтриване..." : "Изтрий продукт"}
+                <span className="hidden sm:inline">{isDeleting ? "Изтриване..." : "Изтрий"}</span>
+                <span className="sm:hidden">{isDeleting ? "..." : "Изтрий"}</span>
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
@@ -276,17 +277,19 @@ export default function ProductPage({ params }: { params: { id: string } }) {
             type="submit" 
             form="product-form" 
             disabled={isLoading}
+            className="btn-responsive btn-text"
           >
             <Save className="w-4 h-4 mr-2" />
-            {isLoading ? "Запазване..." : "Запази промените"}
+            <span className="hidden sm:inline">{isLoading ? "Запазване..." : "Запази"}</span>
+            <span className="sm:hidden">{isLoading ? "..." : "Запази"}</span>
           </Button>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Детайли за продукта</CardTitle>
-          <CardDescription>
+          <CardTitle className="card-title">Детайли за продукта</CardTitle>
+          <CardDescription className="card-description">
             Редактирайте детайлите на вашия продукт или услуга
           </CardDescription>
         </CardHeader>

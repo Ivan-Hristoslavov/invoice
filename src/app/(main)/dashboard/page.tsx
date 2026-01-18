@@ -188,58 +188,59 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Табло</h1>
-          <p className="text-muted-foreground mt-1.5">
-            Добре дошли, {session.user.name || 'потребител'}! Ето преглед на вашата дейност.
+      <div className="page-header">
+        <div className="flex-1 min-w-0">
+          <h1 className="page-title">Табло</h1>
+          <p className="card-description mt-1">
+            Добре дошли, {session.user.name || 'потребител'}!
           </p>
         </div>
         <RadixButton 
           asChild 
-          size="3" 
+          size="2" 
           variant="solid" 
           color="green"
-          className="shadow-lg hover:shadow-xl transition-shadow"
+          className="shadow-lg hover:shadow-xl transition-shadow btn-responsive"
         >
           <Link href="/invoices/new">
-            <Plus className="mr-2 h-5 w-5" />
-            Нова фактура
+            <Plus className="mr-1.5 h-4 w-4" />
+            <span className="hidden sm:inline">Нова фактура</span>
+            <span className="sm:hidden">Нова</span>
           </Link>
         </RadixButton>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, index) => (
           <Card 
             key={stat.title} 
-            className="relative overflow-hidden border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group"
+            className="relative overflow-hidden border border-border/50 shadow-md hover:shadow-lg transition-all duration-300 group"
           >
             {/* Animated background gradient */}
             <div className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
             
-            <CardContent className="relative p-6">
-              <div className="flex items-start justify-between mb-4">
+            <CardContent className="relative p-3 sm:p-4">
+              <div className="flex items-start justify-between mb-2 sm:mb-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-muted-foreground mb-3">{stat.title}</p>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-3xl font-bold tracking-tight">{stat.value}</span>
+                  <p className="tiny-text font-medium text-muted-foreground mb-1.5 sm:mb-2">{stat.title}</p>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-lg sm:text-2xl font-bold tracking-tight">{stat.value}</span>
                     {stat.currency && (
-                      <span className="text-xl font-semibold text-muted-foreground">{stat.currency}</span>
+                      <span className="text-sm sm:text-lg font-semibold text-muted-foreground">{stat.currency}</span>
                     )}
                   </div>
                 </div>
-                <div className={`p-2.5 rounded-xl ${stat.iconBg} flex-shrink-0`}>
-                  <div className={`p-2 rounded-lg bg-gradient-to-br ${stat.gradient} shadow-md`}>
-                    <stat.icon className="h-5 w-5 text-white" />
+                <div className={`p-1.5 sm:p-2 rounded-lg ${stat.iconBg} flex-shrink-0`}>
+                  <div className={`p-1.5 sm:p-2 rounded-md bg-gradient-to-br ${stat.gradient} shadow-sm`}>
+                    <stat.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
                   </div>
                 </div>
               </div>
               
-              <p className="text-xs text-muted-foreground mb-3">{stat.description}</p>
+              <p className="tiny-text text-muted-foreground mb-2 hidden sm:block">{stat.description}</p>
               
               {stat.trend && (
                 <div className="flex items-center gap-1.5 pt-3 border-t border-border/50">
@@ -260,76 +261,76 @@ export default async function DashboardPage() {
       </div>
 
       {/* Quick Actions & Recent Invoices */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
         {/* Quick Actions */}
-        <Card className="lg:col-span-1 border border-border/50 shadow-lg">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-semibold">Бързи действия</CardTitle>
-            <CardDescription className="text-sm">Често използвани операции</CardDescription>
+        <Card className="lg:col-span-1 border border-border/50 shadow-md">
+          <CardHeader className="pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
+            <CardTitle className="card-title">Бързи действия</CardTitle>
+            <CardDescription className="card-description">Често използвани операции</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-1.5 px-3 sm:px-6 pb-3 sm:pb-6">
             <Link 
               href="/invoices/new"
-              className="flex items-center w-full p-3.5 rounded-xl hover:bg-muted/50 transition-colors group"
+              className="flex items-center w-full p-2.5 sm:p-3 rounded-lg sm:rounded-xl hover:bg-muted/50 transition-colors group"
             >
-              <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mr-3 shadow-md shadow-blue-500/20 group-hover:shadow-lg group-hover:shadow-blue-500/30 transition-shadow">
-                <Plus className="h-5 w-5 text-white" />
+              <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mr-2.5 sm:mr-3 shadow-sm">
+                <Plus className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
-              <div className="flex-1 text-left">
-                <p className="font-medium text-sm">Нова фактура</p>
-                <p className="text-xs text-muted-foreground">Създайте фактура</p>
+              <div className="flex-1 text-left min-w-0">
+                <p className="small-text font-medium truncate">Нова фактура</p>
+                <p className="tiny-text text-muted-foreground hidden sm:block">Създайте фактура</p>
               </div>
             </Link>
             <Link 
               href="/clients/new"
-              className="flex items-center w-full p-3.5 rounded-xl hover:bg-muted/50 transition-colors group"
+              className="flex items-center w-full p-2.5 sm:p-3 rounded-lg sm:rounded-xl hover:bg-muted/50 transition-colors group"
             >
-              <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mr-3 shadow-md shadow-amber-500/20 group-hover:shadow-lg group-hover:shadow-amber-500/30 transition-shadow">
-                <Users className="h-5 w-5 text-white" />
+              <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mr-2.5 sm:mr-3 shadow-sm">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
-              <div className="flex-1 text-left">
-                <p className="font-medium text-sm">Нов клиент</p>
-                <p className="text-xs text-muted-foreground">Добавете клиент</p>
+              <div className="flex-1 text-left min-w-0">
+                <p className="small-text font-medium truncate">Нов клиент</p>
+                <p className="tiny-text text-muted-foreground hidden sm:block">Добавете клиент</p>
               </div>
             </Link>
             <Link 
               href="/companies/new"
-              className="flex items-center w-full p-3.5 rounded-xl hover:bg-muted/50 transition-colors group"
+              className="flex items-center w-full p-2.5 sm:p-3 rounded-lg sm:rounded-xl hover:bg-muted/50 transition-colors group"
             >
-              <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mr-3 shadow-md shadow-emerald-500/20 group-hover:shadow-lg group-hover:shadow-emerald-500/30 transition-shadow">
-                <Building className="h-5 w-5 text-white" />
+              <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mr-2.5 sm:mr-3 shadow-sm">
+                <Building className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
-              <div className="flex-1 text-left">
-                <p className="font-medium text-sm">Нова компания</p>
-                <p className="text-xs text-muted-foreground">Добавете фирма</p>
+              <div className="flex-1 text-left min-w-0">
+                <p className="small-text font-medium truncate">Нова компания</p>
+                <p className="tiny-text text-muted-foreground hidden sm:block">Добавете фирма</p>
               </div>
             </Link>
             <Link 
               href="/products/new"
-              className="flex items-center w-full p-3.5 rounded-xl hover:bg-muted/50 transition-colors group"
+              className="flex items-center w-full p-2.5 sm:p-3 rounded-lg sm:rounded-xl hover:bg-muted/50 transition-colors group"
             >
-              <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center mr-3 shadow-md shadow-slate-500/20 group-hover:shadow-lg group-hover:shadow-slate-500/30 transition-shadow">
-                <FileText className="h-5 w-5 text-white" />
+              <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center mr-2.5 sm:mr-3 shadow-sm">
+                <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
-              <div className="flex-1 text-left">
-                <p className="font-medium text-sm">Нов продукт</p>
-                <p className="text-xs text-muted-foreground">Добавете услуга</p>
+              <div className="flex-1 text-left min-w-0">
+                <p className="small-text font-medium truncate">Нов продукт</p>
+                <p className="tiny-text text-muted-foreground hidden sm:block">Добавете услуга</p>
               </div>
             </Link>
           </CardContent>
         </Card>
 
         {/* Recent Invoices */}
-        <Card className="lg:col-span-2 border border-border/50 shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between pb-4">
-            <div>
-              <CardTitle className="text-lg font-semibold">Последни фактури</CardTitle>
-              <CardDescription className="text-sm">Най-новите фактури в системата</CardDescription>
+        <Card className="lg:col-span-2 border border-border/50 shadow-md">
+          <CardHeader className="flex flex-row items-center justify-between pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
+            <div className="min-w-0 flex-1">
+              <CardTitle className="card-title">Последни фактури</CardTitle>
+              <CardDescription className="card-description">Най-новите фактури</CardDescription>
             </div>
-            <Button variant="ghost" size="sm" asChild className="text-xs">
-              <Link href="/invoices" className="flex items-center gap-1.5">
-                Всички
-                <ArrowUpRight className="h-3.5 w-3.5" />
+            <Button variant="ghost" size="sm" asChild className="tiny-text flex-shrink-0">
+              <Link href="/invoices" className="flex items-center gap-1">
+                <span className="hidden sm:inline">Всички</span>
+                <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               </Link>
             </Button>
           </CardHeader>

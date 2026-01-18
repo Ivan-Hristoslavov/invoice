@@ -130,38 +130,36 @@ export default function NewClientPage() {
 
   return (
     <div>
-      <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <Button variant="ghost" size="sm" asChild className="flex-shrink-0">
+      <div className="page-header">
+        <div className="page-header-left">
+          <Button variant="ghost" size="sm" asChild className="back-btn">
             <Link href="/clients">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Назад</span>
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline ml-2">Назад</span>
             </Link>
           </Button>
-          <h1 className="text-2xl sm:text-3xl font-bold truncate">Нов клиент</h1>
+          <h1 className="page-title truncate">Нов клиент</h1>
         </div>
-        <Button 
-          type="submit" 
-          form="client-form" 
-          disabled={isLoading}
-          className="w-full sm:w-auto flex-shrink-0"
-        >
-          <Save className="mr-2 h-4 w-4" />
-          <span className="hidden sm:inline">{isLoading ? "Запазване..." : "Запази клиент"}</span>
-          <span className="sm:hidden">{isLoading ? "Запазване..." : "Запази"}</span>
-        </Button>
+        <div className="page-header-actions">
+          <Button 
+            type="submit" 
+            form="client-form" 
+            disabled={isLoading}
+            className="btn-responsive btn-text"
+          >
+            <Save className="mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">{isLoading ? "Запазване..." : "Запази"}</span>
+            <span className="sm:hidden">{isLoading ? "..." : "Запази"}</span>
+          </Button>
+        </div>
       </div>
 
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle>Данни за клиента</CardTitle>
-              <CardDescription>
-                Добавете информация за вашия клиент
-              </CardDescription>
-            </div>
-          </div>
+          <CardTitle className="card-title">Данни за клиента</CardTitle>
+          <CardDescription className="card-description">
+            Добавете информация за вашия клиент
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
