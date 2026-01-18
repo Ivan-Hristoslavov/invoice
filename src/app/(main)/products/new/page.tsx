@@ -118,7 +118,6 @@ export default function NewProductPage() {
       });
       
       router.push("/products");
-      router.refresh();
     } catch (error) {
       console.error("Грешка при създаване на продукт:", error);
       toast.error("Грешка", {
@@ -203,7 +202,7 @@ export default function NewProductPage() {
                       <FormControl>
                         <div className="relative">
                           <span className="absolute inset-y-0 left-3 flex items-center text-muted-foreground">
-                            лв
+                            €
                           </span>
                           <Input 
                             type="text" 

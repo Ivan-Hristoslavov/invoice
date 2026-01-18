@@ -105,29 +105,42 @@
     @apply border-border;
   }
   
-  /* Smooth theme transition - 1 second slow and smooth */
-  *,
-  *::before,
-  *::after {
-    transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 1000ms;
+  /* Prevent blinking in Safari */
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
-  /* Exclude transform and animations from theme transition */
-  [class*="animate-"],
-  [style*="transform"],
-  [style*="animation"] {
-    transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow;
+  /* Hardware acceleration for smooth animations */
+  html, body {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
   }
   
   body {
     @apply bg-background text-foreground;
   }
   
+  /* Theme transition only for specific elements, not globally */
+  .theme-transition,
+  [data-theme-transition] {
+    transition-property: background-color, border-color, color;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+  }
+  
   /* Fix for inputs - ensure proper contrast */
   input::placeholder {
     @apply text-muted-foreground/70;
+  }
+  
+  /* Prevent flash of unstyled content */
+  .no-fouc {
+    visibility: hidden;
+  }
+  
+  .no-fouc.loaded {
+    visibility: visible;
   }
 }
 

@@ -128,22 +128,16 @@ function formatCurrency(amount: number, currency: string): string {
   const formatted = amount.toFixed(2);
   const symbols: Record<string, string> = {
     'EUR': '€',
-    'BGN': 'лв.',
-    'USD': '$',
-    'GBP': '£',
   };
-  return `${formatted} ${symbols[currency] || currency}`;
+  return `${formatted} ${symbols[currency] || '€'}`;
 }
 
 // Get currency word
 function getCurrencyWord(currency: string): string {
   const words: Record<string, string> = {
     'EUR': 'евро',
-    'BGN': 'лева',
-    'USD': 'долара',
-    'GBP': 'лири',
   };
-  return words[currency] || currency;
+  return words[currency] || 'евро';
 }
 
 // Server-side PDF generation function

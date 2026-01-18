@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { useRef } from "react";
 import { FullPageLoader } from "@/components/ui/loading-spinner";
 
 interface SessionLoaderProps {
@@ -10,23 +10,18 @@ interface SessionLoaderProps {
 
 export function SessionLoader({ children }: SessionLoaderProps) {
   const { status } = useSession();
-  const [showLoader, setShowLoader] = useState(true);
+  // Use ref to track if we've ever resolved - prevents re-showing loader
+  const hasResolvedOnce = useRef(false);
   
-  // Използваме useEffect за да избегнем хидратация грешки
-  useEffect(() => {
-    if (status !== "loading") {
-      // Добавяме малко забавяне за по-плавен преход
-      const timeout = setTimeout(() => {
-        setShowLoader(false);
-      }, 300);
-      
-      return () => clearTimeout(timeout);
-    }
-  }, [status]);
+  // Once session has resolved once, never show loader again
+  if (status !== "loading") {
+    hasResolvedOnce.current = true;
+  }
   
-  if (showLoader) {
+  // Only show loader on initial load, never on subsequent navigations
+  if (status === "loading" && !hasResolvedOnce.current) {
     return <FullPageLoader />;
   }
   
   return <>{children}</>;
-} 
+}

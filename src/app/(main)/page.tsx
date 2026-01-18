@@ -193,7 +193,7 @@ export default function HomePage() {
             "offers": {
               "@type": "Offer",
               "price": "0",
-              "priceCurrency": "BGN",
+              "priceCurrency": "EUR",
               "description": "Безплатен план с ограничени функции"
             },
             "aggregateRating": {
@@ -338,8 +338,8 @@ export default function HomePage() {
               variants={fadeInUp}
               className="text-lg sm:text-xl text-muted-foreground max-w-2xl mb-10"
             >
-              Модерна платформа за фактуриране, създадена за български бизнеси. 
-              Създавайте, изпращайте и проследявайте фактури с лекота.
+              Софтуер за издаване на фактури, създаден за български бизнеси. 
+              Създавайте професионални фактури, изпращайте ги по имейл и следете статуса им.
             </motion.p>
 
             {/* CTA Buttons */}
@@ -403,6 +403,61 @@ export default function HomePage() {
             </div>
           </motion.div>
               </div>
+      </section>
+
+      {/* Who Is It For Section */}
+      <section className="py-16 px-4">
+        <div className="container mx-auto max-w-6xl">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <Card className="border-2 border-amber-500/30 bg-gradient-to-br from-amber-50/50 to-orange-50/30 dark:from-amber-950/20 dark:to-orange-950/10 shadow-xl">
+              <CardContent className="p-8 md:p-12">
+                <div className="flex flex-col md:flex-row gap-8 items-start">
+                  <div className="flex-shrink-0">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                      <FileText className="h-8 w-8 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-2xl md:text-3xl font-bold mb-4">За кого е {APP_NAME}?</h2>
+                    <p className="text-muted-foreground text-lg mb-6">
+                      {APP_NAME} е система за <strong>издаване на фактури</strong>, а не за обработка на плащания. 
+                      Приложението е идеално за:
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                      {[
+                        "Фрийлансъри и самонаети лица",
+                        "Малки и средни предприятия",
+                        "Счетоводители и счетоводни къщи",
+                        "Консултанти и агенции",
+                        "Занаятчии и услуги",
+                        "Търговци и дистрибутори"
+                      ].map((item) => (
+                        <div key={item} className="flex items-center gap-3">
+                          <div className="h-6 w-6 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                            <Check className="h-4 w-4 text-emerald-600" />
+                          </div>
+                          <span className="text-sm md:text-base">{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="p-4 rounded-lg bg-amber-100/50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                      <p className="text-sm text-amber-800 dark:text-amber-200">
+                        <strong>Важно:</strong> {APP_NAME} <strong>не обработва плащания</strong> и не е платежна система. 
+                        Ние ви помагаме да създавате професионални фактури, които да изпращате на клиентите си. 
+                        Плащанията се извършват директно между вас и вашите клиенти чрез банков превод или друг метод по ваш избор.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
       </section>
 
       {/* Features Section */}
@@ -490,7 +545,7 @@ export default function HomePage() {
                     <p className="text-muted-foreground text-sm mb-6">{plan.description}</p>
                     <div className="mb-6">
                       <span className="text-5xl font-bold">{plan.price}</span>
-                      <span className="text-muted-foreground ml-2">лв/{plan.period}</span>
+                      <span className="text-muted-foreground ml-2">€/{plan.period}</span>
               </div>
                     <ul className="space-y-3 mb-8">
                       {plan.features.map((feature) => (
@@ -514,6 +569,20 @@ export default function HomePage() {
               </motion.div>
             ))}
           </div>
+          
+          {/* Pricing Notice */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="mt-12 text-center"
+          >
+            <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
+              Всички планове включват софтуер за издаване на фактури. Не предлагаме обработка на плащания - 
+              вашите клиенти плащат директно на вас чрез банков превод или друг метод по ваш избор.
+            </p>
+          </motion.div>
         </div>
       </section>
 
@@ -570,6 +639,62 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* FAQ Section */}
+      <section className="py-24 px-4">
+        <div className="container mx-auto max-w-4xl">
+          <motion.div 
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-16"
+          >
+            <span className="text-primary font-semibold text-sm uppercase tracking-wider">Въпроси</span>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mt-3 mb-4">
+              Често задавани въпроси
+            </h2>
+          </motion.div>
+
+          <motion.div 
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="space-y-4"
+          >
+            {[
+              {
+                q: "Какво е FacturaPro?",
+                a: "FacturaPro е софтуер за издаване на фактури, предназначен за български бизнеси. Помагаме ви да създавате професионални фактури, да ги изпращате по имейл и да следите кой ви дължи пари."
+              },
+              {
+                q: "Мога ли да приемам плащания чрез FacturaPro?",
+                a: "Не, FacturaPro не е платежна система и не обработва плащания. Ние ви помагаме да издавате фактури, но плащанията се извършват директно между вас и клиентите ви - чрез банков превод, в брой или друг метод по ваш избор."
+              },
+              {
+                q: "Какво представлява кредитното известие?",
+                a: "Кредитното известие е документ, който се издава за сторниране или коригиране на издадена фактура. Например, ако клиент върне стока или има грешка във фактурата, издавате кредитно известие вместо да изтривате оригиналната фактура."
+              },
+              {
+                q: "Съвместима ли е системата с изискванията на НАП?",
+                a: "Да, FacturaPro е напълно съвместима с българските данъчни изисквания. Фактурите съдържат всички задължителни реквизити съгласно ЗДДС и Закона за счетоводството."
+              },
+              {
+                q: "Мога ли да използвам системата за няколко фирми?",
+                a: "Да, в зависимост от вашия план можете да управлявате от 1 до неограничен брой компании от един акаунт."
+              }
+            ].map((faq, index) => (
+              <Card key={index} className="border shadow-sm">
+                <CardContent className="p-6">
+                  <h3 className="font-semibold text-lg mb-2">{faq.q}</h3>
+                  <p className="text-muted-foreground">{faq.a}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-24 px-4">
         <div className="container mx-auto max-w-4xl">
@@ -619,7 +744,7 @@ export default function HomePage() {
                 <span className="font-bold text-xl">{APP_NAME}</span>
               </div>
               <p className="text-muted-foreground text-sm">
-                Професионална платформа за фактуриране, създадена за български бизнеси.
+                Софтуер за издаване на фактури за български бизнеси. Не обработваме плащания.
               </p>
               </div>
               <div>

@@ -25,13 +25,10 @@ export function formatPrice(value: number): string {
   return rounded.toFixed(2);
 }
 
-export function formatCurrency(amount: number, currency: string = "USD"): string {
+export function formatCurrency(amount: number, currency: string = "EUR"): string {
   // Define currency symbols
   const currencySymbols: Record<string, string> = {
-    USD: "$",
     EUR: "€",
-    GBP: "£",
-    BGN: "лв ",
   };
 
   // Get symbol or default to currency code
@@ -43,15 +40,12 @@ export function formatCurrency(amount: number, currency: string = "USD"): string
   return `${symbol}${formattedAmount}`;
 }
 
-export function getCurrencySymbol(currency: string = "USD"): string {
+export function getCurrencySymbol(currency: string = "EUR"): string {
   const currencySymbols: Record<string, string> = {
-    USD: "$",
     EUR: "€",
-    GBP: "£",
-    BGN: "лв",
   };
   
-  return currencySymbols[currency] || "$";
+  return currencySymbols[currency] || "€";
 }
 
 // Function to convert country names to ISO 3166-1 alpha-2 codes

@@ -16,7 +16,9 @@ import {
   XCircle,
   Eye,
   MoreHorizontal,
-  Sparkles
+  Sparkles,
+  Euro,
+  Calendar
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -141,39 +143,47 @@ export default async function DashboardPage() {
   const stats = [
     {
       title: "Обща стойност",
-      value: `${totalIssued.toFixed(2)} лв`,
+      value: totalIssued.toFixed(2),
+      currency: "€",
       description: "От издадени фактури",
-      icon: TrendingUp,
+      icon: Euro,
       trend: "+12.5%",
       trendUp: true,
       gradient: "from-emerald-500 to-teal-600",
-      bgGradient: "from-emerald-500/10 to-teal-600/10"
+      bgGradient: "from-emerald-500/10 via-emerald-500/5 to-transparent",
+      iconBg: "bg-emerald-500/20"
     },
     {
       title: "Този месец",
-      value: `${thisMonthTotal.toFixed(2)} лв`,
-      description: `${thisMonthInvoices.length} фактури`,
-      icon: Sparkles,
+      value: thisMonthTotal.toFixed(2),
+      currency: "€",
+      description: `${thisMonthInvoices.length} ${thisMonthInvoices.length === 1 ? 'фактура' : 'фактури'}`,
+      icon: Calendar,
       trend: "+8.2%",
       trendUp: true,
-      gradient: "from-sky-500 to-blue-600",
-      bgGradient: "from-sky-500/10 to-blue-600/10"
+      gradient: "from-blue-500 to-indigo-600",
+      bgGradient: "from-blue-500/10 via-blue-500/5 to-transparent",
+      iconBg: "bg-blue-500/20"
     },
     {
       title: "Фактури",
       value: counts.total.toString(),
+      currency: "",
       description: `${counts.issued} издадени, ${counts.draft} чернови`,
       icon: FileText,
-      gradient: "from-blue-500 to-indigo-600",
-      bgGradient: "from-blue-500/10 to-indigo-600/10"
+      gradient: "from-violet-500 to-purple-600",
+      bgGradient: "from-violet-500/10 via-violet-500/5 to-transparent",
+      iconBg: "bg-violet-500/20"
     },
     {
       title: "Клиенти",
       value: (clientCount || 0).toString(),
+      currency: "",
       description: "Активни клиенти",
       icon: Users,
       gradient: "from-amber-500 to-orange-600",
-      bgGradient: "from-amber-500/10 to-orange-600/10"
+      bgGradient: "from-amber-500/10 via-amber-500/5 to-transparent",
+      iconBg: "bg-amber-500/20"
     }
   ];
 
@@ -183,7 +193,7 @@ export default async function DashboardPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Табло</h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-1.5">
             Добре дошли, {session.user.name || 'потребител'}! Ето преглед на вашата дейност.
           </p>
         </div>
@@ -192,7 +202,7 @@ export default async function DashboardPage() {
           size="3" 
           variant="solid" 
           color="green"
-          className="shadow-lg"
+          className="shadow-lg hover:shadow-xl transition-shadow"
         >
           <Link href="/invoices/new">
             <Plus className="mr-2 h-5 w-5" />
@@ -202,35 +212,46 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, index) => (
-          <Card key={stat.title} className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 group">
-            {/* Background Gradient */}
-            <div className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-50 group-hover:opacity-70 transition-opacity`} />
+          <Card 
+            key={stat.title} 
+            className="relative overflow-hidden border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group"
+          >
+            {/* Animated background gradient */}
+            <div className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
             
             <CardContent className="relative p-6">
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
-                  <p className="text-3xl font-bold tracking-tight">{stat.value}</p>
-                  <p className="text-xs text-muted-foreground">{stat.description}</p>
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-muted-foreground mb-3">{stat.title}</p>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-3xl font-bold tracking-tight">{stat.value}</span>
+                    {stat.currency && (
+                      <span className="text-xl font-semibold text-muted-foreground">{stat.currency}</span>
+                    )}
+                  </div>
                 </div>
-                <div className={`p-3 rounded-xl bg-gradient-to-br ${stat.gradient} shadow-lg`}>
-                  <stat.icon className="h-5 w-5 text-white" />
+                <div className={`p-2.5 rounded-xl ${stat.iconBg} flex-shrink-0`}>
+                  <div className={`p-2 rounded-lg bg-gradient-to-br ${stat.gradient} shadow-md`}>
+                    <stat.icon className="h-5 w-5 text-white" />
+                  </div>
                 </div>
               </div>
               
+              <p className="text-xs text-muted-foreground mb-3">{stat.description}</p>
+              
               {stat.trend && (
-                <div className="flex items-center gap-1 mt-4">
+                <div className="flex items-center gap-1.5 pt-3 border-t border-border/50">
                   {stat.trendUp ? (
-                    <ArrowUpRight className="h-4 w-4 text-emerald-500" />
+                    <ArrowUpRight className="h-4 w-4 text-emerald-600 flex-shrink-0" />
                   ) : (
-                    <ArrowDownRight className="h-4 w-4 text-red-500" />
+                    <ArrowDownRight className="h-4 w-4 text-red-600 flex-shrink-0" />
                   )}
-                  <span className={`text-sm font-medium ${stat.trendUp ? 'text-emerald-500' : 'text-red-500'}`}>
+                  <span className={`text-sm font-semibold ${stat.trendUp ? 'text-emerald-600' : 'text-red-600'}`}>
                     {stat.trend}
                   </span>
-                  <span className="text-xs text-muted-foreground ml-1">спрямо миналия месец</span>
+                  <span className="text-xs text-muted-foreground ml-0.5">спрямо миналия месец</span>
                 </div>
               )}
             </CardContent>
@@ -241,56 +262,56 @@ export default async function DashboardPage() {
       {/* Quick Actions & Recent Invoices */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Quick Actions */}
-        <Card className="lg:col-span-1 border-0 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-lg">Бързи действия</CardTitle>
-            <CardDescription>Често използвани операции</CardDescription>
+        <Card className="lg:col-span-1 border border-border/50 shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold">Бързи действия</CardTitle>
+            <CardDescription className="text-sm">Често използвани операции</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
             <Link 
               href="/invoices/new"
-              className="flex items-center w-full p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
+              className="flex items-center w-full p-3.5 rounded-xl hover:bg-muted/50 transition-colors group"
             >
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mr-4 shadow-lg shadow-blue-500/20">
+              <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mr-3 shadow-md shadow-blue-500/20 group-hover:shadow-lg group-hover:shadow-blue-500/30 transition-shadow">
                 <Plus className="h-5 w-5 text-white" />
               </div>
-              <div className="text-left">
+              <div className="flex-1 text-left">
                 <p className="font-medium text-sm">Нова фактура</p>
                 <p className="text-xs text-muted-foreground">Създайте фактура</p>
               </div>
             </Link>
             <Link 
               href="/clients/new"
-              className="flex items-center w-full p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
+              className="flex items-center w-full p-3.5 rounded-xl hover:bg-muted/50 transition-colors group"
             >
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mr-4 shadow-lg shadow-amber-500/20">
+              <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mr-3 shadow-md shadow-amber-500/20 group-hover:shadow-lg group-hover:shadow-amber-500/30 transition-shadow">
                 <Users className="h-5 w-5 text-white" />
               </div>
-              <div className="text-left">
+              <div className="flex-1 text-left">
                 <p className="font-medium text-sm">Нов клиент</p>
                 <p className="text-xs text-muted-foreground">Добавете клиент</p>
               </div>
             </Link>
             <Link 
               href="/companies/new"
-              className="flex items-center w-full p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
+              className="flex items-center w-full p-3.5 rounded-xl hover:bg-muted/50 transition-colors group"
             >
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mr-4 shadow-lg shadow-emerald-500/20">
+              <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mr-3 shadow-md shadow-emerald-500/20 group-hover:shadow-lg group-hover:shadow-emerald-500/30 transition-shadow">
                 <Building className="h-5 w-5 text-white" />
               </div>
-              <div className="text-left">
+              <div className="flex-1 text-left">
                 <p className="font-medium text-sm">Нова компания</p>
                 <p className="text-xs text-muted-foreground">Добавете фирма</p>
               </div>
             </Link>
             <Link 
               href="/products/new"
-              className="flex items-center w-full p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
+              className="flex items-center w-full p-3.5 rounded-xl hover:bg-muted/50 transition-colors group"
             >
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center mr-4 shadow-lg shadow-slate-500/20">
+              <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center mr-3 shadow-md shadow-slate-500/20 group-hover:shadow-lg group-hover:shadow-slate-500/30 transition-shadow">
                 <FileText className="h-5 w-5 text-white" />
               </div>
-              <div className="text-left">
+              <div className="flex-1 text-left">
                 <p className="font-medium text-sm">Нов продукт</p>
                 <p className="text-xs text-muted-foreground">Добавете услуга</p>
               </div>
@@ -299,30 +320,30 @@ export default async function DashboardPage() {
         </Card>
 
         {/* Recent Invoices */}
-        <Card className="lg:col-span-2 border-0 shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between">
+        <Card className="lg:col-span-2 border border-border/50 shadow-lg">
+          <CardHeader className="flex flex-row items-center justify-between pb-4">
             <div>
-              <CardTitle className="text-lg">Последни фактури</CardTitle>
-              <CardDescription>Най-новите фактури в системата</CardDescription>
+              <CardTitle className="text-lg font-semibold">Последни фактури</CardTitle>
+              <CardDescription className="text-sm">Най-новите фактури в системата</CardDescription>
             </div>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/invoices">
+            <Button variant="ghost" size="sm" asChild className="text-xs">
+              <Link href="/invoices" className="flex items-center gap-1.5">
                 Всички
-                <ArrowUpRight className="ml-1 h-4 w-4" />
+                <ArrowUpRight className="h-3.5 w-3.5" />
               </Link>
             </Button>
           </CardHeader>
           <CardContent>
             {recentInvoices.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
-                  <FileText className="h-6 w-6 text-muted-foreground" />
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="h-14 w-14 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+                  <FileText className="h-7 w-7 text-muted-foreground" />
                 </div>
-                <p className="text-sm font-medium mb-1">Няма фактури</p>
-                <p className="text-xs text-muted-foreground mb-4">
-                  Създайте първата си фактура
+                <p className="text-base font-semibold mb-1">Няма фактури</p>
+                <p className="text-sm text-muted-foreground mb-6 max-w-xs">
+                  Създайте първата си фактура, за да започнете да управлявате финансите си
                 </p>
-                <Button size="sm" asChild>
+                <Button size="sm" asChild className="shadow-md">
                   <Link href="/invoices/new">
                     <Plus className="mr-2 h-4 w-4" />
                     Нова фактура
@@ -335,15 +356,15 @@ export default async function DashboardPage() {
                   <Link
                     key={invoice.id}
                     href={`/invoices/${invoice.id}`}
-                    className="flex items-center justify-between p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors group"
+                    className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/50 transition-all duration-200 group"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <div className={`h-11 w-11 rounded-lg flex items-center justify-center flex-shrink-0 ${
                         invoice.status === 'ISSUED' 
-                          ? 'bg-emerald-500/10 text-emerald-600'
+                          ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
                           : invoice.status === 'DRAFT'
-                          ? 'bg-amber-500/10 text-amber-600'
-                          : 'bg-red-500/10 text-red-600'
+                          ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
+                          : 'bg-red-500/10 text-red-600 border border-red-500/20'
                       }`}>
                         {invoice.status === 'ISSUED' ? (
                           <CheckCircle className="h-5 w-5" />
@@ -353,24 +374,24 @@ export default async function DashboardPage() {
                           <XCircle className="h-5 w-5" />
                         )}
                       </div>
-                      <div>
-                        <p className="font-medium text-sm">{invoice.invoiceNumber}</p>
-                        <p className="text-xs text-muted-foreground">{invoice.client.name}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm mb-0.5 truncate">{invoice.invoiceNumber}</p>
+                        <p className="text-xs text-muted-foreground truncate">{invoice.client.name}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 flex-shrink-0">
                       <div className="text-right">
-                        <p className="font-semibold text-sm">{invoice.total.toFixed(2)} лв</p>
+                        <p className="font-bold text-sm">{invoice.total.toFixed(2)} €</p>
                         <p className="text-xs text-muted-foreground">
                           {format(invoice.issueDate, 'd MMM yyyy', { locale: bg })}
                         </p>
                       </div>
-                      <div className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                      <div className={`px-3 py-1.5 rounded-full text-xs font-medium ${
                         invoice.status === 'ISSUED' 
-                          ? 'bg-emerald-500/10 text-emerald-600'
+                          ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
                           : invoice.status === 'DRAFT'
-                          ? 'bg-amber-500/10 text-amber-600'
-                          : 'bg-red-500/10 text-red-600'
+                          ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
+                          : 'bg-red-500/10 text-red-600 border border-red-500/20'
                       }`}>
                         {invoice.status === 'ISSUED' ? 'Издадена' : invoice.status === 'DRAFT' ? 'Чернова' : 'Отказана'}
                       </div>
@@ -380,51 +401,6 @@ export default async function DashboardPage() {
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Status Overview */}
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-emerald-500/5 to-teal-600/5">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Издадени</p>
-                <p className="text-3xl font-bold text-emerald-600">{counts.issued}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-emerald-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-amber-500/5 to-orange-600/5">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Чернови</p>
-                <p className="text-3xl font-bold text-amber-600">{counts.draft}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-amber-500/10 flex items-center justify-center">
-                <Clock className="h-6 w-6 text-amber-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-red-500/5 to-red-600/5">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Отказани</p>
-                <p className="text-3xl font-bold text-red-600">{counts.cancelled}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-red-500/10 flex items-center justify-center">
-                <XCircle className="h-6 w-6 text-red-600" />
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>

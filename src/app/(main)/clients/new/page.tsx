@@ -118,7 +118,6 @@ export default function NewClientPage() {
       });
 
       router.push("/clients");
-      router.refresh();
     } catch (error) {
       console.error("Грешка при създаване на клиент:", error);
       toast.error("Грешка", {
@@ -131,19 +130,25 @@ export default function NewClientPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" asChild>
+      <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <Button variant="ghost" size="sm" asChild className="flex-shrink-0">
             <Link href="/clients">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Назад
+              <span className="hidden sm:inline">Назад</span>
             </Link>
           </Button>
-          <h1 className="text-3xl font-bold">Нов клиент</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold truncate">Нов клиент</h1>
         </div>
-        <Button type="submit" form="client-form" disabled={isLoading}>
+        <Button 
+          type="submit" 
+          form="client-form" 
+          disabled={isLoading}
+          className="w-full sm:w-auto flex-shrink-0"
+        >
           <Save className="mr-2 h-4 w-4" />
-          {isLoading ? "Запазване..." : "Запази клиент"}
+          <span className="hidden sm:inline">{isLoading ? "Запазване..." : "Запази клиент"}</span>
+          <span className="sm:hidden">{isLoading ? "Запазване..." : "Запази"}</span>
         </Button>
       </div>
 
@@ -162,11 +167,13 @@ export default function NewClientPage() {
           <Form {...form}>
             <form id="client-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="basic">Основна информация</TabsTrigger>
-                  <TabsTrigger value="address">Адрес</TabsTrigger>
-                  <TabsTrigger value="tax">Данъчна информация</TabsTrigger>
-                </TabsList>
+                <div className="overflow-x-auto -mx-6 px-6">
+                  <TabsList className="inline-flex w-full min-w-max sm:grid sm:grid-cols-3">
+                    <TabsTrigger value="basic" className="whitespace-nowrap text-xs sm:text-sm">Основна</TabsTrigger>
+                    <TabsTrigger value="address" className="whitespace-nowrap text-xs sm:text-sm">Адрес</TabsTrigger>
+                    <TabsTrigger value="tax" className="whitespace-nowrap text-xs sm:text-sm">Данъчна</TabsTrigger>
+                  </TabsList>
+                </div>
 
                 {/* Basic Info Tab */}
                 <TabsContent value="basic" className="space-y-4 pt-4">

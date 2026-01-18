@@ -259,7 +259,7 @@ export default async function ClientDetailPage(props: { params: { id: string } }
                             </Link>
                           </td>
                           <td className="py-3 px-2">{format(new Date(invoice.issueDate), "dd.MM.yyyy")}</td>
-                          <td className="py-3 px-2">{Number(invoice.total).toFixed(2)} лв</td>
+                          <td className="py-3 px-2">{Number(invoice.total).toFixed(2)} €</td>
                           <td className="py-3 px-2">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusStyles(invoice.status)}`}>
                               {getStatusText(invoice.status)}
@@ -301,12 +301,12 @@ export default async function ClientDetailPage(props: { params: { id: string } }
               
               <div className="space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">Общо сума</p>
-                <p className="text-3xl font-bold">{totalAmount.toFixed(2)} лв</p>
+                <p className="text-3xl font-bold">{totalAmount.toFixed(2)} €</p>
               </div>
               
               <div className="space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">Издадена стойност</p>
-                <p className="text-3xl font-bold text-emerald-600">{issuedAmount.toFixed(2)} лв</p>
+                <p className="text-3xl font-bold text-emerald-600">{issuedAmount.toFixed(2)} €</p>
               </div>
             </CardContent>
           </Card>

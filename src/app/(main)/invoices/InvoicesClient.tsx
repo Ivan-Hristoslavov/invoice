@@ -345,7 +345,7 @@ export default function InvoicesClient({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground font-medium">Стойност</p>
-                <p className="text-2xl font-bold">{formatPrice(stats.totalValue)} лв</p>
+                <p className="text-2xl font-bold">{formatPrice(stats.totalValue)} €</p>
               </div>
               <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center">
                 <Download className="h-5 w-5 text-white" />
@@ -454,8 +454,87 @@ export default function InvoicesClient({
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <>
+              <div className="space-y-3 px-4 pb-4 md:hidden">
+                {filteredInvoices.map((invoice) => {
+                  const statusConfig = getStatusConfig(invoice.status);
+                  const StatusIcon = statusConfig.icon;
+                  return (
+                    <div key={invoice.id} className="rounded-xl border bg-card p-4 shadow-sm">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                            (invoice.status === 'ISSUED' || invoice.status === 'PAID')
+                              ? 'bg-emerald-500/10'
+                              : invoice.status === 'DRAFT'
+                              ? 'bg-amber-500/10'
+                              : 'bg-red-500/10'
+                          }`}>
+                            <StatusIcon className={`h-5 w-5 ${
+                              (invoice.status === 'ISSUED' || invoice.status === 'PAID')
+                                ? 'text-emerald-600'
+                                : invoice.status === 'DRAFT'
+                                ? 'text-amber-600'
+                                : 'text-red-600'
+                            }`} />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-sm">{invoice.invoiceNumber}</p>
+                            <p className="text-xs text-muted-foreground">{invoice.client.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(invoice.issueDate), "d MMM yyyy", { locale: bg })}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold">{formatPrice(Number(invoice.total))} €</p>
+                          <Badge variant="outline" className={`${statusConfig.className} mt-2`}>
+                            {statusConfig.label}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <Button size="sm" variant="outline" asChild>
+                          <Link href={`/invoices/${invoice.id}`}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Преглед
+                          </Link>
+                        </Button>
+                        {invoice.userId === currentUserId && invoice.status === "DRAFT" && (
+                          <Button size="sm" variant="outline" asChild>
+                            <Link href={`/invoices/${invoice.id}/edit`}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Редакция
+                            </Link>
+                          </Button>
+                        )}
+                        {invoice.status === "DRAFT" && (
+                          <Button
+                            size="sm"
+                            onClick={() => openStatusModal(invoice, "ISSUED")}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                          >
+                            <FileCheck className="mr-2 h-4 w-4" />
+                            Издай
+                          </Button>
+                        )}
+                        {invoice.userId === currentUserId && invoice.status === "DRAFT" && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => openDeleteModal(invoice)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Изтрий
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full">
                 <thead>
                   <tr className="border-b bg-muted/50">
                     <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -529,7 +608,7 @@ export default function InvoicesClient({
                           </td>
                           <td className="px-6 py-4 text-right">
                             <p className="text-sm font-bold">
-                              {formatPrice(Number(invoice.total))} лв
+                              {formatPrice(Number(invoice.total))} €
                             </p>
                           </td>
                           <td className="px-6 py-4">
@@ -645,8 +724,9 @@ export default function InvoicesClient({
                     })}
                   </AnimatePresence>
                 </tbody>
-              </table>
-            </div>
+                </table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

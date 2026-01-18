@@ -35,10 +35,6 @@ export async function getStripe() {
 
 // Direct checkout URLs (to be updated with actual Stripe Payment Links)
 // FREE plan doesn't need a checkout URL
-const STRIPE_PRO_MONTHLY_URL = process.env.STRIPE_PRO_MONTHLY_URL || 'https://buy.stripe.com/test_pro_monthly';
-const STRIPE_PRO_YEARLY_URL = process.env.STRIPE_PRO_YEARLY_URL || 'https://buy.stripe.com/test_pro_yearly';
-const STRIPE_BUSINESS_MONTHLY_URL = process.env.STRIPE_BUSINESS_MONTHLY_URL || 'https://buy.stripe.com/test_business_monthly';
-const STRIPE_BUSINESS_YEARLY_URL = process.env.STRIPE_BUSINESS_YEARLY_URL || 'https://buy.stripe.com/test_business_yearly';
 
 // Prices from environment variables (can be managed from Vercel)
 // These are the actual prices in EUR that users will pay
