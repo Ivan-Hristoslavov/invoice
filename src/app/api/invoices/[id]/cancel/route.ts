@@ -19,7 +19,7 @@ export async function POST(
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
 
     // Get the invoice
@@ -36,7 +36,7 @@ export async function POST(
       .single();
 
     if (invoiceError || !invoice) {
-      return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+      return NextResponse.json({ error: "Фактурата не е намерена" }, { status: 404 });
     }
 
     // Only ISSUED invoices can be cancelled
@@ -100,9 +100,9 @@ export async function POST(
       .single();
 
     if (creditNoteError) {
-      console.error("Error creating credit note:", creditNoteError);
+      console.error("Грешка при създаване на кредитно известие:", creditNoteError);
       return NextResponse.json(
-        { error: "Failed to create credit note" },
+        { error: "Неуспешно създаване на кредитно известие" },
         { status: 500 }
       );
     }
@@ -140,12 +140,12 @@ export async function POST(
       .eq("id", id);
 
     if (updateError) {
-      console.error("Error updating invoice:", updateError);
+      console.error("Грешка при обновяване на фактура:", updateError);
       // Rollback credit note creation
       await supabaseAdmin.from("CreditNoteItem").delete().eq("creditNoteId", creditNoteId);
       await supabaseAdmin.from("CreditNote").delete().eq("id", creditNoteId);
       return NextResponse.json(
-        { error: "Failed to update invoice" },
+        { error: "Неуспешно обновяване на фактура" },
         { status: 500 }
       );
     }
@@ -178,9 +178,9 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error("Error cancelling invoice:", error);
+    console.error("Грешка при отмяна на фактура:", error);
     return NextResponse.json(
-      { error: "Error cancelling invoice" },
+      { error: "Грешка при отмяна на фактура" },
       { status: 500 }
     );
   }

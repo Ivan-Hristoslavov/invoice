@@ -15,7 +15,7 @@ export async function PUT(request: NextRequest) {
 
     if (!session || !session.user) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Неоторизиран достъп" },
         { status: 401 }
       );
     }
@@ -35,7 +35,7 @@ export async function PUT(request: NextRequest) {
 
       if (existingUser && existingUser.id !== session.user.id) {
         return NextResponse.json(
-          { error: "Email is already in use" },
+          { error: "Имейлът вече се използва" },
           { status: 400 }
         );
       }
@@ -66,14 +66,14 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid profile data", details: error.errors },
+        { error: "Невалидни данни за профила", details: error.errors },
         { status: 400 }
       );
     }
 
-    console.error("Error updating profile:", error);
+    console.error("Грешка при обновяване на профил:", error);
     return NextResponse.json(
-      { error: "Failed to update profile" },
+      { error: "Неуспешно обновяване на профил" },
       { status: 500 }
     );
   }
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
 
     if (!session || !session.user) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Неоторизиран достъп" },
         { status: 401 }
       );
     }
@@ -99,16 +99,16 @@ export async function GET(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { error: "User not found" },
+        { error: "Потребителят не е намерен" },
         { status: 404 }
       );
     }
 
     return NextResponse.json(user);
   } catch (error) {
-    console.error("Error fetching profile:", error);
+    console.error("Грешка при зареждане на профил:", error);
     return NextResponse.json(
-      { error: "Failed to fetch profile" },
+      { error: "Неуспешно зареждане на профил" },
       { status: 500 }
     );
   }

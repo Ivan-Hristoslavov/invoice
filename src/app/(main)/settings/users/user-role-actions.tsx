@@ -74,14 +74,14 @@ export default function UserRoleActions({
       });
       
       if (!response.ok) {
-        throw new Error("Failed to update user role");
+        throw new Error("Неуспешно обновяване на ролята на потребителя");
       }
       
-      toast.success("User role updated successfully");
+      toast.success("Ролята на потребителя е обновена успешно");
       router.refresh();
     } catch (error) {
-      console.error("Error updating user role:", error);
-      toast.error("Failed to update user role");
+      console.error("Грешка при обновяване на ролята на потребителя:", error);
+      toast.error("Неуспешно обновяване на ролята на потребителя");
     } finally {
       setIsLoading(false);
       setIsOpen(false);
@@ -104,14 +104,14 @@ export default function UserRoleActions({
       });
       
       if (!response.ok) {
-        throw new Error("Failed to remove user");
+        throw new Error("Неуспешно премахване на потребителя");
       }
       
-      toast.success("User removed successfully");
+      toast.success("Потребителят е премахнат успешно");
       router.refresh();
     } catch (error) {
-      console.error("Error removing user:", error);
-      toast.error("Failed to remove user");
+      console.error("Грешка при премахване на потребителя:", error);
+      toast.error("Неуспешно премахване на потребителя");
     } finally {
       setIsLoading(false);
       setIsDeleteDialogOpen(false);
@@ -124,21 +124,21 @@ export default function UserRoleActions({
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="sm">
             <UserCog className="h-4 w-4" />
-            <span className="sr-only">User Actions</span>
+            <span className="sr-only">Действия с потребител</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuLabel>User Actions</DropdownMenuLabel>
+          <DropdownMenuLabel>Действия с потребител</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setIsOpen(true)}>
-            Change Role
+            Промяна на роля
           </DropdownMenuItem>
           {!isCurrentUser && (
             <DropdownMenuItem
               onClick={() => setIsDeleteDialogOpen(true)}
               className="text-red-600"
             >
-              Remove User
+              Премахни потребител
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>
@@ -148,45 +148,45 @@ export default function UserRoleActions({
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Change User Role</DialogTitle>
+            <DialogTitle>Промяна на роля на потребител</DialogTitle>
             <DialogDescription>
-              Update the role and permissions for this user.
+              Обновете ролята и разрешенията за този потребител.
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
+              <Label htmlFor="role">Роля</Label>
               <Select
                 value={selectedRole}
                 onValueChange={(value) => setSelectedRole(value as Role)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select role" />
+                  <SelectValue placeholder="Изберете роля" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="OWNER">Owner</SelectItem>
-                  <SelectItem value="MANAGER">Manager</SelectItem>
-                  <SelectItem value="ACCOUNTANT">Accountant</SelectItem>
-                  <SelectItem value="VIEWER">Viewer</SelectItem>
+                  <SelectItem value="OWNER">Собственик</SelectItem>
+                  <SelectItem value="MANAGER">Мениджър</SelectItem>
+                  <SelectItem value="ACCOUNTANT">Счетоводител</SelectItem>
+                  <SelectItem value="VIEWER">Наблюдател</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             
             <div>
-              <Label>Role Permissions</Label>
+              <Label>Разрешения на ролята</Label>
               <p className="text-sm text-muted-foreground mt-1">
                 {selectedRole === "OWNER" && (
-                  "Full access to all company features, including user management."
+                  "Пълен достъп до всички функции на компанията, включително управление на потребители."
                 )}
                 {selectedRole === "MANAGER" && (
-                  "Can create and manage most resources but cannot delete or manage users."
+                  "Може да създава и управлява повечето ресурси, но не може да изтрива или управлява потребители."
                 )}
                 {selectedRole === "ACCOUNTANT" && (
-                  "Can manage invoices, payments, and financial records."
+                  "Може да управлява фактури, плащания и финансови записи."
                 )}
                 {selectedRole === "VIEWER" && (
-                  "Read-only access to view information but cannot make changes."
+                  "Само за четене - може да вижда информация, но не може да прави промени."
                 )}
               </p>
             </div>
@@ -194,10 +194,10 @@ export default function UserRoleActions({
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsOpen(false)}>
-              Cancel
+              Отказ
             </Button>
             <Button onClick={handleUpdateRole} disabled={isLoading}>
-              {isLoading ? "Updating..." : "Save Changes"}
+              {isLoading ? "Обновяване..." : "Запази промените"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -207,16 +207,16 @@ export default function UserRoleActions({
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Remove User</DialogTitle>
+            <DialogTitle>Премахни потребител</DialogTitle>
             <DialogDescription>
-              Are you sure you want to remove this user from the company? This action cannot be undone.
+              Сигурни ли сте, че искате да премахнете този потребител от компанията? Това действие не може да бъде отменено.
             </DialogDescription>
           </DialogHeader>
           
           <div className="flex items-center p-4 bg-amber-50 rounded-md border border-amber-200">
             <AlertTriangle className="h-5 w-5 text-amber-500 mr-2" />
             <p className="text-sm text-amber-700">
-              This will revoke the user's access to your company data.
+              Това ще отмени достъпа на потребителя до данните на вашата компания.
             </p>
           </div>
           
@@ -225,14 +225,14 @@ export default function UserRoleActions({
               variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
             >
-              Cancel
+              Отказ
             </Button>
             <Button
               variant="destructive"
               onClick={handleRemoveUser}
               disabled={isLoading}
             >
-              {isLoading ? "Removing..." : "Remove User"}
+              {isLoading ? "Премахване..." : "Премахни потребител"}
             </Button>
           </DialogFooter>
         </DialogContent>

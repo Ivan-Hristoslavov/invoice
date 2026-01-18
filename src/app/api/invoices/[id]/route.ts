@@ -12,22 +12,22 @@ import cuid from "cuid";
 // Schema for invoice update validation
 const invoiceItemSchema = z.object({
   id: z.union([z.number(), z.string()]).optional(), // Can be number, string or undefined for new items
-  description: z.string().min(1, "Description is required"),
-  quantity: z.number().min(0.01, "Quantity must be greater than 0"),
-  unitPrice: z.number().min(0, "Unit price cannot be negative"),
-  taxRate: z.number().min(0, "Tax rate cannot be negative"),
+  description: z.string().min(1, "Описанието е задължително"),
+  quantity: z.number().min(0.01, "Количеството трябва да е по-голямо от 0"),
+  unitPrice: z.number().min(0, "Единичната цена не може да е отрицателна"),
+  taxRate: z.number().min(0, "ДДС не може да е отрицателно"),
 });
 
 const invoiceUpdateSchema = z.object({
-  invoiceNumber: z.string().min(1, "Invoice number is required"),
-  clientId: z.string().min(1, "Client is required"),
-  companyId: z.string().min(1, "Company is required"),
-  issueDate: z.string().min(1, "Issue date is required"),
-  dueDate: z.string().min(1, "Due date is required"),
-  currency: z.string().min(1, "Currency is required"),
+  invoiceNumber: z.string().min(1, "Номерът на фактурата е задължителен"),
+  clientId: z.string().min(1, "Клиентът е задължителен"),
+  companyId: z.string().min(1, "Компанията е задължителна"),
+  issueDate: z.string().min(1, "Дата на издаване е задължителна"),
+  dueDate: z.string().min(1, "Падежната дата е задължителна"),
+  currency: z.string().min(1, "Валутата е задължителна"),
   notes: z.string().optional(),
   termsAndConditions: z.string().optional(),
-  items: z.array(invoiceItemSchema).min(1, "At least one item is required"),
+  items: z.array(invoiceItemSchema).min(1, "Нужен е поне един артикул"),
 });
 
 export async function GET(
@@ -39,7 +39,7 @@ export async function GET(
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
 
     const supabase = createAdminClient();
@@ -52,14 +52,14 @@ export async function GET(
       .single();
 
     if (checkError || !invoiceCheck) {
-      console.error("Invoice not found:", id, checkError);
-      return Response.json({ error: "Invoice not found" }, { status: 404 });
+      console.error("Фактурата не е намерена:", id, checkError);
+      return Response.json({ error: "Фактурата не е намерена" }, { status: 404 });
     }
 
     // Check if user has access (owner or admin)
     if (invoiceCheck.userId !== session.user.id) {
-      console.error("Access denied: user", session.user.id, "tried to access invoice owned by", invoiceCheck.userId);
-      return Response.json({ error: "Access denied" }, { status: 403 });
+      console.error("Отказан достъп: потребител", session.user.id, "опита да достъпи фактура на", invoiceCheck.userId);
+      return Response.json({ error: "Достъпът е отказан" }, { status: 403 });
     }
 
     // Fetch full invoice data
@@ -70,8 +70,8 @@ export async function GET(
       .single();
 
     if (error || !invoice) {
-      console.error("Error fetching invoice details:", error);
-      return Response.json({ error: "Invoice not found" }, { status: 404 });
+      console.error("Грешка при зареждане на детайли за фактура:", error);
+      return Response.json({ error: "Фактурата не е намерена" }, { status: 404 });
     }
 
     // Fetch related data separately
@@ -92,9 +92,9 @@ export async function GET(
 
     return Response.json(fullInvoice);
   } catch (error) {
-    console.error("Error fetching invoice:", error);
+    console.error("Грешка при зареждане на фактура:", error);
     return Response.json(
-      { error: "Error fetching invoice" },
+      { error: "Грешка при зареждане на фактура" },
       { status: 500 }
     );
   }
@@ -109,7 +109,7 @@ export async function PUT(
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
 
     const supabase = createAdminClient();
@@ -122,7 +122,7 @@ export async function PUT(
       .single();
 
     if (invoiceError || !invoice) {
-      return Response.json({ error: "Invoice not found" }, { status: 404 });
+      return Response.json({ error: "Фактурата не е намерена" }, { status: 404 });
     }
 
     // Invoices are immutable after ISSUED - only DRAFT can be edited
@@ -217,9 +217,9 @@ export async function PUT(
 
     return Response.json(updatedInvoice);
   } catch (error) {
-    console.error("Error updating invoice:", error);
+    console.error("Грешка при обновяване на фактура:", error);
     return Response.json(
-      { error: "Error updating invoice" },
+      { error: "Грешка при обновяване на фактура" },
       { status: 500 }
     );
   }
@@ -232,7 +232,7 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
 
     if (!session || !session.user) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Неоторизиран достъп" },
         { status: 401 }
       );
     }
@@ -248,7 +248,7 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
 
     if (invoiceError || !existingInvoice) {
       return NextResponse.json(
-        { error: "Invoice not found" },
+        { error: "Фактурата не е намерена" },
         { status: 404 }
       );
     }
@@ -293,9 +293,9 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting invoice:", error);
+    console.error("Грешка при изтриване на фактура:", error);
     return NextResponse.json(
-      { error: "Failed to delete invoice" },
+      { error: "Неуспешно изтриване на фактура" },
       { status: 500 }
     );
   }

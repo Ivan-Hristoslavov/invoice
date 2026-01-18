@@ -9,7 +9,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     const session = await getServerSession(authOptions);
     
     if (!session || !session.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
     const userId = (session.user as any).id;
     
@@ -22,7 +22,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     });
     
     if (!invoice) {
-      return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+      return NextResponse.json({ error: "Фактурата не е намерена" }, { status: 404 });
     }
     
     // Get documents for this invoice
@@ -37,9 +37,9 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     
     return NextResponse.json({ documents });
   } catch (error) {
-    console.error("Error fetching documents:", error);
+    console.error("Грешка при зареждане на документи:", error);
     return NextResponse.json(
-      { error: "Failed to fetch documents" },
+      { error: "Неуспешно зареждане на документи" },
       { status: 500 }
     );
   }
@@ -51,7 +51,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const session = await getServerSession(authOptions);
     
     if (!session || !session.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
     const userId = (session.user as any).id;
     
@@ -64,7 +64,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     });
     
     if (!invoice) {
-      return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+      return NextResponse.json({ error: "Фактурата не е намерена" }, { status: 404 });
     }
     
     // In a real application, you would process file uploads here
@@ -84,9 +84,9 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     
     return NextResponse.json({ document });
   } catch (error) {
-    console.error("Error creating document:", error);
+    console.error("Грешка при създаване на документ:", error);
     return NextResponse.json(
-      { error: "Failed to create document" },
+      { error: "Неуспешно създаване на документ" },
       { status: 500 }
     );
   }
@@ -98,7 +98,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
     const session = await getServerSession(authOptions);
     
     if (!session || !session.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
     const userId = (session.user as any).id;
     
@@ -108,7 +108,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
     
     if (!documentId) {
       return NextResponse.json(
-        { error: "Document ID is required" },
+        { error: "Липсва ID на документ" },
         { status: 400 }
       );
     }
@@ -124,7 +124,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
     
     if (!document) {
       return NextResponse.json(
-        { error: "Document not found" },
+        { error: "Документът не е намерен" },
         { status: 404 }
       );
     }
@@ -138,9 +138,9 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
     
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting document:", error);
+    console.error("Грешка при изтриване на документ:", error);
     return NextResponse.json(
-      { error: "Failed to delete document" },
+      { error: "Неуспешно изтриване на документ" },
       { status: 500 }
     );
   }

@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
         // Сесията вече е проверена от withAuthorization middleware
         const session = await getServerSession(authOptions);
         if (!session?.user) {
-          throw new Error("Unauthorized");
+          throw new Error("Неоторизиран достъп");
         }
 
         // Извличане на параметрите от заявката
@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
         // Сесията вече е проверена от withAuthorization middleware
         const session = await getServerSession(authOptions);
         if (!session?.user) {
-          throw new Error("Unauthorized");
+          throw new Error("Неоторизиран достъп");
         }
 
         // Парсване на тялото на заявката
@@ -285,7 +285,7 @@ export async function POST(request: NextRequest) {
                 await new Promise(resolve => setTimeout(resolve, 100 * (attempt + 1)));
                 continue;
               }
-              throw new Error("Failed to generate unique invoice number after retries");
+              throw new Error("Неуспешно генериране на уникален номер на фактура след повторни опити");
             }
             
             // Създаване на фактура в базата данни
@@ -340,7 +340,7 @@ export async function POST(request: NextRequest) {
         }
         
         if (invoiceError || !invoice) {
-          throw invoiceError || new Error("Failed to create invoice after retries");
+          throw invoiceError || new Error("Неуспешно създаване на фактура след повторни опити");
         }
         
         // Create invoice items

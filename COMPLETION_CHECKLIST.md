@@ -7,9 +7,9 @@
 #### 1.1 Премахване на опасни функционалности
 - [ ] **Премахни редактиране на ISSUED фактури**
   - [ ] Премахни `/invoices/[id]/edit` страницата (или ограничи само за DRAFT)
-  - [ ] Обнови `PUT /api/invoices/[id]` - позволи редактиране само на DRAFT
-  - [ ] Премахни Edit бутон от InvoiceDetailClient за ISSUED фактури
-  - [ ] Добави проверка: `if (status !== 'DRAFT') throw error`
+  - [x] Обнови `PUT /api/invoices/[id]` - позволи редактиране само на DRAFT
+  - [x] Премахни Edit бутон от InvoiceDetailClient за ISSUED фактури
+  - [x] Добави проверка: `if (status !== 'DRAFT') throw error`
 
 - [ ] **Премахни Payment management**
   - [ ] Премахни `/payments` страницата от навигацията
@@ -23,16 +23,16 @@
   - [ ] Премахни "Плащания" от навигацията
 
 #### 1.2 Добавяне на CreditNote функционалност
-- [ ] **API за създаване на CreditNote**
-  - [ ] Създай `POST /api/invoices/[id]/cancel` endpoint
-  - [ ] Логика: cancel invoice → create credit note
-  - [ ] Генериране на credit note number
-  - [ ] Копиране на invoice items в credit note items
+- [x] **API за създаване на CreditNote**
+  - [x] Създай `POST /api/invoices/[id]/cancel` endpoint
+  - [x] Логика: cancel invoice → create credit note
+  - [x] Генериране на credit note number
+  - [x] Копиране на invoice items в credit note items
 
 - [ ] **UI за създаване на CreditNote**
-  - [ ] Добави "Отмени фактура" бутон в InvoiceDetailClient
+  - [x] Добави "Отмени фактура" бутон в InvoiceDetailClient
   - [ ] Модал за потвърждение с причина за отмяна
-  - [ ] Показване на credit note след създаване
+  - [x] Показване на credit note след създаване
   - [ ] Страница за преглед на credit notes
 
 - [ ] **PDF export за CreditNote**
@@ -40,26 +40,26 @@
   - [ ] Генериране на PDF с правилен формат
 
 #### 1.3 InvoiceSequence логика
-- [ ] **Автоматично номериране**
-  - [ ] Създай `lib/invoice-sequence.ts` helper
-  - [ ] Функция `getNextInvoiceNumber(companyId, year)`
-  - [ ] Автоматично създаване/обновяване на InvoiceSequence
-  - [ ] Нулиране на sequence в началото на всяка година
-  - [ ] Използване на български формат: `YYCCCCNNNNNNИ`
+- [x] **Автоматично номериране**
+  - [x] Създай `lib/invoice-sequence.ts` helper
+  - [x] Функция `getNextInvoiceSequence(companyId, year)`
+  - [x] Автоматично създаване/обновяване на InvoiceSequence
+  - [x] Нулиране на sequence в началото на всяка година
+  - [x] Използване на български формат: `YYCCCCNNNNNNИ`
 
-- [ ] **Интеграция при създаване на фактура**
-  - [ ] Използвай InvoiceSequence в `POST /api/invoices`
-  - [ ] Автоматично генериране на номер при създаване
+- [x] **Интеграция при създаване на фактура**
+  - [x] Използвай InvoiceSequence в `POST /api/invoices`
+  - [x] Автоматично генериране на номер при създаване
 
 #### 1.4 AuditLog функционалност
 - [ ] **Логване на действия**
-  - [ ] Създай `lib/audit-log.ts` helper
-  - [ ] Функция `logAction(userId, action, entityType, entityId, changes?)`
-  - [ ] Логване при създаване на фактура
-  - [ ] Логване при изпращане на фактура
+  - [x] Създай `lib/audit-log.ts` helper
+  - [x] Функция `logAction(userId, action, entityType, entityId, changes?)`
+  - [x] Логване при създаване на фактура
+  - [x] Логване при изпращане на фактура
   - [ ] Логване при експорт на фактура
-  - [ ] Логване при cancel → credit note
-  - [ ] Логване на IP адрес и user agent
+  - [x] Логване при cancel → credit note
+  - [x] Логване на IP адрес и user agent
 
 - [ ] **UI за преглед на audit logs**
   - [ ] Страница `/settings/audit-logs` (опционално)

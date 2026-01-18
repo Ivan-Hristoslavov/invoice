@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   
   if (!roleParam) {
     return NextResponse.json(
-      { error: "Role parameter is required" },
+      { error: "Параметърът role е задължителен" },
       { status: 400 }
     );
   }
@@ -28,7 +28,7 @@ export async function GET(request: Request) {
   // Validate role
   if (!validRoles.includes(roleParam as Role)) {
     return NextResponse.json(
-      { error: "Invalid role parameter" },
+      { error: "Невалиден параметър role" },
       { status: 400 }
     );
   }
@@ -42,9 +42,9 @@ export async function GET(request: Request) {
     
     return NextResponse.json({ hasAccess });
   } catch (error) {
-    console.error("Error checking role:", error);
+    console.error("Грешка при проверка на роля:", error);
     return NextResponse.json(
-      { error: "Failed to check role" },
+      { error: "Неуспешна проверка на роля" },
       { status: 500 }
     );
   }

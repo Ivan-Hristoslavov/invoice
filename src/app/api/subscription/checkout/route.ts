@@ -8,20 +8,20 @@ export async function POST(req: Request) {
   try {
     // Get session
     const session = await getServerSession();
-    console.log("Session data:", JSON.stringify(session));
+    console.log("Данни за сесията:", JSON.stringify(session));
 
     if (!session) {
-      console.log("No session found");
+      console.log("Липсва сесия");
       return NextResponse.json(
-        { error: "Authentication required" },
+        { error: "Необходима е автентикация" },
         { status: 401 }
       );
     }
 
     if (!session.user || !session.user.email) {
-      console.log("Missing user information in session");
+      console.log("Липсва информация за потребителя в сесията");
       return NextResponse.json(
-        { error: "User information missing from session" },
+        { error: "Липсва информация за потребителя в сесията" },
         { status: 400 }
       );
     }
@@ -34,33 +34,33 @@ export async function POST(req: Request) {
       .single();
 
     if (userError || !user) {
-      console.log("User not found with email:", session.user.email);
+      console.log("Потребител не е намерен с имейл:", session.user.email);
       return NextResponse.json(
-        { error: "User not found" },
+        { error: "Потребителят не е намерен" },
         { status: 404 }
       );
     }
 
-    console.log("Found user:", user.id);
+    console.log("Намерен потребител:", user.id);
 
     // Parse request body
     let body;
     try {
       body = await req.json();
     } catch (error) {
-      console.log("Error parsing request body:", error);
+      console.log("Грешка при парсване на тялото на заявката:", error);
       return NextResponse.json(
-        { error: "Invalid request body" },
+        { error: "Невалидно тяло на заявката" },
         { status: 400 }
       );
     }
 
     const { plan, returnUrl } = body;
-    console.log("Request data:", { plan, returnUrl });
+    console.log("Данни на заявката:", { plan, returnUrl });
     
     if (!plan) {
-      console.log("Missing plan in request");
-      return NextResponse.json({ error: "Plan is required" }, { status: 400 });
+      console.log("Липсва план в заявката");
+      return NextResponse.json({ error: "Планът е задължителен" }, { status: 400 });
     }
     
     // Get subscription plans
@@ -68,14 +68,14 @@ export async function POST(req: Request) {
     
     // Validate plan
     if (!Object.keys(SUBSCRIPTION_PLANS).includes(plan)) {
-      console.log("Invalid plan:", plan);
+      console.log("Невалиден план:", plan);
       return NextResponse.json(
-        { error: "Invalid subscription plan" },
+        { error: "Невалиден абонаментен план" },
         { status: 400 }
       );
     }
 
-    console.log("Creating checkout session with:", { 
+    console.log("Създаване на checkout сесия с:", { 
       userId: user.id, 
       email: session.user.email,
       name: session.user.name,
@@ -93,14 +93,14 @@ export async function POST(req: Request) {
 
     // Verify we have a URL to redirect to
     if (!checkoutSession?.url) {
-      console.error("Missing URL in checkout session:", checkoutSession);
+      console.error("Липсва URL в checkout сесията:", checkoutSession);
       return NextResponse.json(
-        { error: "Failed to create checkout session URL" },
+        { error: "Неуспешно създаване на URL за checkout сесия" },
         { status: 500 }
       );
     }
 
-    console.log("Created checkout session:", { 
+    console.log("Създадена checkout сесия:", { 
       sessionId: checkoutSession.id, 
       url: checkoutSession.url 
     });
@@ -111,9 +111,9 @@ export async function POST(req: Request) {
       url: checkoutSession.url,
     });
   } catch (error: any) {
-    console.error("Checkout session error:", error);
+    console.error("Грешка при checkout сесия:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to create checkout session" },
+      { error: error.message || "Неуспешно създаване на checkout сесия" },
       { status: 500 }
     );
   }

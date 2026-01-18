@@ -9,7 +9,7 @@ export async function POST(req: Request) {
 
     if (!name || !email || !password) {
       return NextResponse.json(
-        { message: "Missing required fields" },
+        { message: "Липсват задължителни полета" },
         { status: 400 }
       );
     }
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
 
     if (existingUser) {
       return NextResponse.json(
-        { message: "User with this email already exists" },
+        { message: "Потребител с този имейл вече съществува" },
         { status: 409 }
       );
     }
@@ -50,25 +50,25 @@ export async function POST(req: Request) {
       .single();
 
     if (createError) {
-      console.error("Registration error:", createError);
+      console.error("Грешка при регистрация:", createError);
       return NextResponse.json(
-        { message: "An error occurred during registration", error: createError.message },
+        { message: "Възникна грешка при регистрация", error: createError.message },
         { status: 500 }
       );
     }
 
     return NextResponse.json(
       { 
-        message: "User registered successfully", 
+        message: "Потребителят е регистриран успешно", 
         user 
       },
       { status: 201 }
     );
     
   } catch (error) {
-    console.error("Registration error:", error);
+    console.error("Грешка при регистрация:", error);
     return NextResponse.json(
-      { message: "An error occurred during registration" },
+      { message: "Възникна грешка при регистрация" },
       { status: 500 }
     );
   }

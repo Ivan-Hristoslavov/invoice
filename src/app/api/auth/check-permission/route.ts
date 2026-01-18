@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   
   if (!permission) {
     return NextResponse.json(
-      { error: "Permission parameter is required" },
+      { error: "Параметърът permission е задължителен" },
       { status: 400 }
     );
   }
@@ -30,9 +30,9 @@ export async function GET(request: Request) {
     
     return NextResponse.json({ hasAccess });
   } catch (error) {
-    console.error("Error checking permission:", error);
+    console.error("Грешка при проверка на права:", error);
     return NextResponse.json(
-      { error: "Failed to check permission" },
+      { error: "Неуспешна проверка на права" },
       { status: 500 }
     );
   }

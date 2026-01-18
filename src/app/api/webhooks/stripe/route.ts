@@ -18,7 +18,7 @@ type PaymentStatus = "PAID" | "FAILED" | "REFUNDED" | "COMPLETED";
 function getStripe() {
   const stripeKey = process.env.STRIPE_SECRET_KEY_FIXED || process.env.STRIPE_SECRET_KEY;
   if (!stripeKey) {
-    throw new Error('STRIPE_SECRET_KEY_FIXED or STRIPE_SECRET_KEY is not configured');
+    throw new Error('STRIPE_SECRET_KEY_FIXED или STRIPE_SECRET_KEY не е конфигуриран');
   }
   return new Stripe(stripeKey, {
     apiVersion: "2025-04-30.basil" as Stripe.LatestApiVersion,
@@ -57,9 +57,9 @@ async function logWebhookEvent(eventType: string, eventId: string, status: "SUCC
         payload: JSON.stringify(data),
         processedAt: new Date().toISOString(),
       });
-    console.log(`Logged webhook event: ${eventType} (${eventId}) - Status: ${status}`);
+    console.log(`Записано webhook събитие: ${eventType} (${eventId}) - Статус: ${status}`);
   } catch (error) {
-    console.error(`Failed to log webhook event: ${error}`);
+    console.error(`Неуспешно логване на webhook събитие: ${error}`);
   }
 }
 
@@ -75,9 +75,9 @@ async function logSubscriptionHistory(subscriptionId: string, status: Subscripti
         event,
         createdAt: new Date().toISOString(),
       });
-    console.log(`Logged subscription history: ${subscriptionId} - ${event}`);
+    console.log(`Записана история на абонамент: ${subscriptionId} - ${event}`);
   } catch (error) {
-    console.error(`Failed to log subscription history: ${error}`);
+    console.error(`Неуспешно логване на история на абонамент: ${error}`);
   }
 }
 
@@ -108,13 +108,13 @@ export async function POST(req: Request) {
           await logWebhookEvent(eventData.type, eventData.id, "FAILED", { error: err.message });
         }
       } catch (parseErr) {
-        console.error("Could not parse webhook body", parseErr);
+        console.error("Неуспешно парсване на тялото на webhook", parseErr);
       }
       return NextResponse.json({ error: err.message }, { status: 400 });
     }
     
     if (!event) {
-      return NextResponse.json({ error: "Invalid event" }, { status: 400 });
+      return NextResponse.json({ error: "Невалидно събитие" }, { status: 400 });
     }
     
     // Log the received event immediately
@@ -127,13 +127,13 @@ export async function POST(req: Request) {
       case "payment_intent.succeeded": {
         // Only handle subscription payments, not invoice payments
         // Invoice payments should not be processed through this system
-        console.log("Payment intent succeeded (subscription only)");
+        console.log("Плащането е успешно (само за абонамент)");
         break;
       }
 
       case "payment_intent.payment_failed": {
         // Only handle subscription payments, not invoice payments
-        console.log("Payment intent failed (subscription only)");
+        console.log("Плащането е неуспешно (само за абонамент)");
         break;
       }
 
@@ -142,8 +142,8 @@ export async function POST(req: Request) {
         const invoiceId = paymentIntent.metadata?.invoiceId;
 
         if (!invoiceId) {
-          await logWebhookEvent(event.type, event.id, "FAILED", { error: "No invoiceId found" });
-          return NextResponse.json({ error: "No invoiceId found" }, { status: 400 });
+          await logWebhookEvent(event.type, event.id, "FAILED", { error: "Липсва invoiceId" });
+          return NextResponse.json({ error: "Липсва invoiceId" }, { status: 400 });
         }
 
         try {
@@ -165,7 +165,7 @@ export async function POST(req: Request) {
           revalidatePath(`/invoices/${invoiceId}`);
           revalidatePath("/invoices");
         } catch (error) {
-          console.error("Error processing payment_intent.payment_failed:", error);
+          console.error("Грешка при обработка на payment_intent.payment_failed:", error);
           await logWebhookEvent(event.type, event.id, "FAILED", { error: String(error) });
         }
         break;
@@ -212,11 +212,11 @@ export async function POST(req: Request) {
             revalidatePath("/invoices");
             revalidatePath("/dashboard");
           } else {
-            console.error(`No payment found for payment intent ${paymentIntentId}`);
-            await logWebhookEvent(event.type, event.id, "FAILED", { error: `No payment found for payment intent ${paymentIntentId}` });
+            console.error(`Не е намерено плащане за payment intent ${paymentIntentId}`);
+            await logWebhookEvent(event.type, event.id, "FAILED", { error: `Не е намерено плащане за payment intent ${paymentIntentId}` });
           }
         } catch (error) {
-          console.error("Error processing charge.refunded:", error);
+          console.error("Грешка при обработка на charge.refunded:", error);
           await logWebhookEvent(event.type, event.id, "FAILED", { error: String(error) });
         }
         break;
@@ -231,8 +231,8 @@ export async function POST(req: Request) {
         
         // Check for customer information
         if (!session.customer && !session.customer_email) {
-          console.error("No customer email or ID found in checkout session");
-          await logWebhookEvent(event.type, event.id, "FAILED", { error: "No customer email or ID found" });
+          console.error("Липсва имейл или ID на клиент в checkout сесията");
+          await logWebhookEvent(event.type, event.id, "FAILED", { error: "Липсва имейл или ID на клиент" });
           return NextResponse.json({ received: true }); // Still return 200 to acknowledge the event
         }
         
@@ -242,7 +242,7 @@ export async function POST(req: Request) {
         
         // Check for subscription ID (it might be undefined for non-subscription checkouts)
         if (!session.subscription) {
-          console.log("No subscription created in this checkout session");
+          console.log("В тази checkout сесия не е създаден абонамент");
           return NextResponse.json({ received: true });
         }
         
@@ -251,7 +251,7 @@ export async function POST(req: Request) {
           : '';
         
         if (!subscriptionId) {
-          console.log("Invalid subscription ID format");
+          console.log("Невалиден формат на subscription ID");
           return NextResponse.json({ received: true });
         }
         
@@ -298,8 +298,8 @@ export async function POST(req: Request) {
           }
           
           if (!user) {
-            console.error("Could not find or create user from checkout data");
-            await logWebhookEvent(event.type, event.id, "FAILED", { error: "Could not find or create user" });
+            console.error("Неуспешно намиране или създаване на потребител от checkout данни");
+            await logWebhookEvent(event.type, event.id, "FAILED", { error: "Неуспешно намиране или създаване на потребител" });
             return NextResponse.json({ received: true }); // Still acknowledge the event
           }
           
@@ -407,7 +407,7 @@ export async function POST(req: Request) {
         
         if (!user) {
           console.error(`No user found for customer ${customerId}`);
-          return NextResponse.json({ error: "User not found" }, { status: 400 });
+          return NextResponse.json({ error: "Потребителят не е намерен" }, { status: 400 });
         }
         
         // Map Stripe status to our status
@@ -509,11 +509,11 @@ export async function POST(req: Request) {
             await logSubscriptionHistory(
               existingSubscription.id,
               status,
-              "Subscription updated"
+            "Абонаментът е обновен"
             );
           }
         } else {
-          console.error(`No subscription found for stripe subscription ID ${subscription.id}`);
+          console.error(`Не е намерен абонамент за stripe subscription ID ${subscription.id}`);
         }
         
         break;
@@ -532,7 +532,7 @@ export async function POST(req: Request) {
         
         if (!user) {
           console.error(`No user found for customer ${customerId}`);
-          return NextResponse.json({ error: "User not found" }, { status: 400 });
+          return NextResponse.json({ error: "Потребителят не е намерен" }, { status: 400 });
         }
         
         // Find the subscription
@@ -558,12 +558,12 @@ export async function POST(req: Request) {
           await logSubscriptionHistory(
             existingSubscription.id,
             "CANCELED" as SubscriptionStatus,
-            "Subscription canceled"
+            "Абонаментът е отменен"
           );
           
           console.log(`Subscription ${existingSubscription.id} marked as canceled`);
         } else {
-          console.error(`No subscription found for stripe subscription ID ${subscription.id}`);
+          console.error(`Не е намерен абонамент за stripe subscription ID ${subscription.id}`);
         }
         
         break;
@@ -585,13 +585,13 @@ export async function POST(req: Request) {
           const customerId = typeof invoice.customer === 'string' ? invoice.customer : '';
           
           if (!customerId) {
-            console.log("No customer ID found in invoice");
+            console.log("Липсва customer ID във фактурата");
             return NextResponse.json({ received: true });
           }
           
           // Check if this is a subscription invoice
           if (!invoice.subscription) {
-            console.log("Not a subscription invoice");
+            console.log("Фактурата не е за абонамент");
             return NextResponse.json({ received: true });
           }
           
@@ -600,7 +600,7 @@ export async function POST(req: Request) {
             : '';
           
           if (!subscriptionId) {
-            console.log("Invalid subscription ID format in invoice");
+            console.log("Невалиден формат на subscription ID във фактурата");
             return NextResponse.json({ received: true });
           }
           
@@ -622,7 +622,7 @@ export async function POST(req: Request) {
           });
           
           if (!subscription) {
-            console.log(`No subscription found with ID ${subscriptionId} - might be a new subscription`);
+            console.log(`Не е намерен абонамент с ID ${subscriptionId} - възможно е да е нов абонамент`);
             
             // Try to retrieve the subscription details from Stripe
             try {
@@ -689,7 +689,7 @@ export async function POST(req: Request) {
             await logSubscriptionHistory(
               subscription.id,
               "ACTIVE" as SubscriptionStatus,
-              "Subscription payment succeeded"
+              "Плащането на абонамент е успешно"
             );
             
             console.log(`Updated subscription ${subscription.id} to ACTIVE status`);
@@ -712,7 +712,7 @@ export async function POST(req: Request) {
         
         if (!customerId || !subscriptionId) {
           console.error(`Missing customer or subscription ID in failed invoice: ${invoice.id}`);
-          return NextResponse.json({ error: "Missing required IDs" }, { status: 400 });
+          return NextResponse.json({ error: "Липсват задължителни идентификатори" }, { status: 400 });
         }
         
         // Find user by Stripe customer ID
@@ -722,7 +722,7 @@ export async function POST(req: Request) {
         
         if (!user) {
           console.error(`No user found for customer ${customerId}`);
-          return NextResponse.json({ error: "User not found" }, { status: 400 });
+          return NextResponse.json({ error: "Потребителят не е намерен" }, { status: 400 });
         }
         
         // Find subscription in our database
@@ -747,7 +747,7 @@ export async function POST(req: Request) {
           await logSubscriptionHistory(
             subscription.id,
             "PAST_DUE" as SubscriptionStatus,
-            "Payment failed for subscription"
+            "Плащането на абонамента е неуспешно"
           );
           
           // Record failed payment
@@ -764,7 +764,7 @@ export async function POST(req: Request) {
           
           console.log(`Recorded failed payment for subscription ${subscription.id}`);
         } else {
-          console.error(`No subscription found for stripe subscription ID ${subscriptionId}`);
+          console.error(`Не е намерен абонамент за stripe subscription ID ${subscriptionId}`);
         }
         
         break;
@@ -786,7 +786,7 @@ export async function POST(req: Request) {
           const customerId = typeof subscription.customer === 'string' ? subscription.customer : '';
           
           if (!customerId) {
-            console.log("No customer ID found in subscription");
+            console.log("Липсва customer ID в абонамента");
             return NextResponse.json({ received: true });
           }
           
@@ -829,7 +829,7 @@ export async function POST(req: Request) {
                   console.log(`No user found with email ${stripeCustomer.email}`);
                 }
               } else {
-                console.log(`Could not retrieve valid customer data from Stripe`);
+                console.log(`Неуспешно извличане на валидни данни за клиент от Stripe`);
               }
             } catch (err: any) {
               console.error(`Error retrieving customer from Stripe: ${err.message}`);
@@ -854,12 +854,12 @@ export async function POST(req: Request) {
     
     return NextResponse.json({ received: true });
   } catch (error: any) {
-    console.error("Error processing webhook:", error);
+    console.error("Грешка при обработка на webhook:", error);
     if (error instanceof Error) {
       console.error(`Error stack: ${error.stack}`);
     }
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Вътрешна сървърна грешка" },
       { status: 500 }
     );
   }

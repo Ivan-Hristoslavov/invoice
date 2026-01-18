@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
     
     // Check subscription limits - експорт
@@ -114,14 +114,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ invoices });
     } else {
       return NextResponse.json(
-        { error: "Unsupported export format" },
+        { error: "Неподдържан формат за експорт" },
         { status: 400 }
       );
     }
   } catch (error) {
-    console.error("Error exporting invoices:", error);
+    console.error("Грешка при експорт на фактури:", error);
     return NextResponse.json(
-      { error: "Failed to export invoices" },
+      { error: "Неуспешен експорт на фактури" },
       { status: 500 }
     );
   }

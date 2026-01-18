@@ -12,7 +12,7 @@ export async function GET(req: Request) {
     const session = await getServerSession(authOptions);
     
     if (!session?.user) {
-      return new NextResponse('Unauthorized', { status: 401 });
+      return new NextResponse('Неоторизиран достъп', { status: 401 });
     }
     
     // Get pagination parameters from query string
@@ -32,7 +32,7 @@ export async function GET(req: Request) {
     
     if (subError || !subscription) {
       return NextResponse.json({ 
-        message: "No active subscription found",
+        message: "Няма активен абонамент",
         payments: [],
         history: [],
         pagination: {
@@ -91,7 +91,7 @@ export async function GET(req: Request) {
       }
     });
   } catch (error) {
-    console.error('Error fetching subscription history:', error);
-    return new NextResponse('Internal Server Error', { status: 500 });
+    console.error('Грешка при зареждане на история на абонамент:', error);
+    return new NextResponse('Вътрешна сървърна грешка', { status: 500 });
   }
 }

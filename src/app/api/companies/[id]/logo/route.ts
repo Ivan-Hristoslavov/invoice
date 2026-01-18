@@ -12,7 +12,7 @@ export async function DELETE(
 
     if (!session || !session.user) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Неоторизиран достъп" },
         { status: 401 }
       );
     }
@@ -30,7 +30,7 @@ export async function DELETE(
 
     if (companyError || !company) {
       return NextResponse.json(
-        { error: "Company not found" },
+        { error: "Компанията не е намерена" },
         { status: 404 }
       );
     }
@@ -47,10 +47,10 @@ export async function DELETE(
           .remove([filePath]);
 
         if (deleteError) {
-          console.warn('Could not delete logo from storage:', deleteError);
+          console.warn('Неуспешно изтриване на логото от хранилището:', deleteError);
         }
       } catch (error) {
-        console.warn('Error parsing logo URL:', error);
+        console.warn('Грешка при обработка на URL за логото:', error);
       }
     }
 
@@ -62,7 +62,7 @@ export async function DELETE(
 
     if (updateError) {
       return NextResponse.json(
-        { error: "Failed to delete logo" },
+        { error: "Неуспешно изтриване на лого" },
         { status: 500 }
       );
     }
@@ -71,9 +71,9 @@ export async function DELETE(
       success: true,
     });
   } catch (error) {
-    console.error("Error deleting logo:", error);
+    console.error("Грешка при изтриване на лого:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Вътрешна сървърна грешка" },
       { status: 500 }
     );
   }

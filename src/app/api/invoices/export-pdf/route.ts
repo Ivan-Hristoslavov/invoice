@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
 
     // Get query parameters
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     if (!invoiceId) {
       return NextResponse.json(
-        { error: "Invoice ID is required" },
+        { error: "Липсва ID на фактура" },
         { status: 400 }
       );
     }
@@ -33,9 +33,9 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (invoiceError || !invoice) {
-      console.error("Invoice fetch error:", invoiceError);
+      console.error("Грешка при зареждане на фактура:", invoiceError);
       return NextResponse.json(
-        { error: "Invoice not found or access denied" },
+        { error: "Фактурата не е намерена или достъпът е отказан" },
         { status: 404 }
       );
     }
@@ -100,9 +100,9 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error exporting invoice to PDF:", error);
+    console.error("Грешка при експорт на фактура в PDF:", error);
     return NextResponse.json(
-      { error: "Failed to export invoice to PDF" },
+      { error: "Неуспешен експорт на фактура в PDF" },
       { status: 500 }
     );
   }

@@ -16,14 +16,14 @@ export async function PUT(
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
     
     // Check permission
     const canManageUsers = await hasPermission(session.user.id, "user:manage");
     if (!canManageUsers) {
       return NextResponse.json(
-        { error: "You don't have permission to manage users" },
+        { error: "Нямате права да управлявате потребители" },
         { status: 403 }
       );
     }
@@ -34,7 +34,7 @@ export async function PUT(
     // Validate role
     if (!validRoles.includes(role)) {
       return NextResponse.json(
-        { error: "Invalid role" },
+        { error: "Невалидна роля" },
         { status: 400 }
       );
     }
@@ -49,7 +49,7 @@ export async function PUT(
     
     if (companyError || !company) {
       return NextResponse.json(
-        { error: "Company not found or access denied" },
+        { error: "Компанията не е намерена или достъпът е отказан" },
         { status: 404 }
       );
     }
@@ -96,9 +96,9 @@ export async function PUT(
     
     return NextResponse.json({ userRole });
   } catch (error) {
-    console.error("Error updating user role:", error);
+    console.error("Грешка при обновяване на роля на потребител:", error);
     return NextResponse.json(
-      { error: "Failed to update user role" },
+      { error: "Неуспешно обновяване на ролята на потребителя" },
       { status: 500 }
     );
   }
@@ -112,14 +112,14 @@ export async function DELETE(
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
     
     // Check permission
     const canManageUsers = await hasPermission(session.user.id, "user:manage");
     if (!canManageUsers) {
       return NextResponse.json(
-        { error: "You don't have permission to manage users" },
+        { error: "Нямате права да управлявате потребители" },
         { status: 403 }
       );
     }
@@ -137,7 +137,7 @@ export async function DELETE(
     
     if (companyError || !company) {
       return NextResponse.json(
-        { error: "Company not found or access denied" },
+        { error: "Компанията не е намерена или достъпът е отказан" },
         { status: 404 }
       );
     }
@@ -153,7 +153,7 @@ export async function DELETE(
     
     if (isOwner && userId === session.user.id) {
       return NextResponse.json(
-        { error: "You cannot remove yourself as owner" },
+        { error: "Не можете да премахнете себе си като собственик" },
         { status: 400 }
       );
     }
@@ -167,9 +167,9 @@ export async function DELETE(
     
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error removing user role:", error);
+    console.error("Грешка при премахване на роля на потребител:", error);
     return NextResponse.json(
-      { error: "Failed to remove user role" },
+      { error: "Неуспешно премахване на ролята на потребителя" },
       { status: 500 }
     );
   }

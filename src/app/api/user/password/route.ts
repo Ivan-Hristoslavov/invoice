@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
     if (!session || !session.user) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Неоторизиран достъп" },
         { status: 401 }
       );
     }
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     if (error || !user || !user.password) {
       return NextResponse.json(
-        { error: "User not found or no password set" },
+        { error: "Потребителят не е намерен или няма зададена парола" },
         { status: 404 }
       );
     }
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     if (!isPasswordValid) {
       return NextResponse.json(
-        { error: "Current password is incorrect" },
+        { error: "Текущата парола е грешна" },
         { status: 400 }
       );
     }
@@ -69,14 +69,14 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid password data", details: error.errors },
+        { error: "Невалидни данни за парола", details: error.errors },
         { status: 400 }
       );
     }
 
-    console.error("Error updating password:", error);
+    console.error("Грешка при обновяване на парола:", error);
     return NextResponse.json(
-      { error: "Failed to update password" },
+      { error: "Неуспешно обновяване на парола" },
       { status: 500 }
     );
   }

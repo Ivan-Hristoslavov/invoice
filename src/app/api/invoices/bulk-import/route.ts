@@ -10,24 +10,24 @@ type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'CANCELLED';
 
 // Define validation schema for CSV invoice data
 const invoiceItemSchema = z.object({
-  description: z.string().min(1, "Description is required"),
-  quantity: z.coerce.number().min(0.01, "Quantity must be greater than 0"),
-  unitPrice: z.coerce.number().min(0, "Unit price cannot be negative"),
-  taxRate: z.coerce.number().min(0, "Tax rate cannot be negative").default(0),
+  description: z.string().min(1, "Описанието е задължително"),
+  quantity: z.coerce.number().min(0.01, "Количеството трябва да е по-голямо от 0"),
+  unitPrice: z.coerce.number().min(0, "Единичната цена не може да е отрицателна"),
+  taxRate: z.coerce.number().min(0, "ДДС не може да е отрицателно").default(0),
   productId: z.string().optional(),
 });
 
 const importInvoiceSchema = z.object({
-  invoiceNumber: z.string().min(1, "Invoice number is required"),
-  clientId: z.string().min(1, "Client is required"),
-  companyId: z.string().min(1, "Company is required"),
-  issueDate: z.string().min(1, "Issue date is required"),
-  dueDate: z.string().min(1, "Due date is required"),
+  invoiceNumber: z.string().min(1, "Номерът на фактурата е задължителен"),
+  clientId: z.string().min(1, "Клиентът е задължителен"),
+  companyId: z.string().min(1, "Компанията е задължителна"),
+  issueDate: z.string().min(1, "Дата на издаване е задължителна"),
+  dueDate: z.string().min(1, "Падежната дата е задължителна"),
   status: z.enum(["DRAFT", "ISSUED", "CANCELLED"]).default("DRAFT"),
-  currency: z.string().min(1, "Currency is required").default("EUR"),
+  currency: z.string().min(1, "Валутата е задължителна").default("EUR"),
   notes: z.string().optional(),
   termsAndConditions: z.string().optional(),
-  items: z.array(invoiceItemSchema).min(1, "At least one item is required"),
+  items: z.array(invoiceItemSchema).min(1, "Нужен е поне един артикул"),
 });
 
 const bulkImportSchema = z.array(importInvoiceSchema);
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
 
     // Get user ID
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     
     if (!validationResult.success) {
       return NextResponse.json(
-        { error: "Invalid data", details: validationResult.error.format() },
+        { error: "Невалидни данни", details: validationResult.error.format() },
         { status: 400 }
       );
     }
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         if (clientError || !client) {
           errors.push({
             invoiceNumber: invoiceData.invoiceNumber,
-            error: `Client with ID ${invoiceData.clientId} not found or does not belong to user`,
+            error: `Клиент с ID ${invoiceData.clientId} не е намерен или не принадлежи на потребителя`,
           });
           continue;
         }
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
         if (companyError || !company) {
           errors.push({
             invoiceNumber: invoiceData.invoiceNumber,
-            error: `Company with ID ${invoiceData.companyId} not found or does not belong to user`,
+            error: `Компания с ID ${invoiceData.companyId} не е намерена или не принадлежи на потребителя`,
           });
           continue;
         }
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
         if (existingInvoice) {
           errors.push({
             invoiceNumber: invoiceData.invoiceNumber,
-            error: `Invoice number ${invoiceData.invoiceNumber} already exists for this company`,
+            error: `Номерът на фактура ${invoiceData.invoiceNumber} вече съществува за тази компания`,
           });
           continue;
         }
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
       } catch (error: any) {
         errors.push({
           invoiceNumber: invoiceData.invoiceNumber,
-          error: error?.message || "An error occurred while processing this invoice",
+          error: error?.message || "Възникна грешка при обработка на тази фактура",
         });
       }
     }
@@ -195,9 +195,9 @@ export async function POST(request: NextRequest) {
       errors,
     });
   } catch (error) {
-    console.error("Error in bulk import:", error);
+    console.error("Грешка при масов импорт:", error);
     return NextResponse.json(
-      { error: "Failed to process import", details: error },
+      { error: "Неуспешна обработка на импорта", details: error },
       { status: 500 }
     );
   }

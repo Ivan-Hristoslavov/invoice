@@ -34,7 +34,7 @@ export async function PATCH(
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
 
     let body;
@@ -42,7 +42,7 @@ export async function PATCH(
       body = await request.json();
     } catch (e) {
       return NextResponse.json(
-        { error: "Invalid request body" },
+        { error: "Невалидно тяло на заявката" },
         { status: 400 }
       );
     }
@@ -51,7 +51,7 @@ export async function PATCH(
 
     if (!status) {
       return NextResponse.json(
-        { error: "Status is required" },
+        { error: "Статусът е задължителен" },
         { status: 400 }
       );
     }
@@ -66,16 +66,16 @@ export async function PATCH(
       .single();
 
     if (invoiceError) {
-      console.error("Error fetching invoice:", invoiceError);
+      console.error("Грешка при зареждане на фактура:", invoiceError);
       return NextResponse.json(
-        { error: "Invoice not found" },
+        { error: "Фактурата не е намерена" },
         { status: 404 }
       );
     }
 
     if (!invoice) {
       return NextResponse.json(
-        { error: "Invoice not found" },
+        { error: "Фактурата не е намерена" },
         { status: 404 }
       );
     }
@@ -83,7 +83,7 @@ export async function PATCH(
     // Check ownership
     if (invoice.userId !== session.user.id) {
       return NextResponse.json(
-        { error: "Access denied" },
+        { error: "Достъпът е отказан" },
         { status: 403 }
       );
     }
@@ -117,7 +117,7 @@ export async function PATCH(
       .single();
 
     if (updateError) {
-      console.error("Error updating invoice status:", updateError);
+      console.error("Грешка при обновяване на статуса на фактура:", updateError);
       return NextResponse.json(
         { error: "Грешка при обновяване на статуса" },
         { status: 500 }
@@ -142,7 +142,7 @@ export async function PATCH(
         userAgent: headers.get("user-agent") || undefined,
       });
     } catch (auditError) {
-      console.error("Failed to log audit action:", auditError);
+      console.error("Неуспешно логване на audit действие:", auditError);
       // Continue - audit logging should not block the response
     }
 
@@ -152,7 +152,7 @@ export async function PATCH(
 
     return NextResponse.json(updatedInvoice);
   } catch (error) {
-    console.error("Error changing invoice status:", error);
+    console.error("Грешка при промяна на статуса на фактура:", error);
     return NextResponse.json(
       { error: "Грешка при промяна на статуса" },
       { status: 500 }

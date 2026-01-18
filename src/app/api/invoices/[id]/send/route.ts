@@ -15,7 +15,7 @@ export async function POST(
 
     if (!session?.user) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Неоторизиран достъп" },
         { status: 401 }
       );
     }
@@ -51,28 +51,28 @@ export async function POST(
     
     if (invoiceError || !invoice) {
       return NextResponse.json(
-        { error: "Invoice not found" },
+        { error: "Фактурата не е намерена" },
         { status: 404 }
       );
     }
 
     if (!invoice) {
       return NextResponse.json(
-        { error: "Invoice not found" },
+        { error: "Фактурата не е намерена" },
         { status: 404 }
       );
     }
 
     if (!invoice.client.email) {
       return NextResponse.json(
-        { error: "Client email not found" },
+        { error: "Липсва имейл на клиента" },
         { status: 400 }
       );
     }
 
     if (!invoice.client?.email) {
       return NextResponse.json(
-        { error: "Client email not found" },
+        { error: "Липсва имейл на клиента" },
         { status: 400 }
       );
     }
@@ -108,9 +108,9 @@ export async function POST(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error sending invoice:', error);
+    console.error('Грешка при изпращане на фактура:', error);
     return NextResponse.json(
-      { error: "Failed to send invoice" },
+      { error: "Неуспешно изпращане на фактура" },
       { status: 500 }
     );
   }
@@ -135,9 +135,9 @@ export async function POST_TEST(
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
-    console.error('Error in invoice send route:', error);
+    console.error('Грешка при тестово изпращане на фактура:', error);
     return NextResponse.json(
-      { error: 'Failed to send invoice email' },
+      { error: 'Неуспешно изпращане на имейл за фактура' },
       { status: 500 }
     );
   }

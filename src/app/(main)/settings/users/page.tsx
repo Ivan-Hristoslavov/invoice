@@ -26,8 +26,8 @@ import { UserCog, UserPlus, ShieldAlert } from "lucide-react";
 import UserRoleActions from "./user-role-actions";
 
 export const metadata = {
-  title: "User Management - FacturaPro",
-  description: "Manage users and their roles in your organization",
+  title: "Управление на потребители - FacturaPro",
+  description: "Управлявайте потребителите и ролите им във вашата организация",
 };
 
 type Role = "ADMIN" | "OWNER" | "MANAGER" | "ACCOUNTANT" | "VIEWER";
@@ -52,17 +52,34 @@ function getRoleBadgeColor(role: Role) {
 function getRoleDescription(role: Role) {
   switch (role) {
     case "ADMIN":
-      return "Full system access";
+      return "Пълен достъп до системата";
     case "OWNER":
-      return "Full company access";
+      return "Пълен достъп до компанията";
     case "MANAGER":
-      return "Create and manage most resources";
+      return "Създава и управлява повечето ресурси";
     case "ACCOUNTANT":
-      return "Manage financial records";
+      return "Управлява финансови записи";
     case "VIEWER":
-      return "Read-only access";
+      return "Само за четене";
     default:
       return "";
+  }
+}
+
+function getRoleLabel(role: Role) {
+  switch (role) {
+    case "ADMIN":
+      return "Администратор";
+    case "OWNER":
+      return "Собственик";
+    case "MANAGER":
+      return "Мениджър";
+    case "ACCOUNTANT":
+      return "Счетоводител";
+    case "VIEWER":
+      return "Наблюдател";
+    default:
+      return role;
   }
 }
 
@@ -79,12 +96,12 @@ export default async function UsersPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] max-w-md mx-auto text-center">
         <ShieldAlert className="h-12 w-12 text-amber-500 mb-4" />
-        <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
+        <h1 className="text-2xl font-bold mb-2">Достъпът е отказан</h1>
         <p className="text-muted-foreground mb-6">
-          You don't have permission to manage users. Please contact your administrator.
+          Нямате права да управлявате потребители. Моля, свържете се с администратора.
         </p>
         <Button asChild>
-          <Link href="/dashboard">Return to Dashboard</Link>
+          <Link href="/dashboard">Към таблото</Link>
         </Button>
       </div>
     );
@@ -101,12 +118,12 @@ export default async function UsersPage() {
   if (!companies || companies.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] max-w-md mx-auto text-center">
-        <h1 className="text-2xl font-bold mb-2">No Companies Found</h1>
+        <h1 className="text-2xl font-bold mb-2">Няма намерени компании</h1>
         <p className="text-muted-foreground mb-6">
-          You need to create a company before you can manage users.
+          Трябва да създадете компания, преди да можете да управлявате потребители.
         </p>
         <Button asChild>
-          <Link href="/settings/company">Create Company</Link>
+          <Link href="/settings/company">Създай компания</Link>
         </Button>
       </div>
     );
@@ -139,35 +156,35 @@ export default async function UsersPage() {
     <div>
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold">User Management</h1>
+          <h1 className="text-3xl font-bold">Управление на потребители</h1>
           <p className="text-muted-foreground">
-            Manage users and their roles for {company.name}
+            Управлявайте потребителите и ролите им за {company.name}
           </p>
         </div>
         <Button asChild>
           <Link href="/settings/users/invite">
             <UserPlus className="mr-2 h-4 w-4" />
-            Invite User
+            Покани потребител
           </Link>
         </Button>
       </div>
       
       <Card>
         <CardHeader>
-          <CardTitle>Company Users</CardTitle>
+          <CardTitle>Потребители на компанията</CardTitle>
           <CardDescription>
-            All users with access to {company.name}
+            Всички потребители с достъп до {company.name}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Permissions</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>Потребител</TableHead>
+                <TableHead>Имейл</TableHead>
+                <TableHead>Роля</TableHead>
+                <TableHead>Права</TableHead>
+                <TableHead className="text-right">Действия</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -175,7 +192,7 @@ export default async function UsersPage() {
                 <TableRow key={userRole.id}>
                   <TableCell>
                     <div className="font-medium">
-                      {userRole.user.name || "Unnamed User"}
+                      {userRole.user.name || "Потребител без име"}
                     </div>
                   </TableCell>
                   <TableCell>{userRole.user.email}</TableCell>
@@ -184,7 +201,7 @@ export default async function UsersPage() {
                       variant="outline"
                       className={getRoleBadgeColor(userRole.role as Role)}
                     >
-                      {userRole.role}
+                      {getRoleLabel(userRole.role as Role)}
                     </Badge>
                   </TableCell>
                   <TableCell>

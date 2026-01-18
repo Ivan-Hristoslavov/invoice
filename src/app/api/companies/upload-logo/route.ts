@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
 
     if (!session || !session.user) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Неоторизиран достъп" },
         { status: 401 }
       );
     }
@@ -34,14 +34,14 @@ export async function POST(request: NextRequest) {
 
     if (!file) {
       return NextResponse.json(
-        { error: "No file provided" },
+        { error: "Не е предоставен файл" },
         { status: 400 }
       );
     }
 
     if (!companyId) {
       return NextResponse.json(
-        { error: "Company ID is required" },
+        { error: "Липсва ID на компания" },
         { status: 400 }
       );
     }
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     // Validate file type
     if (!file.type.startsWith('image/')) {
       return NextResponse.json(
-        { error: "Invalid file type. Only images are allowed." },
+        { error: "Невалиден тип файл. Позволени са само изображения." },
         { status: 400 }
       );
     }
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       return NextResponse.json(
-        { error: "File size exceeds 5MB limit" },
+        { error: "Размерът на файла надвишава 5MB" },
         { status: 400 }
       );
     }
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
 
     if (companyError || !company) {
       return NextResponse.json(
-        { error: "Company not found" },
+        { error: "Компанията не е намерена" },
         { status: 404 }
       );
     }
@@ -97,9 +97,9 @@ export async function POST(request: NextRequest) {
       });
 
     if (uploadError) {
-      console.error('Error uploading to Supabase storage:', uploadError);
+      console.error('Грешка при качване в Supabase storage:', uploadError);
       return NextResponse.json(
-        { error: "Failed to upload file to storage" },
+        { error: "Неуспешно качване на файла в хранилището" },
         { status: 500 }
       );
     }
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
         .remove([filePath]);
 
       return NextResponse.json(
-        { error: "Failed to update company logo" },
+        { error: "Неуспешно обновяване на логото на компанията" },
         { status: 500 }
       );
     }
@@ -150,9 +150,9 @@ export async function POST(request: NextRequest) {
       logoUrl,
     });
   } catch (error) {
-    console.error("Error uploading logo:", error);
+    console.error("Грешка при качване на лого:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Вътрешна сървърна грешка" },
       { status: 500 }
     );
   }

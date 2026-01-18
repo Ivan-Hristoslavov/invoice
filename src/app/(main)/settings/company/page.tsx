@@ -40,7 +40,7 @@ export default async function CompanySettingsPage() {
       company = data;
     }
   } catch (error) {
-    console.error("Database connection error:", error);
+    console.error("Грешка при връзка с базата данни:", error);
     // Continue with null company - the form will handle creating a new one
   }
   
