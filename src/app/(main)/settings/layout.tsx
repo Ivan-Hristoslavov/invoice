@@ -2,13 +2,6 @@ import { ReactNode } from "react";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { 
-  Card, 
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle 
-} from "@/components/ui/card";
 import { SettingsNav } from "./SettingsNav";
 
 interface SettingsLayoutProps {
@@ -23,27 +16,18 @@ export default async function SettingsLayout({ children }: SettingsLayoutProps) 
   }
   
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Настройки</h1>
-        <p className="text-muted-foreground">Управление на вашия акаунт и предпочитания</p>
-      </div>
+    <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-10rem)] overflow-hidden">
+      {/* Fixed width sidebar navigation - non-scrolling */}
+      <aside className="w-full lg:w-64 flex-shrink-0 lg:overflow-y-auto">
+        <SettingsNav />
+      </aside>
       
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-3 lg:grid-cols-4">
-        <Card className="md:col-span-1">
-          <CardHeader>
-            <CardTitle>Настройки</CardTitle>
-            <CardDescription>Управление на вашия акаунт</CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <SettingsNav />
-          </CardContent>
-        </Card>
-        
-        <div className="md:col-span-2 lg:col-span-3">
+      {/* Main content area - scrollable */}
+      <main className="flex-1 min-w-0 overflow-y-auto pr-2">
+        <div className="pb-6">
           {children}
         </div>
-      </div>
+      </main>
     </div>
   );
 }

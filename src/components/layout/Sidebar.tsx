@@ -11,7 +11,6 @@ import {
   Settings,
   Menu,
   X,
-  CreditCard,
   HelpCircle,
   LogOut,
   ChevronRight
@@ -58,11 +57,6 @@ const mainNavItems = [
 
 const bottomNavItems = [
   { 
-    name: "Абонамент", 
-    href: "/settings/subscription", 
-    icon: CreditCard,
-  },
-  { 
     name: "Настройки", 
     href: "/settings", 
     icon: Settings,
@@ -83,8 +77,10 @@ export function Sidebar() {
 
   useEffect(() => {
     const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
-      if (window.innerWidth >= 1024) {
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      // On desktop (>= 1024px), sidebar is always visible, no collapse
+      if (!mobile) {
         setIsOpen(false);
       }
     };
@@ -94,7 +90,7 @@ export function Sidebar() {
     return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
 
-  // Close sidebar on route change (mobile)
+  // Close sidebar on route change (mobile only)
   useEffect(() => {
     if (isMobile) {
       setIsOpen(false);
@@ -146,7 +142,7 @@ export function Sidebar() {
         )}
       </AnimatePresence>
 
-      {/* Sidebar */}
+      {/* Sidebar - Fixed and always visible on desktop (lg+), collapsible on mobile only */}
       <motion.aside 
         className={cn(
           "fixed top-0 left-0 z-40 h-full w-72 bg-card border-r flex flex-col",

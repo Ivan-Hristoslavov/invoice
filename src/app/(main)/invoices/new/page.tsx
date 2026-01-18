@@ -61,7 +61,7 @@ import {
   CardTitle,
   CardDescription
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Input, NumericInput } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -284,9 +284,8 @@ function InvoiceItemRow({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Количество</Label>
-          <Input
-            type="number"
-            min="1"
+          <NumericInput
+            allowDecimal={false}
             value={item.quantity}
             onChange={(e) => onUpdate("quantity", parseInt(e.target.value) || 1)}
             className="h-9"
@@ -294,10 +293,7 @@ function InvoiceItemRow({
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Ед. цена ({currency})</Label>
-          <Input
-            type="number"
-            min="0"
-            step="0.01"
+          <NumericInput
             value={item.unitPrice}
             onChange={(e) => onUpdate("unitPrice", parseFloat(e.target.value) || 0)}
             className="h-9"
@@ -305,10 +301,7 @@ function InvoiceItemRow({
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">ДДС (%)</Label>
-          <Input
-            type="number"
-            min="0"
-            step="0.01"
+          <NumericInput
             value={item.taxRate}
             onChange={(e) => onUpdate("taxRate", parseFloat(e.target.value) || 0)}
             className="h-9"

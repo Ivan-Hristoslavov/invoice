@@ -97,8 +97,22 @@ export function useSubscription(): UseSubscriptionReturn {
 
       if (data.url) {
         console.log("Redirecting to direct URL:", data.url);
-        // Open in a new tab
-        window.open(data.url, '_blank');
+        
+        // Always try to open in a new tab
+        const newWindow = window.open(data.url, '_blank', 'noopener,noreferrer');
+        
+        // Check if popup was blocked
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+          console.warn("Popup blocked by browser, using alternative method");
+          // Try alternative: create an anchor and click it programmatically
+          const link = document.createElement('a');
+          link.href = data.url;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
       } else {
         console.error("No URL returned");
         throw new Error('No checkout URL returned');

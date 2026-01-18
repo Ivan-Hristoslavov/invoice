@@ -19,8 +19,8 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
 const profileSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email address"),
+  name: z.string().min(2, "Името трябва да е поне 2 символа"),
+  email: z.string().email("Моля, въведете валиден имейл адрес"),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -55,15 +55,15 @@ export function ProfileForm({ defaultValues }: ProfileFormProps) {
         throw new Error("Failed to update profile");
       }
       
-      toast.success("Profile updated", {
-        description: "Your profile information has been updated successfully."
+      toast.success("Профилът е обновен", {
+        description: "Вашата профилна информация беше успешно обновена."
       });
       
       router.refresh();
     } catch (error) {
       console.error("Error updating profile:", error);
-      toast.error("Error", {
-        description: "There was an error updating your profile. Please try again."
+      toast.error("Грешка", {
+        description: "Възникна грешка при обновяване на профила. Моля, опитайте отново."
       });
     } finally {
       setIsLoading(false);
@@ -78,12 +78,12 @@ export function ProfileForm({ defaultValues }: ProfileFormProps) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Name</FormLabel>
+              <FormLabel>Име</FormLabel>
               <FormControl>
-                <Input placeholder="Your name" {...field} />
+                <Input placeholder="Вашето име" {...field} />
               </FormControl>
               <FormDescription>
-                This is the name that will be displayed on your profile
+                Това е името, което ще се показва във вашия профил
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -95,12 +95,12 @@ export function ProfileForm({ defaultValues }: ProfileFormProps) {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>Имейл</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="your.email@example.com" {...field} />
+                <Input type="email" placeholder="vashiat.email@example.com" {...field} />
               </FormControl>
               <FormDescription>
-                This email will be used for account notifications
+                Този имейл ще се използва за известия за акаунта
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -109,7 +109,7 @@ export function ProfileForm({ defaultValues }: ProfileFormProps) {
         
         <div className="flex justify-end">
           <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Saving..." : "Save Changes"}
+            {isLoading ? "Запазване..." : "Запази промените"}
           </Button>
         </div>
       </form>

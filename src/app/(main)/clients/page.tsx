@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { Building, Plus, Search, Users, Mail, Phone, MapPin, ArrowUpRight, MoreHorizontal } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
 import { Button } from "@/components/ui/button";
 import { Button as RadixButton } from "@radix-ui/themes";
 import { APP_NAME } from "@/config/constants";
@@ -88,36 +89,20 @@ export default async function ClientsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-amber-500/5 to-orange-600/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Общо клиенти</p>
-                <p className="text-2xl font-bold">{clientsList.length}</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
-                <Users className="h-5 w-5 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500/5 to-indigo-600/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">С фактури</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {Object.keys(clientInvoiceCounts).length}
-                </p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                <Building className="h-5 w-5 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <CardStatsMetric
+          title="Общо клиенти"
+          value={clientsList.length}
+          icon={Users}
+          gradient="from-amber-500 to-orange-600"
+        />
+        <CardStatsMetric
+          title="С фактури"
+          value={Object.keys(clientInvoiceCounts).length}
+          valueClassName="text-blue-600"
+          icon={Building}
+          gradient="from-blue-500 to-indigo-600"
+        />
       </div>
 
       {/* Search */}

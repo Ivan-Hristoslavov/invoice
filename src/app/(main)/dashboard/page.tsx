@@ -171,6 +171,8 @@ export default async function DashboardPage() {
       currency: "",
       description: `${counts.issued} издадени, ${counts.draft} чернови`,
       icon: FileText,
+      trend: `+${counts.total}`,
+      trendUp: true,
       gradient: "from-violet-500 to-purple-600",
       bgGradient: "from-violet-500/10 via-violet-500/5 to-transparent",
       iconBg: "bg-violet-500/20"
@@ -181,6 +183,8 @@ export default async function DashboardPage() {
       currency: "",
       description: "Активни клиенти",
       icon: Users,
+      trend: `+${clientCount || 0}`,
+      trendUp: true,
       gradient: "from-amber-500 to-orange-600",
       bgGradient: "from-amber-500/10 via-amber-500/5 to-transparent",
       iconBg: "bg-amber-500/20"

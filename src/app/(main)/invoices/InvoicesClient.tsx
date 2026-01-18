@@ -13,6 +13,7 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
+import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
 import { 
   FileText, 
   Plus, 
@@ -217,6 +218,36 @@ export default function InvoicesClient({
     return { issued: issued.length, draft: draft.length, cancelled: cancelled.length, totalValue };
   }, [invoices]);
 
+  const statsCards = [
+    {
+      title: "Общо",
+      value: invoices.length,
+      icon: FileText,
+      gradient: "from-blue-500 to-indigo-600",
+    },
+    {
+      title: "Издадени",
+      value: stats.issued,
+      icon: CheckCircle,
+      gradient: "from-emerald-500 to-teal-600",
+      valueClassName: "text-emerald-600",
+    },
+    {
+      title: "Чернови",
+      value: stats.draft,
+      icon: Clock,
+      gradient: "from-amber-500 to-orange-600",
+      valueClassName: "text-amber-600",
+    },
+    {
+      title: "Стойност",
+      value: formatPrice(stats.totalValue),
+      valueSuffix: "€",
+      icon: Download,
+      gradient: "from-slate-500 to-slate-600",
+    },
+  ];
+
   const getStatusConfig = (status: string) => {
     switch (status) {
       case "ISSUED":
@@ -297,62 +328,18 @@ export default function InvoicesClient({
       )}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500/5 to-indigo-600/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Общо</p>
-                <p className="text-2xl font-bold">{invoices.length}</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                <FileText className="h-5 w-5 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-emerald-500/5 to-teal-600/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Издадени</p>
-                <p className="text-2xl font-bold text-emerald-600">{stats.issued}</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-                <CheckCircle className="h-5 w-5 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-amber-500/5 to-orange-600/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Чернови</p>
-                <p className="text-2xl font-bold text-amber-600">{stats.draft}</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
-                <Clock className="h-5 w-5 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-slate-500/5 to-slate-600/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Стойност</p>
-                <p className="text-2xl font-bold">{formatPrice(stats.totalValue)} €</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center">
-                <Download className="h-5 w-5 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {statsCards.map((stat) => (
+          <CardStatsMetric
+            key={stat.title}
+            title={stat.title}
+            value={stat.value}
+            valueSuffix={stat.valueSuffix}
+            valueClassName={stat.valueClassName}
+            icon={stat.icon}
+            gradient={stat.gradient}
+          />
+        ))}
       </div>
 
       {/* Filters */}
@@ -552,7 +539,7 @@ export default function InvoicesClient({
                     <th className="px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                       Статус
                     </th>
-                    <th className="px-6 py-4 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <th className="px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                       <span className="hidden md:inline">Действия</span>
                       <MoreHorizontal className="h-4 w-4 inline md:hidden" />
                     </th>
@@ -619,9 +606,9 @@ export default function InvoicesClient({
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="flex items-center justify-end">
+                            <div className="flex items-center justify-center">
                               <DropdownMenu>
-                                <DropdownMenuTrigger className="h-8 w-8 p-0 hover:bg-muted">
+                                <DropdownMenuTrigger className="h-8 w-8 p-0 hover:bg-muted rounded-md flex items-center justify-center">
                                   <MoreHorizontal className="h-4 w-4" />
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">

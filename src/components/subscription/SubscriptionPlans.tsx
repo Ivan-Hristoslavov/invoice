@@ -120,7 +120,7 @@ export function SubscriptionPlans() {
   };
 
   const isCurrentPlan = (plan: string): boolean => {
-    if (!subscription) return false;
+    if (!subscription) return plan === 'FREE';
     
     return subscription.plan === plan && 
            (subscription.status === 'ACTIVE' || 
@@ -242,6 +242,7 @@ export function SubscriptionPlans() {
           onEditSubscription={() => handleEditSubscription('FREE')}
           loading={isLoading || editingSubscription}
           hasActiveSubscription={!!subscription}
+          isFree={true}
         />
 
         <PlanCard
@@ -306,6 +307,7 @@ interface PlanCardProps {
   onEditSubscription: () => void;
   loading: boolean;
   hasActiveSubscription: boolean;
+  isFree?: boolean;
 }
 
 function PlanCard({
@@ -319,6 +321,7 @@ function PlanCard({
   onEditSubscription,
   loading,
   hasActiveSubscription,
+  isFree = false,
 }: PlanCardProps) {
   // Ensure price is a valid number with fallback - simple check
   const safePrice = typeof price === 'number' && !isNaN(price) && isFinite(price) ? price : 0;
@@ -371,6 +374,10 @@ function PlanCard({
         {current ? (
           <Button variant="outline" className="w-full border-green-600 text-green-700" disabled>
             Текущ план
+          </Button>
+        ) : isFree ? (
+          <Button variant="outline" className="w-full" disabled>
+            Безплатен план
           </Button>
         ) : hasActiveSubscription ? (
           <Button 

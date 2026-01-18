@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { Building, Plus, Search, Mail, Phone, MapPin, ArrowUpRight, FileText, CheckCircle2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
 import { Button } from "@/components/ui/button";
 import { Button as RadixButton } from "@radix-ui/themes";
 import { Badge } from "@/components/ui/badge";
@@ -93,50 +94,27 @@ export default async function CompaniesPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-slate-500/5 to-slate-600/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Общо компании</p>
-                <p className="text-2xl font-bold">{totalCompanies}</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center">
-                <Building className="h-5 w-5 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-emerald-500/5 to-teal-600/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Регистрирани по ДДС</p>
-                <p className="text-2xl font-bold text-emerald-600">{vatRegistered}</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-                <CheckCircle2 className="h-5 w-5 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500/5 to-indigo-600/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Издадени фактури</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {Object.values(companyInvoiceCounts).reduce((a: any, b: any) => a + b, 0)}
-                </p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                <FileText className="h-5 w-5 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <CardStatsMetric
+          title="Общо компании"
+          value={totalCompanies}
+          icon={Building}
+          gradient="from-slate-500 to-slate-600"
+        />
+        <CardStatsMetric
+          title="Регистрирани по ДДС"
+          value={vatRegistered}
+          valueClassName="text-emerald-600"
+          icon={CheckCircle2}
+          gradient="from-emerald-500 to-teal-600"
+        />
+        <CardStatsMetric
+          title="Издадени фактури"
+          value={Object.values(companyInvoiceCounts).reduce((a: any, b: any) => a + b, 0)}
+          valueClassName="text-blue-600"
+          icon={FileText}
+          gradient="from-blue-500 to-indigo-600"
+        />
       </div>
 
       {/* Search */}

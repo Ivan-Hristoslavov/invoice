@@ -12,7 +12,7 @@ import {
   CardTitle 
 } from "@/components/ui/card";
 import { CompanyForm } from "./CompanyForm";
-import { LogoUpload } from "@/components/forms/LogoUpload";
+import { CompanyLogoSection } from "./CompanyLogoSection";
 
 export const metadata: Metadata = {
   title: `Настройки на компанията | ${APP_NAME}`,
@@ -105,13 +105,9 @@ export default async function CompanySettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <LogoUpload
+            <CompanyLogoSection
               currentLogoUrl={company.logo}
               companyId={company.id}
-              onLogoUploaded={() => {
-                // Refresh the page to show updated logo
-                window.location.reload();
-              }}
             />
           </CardContent>
         </Card>

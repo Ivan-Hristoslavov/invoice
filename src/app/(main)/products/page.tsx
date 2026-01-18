@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { Package, Plus, Search, Tag, ArrowUpRight, Euro, Percent } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
 import { Button } from "@/components/ui/button";
 import { Button as RadixButton } from "@radix-ui/themes";
 import { Badge } from "@/components/ui/badge";
@@ -99,48 +100,27 @@ export default async function ProductsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-emerald-500/5 to-teal-600/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Общо продукти</p>
-                <p className="text-2xl font-bold">{totalProducts}</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-                <Package className="h-5 w-5 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500/5 to-indigo-600/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Средна цена</p>
-                <p className="text-2xl font-bold">{avgPrice.toFixed(2)} €</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                <Euro className="h-5 w-5 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-slate-500/5 to-slate-600/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">С ДДС</p>
-                <p className="text-2xl font-bold text-violet-600">{withTax}</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center">
-                <Percent className="h-5 w-5 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <CardStatsMetric
+          title="Общо продукти"
+          value={totalProducts}
+          icon={Package}
+          gradient="from-emerald-500 to-teal-600"
+        />
+        <CardStatsMetric
+          title="Средна цена"
+          value={avgPrice.toFixed(2)}
+          valueSuffix="€"
+          icon={Euro}
+          gradient="from-blue-500 to-indigo-600"
+        />
+        <CardStatsMetric
+          title="С ДДС"
+          value={withTax}
+          valueClassName="text-violet-600"
+          icon={Percent}
+          gradient="from-slate-500 to-slate-600"
+        />
       </div>
 
       {/* Search */}

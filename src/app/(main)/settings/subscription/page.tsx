@@ -8,15 +8,12 @@ import {
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SubscriptionPlans } from '@/components/subscription/SubscriptionPlans';
 import { SubscriptionHistory } from '@/components/subscription/SubscriptionHistory';
-import { WebhookEventHistory } from '@/components/subscription/WebhookEventHistory';
 import { useSearchParams } from 'next/navigation';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, CreditCard, History } from 'lucide-react';
 
 export default function SubscriptionPage() {
   const searchParams = useSearchParams();
@@ -24,17 +21,19 @@ export default function SubscriptionPage() {
   const canceled = searchParams.get('canceled');
   
   return (
-    <div className="container mx-auto px-4 py-6 space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Абонамент</h1>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="page-title">Абонамент</h1>
+        <p className="card-description mt-1.5">
+          Управлявайте вашия абонамент и вижте история на плащанията
+        </p>
       </div>
-      <p className="text-muted-foreground">
-        Управлявайте вашия абонамент и вижте история на плащанията.
-      </p>
       
+      {/* Success/Cancel Alerts */}
       {success && (
-        <Alert variant="default" className="bg-green-50 text-green-800 border-green-200">
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
+        <Alert variant="default" className="bg-green-50 dark:bg-green-950/20 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800">
+          <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
           <AlertTitle>Успех!</AlertTitle>
           <AlertDescription>
             Вашият абонамент беше успешно обновен. Благодарим ви!
@@ -43,8 +42,8 @@ export default function SubscriptionPage() {
       )}
       
       {canceled && (
-        <Alert variant="destructive" className="bg-red-50 text-red-800 border-red-200">
-          <XCircle className="h-4 w-4 text-red-600" />
+        <Alert variant="destructive">
+          <XCircle className="h-4 w-4" />
           <AlertTitle>Отказано плащане</AlertTitle>
           <AlertDescription>
             Плащането беше отказано. Може да опитате отново, когато сте готови.
@@ -52,31 +51,50 @@ export default function SubscriptionPage() {
         </Alert>
       )}
       
-      <Tabs defaultValue="plans" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="plans">Планове</TabsTrigger>
-          <TabsTrigger value="history">История</TabsTrigger>
-          <TabsTrigger value="events">Webhook събития</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="plans" className="space-y-4">
-          <Suspense fallback={<SubscriptionSkeleton />}>
-            <SubscriptionPlans />
-          </Suspense>
-        </TabsContent>
-        
-        <TabsContent value="history" className="space-y-4">
-          <Suspense fallback={<SubscriptionSkeleton />}>
-            <SubscriptionHistory />
-          </Suspense>
-        </TabsContent>
-        
-        <TabsContent value="events" className="space-y-4">
-          <Suspense fallback={<SubscriptionSkeleton />}>
-            <WebhookEventHistory />
-          </Suspense>
-        </TabsContent>
-      </Tabs>
+      {/* Subscription Sections - Combined with Settings navigation */}
+      <div className="grid gap-6">
+        <Card className="border border-border/60 shadow-sm">
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-2">
+              <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                <CreditCard className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="card-title">Планове и фактуриране</CardTitle>
+                <CardDescription className="card-description">
+                  Изберете план, управлявайте подновяване и отмяна
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Suspense fallback={<SubscriptionSkeleton />}>
+              <SubscriptionPlans />
+            </Suspense>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-border/60 shadow-sm">
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-2">
+              <div className="h-9 w-9 rounded-lg bg-secondary flex items-center justify-center">
+                <History className="h-4 w-4 text-foreground" />
+              </div>
+              <div>
+                <CardTitle className="card-title">История на плащанията</CardTitle>
+                <CardDescription className="card-description">
+                  Преглед на всички транзакции и периоди
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Suspense fallback={<SubscriptionSkeleton />}>
+              <SubscriptionHistory />
+            </Suspense>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
