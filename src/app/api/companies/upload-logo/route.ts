@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
-import { checkSubscriptionLimit } from "@/middleware/subscription";
+import { checkSubscriptionLimits } from "@/middleware/subscription";
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check subscription limit for custom branding
-    const limitCheck = await checkSubscriptionLimit(
+    const limitCheck = await checkSubscriptionLimits(
       session.user.id as string,
       'customBranding'
     );

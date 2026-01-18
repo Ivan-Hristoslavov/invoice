@@ -1,5 +1,5 @@
 import { Resend } from 'resend';
-import { generateInvoicePdfBuffer } from './invoice-export';
+import { exportInvoicePdfBuffer } from './invoice-export';
 import { createAdminClient } from './supabase/server';
 
 // Lazy initialization helper to avoid build-time errors
@@ -84,7 +84,7 @@ export async function sendInvoiceEmail({ to, invoiceNumber, type, paymentLink }:
         throw new Error('Invoice not found or access denied');
       }
       
-      const pdf = await generateInvoicePdfBuffer(invoice);
+      const pdf = await exportInvoicePdfBuffer(invoice.id);
       attachments.push({
         filename: pdf.filename,
         content: pdf.buffer,
