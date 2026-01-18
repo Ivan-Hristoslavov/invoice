@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabase";
 import { authOptions } from "@/lib/auth";
 import * as bcrypt from "bcrypt";
 
@@ -30,17 +30,13 @@ export async function POST(request: NextRequest) {
     const validated = passwordSchema.parse(json);
 
     // Get user with password
-    const user = await prisma.user.findUnique({
-      where: {
-        id: session.user.id,
-      },
-      select: {
-        id: true,
-        password: true,
-      },
-    });
+    const { data: user, error } = await supabaseAdmin
+      .from('User')
+      .select('id, password')
+      .eq('id', session.user.id)
+      .single();
 
-    if (!user || !user.password) {
+    if (error || !user || !user.password) {
       return NextResponse.json(
         { error: "User not found or no password set" },
         { status: 404 }
@@ -64,14 +60,10 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(validated.newPassword, 10);
 
     // Update password
-    await prisma.user.update({
-      where: {
-        id: session.user.id,
-      },
-      data: {
-        password: hashedPassword,
-      },
-    });
+    await supabaseAdmin
+      .from('User')
+      .update({ password: hashedPassword })
+      .eq('id', session.user.id);
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -88,4 +80,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

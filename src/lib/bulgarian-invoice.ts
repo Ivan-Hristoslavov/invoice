@@ -33,10 +33,6 @@ export function generateBulgarianInvoiceNumber(
 ): string {
   const year = format(new Date(), 'yy'); // Get last 2 digits of current year
   
-  let typeCode = 'И'; // Default for invoice (Фактура)
-  if (type === 'credit-note') typeCode = 'К'; // Credit note (Кредитно известие)
-  if (type === 'debit-note') typeCode = 'Д'; // Debit note (Дебитно известие)
-  
   // Use last 4 digits of EIK if available
   const companyPart = companyEik && companyEik.length >= 4 
     ? companyEik.slice(-4) 
@@ -45,8 +41,8 @@ export function generateBulgarianInvoiceNumber(
   // Format the sequence number to have leading zeros
   const sequencePart = sequenceNumber.toString().padStart(6, '0');
   
-  // Format according to Bulgarian regulations
-  return `${year}${companyPart}${sequencePart}${typeCode}`;
+  // Format: YYCCCCNNNNNN (without type code suffix)
+  return `${year}${companyPart}${sequencePart}`;
 }
 
 /**
@@ -56,8 +52,8 @@ export function generateBulgarianInvoiceNumber(
  * @returns The components of the invoice number
  */
 export function parseBulgarianInvoiceNumber(invoiceNumber: string): BulgarianInvoiceNumberComponents | null {
-  // Expected format: YYCCCCNNNNNNX where YY=year, CCCC=company, NNNNNN=sequential number, X=type
-  const regex = /^(\d{2})(\d{4})(\d{6})([А-Я])$/;
+  // Expected format: YYCCCCNNNNNN where YY=year, CCCC=company, NNNNNN=sequential number
+  const regex = /^(\d{2})(\d{4})(\d{6})$/;
   const match = invoiceNumber.match(regex);
   
   if (!match) return null;
@@ -66,7 +62,7 @@ export function parseBulgarianInvoiceNumber(invoiceNumber: string): BulgarianInv
     year: match[1],
     companyId: match[2],
     sequentialNumber: parseInt(match[3], 10),
-    type: match[4]
+    type: 'invoice' // Default type
   };
 }
 

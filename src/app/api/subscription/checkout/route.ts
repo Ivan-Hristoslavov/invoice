@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { createCheckoutSession } from "@/services/subscription-service";
 import { getSubscriptionPlans } from "@/lib/stripe";
-import { prisma } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function POST(req: Request) {
   try {
@@ -27,14 +27,13 @@ export async function POST(req: Request) {
     }
 
     // Find the user ID from the email in the session
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    }).catch(err => {
-      console.log("Error finding user:", err);
-      return null;
-    });
+    const { data: user, error: userError } = await supabaseAdmin
+      .from('User')
+      .select('id')
+      .eq('email', session.user.email)
+      .single();
 
-    if (!user || !user.id) {
+    if (userError || !user) {
       console.log("User not found with email:", session.user.email);
       return NextResponse.json(
         { error: "User not found" },

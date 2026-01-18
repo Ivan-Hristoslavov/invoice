@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { ReactNode } from "react";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -10,16 +9,7 @@ import {
   CardHeader,
   CardTitle 
 } from "@/components/ui/card";
-import { 
-  User, 
-  Building, 
-  ShieldCheck, 
-  Users, 
-  CreditCard,
-  ChevronRight,
-  FileText
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+import { SettingsNav } from "./SettingsNav";
 
 interface SettingsLayoutProps {
   children: ReactNode;
@@ -31,45 +21,6 @@ export default async function SettingsLayout({ children }: SettingsLayoutProps) 
   if (!session) {
     redirect("/signin");
   }
-
-  const navItems = [
-    {
-      title: "Профил",
-      href: "/settings/profile",
-      icon: User,
-      description: "Управление на личната информация"
-    },
-    {
-      title: "Компания",
-      href: "/settings/company",
-      icon: Building,
-      description: "Обновяване на детайлите за компанията"
-    },
-    {
-      title: "Сигурност",
-      href: "/settings/security",
-      icon: ShieldCheck,
-      description: "Парола и сигурност на акаунта"
-    },
-    {
-      title: "Членове на екипа",
-      href: "/settings/team",
-      icon: Users,
-      description: "Покана и управление на членове на екипа"
-    },
-    {
-      title: "Фактуриране",
-      href: "/settings/billing",
-      icon: CreditCard,
-      description: "Управление на вашия абонамент и фактуриране"
-    },
-    {
-      title: "Настройки на фактури",
-      href: "/settings/invoice-preferences",
-      icon: FileText,
-      description: "Настройки за фактури и ДДС"
-    }
-  ];
   
   return (
     <div>
@@ -85,16 +36,7 @@ export default async function SettingsLayout({ children }: SettingsLayoutProps) 
             <CardDescription>Управление на вашия акаунт</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <nav className="flex flex-col">
-              {navItems.map((item) => (
-                <SettingsNavItem 
-                  key={item.href}
-                  href={item.href}
-                  icon={item.icon}
-                  title={item.title}
-                />
-              ))}
-            </nav>
+            <SettingsNav />
           </CardContent>
         </Card>
         
@@ -105,30 +47,3 @@ export default async function SettingsLayout({ children }: SettingsLayoutProps) 
     </div>
   );
 }
-
-interface SettingsNavItemProps {
-  href: string;
-  icon: React.ElementType;
-  title: string;
-}
-
-function SettingsNavItem({ href, icon: Icon, title }: SettingsNavItemProps) {
-  // In a client component, we would use usePathname() to get the current path
-  // For now, we'll use a simple string includes check
-  
-  return (
-    <Link
-      href={href}
-      className={cn(
-        "flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors",
-        true && "bg-muted font-medium"
-      )}
-    >
-      <div className="flex items-center gap-3">
-        <Icon className="h-5 w-5 text-muted-foreground" />
-        <span>{title}</span>
-      </div>
-      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-    </Link>
-  );
-} 

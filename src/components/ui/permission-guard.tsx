@@ -1,8 +1,10 @@
 "use client";
 
 import { ReactNode } from "react";
-import { Role } from "@prisma/client";
 import { usePermission, useRole } from "@/hooks/use-permissions";
+
+// Define Role type locally since we're not using Prisma on client side
+type Role = 'ADMIN' | 'OWNER' | 'MANAGER' | 'ACCOUNTANT' | 'VIEWER';
 
 interface BaseGuardProps {
   children: ReactNode;

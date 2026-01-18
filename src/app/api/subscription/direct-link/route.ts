@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from '@/lib/auth';
 import { getStripe } from '@/lib/stripe';
-import { Decimal } from '@prisma/client/runtime/library';
 
 // Get direct Stripe checkout URLs from environment variables
 const STRIPE_URLS = {
@@ -11,18 +10,18 @@ const STRIPE_URLS = {
   BUSINESS: process.env.STRIPE_BUSINESS_MONTHLY_URL || 'https://buy.stripe.com/test_business_monthly',
 };
 
-// Helper function to serialize Prisma Decimal objects
-function serializeDecimal(value: any): any {
-  if (value instanceof Decimal) {
+// Helper function to serialize objects
+function serializeValue(value: any): any {
+  if (typeof value === 'object' && value !== null && typeof value.toString === 'function' && value.constructor?.name === 'Decimal') {
     return value.toString();
   }
   if (Array.isArray(value)) {
-    return value.map(serializeDecimal);
+    return value.map(serializeValue);
   }
   if (typeof value === 'object' && value !== null) {
     const result: any = {};
     for (const [key, val] of Object.entries(value)) {
-      result[key] = serializeDecimal(val);
+      result[key] = serializeValue(val);
     }
     return result;
   }
@@ -56,7 +55,13 @@ export async function POST(req: Request) {
 
     // Fallback to creating a Checkout session if direct URL is not available
     // Get the price ID for the selected plan
-    const priceId = process.env[`STRIPE_${plan}_PRICE_ID`];
+    let priceId: string | undefined;
+    if (plan === 'PRO') {
+      priceId = process.env.STRIPE_PRO_PRICE_ID;
+    } else if (plan === 'BUSINESS') {
+      priceId = process.env.STRIPE_BUISNESS_PRICE_ID;
+    }
+    
     if (!priceId) {
       return new NextResponse('Price ID not configured', { status: 500 });
     }
@@ -83,8 +88,8 @@ export async function POST(req: Request) {
       },
     });
 
-    // Serialize the response to handle any potential Decimal objects
-    const serializedResponse = serializeDecimal({
+    // Serialize the response
+    const serializedResponse = serializeValue({
       url: checkoutSession.url,
       sessionId: checkoutSession.id
     });
@@ -94,4 +99,4 @@ export async function POST(req: Request) {
     console.error('Error creating checkout session:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
-} 
+}

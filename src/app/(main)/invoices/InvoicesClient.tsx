@@ -2,7 +2,10 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Button as RadixButton } from "@radix-ui/themes";
 import { 
   Card, 
   CardContent, 
@@ -23,7 +26,10 @@ import {
   Clock,
   XCircle,
   ArrowUpDown,
-  MoreHorizontal
+  MoreHorizontal,
+  FileCheck,
+  Printer,
+  Trash2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +51,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
+import { StatusChangeModal } from "@/components/invoice/StatusChangeModal";
+import { DeleteInvoiceModal } from "@/components/invoice/DeleteInvoiceModal";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Invoice {
   id: string;
@@ -76,12 +86,109 @@ export default function InvoicesClient({
   canCreateInvoices,
   currentUserId,
 }: InvoicesClientProps) {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [invoices, setInvoices] = useState(initialInvoices);
+  
+  // Modal state for status change
+  const [statusModal, setStatusModal] = useState<{
+    isOpen: boolean;
+    invoice: Invoice | null;
+    newStatus: string;
+  }>({ isOpen: false, invoice: null, newStatus: "" });
+
+  // Modal state for delete
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    invoice: Invoice | null;
+  }>({ isOpen: false, invoice: null });
+
+  // Handle delete invoice
+  const handleDeleteInvoice = async () => {
+    if (!deleteModal.invoice) return;
+    
+    const invoiceId = deleteModal.invoice.id;
+    const invoiceNumber = deleteModal.invoice.invoiceNumber;
+    
+    try {
+      const response = await fetch(`/api/invoices/${invoiceId}`, {
+        method: "DELETE",
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Грешка при изтриване на фактурата");
+      }
+      
+      // Remove invoice from local state
+      setInvoices(prev => prev.filter(inv => inv.id !== invoiceId));
+      toast.success("Фактурата беше изтрита успешно");
+      
+      // Refresh the page to update the list
+      router.refresh();
+    } catch (error: any) {
+      console.error("Error deleting invoice:", error);
+      toast.error(error.message || "Грешка при изтриване на фактурата");
+      throw error; // Re-throw to let modal handle loading state
+    }
+  };
+
+  const openDeleteModal = (invoice: Invoice) => {
+    setDeleteModal({ isOpen: true, invoice });
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteModal({ isOpen: false, invoice: null });
+  };
+
+  // Handle status change
+  const handleStatusChange = async () => {
+    if (!statusModal.invoice) return;
+    
+    try {
+      const response = await fetch(`/api/invoices/${statusModal.invoice.id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: statusModal.newStatus }),
+      });
+      
+      if (response.ok) {
+        // Update local state
+        setInvoices(prev => 
+          prev.map(inv => 
+            inv.id === statusModal.invoice?.id 
+              ? { ...inv, status: statusModal.newStatus }
+              : inv
+          )
+        );
+        toast.success(
+          statusModal.newStatus === "ISSUED" 
+            ? "Фактурата е издадена успешно" 
+            : "Статусът е променен успешно"
+        );
+        router.refresh();
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Грешка при промяна на статуса");
+      }
+    } catch (error) {
+      console.error("Error changing status:", error);
+      toast.error("Грешка при промяна на статуса");
+    }
+  };
+
+  const openStatusModal = (invoice: Invoice, newStatus: string) => {
+    setStatusModal({ isOpen: true, invoice, newStatus });
+  };
+
+  const closeStatusModal = () => {
+    setStatusModal({ isOpen: false, invoice: null, newStatus: "" });
+  };
 
   // Filter invoices based on search and status
   const filteredInvoices = useMemo(() => {
-    let filtered = initialInvoices;
+    let filtered = invoices;
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -98,21 +205,22 @@ export default function InvoicesClient({
     }
 
     return filtered;
-  }, [initialInvoices, searchQuery, statusFilter]);
+  }, [invoices, searchQuery, statusFilter]);
 
   // Stats
   const stats = useMemo(() => {
-    const issued = initialInvoices.filter(i => i.status === 'ISSUED');
-    const draft = initialInvoices.filter(i => i.status === 'DRAFT');
-    const cancelled = initialInvoices.filter(i => i.status === 'CANCELLED');
+    const issued = invoices.filter(i => i.status === 'ISSUED' || i.status === 'PAID');
+    const draft = invoices.filter(i => i.status === 'DRAFT');
+    const cancelled = invoices.filter(i => i.status === 'CANCELLED');
     const totalValue = issued.reduce((sum, i) => sum + Number(i.total), 0);
     
     return { issued: issued.length, draft: draft.length, cancelled: cancelled.length, totalValue };
-  }, [initialInvoices]);
+  }, [invoices]);
 
   const getStatusConfig = (status: string) => {
     switch (status) {
       case "ISSUED":
+      case "PAID": // PAID in DB = ISSUED in app
         return {
           label: "Издадена",
           icon: CheckCircle,
@@ -143,29 +251,50 @@ export default function InvoicesClient({
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl font-bold tracking-tight">Фактури</h1>
           <p className="text-muted-foreground mt-1">
             Управлявайте и проследявайте вашите фактури
           </p>
         </div>
-        {canCreateInvoices && (
-          <div className="flex items-center gap-2">
-            <Button variant="outline" asChild>
+        <div className="flex items-center gap-3">
+          {canCreateInvoices && (
+            <Button variant="outline" asChild size="lg">
               <Link href="/invoices/import">
                 <Upload className="mr-2 h-4 w-4" />
                 Импорт
               </Link>
             </Button>
-            <Button asChild className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20">
-              <Link href="/invoices/new">
-                <Plus className="mr-2 h-4 w-4" />
-                Нова фактура
-              </Link>
-            </Button>
-          </div>
-        )}
+          )}
+          <RadixButton 
+            asChild 
+            size="3" 
+            variant="solid" 
+            color="green"
+            className="shadow-lg"
+          >
+            <Link href="/invoices/new">
+              <Plus className="mr-2 h-5 w-5" />
+              Нова фактура
+            </Link>
+          </RadixButton>
+        </div>
       </div>
+      
+      {/* Fast Action Button - Floating */}
+      {canCreateInvoices && (
+        <div className="fixed bottom-8 right-8 z-50">
+          <Button
+            asChild
+            size="lg"
+            className="h-14 w-14 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xl shadow-emerald-600/30 hover:shadow-emerald-600/40 transition-all hover:scale-110"
+          >
+            <Link href="/invoices/new">
+              <Plus className="h-6 w-6" />
+            </Link>
+          </Button>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -174,7 +303,7 @@ export default function InvoicesClient({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground font-medium">Общо</p>
-                <p className="text-2xl font-bold">{initialInvoices.length}</p>
+                <p className="text-2xl font-bold">{invoices.length}</p>
               </div>
               <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
                 <FileText className="h-5 w-5 text-white" />
@@ -216,7 +345,7 @@ export default function InvoicesClient({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground font-medium">Стойност</p>
-                <p className="text-2xl font-bold">{stats.totalValue.toFixed(0)} лв</p>
+                <p className="text-2xl font-bold">{formatPrice(stats.totalValue)} лв</p>
               </div>
               <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center">
                 <Download className="h-5 w-5 text-white" />
@@ -281,9 +410,21 @@ export default function InvoicesClient({
             <div>
               <CardTitle>Списък с фактури</CardTitle>
               <CardDescription>
-                {filteredInvoices.length} от {initialInvoices.length} фактури
+                {filteredInvoices.length} от {invoices.length} фактури
               </CardDescription>
             </div>
+            {canCreateInvoices && (
+              <Button 
+                asChild 
+                className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all"
+              >
+                <Link href="/invoices/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">Нова фактура</span>
+                  <span className="sm:hidden">Нова</span>
+                </Link>
+              </Button>
+            )}
           </div>
         </CardHeader>
         
@@ -333,7 +474,8 @@ export default function InvoicesClient({
                       Статус
                     </th>
                     <th className="px-6 py-4 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Действия
+                      <span className="hidden md:inline">Действия</span>
+                      <MoreHorizontal className="h-4 w-4 inline md:hidden" />
                     </th>
                   </tr>
                 </thead>
@@ -355,14 +497,14 @@ export default function InvoicesClient({
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-                                invoice.status === 'ISSUED' 
+                                (invoice.status === 'ISSUED' || invoice.status === 'PAID')
                                   ? 'bg-emerald-500/10'
                                   : invoice.status === 'DRAFT'
                                   ? 'bg-amber-500/10'
                                   : 'bg-red-500/10'
                               }`}>
                                 <StatusIcon className={`h-5 w-5 ${
-                                  invoice.status === 'ISSUED' 
+                                  (invoice.status === 'ISSUED' || invoice.status === 'PAID')
                                     ? 'text-emerald-600'
                                     : invoice.status === 'DRAFT'
                                     ? 'text-amber-600'
@@ -387,7 +529,7 @@ export default function InvoicesClient({
                           </td>
                           <td className="px-6 py-4 text-right">
                             <p className="text-sm font-bold">
-                              {Number(invoice.total).toFixed(2)} лв
+                              {formatPrice(Number(invoice.total))} лв
                             </p>
                           </td>
                           <td className="px-6 py-4">
@@ -398,19 +540,10 @@ export default function InvoicesClient({
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="flex items-center justify-end gap-1">
-                              <Button variant="ghost" size="sm" asChild className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Link href={`/invoices/${invoice.id}`}>
-                                  <Eye className="h-4 w-4 mr-1" />
-                                  Преглед
-                                </Link>
-                              </Button>
-                              
+                            <div className="flex items-center justify-end">
                               <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
+                                <DropdownMenuTrigger className="h-8 w-8 p-0 hover:bg-muted">
+                                  <MoreHorizontal className="h-4 w-4" />
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem asChild>
@@ -428,7 +561,78 @@ export default function InvoicesClient({
                                     </DropdownMenuItem>
                                   )}
                                   <DropdownMenuSeparator />
-                                  <DropdownMenuItem>
+                                  {invoice.status === "DRAFT" && (
+                                    <>
+                                      <DropdownMenuItem
+                                        onClick={() => openStatusModal(invoice, "ISSUED")}
+                                        className="text-emerald-600 focus:text-emerald-600"
+                                      >
+                                        <FileCheck className="mr-2 h-4 w-4" />
+                                        Издай фактура
+                                      </DropdownMenuItem>
+                                      {invoice.userId === currentUserId && (
+                                        <>
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem
+                                            onClick={() => openDeleteModal(invoice)}
+                                            className="text-red-600 focus:text-red-600"
+                                          >
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Изтрий фактура
+                                          </DropdownMenuItem>
+                                        </>
+                                      )}
+                                    </>
+                                  )}
+                                  <DropdownMenuItem
+                                    onClick={async () => {
+                                      try {
+                                        // Fetch PDF and open in new tab for printing
+                                        const response = await fetch(`/api/invoices/export-pdf?invoiceId=${invoice.id}`);
+                                        
+                                        if (!response.ok) {
+                                          throw new Error('Грешка при генерирането на PDF');
+                                        }
+                                        
+                                        const blob = await response.blob();
+                                        const url = URL.createObjectURL(blob);
+                                        
+                                        // Create a link element and click it to open PDF in new tab
+                                        const link = document.createElement('a');
+                                        link.href = url;
+                                        link.target = '_blank';
+                                        link.style.display = 'none';
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        document.body.removeChild(link);
+                                        
+                                        // Show toast message
+                                        toast.info("PDF файлът беше отворен. Моля, използвайте бутона за принтиране в браузъра.");
+                                        
+                                        // Clean up URL after a delay
+                                        setTimeout(() => {
+                                          URL.revokeObjectURL(url);
+                                        }, 1000);
+                                      } catch (error) {
+                                        console.error("Error printing invoice:", error);
+                                        toast.error("Грешка при принтирането на фактурата");
+                                      }
+                                    }}
+                                  >
+                                    <Printer className="mr-2 h-4 w-4" />
+                                    Принтирай
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={async () => {
+                                      try {
+                                        const { exportInvoiceAsPdf } = await import("@/lib/invoice-export");
+                                        await exportInvoiceAsPdf(invoice.id);
+                                      } catch (error) {
+                                        console.error("Error exporting PDF:", error);
+                                        toast.error("Грешка при експортиране на PDF");
+                                      }
+                                    }}
+                                  >
                                     <Download className="mr-2 h-4 w-4" />
                                     Изтегли PDF
                                   </DropdownMenuItem>
@@ -446,6 +650,28 @@ export default function InvoicesClient({
           )}
         </CardContent>
       </Card>
+
+      {/* Status Change Modal */}
+      {statusModal.invoice && (
+        <StatusChangeModal
+          isOpen={statusModal.isOpen}
+          onClose={closeStatusModal}
+          onConfirm={handleStatusChange}
+          invoiceNumber={statusModal.invoice.invoiceNumber}
+          currentStatus={statusModal.invoice.status}
+          newStatus={statusModal.newStatus}
+        />
+      )}
+
+      {/* Delete Invoice Modal */}
+      {deleteModal.invoice && (
+        <DeleteInvoiceModal
+          isOpen={deleteModal.isOpen}
+          onClose={closeDeleteModal}
+          onConfirm={handleDeleteInvoice}
+          invoiceNumber={deleteModal.invoice.invoiceNumber}
+        />
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabase";
 
 /**
  * Generates the next invoice number for a company based on Bulgarian requirements.
@@ -7,23 +7,20 @@ import { prisma } from "@/lib/db";
 export async function generateNextInvoiceNumber(companyId: string): Promise<string> {
   try {
     const currentYear = new Date().getFullYear();
-    const startOfYear = new Date(currentYear, 0, 1); // January 1st of current year
+    const startOfYear = new Date(currentYear, 0, 1).toISOString();
     
     // Find the last invoice for this company in the current year
-    const lastInvoice = await prisma.invoice.findFirst({
-      where: {
-        companyId,
-        createdAt: {
-          gte: startOfYear
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
+    const { data: lastInvoice, error } = await supabaseAdmin
+      .from('Invoice')
+      .select('invoiceNumber')
+      .eq('companyId', companyId)
+      .gte('createdAt', startOfYear)
+      .order('createdAt', { ascending: false })
+      .limit(1)
+      .single();
 
     // If no invoice exists for this year, start from 1
-    if (!lastInvoice) {
+    if (error || !lastInvoice) {
       return formatInvoiceNumber(1, currentYear);
     }
 
@@ -81,4 +78,4 @@ export function isValidInvoiceNumber(invoiceNumber: string): boolean {
   }
 
   return true;
-} 
+}

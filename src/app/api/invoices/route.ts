@@ -226,13 +226,6 @@ export async function POST(request: NextRequest) {
           );
         }
         
-        // Get next invoice number using InvoiceSequence
-        const { getNextInvoiceSequence } = await import("@/lib/invoice-sequence");
-        const { invoiceNumber, sequence } = await getNextInvoiceSequence(
-          validatedData.companyId,
-          company.bulstatNumber || undefined
-        );
-        
         // Изчисляване на суми
         let subtotal = 0;
         let taxAmount = 0;
@@ -264,35 +257,90 @@ export async function POST(request: NextRequest) {
         const total = subtotal + taxAmount;
         const invoiceId = cuid();
         
-        // Създаване на фактура в базата данни
-        const invoiceData = {
-          id: invoiceId,
-          invoiceNumber,
-          clientId: validatedData.clientId,
-          companyId: validatedData.companyId,
-          userId: session.user.id,
-          issueDate: new Date(validatedData.issueDate).toISOString(),
-          dueDate: new Date(validatedData.dueDate).toISOString(),
-          status: "DRAFT", // Always DRAFT when created
-          subtotal: subtotal.toString(),
-          taxAmount: taxAmount.toString(),
-          total: total.toString(),
-          notes: validatedData.notes || null,
-          termsAndConditions: validatedData.termsAndConditions || null,
-          currency: validatedData.currency || "EUR",
-          locale: validatedData.locale || "bg",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
+        // Retry logic for invoice creation (handles duplicate invoice numbers)
+        const maxRetries = 3;
+        let invoice: any = null;
+        let invoiceError: any = null;
         
-        const { data: invoice, error: invoiceError } = await supabase
-          .from("Invoice")
-          .insert(invoiceData)
-          .select()
-          .single();
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+          try {
+            // Get next invoice number using InvoiceSequence
+            const { getNextInvoiceSequence } = await import("@/lib/invoice-sequence");
+            const { invoiceNumber, sequence } = await getNextInvoiceSequence(
+              validatedData.companyId,
+              company.bulstatNumber || undefined
+            );
+            
+            // Check if invoice number already exists (race condition check)
+            const { data: existingInvoice } = await supabase
+              .from("Invoice")
+              .select("id")
+              .eq("invoiceNumber", invoiceNumber)
+              .eq("companyId", validatedData.companyId)
+              .single();
+            
+            if (existingInvoice) {
+              // Invoice number already exists, retry with new number
+              if (attempt < maxRetries - 1) {
+                await new Promise(resolve => setTimeout(resolve, 100 * (attempt + 1)));
+                continue;
+              }
+              throw new Error("Failed to generate unique invoice number after retries");
+            }
+            
+            // Създаване на фактура в базата данни
+            const invoiceData = {
+              id: invoiceId,
+              invoiceNumber,
+              clientId: validatedData.clientId,
+              companyId: validatedData.companyId,
+              userId: session.user.id,
+              issueDate: new Date(validatedData.issueDate).toISOString(),
+              dueDate: new Date(validatedData.dueDate).toISOString(),
+              status: "DRAFT", // Always DRAFT when created
+              subtotal: subtotal.toString(),
+              taxAmount: taxAmount.toString(),
+              total: total.toString(),
+              notes: validatedData.notes || null,
+              termsAndConditions: validatedData.termsAndConditions || null,
+              currency: validatedData.currency || "EUR",
+              locale: validatedData.locale || "bg",
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+            
+            const { data: insertedInvoice, error: insertError } = await supabase
+              .from("Invoice")
+              .insert(invoiceData)
+              .select()
+              .single();
+            
+            if (insertError) {
+              // Check if it's a duplicate key error
+              if (insertError.code === '23505' && attempt < maxRetries - 1) {
+                // Duplicate invoice number, retry
+                await new Promise(resolve => setTimeout(resolve, 100 * (attempt + 1)));
+                continue;
+              }
+              throw insertError;
+            }
+            
+            invoice = insertedInvoice;
+            invoiceError = null;
+            break; // Success, exit retry loop
+          } catch (error: any) {
+            invoiceError = error;
+            if (attempt === maxRetries - 1) {
+              // Last attempt, throw error
+              throw error;
+            }
+            // Wait before retry
+            await new Promise(resolve => setTimeout(resolve, 100 * (attempt + 1)));
+          }
+        }
         
-        if (invoiceError) {
-          throw invoiceError;
+        if (invoiceError || !invoice) {
+          throw invoiceError || new Error("Failed to create invoice after retries");
         }
         
         // Create invoice items

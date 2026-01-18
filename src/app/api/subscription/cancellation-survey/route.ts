@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function POST(req: Request) {
   try {
@@ -15,14 +15,14 @@ export async function POST(req: Request) {
     const { reason, feedback, subscriptionId } = await req.json();
 
     // Проверяваме дали потребителят има този абонамент
-    const subscription = await prisma.subscription.findFirst({
-      where: {
-        id: subscriptionId,
-        userId: session.user.id,
-      }
-    });
+    const { data: subscription, error } = await supabaseAdmin
+      .from('Subscription')
+      .select('id')
+      .eq('id', subscriptionId)
+      .eq('userId', session.user.id)
+      .single();
 
-    if (!subscription) {
+    if (error || !subscription) {
       return new NextResponse('Subscription not found', { status: 404 });
     }
 
@@ -30,14 +30,16 @@ export async function POST(req: Request) {
     // Забележка: Трябва да създадем модел за анкети в схемата
     // Тук е пример как би изглеждало:
     /*
-    const survey = await prisma.cancellationSurvey.create({
-      data: {
+    const cuid = require('cuid');
+    await supabaseAdmin
+      .from('CancellationSurvey')
+      .insert({
+        id: cuid(),
         subscriptionId,
         reason,
         feedback,
         userId: session.user.id
-      }
-    });
+      });
     */
 
     // Тъй като може би нямаме такъв модел, просто връщаме успешен отговор
@@ -49,4 +51,4 @@ export async function POST(req: Request) {
     console.error('Error saving cancellation survey:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
-} 
+}

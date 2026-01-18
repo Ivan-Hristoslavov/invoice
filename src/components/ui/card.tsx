@@ -9,7 +9,7 @@ const Card = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <RadixCard
     ref={ref}
-    className={className}
+    className={`backdrop-blur-sm bg-card/75 dark:bg-card dark:backdrop-blur-none ${className || ""}`}
     {...props}
   />
 ));

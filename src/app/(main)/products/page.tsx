@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { Package, Plus, Search, Tag, ArrowUpRight, Euro, Percent } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Button as RadixButton } from "@radix-ui/themes";
 import { Badge } from "@/components/ui/badge";
 import { APP_NAME } from "@/config/constants";
 import { createAdminClient } from "@/lib/supabase/server";
@@ -83,12 +84,18 @@ export default async function ProductsPage() {
             Управлявайте вашите продукти и услуги
           </p>
         </div>
-        <Button asChild className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20">
+        <RadixButton 
+          asChild 
+          size="3" 
+          variant="solid" 
+          color="green"
+          className="shadow-lg"
+        >
           <Link href="/products/new">
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 h-5 w-5" />
             Нов продукт
           </Link>
-        </Button>
+        </RadixButton>
       </div>
 
       {/* Stats */}

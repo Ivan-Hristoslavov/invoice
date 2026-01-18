@@ -1,8 +1,10 @@
 import { getServerSession } from "next-auth";
 import { Session } from "next-auth";
-import { Role } from "@prisma/client";
 import { authOptions } from "@/lib/auth";
-import { createAdminClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase";
+
+// Define Role type since we're not using Prisma anymore
+export type Role = 'ADMIN' | 'OWNER' | 'MANAGER' | 'ACCOUNTANT' | 'VIEWER';
 
 export type UserSession = Session & {
   user: {
@@ -19,7 +21,7 @@ const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
 
 // Get all permissions for a user
 export async function getUserPermissions(userId: string, companyId?: string): Promise<string[]> {
-  const supabase = createAdminClient();
+  const supabase = supabaseAdmin;
   
   // Get all user roles
   let query = supabase
@@ -97,7 +99,7 @@ export async function hasPermission(
 
 // Get all roles for a user across all companies
 export async function getUserRoles(userId: string): Promise<{ role: Role, companyId: string | null }[]> {
-  const supabase = createAdminClient();
+  const supabase = supabaseAdmin;
   
   const { data: userRoles, error } = await supabase
     .from("UserRole")
@@ -120,7 +122,7 @@ export async function hasRole(
   role: Role,
   companyId?: string
 ): Promise<boolean> {
-  const supabase = createAdminClient();
+  const supabase = supabaseAdmin;
   
   let query = supabase
     .from("UserRole")
@@ -145,7 +147,7 @@ export async function assignRole(
   role: Role,
   companyId?: string
 ): Promise<void> {
-  const supabase = createAdminClient();
+  const supabase = supabaseAdmin;
   
   // Check if role already exists
   let query = supabase
@@ -190,7 +192,7 @@ export async function removeRole(
   userId: string,
   companyId?: string
 ): Promise<void> {
-  const supabase = createAdminClient();
+  const supabase = supabaseAdmin;
   
   let query = supabase
     .from("UserRole")

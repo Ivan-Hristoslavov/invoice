@@ -5,6 +5,26 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// Helper function to format price - removes unnecessary trailing zeros
+export function formatPrice(value: number): string {
+  // Round to 2 decimal places to avoid floating point issues
+  const rounded = Math.round(value * 100) / 100;
+  
+  // If it's a whole number, show without decimals
+  if (Number.isInteger(rounded)) {
+    return rounded.toString();
+  }
+  
+  // Check if it has only one decimal place (e.g., 1.2, 5.5)
+  const oneDecimal = Math.round(value * 10) / 10;
+  if (oneDecimal === rounded) {
+    return oneDecimal.toString();
+  }
+  
+  // Otherwise show 2 decimal places
+  return rounded.toFixed(2);
+}
+
 export function formatCurrency(amount: number, currency: string = "USD"): string {
   // Define currency symbols
   const currencySymbols: Record<string, string> = {
@@ -17,8 +37,8 @@ export function formatCurrency(amount: number, currency: string = "USD"): string
   // Get symbol or default to currency code
   const symbol = currencySymbols[currency] || currency;
   
-  // Format the amount with 2 decimal places
-  const formattedAmount = amount.toFixed(2);
+  // Format the amount without trailing zeros
+  const formattedAmount = formatPrice(amount);
   
   return `${symbol}${formattedAmount}`;
 }

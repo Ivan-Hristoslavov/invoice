@@ -3,7 +3,35 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Save, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, Plus, Trash2, MoreVertical, Eye, FileCheck, Printer, Download } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { exportInvoiceAsPdf } from "@/lib/invoice-export";
+
+// Helper function to format price - removes unnecessary trailing zeros
+const formatPrice = (value: number): string => {
+  // Round to 2 decimal places to avoid floating point issues
+  const rounded = Math.round(value * 100) / 100;
+  
+  // If it's a whole number, show without decimals
+  if (Number.isInteger(rounded)) {
+    return rounded.toString();
+  }
+  
+  // Check if it has only one decimal place (e.g., 1.2, 5.5)
+  const oneDecimal = Math.round(value * 10) / 10;
+  if (oneDecimal === rounded) {
+    return oneDecimal.toString();
+  }
+  
+  // Otherwise show 2 decimal places
+  return rounded.toFixed(2);
+};
 import { Button } from "@/components/ui/button";
 import { 
   Card, 
@@ -49,6 +77,7 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
   const [companies, setCompanies] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [client, setClient] = useState<any>(null);
+  const [productNames, setProductNames] = useState<Record<string, string>>({});
 
   // Fetch invoice data on component mount
   useEffect(() => {
@@ -84,16 +113,6 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
         // Set client
         setClient(data.client);
         
-        // Set items
-        setItems(data.items.map((item: any, index: number) => ({
-          id: index + 1,
-          itemId: item.id,
-          description: item.description,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          taxRate: item.taxRate
-        })));
-        
         // Fetch companies for dropdown
         const companiesResponse = await fetch("/api/companies");
         if (companiesResponse.ok) {
@@ -103,10 +122,35 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
         
         // Fetch products for dropdown
         const productsResponse = await fetch("/api/products");
+        let productsData: any[] = [];
         if (productsResponse.ok) {
-          const productsData = await productsResponse.json();
+          productsData = await productsResponse.json();
           setProducts(productsData);
         }
+        
+        // Set items - ensure quantity is at least 1
+        const itemsData = data.items.map((item: any, index: number) => ({
+          id: index + 1,
+          itemId: item.id,
+          description: item.description,
+          quantity: Math.max(1, parseFloat(item.quantity) || 1),
+          unitPrice: item.unitPrice,
+          taxRate: item.taxRate,
+          productId: item.productId || null
+        }));
+        setItems(itemsData);
+        
+        // Store product names for items that have products
+        const productNamesMap: Record<string, string> = {};
+        itemsData.forEach((item: any) => {
+          if (item.productId) {
+            const product = productsData.find((p: any) => p.id === item.productId);
+            if (product) {
+              productNamesMap[item.id] = product.name;
+            }
+          }
+        });
+        setProductNames(productNamesMap);
       } catch (error) {
         console.error("Error fetching invoice data:", error);
         setError("Грешка при зареждане на данните");
@@ -129,7 +173,18 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
   // Handle item change
   const handleItemChange = (index: number, field: string, value: any) => {
     const newItems = [...items];
-    newItems[index][field] = value;
+    
+    // Validate quantity - cannot be 0 or negative
+    if (field === 'quantity') {
+      const quantity = parseFloat(value);
+      if (isNaN(quantity) || quantity <= 0) {
+        toast.error("Количеството трябва да е по-голямо от 0");
+        return;
+      }
+      newItems[index][field] = value;
+    } else {
+      newItems[index][field] = value;
+    }
     
     // Auto-calculate subtotal based on quantity and unit price
     if (field === 'quantity' || field === 'unitPrice') {
@@ -152,14 +207,20 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
         id: items.length + 1,
         description: "",
         quantity: 1,
-        unitPrice: 0,
+        unitPrice: 0, // Default to 0, user should set the price or select a product
         taxRate: 20
       }
     ]);
   };
   
-  // Remove item
+  // Remove item with validation
   const removeItem = (index: number) => {
+    // Cannot remove if only one item remains
+    if (items.length <= 1) {
+      toast.error("Трябва да има поне един артикул във фактурата");
+      return;
+    }
+    
     const newItems = [...items];
     newItems.splice(index, 1);
     setItems(newItems);
@@ -169,16 +230,23 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
   const addProductAsItem = (productId: string) => {
     const product = products.find(p => p.id === productId);
     if (product) {
+      const newItemId = items.length + 1;
       setItems([
         ...items,
         {
-          id: items.length + 1,
+          id: newItemId,
           description: product.name,
           quantity: 1,
           unitPrice: product.price,
-          taxRate: product.taxRate || 20
+          taxRate: product.taxRate || 20,
+          productId: product.id
         }
       ]);
+      // Store product name for this item
+      setProductNames(prev => ({
+        ...prev,
+        [newItemId]: product.name
+      }));
     }
   };
   
@@ -198,9 +266,9 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
     const total = subtotal + taxAmount;
     
     return {
-      subtotal: subtotal.toFixed(2),
-      taxAmount: taxAmount.toFixed(2),
-      total: total.toFixed(2)
+      subtotal: formatPrice(subtotal),
+      taxAmount: formatPrice(taxAmount),
+      total: formatPrice(total)
     };
   };
   
@@ -233,6 +301,18 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
         return;
       }
       
+      // Validate quantities - all must be greater than 0
+      const hasInvalidQuantities = items.some(item => {
+        const quantity = parseFloat(item.quantity);
+        return isNaN(quantity) || quantity <= 0;
+      });
+      
+      if (hasInvalidQuantities) {
+        toast.error("Всички артикули трябва да имат количество по-голямо от 0");
+        setIsLoading(false);
+        return;
+      }
+      
       // Create request data
       const data = {
         invoiceNumber: invoiceData.invoiceNumber,
@@ -244,7 +324,7 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
         notes: invoiceData.notes,
         termsAndConditions: invoiceData.termsAndConditions,
         items: items.map(item => ({
-          id: item.id,
+          id: item.itemId || undefined, // Use existing itemId if available
           description: item.description,
           quantity: Number(item.quantity),
           unitPrice: Number(item.unitPrice),
@@ -322,20 +402,104 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" asChild>
             <Link href={`/invoices/${invoiceId}`}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Назад към фактурата
+              <ArrowLeft className="w-4 h-4 mr-1.5" />
+              Назад
             </Link>
           </Button>
-          <h1 className="text-3xl font-bold">Редактиране на фактура #{invoiceData.invoiceNumber}</h1>
+          <h1 className="text-xl font-bold">Редактиране #{invoiceData.invoiceNumber}</h1>
         </div>
-        <Button 
-          type="submit" 
-          form="invoice-form" 
-          disabled={isLoading}
-        >
-          <Save className="w-4 h-4 mr-2" />
-          {isLoading ? "Запазване..." : "Запази промените"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger className="h-8 px-3 border rounded-md hover:bg-muted">
+              <MoreVertical className="w-4 h-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link href={`/invoices/${invoiceId}`}>
+                  <Eye className="mr-2 h-4 w-4" />
+                  Преглед
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {invoiceData.status === "DRAFT" && (
+                <DropdownMenuItem
+                  onClick={() => {
+                    router.push(`/invoices/${invoiceId}?action=issue`);
+                  }}
+                  className="text-emerald-600 focus:text-emerald-600"
+                >
+                  <FileCheck className="mr-2 h-4 w-4" />
+                  Издай фактура
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem
+                onClick={async () => {
+                  try {
+                    // Fetch PDF and open in new window for printing
+                    const response = await fetch(`/api/invoices/export-pdf?invoiceId=${invoiceId}`);
+                    
+                    if (!response.ok) {
+                      throw new Error('Грешка при генерирането на PDF');
+                    }
+                    
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    
+                    // Create a link element and click it to open PDF in new tab
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.target = '_blank';
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    // Wait a bit for PDF to open, then try to print
+                    setTimeout(() => {
+                      // Try to find the new window and print
+                      // Note: This may not work in all browsers due to security restrictions
+                      // The user may need to manually print from the PDF viewer
+                      toast.info("PDF файлът беше отворен. Моля, използвайте бутона за принтиране в браузъра.");
+                    }, 500);
+                    
+                    // Clean up URL after a delay
+                    setTimeout(() => {
+                      URL.revokeObjectURL(url);
+                    }, 1000);
+                  } catch (error) {
+                    console.error("Error printing invoice:", error);
+                    toast.error("Грешка при принтирането на фактурата");
+                  }
+                }}
+              >
+                <Printer className="mr-2 h-4 w-4" />
+                Принтирай
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={async () => {
+                  try {
+                    await exportInvoiceAsPdf(invoiceId);
+                  } catch (error) {
+                    console.error("Error exporting PDF:", error);
+                    toast.error("Грешка при експортиране на PDF");
+                  }
+                }}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Изтегли PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button 
+            type="submit" 
+            form="invoice-form" 
+            size="sm"
+            disabled={isLoading}
+          >
+            <Save className="w-4 h-4 mr-1.5" />
+            {isLoading ? "Запазване..." : "Запази"}
+          </Button>
+        </div>
       </div>
 
       <form id="invoice-form" onSubmit={handleSubmit}>
@@ -453,23 +617,44 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                         </tr>
                       </thead>
                       <tbody>
-                        {items.map((item, index) => (
+                        {items.map((item, index) => {
+                          const productName = productNames[item.id] || (item.productId ? products.find(p => p.id === item.productId)?.name : null);
+                          return (
                           <tr key={item.id} className="border-b">
                             <td className="py-3 px-4">
-                              <Input
-                                placeholder="Описание на артикула"
-                                value={item.description}
-                                onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                              />
+                              <div className="space-y-1">
+                                {productName && (
+                                  <div className="text-xs text-muted-foreground font-medium">
+                                    Продукт: {productName}
+                                  </div>
+                                )}
+                                <Input
+                                  placeholder={productName ? `Описание за ${productName}` : "Описание на артикула"}
+                                  value={item.description}
+                                  onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                                />
+                              </div>
                             </td>
                             <td className="py-3 px-4">
                               <Input
                                 type="number"
-                                min="0"
+                                min="0.01"
                                 step="0.01"
                                 className="text-right"
                                 value={item.quantity}
-                                onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (value === '' || parseFloat(value) > 0) {
+                                    handleItemChange(index, 'quantity', value);
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  const value = parseFloat(e.target.value);
+                                  if (isNaN(value) || value <= 0) {
+                                    handleItemChange(index, 'quantity', '1');
+                                    toast.error("Количеството трябва да е по-голямо от 0. Автоматично е зададено на 1.");
+                                  }
+                                }}
                               />
                             </td>
                             <td className="py-3 px-4">
@@ -499,12 +684,14 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                                 size="icon"
                                 onClick={() => removeItem(index)}
                                 disabled={items.length <= 1}
+                                title={items.length <= 1 ? "Трябва да има поне един артикул" : "Изтрий артикул"}
                               >
                                 <Trash2 className="w-4 h-4 text-destructive" />
                               </Button>
                             </td>
                           </tr>
-                        ))}
+                        );
+                        })}
                       </tbody>
                     </table>
                   </div>

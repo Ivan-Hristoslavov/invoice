@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Button as RadixButton } from "@radix-ui/themes";
 import { APP_NAME } from "@/config/constants";
 import { createAdminClient } from "@/lib/supabase/server";
 import { format } from "date-fns";
@@ -186,12 +187,18 @@ export default async function DashboardPage() {
             Добре дошли, {session.user.name || 'потребител'}! Ето преглед на вашата дейност.
           </p>
         </div>
-        <Button asChild className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20">
+        <RadixButton 
+          asChild 
+          size="3" 
+          variant="solid" 
+          color="green"
+          className="shadow-lg"
+        >
           <Link href="/invoices/new">
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 h-5 w-5" />
             Нова фактура
           </Link>
-        </Button>
+        </RadixButton>
       </div>
 
       {/* Stats Grid */}
@@ -223,7 +230,7 @@ export default async function DashboardPage() {
                   <span className={`text-sm font-medium ${stat.trendUp ? 'text-emerald-500' : 'text-red-500'}`}>
                     {stat.trend}
                   </span>
-                  <span className="text-xs text-muted-foreground ml-1">vs миналия месец</span>
+                  <span className="text-xs text-muted-foreground ml-1">спрямо миналия месец</span>
                 </div>
               )}
             </CardContent>

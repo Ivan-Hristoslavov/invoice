@@ -40,16 +40,20 @@ const STRIPE_PRO_YEARLY_URL = process.env.STRIPE_PRO_YEARLY_URL || 'https://buy.
 const STRIPE_BUSINESS_MONTHLY_URL = process.env.STRIPE_BUSINESS_MONTHLY_URL || 'https://buy.stripe.com/test_business_monthly';
 const STRIPE_BUSINESS_YEARLY_URL = process.env.STRIPE_BUSINESS_YEARLY_URL || 'https://buy.stripe.com/test_business_yearly';
 
-// Subscription prices in EUR (BGN equivalent: 1 EUR ≈ 1.96 BGN)
-// FREE: 0 EUR (free forever)
-// PRO: 12-15 EUR/month or 120-150 EUR/year (20% discount)
-// BUSINESS: 25-30 EUR/month or 250-300 EUR/year (20% discount)
-
+// Prices from environment variables (can be managed from Vercel)
+// These are the actual prices in EUR that users will pay
 const STRIPE_FREE_PRICE = 0; // Free plan
-const STRIPE_PRO_MONTHLY_PRICE = 13; // 13 EUR/month (≈ 25 BGN)
-const STRIPE_PRO_YEARLY_PRICE = 130; // 130 EUR/year (≈ 255 BGN, 20% discount)
-const STRIPE_BUSINESS_MONTHLY_PRICE = 28; // 28 EUR/month (≈ 55 BGN)
-const STRIPE_BUSINESS_YEARLY_PRICE = 280; // 280 EUR/year (≈ 550 BGN, 20% discount)
+const STRIPE_PRO_PRICE = parseFloat(process.env.STRIPE_PRO_PRICE || '13'); // Default to 13 EUR/month
+const STRIPE_BUISNESS_PRICE = parseFloat(process.env.STRIPE_BUISNESS_PRICE || '28'); // Default to 28 EUR/month (note: keeping typo as per user's request)
+
+// Calculate yearly prices (20% discount)
+const STRIPE_PRO_YEARLY_PRICE = STRIPE_PRO_PRICE * 12 * 0.8; // 20% discount
+const STRIPE_BUISNESS_YEARLY_PRICE = STRIPE_BUISNESS_PRICE * 12 * 0.8; // 20% discount
+
+// Price IDs from environment variables
+// Note: User provided product IDs, but we need price IDs. These should be updated with actual price IDs from Stripe
+const STRIPE_PRO_PRICE_ID = process.env.STRIPE_PRO_PRICE_ID || null;
+const STRIPE_BUISNESS_PRICE_ID = process.env.STRIPE_BUISNESS_PRICE_ID || null;
 
 // Fallback price IDs (for development only - should be set in environment variables)
 const FALLBACK_PRICE_IDS = {
@@ -82,14 +86,15 @@ const PLANS_DATA = {
   },
   PRO: {
     name: 'Pro',
-    price: STRIPE_PRO_MONTHLY_PRICE,
-    priceMonthly: STRIPE_PRO_MONTHLY_PRICE,
+    price: STRIPE_PRO_PRICE,
+    priceMonthly: STRIPE_PRO_PRICE,
     priceYearly: STRIPE_PRO_YEARLY_PRICE,
-    priceIdMonthly: process.env.STRIPE_PRO_MONTHLY_PRICE_ID || FALLBACK_PRICE_IDS.PRO_MONTHLY,
+    priceId: STRIPE_PRO_PRICE_ID || FALLBACK_PRICE_IDS.PRO_MONTHLY,
+    priceIdMonthly: STRIPE_PRO_PRICE_ID || FALLBACK_PRICE_IDS.PRO_MONTHLY,
     priceIdYearly: process.env.STRIPE_PRO_YEARLY_PRICE_ID || FALLBACK_PRICE_IDS.PRO_YEARLY,
     features: [
       'Неограничени фактури',
-      '1 фирма',
+      '3 фирми',
       'Собствено лого',
       'Професионален PDF',
       'Кредитни известия',
@@ -100,17 +105,15 @@ const PLANS_DATA = {
   },
   BUSINESS: {
     name: 'Business',
-    price: STRIPE_BUSINESS_MONTHLY_PRICE,
-    priceMonthly: STRIPE_BUSINESS_MONTHLY_PRICE,
-    priceYearly: STRIPE_BUSINESS_YEARLY_PRICE,
-    priceIdMonthly: process.env.STRIPE_BUSINESS_MONTHLY_PRICE_ID || FALLBACK_PRICE_IDS.BUSINESS_MONTHLY,
-    priceIdYearly: process.env.STRIPE_BUSINESS_YEARLY_PRICE_ID || FALLBACK_PRICE_IDS.BUSINESS_YEARLY,
+    price: STRIPE_BUISNESS_PRICE,
+    priceMonthly: STRIPE_BUISNESS_PRICE,
+    priceYearly: STRIPE_BUISNESS_YEARLY_PRICE,
+    priceId: STRIPE_BUISNESS_PRICE_ID || FALLBACK_PRICE_IDS.BUSINESS_MONTHLY,
+    priceIdMonthly: STRIPE_BUISNESS_PRICE_ID || FALLBACK_PRICE_IDS.BUSINESS_MONTHLY,
+    priceIdYearly: process.env.STRIPE_BUISNESS_YEARLY_PRICE_ID || FALLBACK_PRICE_IDS.BUSINESS_YEARLY,
     features: [
       'Всичко от Pro',
-      'До 5 фирми',
-      'Потребители с роли',
-      'Експорт за счетоводство',
-      'API достъп (read-only)',
+      'Неограничени фирми',
       'Приоритетна поддръжка',
     ],
   },
@@ -159,10 +162,13 @@ export async function getSubscription(subscriptionId: string) {
 // Payment link functionality removed - invoices are for issuance only, not payment processing
 
 export async function getStripeInstance() {
-  if (!process.env.STRIPE_SECRET_KEY) {
-    throw new Error('STRIPE_SECRET_KEY is not set');
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY_FIXED || process.env.STRIPE_SECRET_KEY;
+  
+  if (!stripeSecretKey) {
+    throw new Error('STRIPE_SECRET_KEY_FIXED or STRIPE_SECRET_KEY is not set');
   }
-  return new Stripe(process.env.STRIPE_SECRET_KEY, {
+  
+  return new Stripe(stripeSecretKey, {
     apiVersion: "2025-04-30.basil" as Stripe.LatestApiVersion,
   });
-} 
+}

@@ -110,10 +110,11 @@ export default function HomePage() {
       period: "завинаги",
       description: "Перфектен за стартиращи бизнеси",
       features: [
-        "До 3 фактури месечно",
-        "1 компания",
-        "Основен PDF експорт",
-        "Имейл поддръжка"
+        "До 3 фактури на месец",
+        "1 фирма",
+        "Basic PDF (с воден знак)",
+        "Без експорт",
+        "Без лого"
       ],
       cta: "Започни безплатно",
       popular: false,
@@ -121,16 +122,17 @@ export default function HomePage() {
     },
     {
       name: "Професионален",
-      price: "29",
+      price: "13",
       period: "месец",
-      description: "За растящи бизнеси",
+      description: "Идеален за малки бизнеси",
       features: [
         "Неограничени фактури",
-        "1 компания",
-        "Персонализирано лого",
-        "PDF & CSV експорт",
+        "10 компании",
+        "Собствено лого",
+        "Професионален PDF",
         "Кредитни известия",
-        "Приоритетна поддръжка"
+        "Експорт PDF / CSV",
+        "Изпращане по имейл"
       ],
       cta: "Започни 14-дневен пробен период",
       popular: true,
@@ -138,16 +140,13 @@ export default function HomePage() {
     },
     {
       name: "Бизнес",
-      price: "79",
+      price: "28",
       period: "месец",
-      description: "За утвърдени компании",
+      description: "За предприятия и разрастващи се екипи",
       features: [
-        "Всичко от Про плана",
-        "До 5 компании",
-        "До 5 потребителя",
-        "API достъп",
-        "Разширена аналитика",
-        "Персонален мениджър"
+        "Всичко от Pro",
+        "Неограничени компании",
+        "Приоритетна поддръжка"
       ],
       cta: "Свържете се с нас",
       popular: false,
@@ -637,7 +636,6 @@ export default function HomePage() {
               <ul className="space-y-3 text-sm">
                 <li><Link href="/about" className="text-muted-foreground hover:text-foreground transition-colors">За нас</Link></li>
                 <li><Link href="/blog" className="text-muted-foreground hover:text-foreground transition-colors">Блог</Link></li>
-                <li><Link href="/careers" className="text-muted-foreground hover:text-foreground transition-colors">Кариери</Link></li>
                 <li><Link href="/contact" className="text-muted-foreground hover:text-foreground transition-colors">Контакти</Link></li>
                 </ul>
               </div>

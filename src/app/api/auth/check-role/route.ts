@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { hasRole } from "@/lib/permissions";
-import { Role } from "@prisma/client";
+
+// Define Role type since we're not using Prisma anymore
+type Role = 'ADMIN' | 'OWNER' | 'MANAGER' | 'ACCOUNTANT' | 'VIEWER';
+const validRoles: Role[] = ['ADMIN', 'OWNER', 'MANAGER', 'ACCOUNTANT', 'VIEWER'];
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
@@ -23,7 +26,6 @@ export async function GET(request: Request) {
   }
   
   // Validate role
-  const validRoles = Object.values(Role);
   if (!validRoles.includes(roleParam as Role)) {
     return NextResponse.json(
       { error: "Invalid role parameter" },
@@ -46,4 +48,4 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
-} 
+}

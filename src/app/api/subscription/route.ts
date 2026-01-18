@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { Decimal } from '@prisma/client/runtime/library';
-import { PrismaClientInitializationError } from '@prisma/client/runtime/library';
+import { supabaseAdmin } from '@/lib/supabase';
 
 // Mock subscription data for development when database is unavailable
 const mockSubscription = {
@@ -31,24 +29,6 @@ const mockSubscription = {
   ]
 };
 
-// Helper function to serialize Prisma Decimal objects
-function serializeDecimal(value: any): any {
-  if (value instanceof Decimal) {
-    return value.toString();
-  }
-  if (Array.isArray(value)) {
-    return value.map(serializeDecimal);
-  }
-  if (typeof value === 'object' && value !== null) {
-    const result: any = {};
-    for (const [key, val] of Object.entries(value)) {
-      result[key] = serializeDecimal(val);
-    }
-    return result;
-  }
-  return value;
-}
-
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -61,55 +41,76 @@ export async function GET() {
 
     try {
       // Get user's subscription from database
-      const subscription = await prisma.subscription.findFirst({
-        where: {
-          userId: session.user.id,
-          status: {
-            in: ['ACTIVE', 'TRIALING', 'PAST_DUE']
-          }
-        },
-        include: {
-          paymentHistory: {
-            orderBy: {
-              createdAt: 'desc'
-            }
-          },
-          history: {
-            orderBy: {
-              createdAt: 'desc'
-            }
-          }
-        }
-      });
+      const { data: subscription, error } = await supabaseAdmin
+        .from('Subscription')
+        .select(`
+          id,
+          plan,
+          status,
+          cancelAtPeriodEnd,
+          currentPeriodEnd,
+          stripeSubscriptionId,
+          priceId,
+          currentPeriodStart,
+          createdAt,
+          updatedAt
+        `)
+        .eq('userId', session.user.id)
+        .in('status', ['ACTIVE', 'TRIALING', 'PAST_DUE'])
+        .order('createdAt', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching subscription:', error);
+        // Return mock data on error
+        return NextResponse.json({ 
+          subscription: mockSubscription,
+          _mock: true
+        });
+      }
+
+      // Get payment history if subscription exists
+      let paymentHistory: any[] = [];
+      let history: any[] = [];
+
+      if (subscription) {
+        const { data: payments } = await supabaseAdmin
+          .from('SubscriptionPayment')
+          .select('*')
+          .eq('subscriptionId', subscription.id)
+          .order('createdAt', { ascending: false });
+
+        const { data: statusHistory } = await supabaseAdmin
+          .from('SubscriptionHistory')
+          .select('*')
+          .eq('subscriptionId', subscription.id)
+          .order('createdAt', { ascending: false });
+
+        paymentHistory = payments || [];
+        history = statusHistory || [];
+      }
 
       console.log('Found subscription:', subscription ? `${subscription.id} (${subscription.plan})` : 'none');
 
-      // Serialize the response to handle Decimal objects
-      const serializedSubscription = subscription ? serializeDecimal(subscription) : null;
-
-      return NextResponse.json({ subscription: serializedSubscription });
+      return NextResponse.json({ 
+        subscription: subscription ? {
+          ...subscription,
+          paymentHistory,
+          history
+        } : null 
+      });
     } catch (dbError: any) {
-      // Check if it's a database connection error
-      if (
-        dbError instanceof PrismaClientInitializationError ||
-        dbError?.name === 'PrismaClientInitializationError' ||
-        dbError?.message?.includes("Can't reach database server") ||
-        dbError?.message?.includes("P1001")
-      ) {
-        console.warn('Database connection unavailable, using mock subscription data:', dbError.message);
-        
-        // Return mock data when database is unavailable
-        return NextResponse.json({ 
-          subscription: mockSubscription,
-          _mock: true // Flag to indicate this is mock data
-        });
-      }
+      console.warn('Database error, using mock subscription data:', dbError.message);
       
-      // Re-throw other database errors
-      throw dbError;
+      // Return mock data when database is unavailable
+      return NextResponse.json({ 
+        subscription: mockSubscription,
+        _mock: true
+      });
     }
   } catch (error) {
     console.error('Error fetching subscription:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
-} 
+}

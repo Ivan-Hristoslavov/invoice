@@ -1,6 +1,27 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+
+// Helper function to format price without trailing zeros
+// Helper function to format price - removes unnecessary trailing zeros
+const formatPrice = (value: number): string => {
+  // Round to 2 decimal places to avoid floating point issues
+  const rounded = Math.round(value * 100) / 100;
+  
+  // If it's a whole number, show without decimals
+  if (Number.isInteger(rounded)) {
+    return rounded.toString();
+  }
+  
+  // Check if it has only one decimal place (e.g., 1.2, 5.5)
+  const oneDecimal = Math.round(value * 10) / 10;
+  if (oneDecimal === rounded) {
+    return oneDecimal.toString();
+  }
+  
+  // Otherwise show 2 decimal places
+  return rounded.toFixed(2);
+};
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { 
@@ -135,7 +156,7 @@ function ProductCard({
         <div className="flex items-end justify-between mt-4 pt-3 border-t border-border/50">
           <div>
             <p className="text-2xl font-bold text-foreground">
-              {Number(product.price).toFixed(2)}
+              {formatPrice(Number(product.price))}
               <span className="text-sm font-normal text-muted-foreground ml-1">{currency}</span>
             </p>
           </div>
@@ -232,7 +253,8 @@ function InvoiceItemRow({
   canRemove: boolean;
   currency: string;
 }) {
-  const itemTotal = item.quantity * item.unitPrice * (1 + item.taxRate / 100);
+  // Line item total = quantity × unit price (without VAT)
+  const itemTotal = item.quantity * item.unitPrice;
   
   return (
     <div className="group relative bg-card rounded-xl border border-border p-4 hover:border-primary/30 transition-all duration-200">
@@ -293,9 +315,9 @@ function InvoiceItemRow({
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Общо</Label>
+          <Label className="text-xs text-muted-foreground">Сума</Label>
           <div className="h-9 flex items-center px-3 rounded-md bg-muted font-semibold">
-            {itemTotal.toFixed(2)} {currency}
+            {formatPrice(itemTotal)} {currency}
           </div>
         </div>
       </div>
@@ -319,9 +341,13 @@ export default function NewInvoicePage() {
   const [products, setProducts] = useState<any[]>([]);
   const [productSearchQuery, setProductSearchQuery] = useState("");
   
-  const [items, setItems] = useState([
-    { id: 1, description: "", quantity: 1, unitPrice: 0, taxRate: DEFAULT_VAT_RATE }
-  ]);
+  const [items, setItems] = useState<Array<{
+    id: number;
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    taxRate: number;
+  }>>([]);
   
   const [invoiceData, setInvoiceData] = useState({
     invoiceNumber: "",
@@ -470,10 +496,10 @@ export default function NewInvoicePage() {
 
   const addItem = useCallback(() => {
     setItems(prev => [...prev, {
-      id: Math.max(...prev.map(i => i.id)) + 1,
+      id: prev.length > 0 ? Math.max(...prev.map(i => i.id)) + 1 : 1,
       description: "",
       quantity: 1,
-      unitPrice: 0,
+      unitPrice: 0, // Default to 0, user should set the price or select a product
       taxRate: DEFAULT_VAT_RATE
     }]);
   }, []);
@@ -498,7 +524,7 @@ export default function NewInvoicePage() {
     };
     setItems(prev => [...prev, newItem]);
     toast.success(`"${product.name}" добавен`, {
-      description: `${Number(product.price).toFixed(2)} ${invoiceData.currency}`
+      description: `${formatPrice(Number(product.price))} ${invoiceData.currency}`
     });
   }, [items, invoiceData.currency]);
 
@@ -839,17 +865,25 @@ export default function NewInvoicePage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {items.map((item, index) => (
-                  <InvoiceItemRow
-                    key={item.id}
-                    item={item}
-                    index={index}
-                    onUpdate={(field, value) => updateItem(item.id, field, value)}
-                    onRemove={() => removeItem(item.id)}
-                    canRemove={items.length > 1}
-                    currency={invoiceData.currency}
-                  />
-                ))}
+                {items.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p className="font-medium">Няма добавени артикули</p>
+                    <p className="text-sm mt-1">Изберете продукт от списъка отгоре или добавете ръчно ред</p>
+                  </div>
+                ) : (
+                  items.map((item, index) => (
+                    <InvoiceItemRow
+                      key={item.id}
+                      item={item}
+                      index={index}
+                      onUpdate={(field, value) => updateItem(item.id, field, value)}
+                      onRemove={() => removeItem(item.id)}
+                      canRemove={true}
+                      currency={invoiceData.currency}
+                    />
+                  ))
+                )}
               </CardContent>
             </Card>
           </div>
@@ -964,7 +998,8 @@ export default function NewInvoicePage() {
                       </div>
                       <div className="divide-y">
                         {items.filter(i => i.description).map((item, index) => {
-                          const itemTotal = item.quantity * item.unitPrice * (1 + item.taxRate / 100);
+                          // Line item total = quantity × unit price (without VAT)
+                          const itemTotal = item.quantity * item.unitPrice;
                           return (
                             <div key={item.id} className="px-4 py-4 grid grid-cols-12 gap-4 hover:bg-muted/30 transition-colors">
                               <div className="col-span-1 text-center text-sm font-medium text-muted-foreground">
@@ -973,7 +1008,7 @@ export default function NewInvoicePage() {
                               <div className="col-span-6">
                                 <p className="font-semibold mb-1">{item.description}</p>
                                 <p className="text-xs text-muted-foreground">
-                                  {item.unitPrice.toFixed(2)} {invoiceData.currency} × {item.quantity} (ДДС {item.taxRate}%)
+                                  {formatPrice(item.unitPrice)} {invoiceData.currency} × {item.quantity} (ДДС {item.taxRate}%)
                                 </p>
                               </div>
                               <div className="col-span-2 text-right text-sm font-medium">
@@ -981,7 +1016,7 @@ export default function NewInvoicePage() {
                               </div>
                               <div className="col-span-3 text-right">
                                 <p className="font-semibold">
-                                  {itemTotal.toFixed(2)} {invoiceData.currency}
+                                  {formatPrice(itemTotal)} {invoiceData.currency}
                                 </p>
                               </div>
                             </div>
@@ -995,17 +1030,17 @@ export default function NewInvoicePage() {
                   <div className="bg-gradient-to-br from-muted/50 to-muted/30 rounded-xl p-6 space-y-3 border">
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-muted-foreground font-medium">Подсума</span>
-                      <span className="font-semibold">{totals.subtotal.toFixed(2)} {invoiceData.currency}</span>
+                      <span className="font-semibold">{formatPrice(totals.subtotal)} {invoiceData.currency}</span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-muted-foreground font-medium">ДДС</span>
-                      <span className="font-semibold">{totals.tax.toFixed(2)} {invoiceData.currency}</span>
+                      <span className="font-semibold">{formatPrice(totals.tax)} {invoiceData.currency}</span>
                     </div>
                     <Separator className="my-3" />
                     <div className="flex justify-between items-center pt-2">
                       <span className="text-lg font-bold">Общо</span>
                       <span className="text-2xl font-bold text-primary">
-                        {getCurrencySymbol(invoiceData.currency)} {totals.total.toFixed(2)}
+                        {getCurrencySymbol(invoiceData.currency)} {formatPrice(totals.total)}
                       </span>
                     </div>
                   </div>

@@ -14,6 +14,9 @@ import {
   AlertTriangle,
   CheckCircle,
   Paperclip,
+  Printer,
+  FileCheck,
+  Edit,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +28,7 @@ import { formatCurrency } from "@/lib/utils";
 import DocumentsTab from "@/components/invoice/DocumentsTab";
 import { getDocuments } from "@/lib/services/document-service";
 import { exportInvoiceAsPdf } from "@/lib/invoice-export";
+import { StatusChangeModal } from "@/components/invoice/StatusChangeModal";
 // Payment link functionality removed - invoices are for issuance only
 
 type InvoiceItem = {
@@ -94,17 +98,49 @@ interface InvoiceDetailClientProps {
 
 export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailClientProps) {
   const router = useRouter();
-  const [invoice] = useState<Invoice>(initialInvoice);
+  const [invoice, setInvoice] = useState<Invoice>(initialInvoice);
   const [activeTab, setActiveTab] = useState("details");
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isChangingStatus, setIsChangingStatus] = useState(false);
+  const [showIssueModal, setShowIssueModal] = useState(false);
 
   useEffect(() => {
     return () => {
       setIsSendingEmail(false);
+      setIsChangingStatus(false);
     };
   }, []);
+
+  // Issue invoice (change status from DRAFT to ISSUED)
+  const handleIssueInvoice = async () => {
+    setIsChangingStatus(true);
+    try {
+      const response = await fetch(`/api/invoices/${invoice.id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "ISSUED" }),
+      });
+      
+      if (response.ok) {
+        const updatedInvoice = await response.json();
+        setInvoice({ ...invoice, status: updatedInvoice.status });
+        toast.success("Фактурата е издадена успешно", {
+          description: "Фактурата вече е със статус 'Издадена'"
+        });
+        router.refresh();
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Грешка при издаване на фактурата");
+      }
+    } catch (error) {
+      console.error("Error issuing invoice:", error);
+      toast.error("Грешка при издаване на фактурата");
+    } finally {
+      setIsChangingStatus(false);
+    }
+  };
 
   const handleExportPdf = async () => {
     try {
@@ -112,6 +148,47 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
     } catch (error) {
       console.error("Error exporting PDF:", error);
       toast.error("Грешка при експортиране на PDF");
+    }
+  };
+
+  const handlePrintInvoice = async () => {
+    try {
+      // Fetch PDF and open in new window for printing
+      const response = await fetch(`/api/invoices/export-pdf?invoiceId=${invoice.id}`);
+      
+      if (!response.ok) {
+        throw new Error('Грешка при генерирането на PDF');
+      }
+      
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      
+      // Open PDF in new window
+      const printWindow = window.open(url, '_blank');
+      
+      if (printWindow) {
+        printWindow.onload = () => {
+          // Wait a bit for PDF to load, then trigger print
+          setTimeout(() => {
+            printWindow.print();
+          }, 500);
+        };
+      } else {
+        // Fallback: download if popup blocked
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Faktura-${invoice.invoiceNumber}.pdf`;
+        link.click();
+        toast.info("Поп-ъп прозорецът беше блокиран. PDF файлът беше изтеглен.");
+      }
+      
+      // Clean up URL after a delay
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 1000);
+    } catch (error) {
+      console.error("Error printing invoice:", error);
+      toast.error("Грешка при принтирането на фактурата");
     }
   };
 
@@ -179,7 +256,8 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
       case "DRAFT":
         return <AlertTriangle className="h-4 w-4 text-slate-500" />;
       case "ISSUED":
-        return <CheckCircle className="h-4 w-4 text-blue-500" />;
+      case "PAID": // PAID in DB = ISSUED in app
+        return <CheckCircle className="h-4 w-4 text-emerald-500" />;
       case "CANCELLED":
         return <AlertTriangle className="h-4 w-4 text-red-500" />;
       default:
@@ -189,16 +267,15 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "PAID":
-        return "bg-green-50 text-green-700 border-green-200";
-      case "UNPAID":
-        return "bg-amber-50 text-amber-700 border-amber-200";
-      case "OVERDUE":
-        return "bg-red-50 text-red-700 border-red-200";
+      case "ISSUED":
+      case "PAID": // PAID in DB = ISSUED in app
+        return "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800";
       case "DRAFT":
-        return "bg-slate-50 text-slate-700 border-slate-200";
+        return "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-700";
+      case "CANCELLED":
+        return "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800";
       default:
-        return "bg-slate-50 text-slate-700 border-slate-200";
+        return "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-700";
     }
   };
 
@@ -207,6 +284,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
       case "DRAFT":
         return "Чернова";
       case "ISSUED":
+      case "PAID": // PAID in DB = ISSUED in app
         return "Издадена";
       case "CANCELLED":
         return "Отказана";
@@ -296,40 +374,90 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
 
   return (
     <div className="max-w-[1400px] mx-auto px-4">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
-        <div className="flex items-center gap-3">
+      {/* Header */}
+      <div className="flex flex-col gap-4 mb-6">
+        {/* Top row: Back button */}
+        <div className="flex items-center justify-between">
           <Button variant="ghost" size="sm" asChild>
             <Link href="/invoices">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Назад към фактурите
+              Назад
             </Link>
           </Button>
-          <h1 className="text-2xl sm:text-3xl font-bold">
-            Фактура #{invoice.invoiceNumber}
-          </h1>
-          <div
-            className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${getStatusColor(
-              invoice.status
-            )}`}
-          >
-            <span className="flex items-center gap-2">
-              {getStatusIcon(invoice.status)}
-              {getStatusText(invoice.status)}
-            </span>
-          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Button variant="outline" size="lg" onClick={handleExportPdf}>
-            <Download className="w-5 h-5 mr-2" />
-            Изтегли PDF
-          </Button>
-          {invoice.status === "DRAFT" && (
-            <Button variant="outline" size="lg" asChild>
-              <Link href={`/invoices/${invoice.id}/edit`}>
-                Редактирай
-              </Link>
+        
+        {/* Main row: Title, Status, Actions */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-xl font-bold">
+              Фактура #{invoice.invoiceNumber}
+            </h1>
+            <div
+              className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                invoice.status
+              )}`}
+            >
+              <span className="flex items-center gap-1.5">
+                {getStatusIcon(invoice.status)}
+                {getStatusText(invoice.status)}
+              </span>
+            </div>
+          </div>
+          
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            {/* Draft actions */}
+            {invoice.status === "DRAFT" && (
+              <>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/invoices/${invoice.id}/edit`}>
+                    <Edit className="w-4 h-4 mr-1.5" />
+                    Редактирай
+                  </Link>
+                </Button>
+                <Button 
+                  size="sm"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={() => setShowIssueModal(true)}
+                  disabled={isChangingStatus}
+                >
+                  <FileCheck className="w-4 h-4 mr-1.5" />
+                  {isChangingStatus ? "..." : "Издай"}
+                </Button>
+              </>
+            )}
+            
+          {/* Issued actions */}
+          {(invoice.status === "ISSUED" || invoice.status === "PAID") && (
+            <Button 
+              variant="destructive" 
+              size="sm"
+              onClick={handleCancelInvoice}
+              disabled={isSendingEmail}
+            >
+              <AlertTriangle className="w-4 h-4 mr-1.5" />
+              Отмени
             </Button>
           )}
+            
+          {/* Common actions */}
+          <Button variant="outline" size="sm" onClick={handlePrintInvoice}>
+            <Printer className="w-4 h-4 mr-1.5" />
+            Принт
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExportPdf} title="Изтегли оригинал">
+            <Download className="w-4 h-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => exportInvoiceAsPdf(invoice.id, true)}
+            title="Изтегли копие"
+            className="text-muted-foreground"
+          >
+            <Copy className="w-4 h-4" />
+          </Button>
+        </div>
         </div>
       </div>
 
@@ -439,7 +567,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
                         <tr key={item.id} className="border-b">
                           <td className="px-6 py-3">{item.description}</td>
                           <td className="px-6 py-3 text-right">
-                            {Number(item.quantity).toFixed(2)}
+                            {Number.isInteger(Number(item.quantity)) ? Number(item.quantity) : Number(item.quantity).toFixed(2)}
                           </td>
                           <td className="px-6 py-3 text-right">
                             {formatCurrency(
@@ -531,28 +659,15 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
             </Tabs>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Действия</CardTitle>
-            </CardHeader>
-            <CardContent className="space-x-3">
-              {invoice.status === "DRAFT" && (
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/invoices/${invoice.id}/edit`}>Редактиране на фактура</Link>
-                </Button>
-              )}
-              {invoice.status === "ISSUED" && (
-                <Button 
-                  variant="destructive" 
-                  size="sm"
-                  onClick={handleCancelInvoice}
-                  disabled={isSendingEmail}
-                >
-                  Отмени фактура
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+          {/* Issue Invoice Modal */}
+          <StatusChangeModal
+            isOpen={showIssueModal}
+            onClose={() => setShowIssueModal(false)}
+            onConfirm={handleIssueInvoice}
+            invoiceNumber={invoice.invoiceNumber}
+            currentStatus={invoice.status}
+            newStatus="ISSUED"
+          />
         </div>
 
         <div className="space-y-6">

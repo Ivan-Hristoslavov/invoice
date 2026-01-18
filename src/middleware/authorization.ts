@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { formatApiError } from '@/lib/api-utils';
 import { ApiStatusCode } from '@/types/api';
-import { prisma } from '@/lib/db';
+import { supabaseAdmin } from '@/lib/supabase';
 
 /**
  * Middleware за проверка на аутентикация и авторизация
@@ -35,12 +35,24 @@ export async function withAuthorization(
 
   // Проверка на роли (ако има такива)
   if (options.requiredRoles && options.requiredRoles.length > 0) {
-    const userRoles = await prisma.userRole.findMany({
-      where: { userId: session.user.id },
-      select: { role: { select: { name: true } } },
-    });
+    const { data: userRoles, error } = await supabaseAdmin
+      .from('UserRole')
+      .select('role')
+      .eq('userId', session.user.id);
     
-    const roles = userRoles.map(ur => ur.role.name);
+    if (error || !userRoles) {
+      return NextResponse.json(
+        formatApiError(
+          'FORBIDDEN',
+          'Нямате достатъчни права за тази операция',
+          undefined,
+          ApiStatusCode.FORBIDDEN
+        ),
+        { status: ApiStatusCode.FORBIDDEN }
+      );
+    }
+    
+    const roles = userRoles.map(ur => ur.role);
     const hasRequiredRole = options.requiredRoles.some(role => roles.includes(role));
     
     if (!hasRequiredRole) {
@@ -58,25 +70,67 @@ export async function withAuthorization(
   
   // Проверка на права (ако има такива)
   if (options.requiredPermissions && options.requiredPermissions.length > 0) {
-    const userPermissions = await prisma.userRole.findMany({
-      where: { userId: session.user.id },
-      select: { 
-        role: { 
-          select: { 
-            rolePermissions: { 
-              select: { permission: { select: { name: true } } } 
-            } 
-          } 
-        } 
-      },
-    });
+    // Get user roles
+    const { data: userRoles, error: rolesError } = await supabaseAdmin
+      .from('UserRole')
+      .select('role')
+      .eq('userId', session.user.id);
     
-    const permissions = userPermissions.flatMap(
-      ur => ur.role.rolePermissions.map(rp => rp.permission.name)
-    );
+    if (rolesError || !userRoles || userRoles.length === 0) {
+      return NextResponse.json(
+        formatApiError(
+          'FORBIDDEN',
+          'Нямате достатъчни права за тази операция',
+          undefined,
+          ApiStatusCode.FORBIDDEN
+        ),
+        { status: ApiStatusCode.FORBIDDEN }
+      );
+    }
     
+    const roles = userRoles.map(ur => ur.role);
+    
+    // Get permissions for these roles
+    const { data: rolePermissions, error: permError } = await supabaseAdmin
+      .from('RolePermission')
+      .select('permissionId')
+      .in('role', roles);
+    
+    if (permError || !rolePermissions || rolePermissions.length === 0) {
+      return NextResponse.json(
+        formatApiError(
+          'FORBIDDEN',
+          'Нямате достатъчни права за тази операция',
+          undefined,
+          ApiStatusCode.FORBIDDEN
+        ),
+        { status: ApiStatusCode.FORBIDDEN }
+      );
+    }
+    
+    const permissionIds = rolePermissions.map(rp => rp.permissionId);
+    
+    // Get permission names
+    const { data: permissions, error: nameError } = await supabaseAdmin
+      .from('Permission')
+      .select('name')
+      .in('id', permissionIds);
+    
+    if (nameError || !permissions) {
+      return NextResponse.json(
+        formatApiError(
+          'FORBIDDEN',
+          'Нямате достатъчни права за тази операция',
+          undefined,
+          ApiStatusCode.FORBIDDEN
+        ),
+        { status: ApiStatusCode.FORBIDDEN }
+      );
+    }
+    
+    const permissionNames = permissions.map(p => p.name);
     const hasRequiredPermission = options.requiredPermissions.some(
-      permission => permissions.includes(permission)
+      permission => permissionNames.includes(permission)
     );
     
     if (!hasRequiredPermission) {
@@ -98,13 +152,14 @@ export async function withAuthorization(
     
     // Проверяваме дали потребителят е собственик на ресурса
     if (resourceId) {
-      const resource = await prisma[options.resourceType].findUnique({
-        where: { id: resourceId },
-        select: { userId: true }
-      });
+      const { data: resource, error } = await supabaseAdmin
+        .from(options.resourceType)
+        .select('userId')
+        .eq('id', resourceId)
+        .single();
       
       // Ако ресурсът съществува и потребителят не е собственик
-      if (resource && resource.userId !== session.user.id) {
+      if (!error && resource && resource.userId !== session.user.id) {
         // Проверяваме дали е разрешен достъп на същия потребител
         if (!options.allowSameUser || resource.userId !== session.user.id) {
           return NextResponse.json(
@@ -134,14 +189,15 @@ export async function isResourceOwner(
   resourceId: string
 ): Promise<boolean> {
   try {
-    const resource = await prisma[resourceType].findUnique({
-      where: { id: resourceId },
-      select: { userId: true }
-    });
+    const { data: resource, error } = await supabaseAdmin
+      .from(resourceType)
+      .select('userId')
+      .eq('id', resourceId)
+      .single();
     
-    return resource?.userId === userId;
+    return !error && resource?.userId === userId;
   } catch (error) {
     console.error(`Error checking resource ownership: ${error}`);
     return false;
   }
-} 
+}

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { Bell, Search, Settings, LogOut, User, ChevronDown } from "lucide-react";
+import { Search, Settings, LogOut, User, ChevronDown, Plus, FileText } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -71,14 +71,20 @@ export function Navbar() {
 
         {/* Right Section - Actions */}
         <div className="flex items-center gap-2">
+          {/* Quick Add Invoice Icon - Always visible for fast access */}
+          <Button 
+            asChild 
+            size="icon" 
+            className="h-10 w-10 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20"
+            title="Нова фактура"
+          >
+            <Link href="/invoices/new">
+              <Plus className="h-5 w-5" />
+            </Link>
+          </Button>
+
           {/* Theme Toggle */}
           <ThemeToggle />
-
-          {/* Notifications */}
-          <Button variant="ghost" size="icon" className="relative h-10 w-10">
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-          </Button>
 
           {/* User Menu */}
           <DropdownMenu>

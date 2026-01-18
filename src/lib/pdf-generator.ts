@@ -2,45 +2,148 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import jsPDF from 'jspdf';
 
+// Colors for professional design
+const COLORS = {
+  primary: { r: 16, g: 185, b: 129 }, // Emerald-500
+  primaryDark: { r: 5, g: 150, b: 105 }, // Emerald-600
+  secondary: { r: 59, g: 130, b: 246 }, // Blue-500
+  dark: { r: 15, g: 23, b: 42 }, // Slate-900
+  text: { r: 30, g: 41, b: 59 }, // Slate-800
+  muted: { r: 100, g: 116, b: 139 }, // Slate-500
+  light: { r: 241, g: 245, b: 249 }, // Slate-100
+  border: { r: 226, g: 232, b: 240 }, // Slate-200
+  white: { r: 255, g: 255, b: 255 },
+  success: { r: 34, g: 197, b: 94 }, // Green-500
+  warning: { r: 245, g: 158, b: 11 }, // Amber-500
+};
+
 // Helper function to convert number to words in Bulgarian
-function numberToWords(num: number): string {
+function numberToWordsBG(num: number): string {
   const units = ['', 'един', 'два', 'три', 'четири', 'пет', 'шест', 'седем', 'осем', 'девет'];
+  const unitsF = ['', 'една', 'две', 'три', 'четири', 'пет', 'шест', 'седем', 'осем', 'девет'];
   const teens = ['десет', 'единадесет', 'дванадесет', 'тринадесет', 'четиринадесет', 'петнадесет', 'шестнадесет', 'седемнадесет', 'осемнадесет', 'деветнадесет'];
   const tens = ['', '', 'двадесет', 'тридесет', 'четиридесет', 'петдесет', 'шестдесет', 'седемдесет', 'осемдесет', 'деветдесет'];
+  const hundreds = ['', 'сто', 'двеста', 'триста', 'четиристотин', 'петстотин', 'шестстотин', 'седемстотин', 'осемстотин', 'деветстотин'];
 
   if (num === 0) return 'нула';
 
-  const numStr = Math.floor(num).toString();
-  const decimal = Math.round((num - Math.floor(num)) * 100);
+  const intPart = Math.floor(num);
+  const decimal = Math.round((num - intPart) * 100);
+  
+  function convertHundreds(n: number, feminine: boolean = false): string {
+    if (n === 0) return '';
+    
+    const u = feminine ? unitsF : units;
+    
+    if (n < 10) return u[n];
+    if (n < 20) return teens[n - 10];
+    if (n < 100) {
+      const t = Math.floor(n / 10);
+      const unit = n % 10;
+      return tens[t] + (unit > 0 ? ' и ' + u[unit] : '');
+    }
+    
+    const h = Math.floor(n / 100);
+    const remainder = n % 100;
+    let result = hundreds[h];
+    
+    if (remainder > 0) {
+      if (remainder < 20) {
+        result += ' и ' + convertHundreds(remainder, feminine);
+      } else if (remainder < 100) {
+        result += ' ' + convertHundreds(remainder, feminine);
+      } else {
+        result += ' ' + convertHundreds(remainder, feminine);
+      }
+    }
+    
+    return result;
+  }
+  
+  function convertThousands(n: number): string {
+    if (n < 1000) return convertHundreds(n);
+    
+    const thousands = Math.floor(n / 1000);
+    const remainder = n % 1000;
+    
+    let result = '';
+    if (thousands === 1) {
+      result = 'хиляда';
+    } else if (thousands === 2) {
+      result = 'две хиляди';
+    } else if (thousands < 10) {
+      result = unitsF[thousands] + ' хиляди';
+    } else {
+      result = convertHundreds(thousands, true) + ' хиляди';
+    }
+    
+    if (remainder > 0) {
+      if (remainder < 100) {
+        result += ' и ' + convertHundreds(remainder);
+      } else {
+        result += ' ' + convertHundreds(remainder);
+      }
+    }
+    
+    return result;
+  }
   
   let result = '';
   
-  if (Math.floor(num) > 0) {
-    const num = parseInt(numStr);
-    if (num < 10) {
-      result = units[num];
-    } else if (num < 20) {
-      result = teens[num - 10];
-    } else if (num < 100) {
-      const unit = num % 10;
-      const ten = Math.floor(num / 10);
-      result = tens[ten] + (unit > 0 ? ' и ' + units[unit] : '');
-    } else if (num < 1000) {
-      const hundred = Math.floor(num / 100);
-      const remainder = num % 100;
-      result = (hundred === 1 ? 'сто' : units[hundred] + 'стотин') + 
-               (remainder > 0 ? ' ' + numberToWords(remainder) : '');
-    } else {
-      // Simplified for larger numbers
-      result = num.toString();
-    }
+  if (intPart >= 1000000) {
+    result = intPart.toLocaleString('bg-BG');
+  } else {
+    result = convertThousands(intPart);
+  }
+  
+  // Add currency word for integer part
+  if (intPart > 0) {
+    result += ' евро';
   }
   
   if (decimal > 0) {
-    result += ` и ${decimal} стотинки`;
+    // Convert decimal to words (cents/stotinki)
+    if (decimal === 1) {
+      result += ' и един евроцент';
+    } else if (decimal < 10) {
+      result += ' и ' + unitsF[decimal] + ' евроцента';
+    } else if (decimal < 20) {
+      result += ' и ' + teens[decimal - 10] + ' евроцента';
+    } else if (decimal < 100) {
+      const t = Math.floor(decimal / 10);
+      const unit = decimal % 10;
+      if (unit === 0) {
+        result += ' и ' + tens[t] + ' евроцента';
+      } else {
+        result += ' и ' + tens[t] + ' и ' + unitsF[unit] + ' евроцента';
+      }
+    }
   }
   
   return result || num.toString();
+}
+
+// Format currency
+function formatCurrency(amount: number, currency: string): string {
+  const formatted = amount.toFixed(2);
+  const symbols: Record<string, string> = {
+    'EUR': '€',
+    'BGN': 'лв.',
+    'USD': '$',
+    'GBP': '£',
+  };
+  return `${formatted} ${symbols[currency] || currency}`;
+}
+
+// Get currency word
+function getCurrencyWord(currency: string): string {
+  const words: Record<string, string> = {
+    'EUR': 'евро',
+    'BGN': 'лева',
+    'USD': 'долара',
+    'GBP': 'лири',
+  };
+  return words[currency] || currency;
 }
 
 // Server-side PDF generation function
@@ -67,210 +170,489 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 20;
+  const margin = 15;
   const contentWidth = pageWidth - (2 * margin);
 
-  // Header section
-  doc.setFillColor(240, 240, 240);
-  doc.rect(margin, margin, contentWidth, 15, 'F');
-  doc.setFont('Roboto', 'bold');
-  doc.setFontSize(16);
-  doc.setTextColor(0, 0, 0);
-  doc.text('ФАКТУРА', pageWidth / 2, margin + 10, { align: 'center' });
-  doc.setFontSize(12);
-  doc.text(`№ ${invoice.invoiceNumber}`, margin + 2, margin + 10);
-  
-  // "ОРИГИНАЛ" text in header (smaller, not watermark)
-  doc.setTextColor(0, 100, 200);
-  doc.setFontSize(10);
-  doc.text('ОРИГИНАЛ', pageWidth - margin - 20, margin + 8);
-  doc.setTextColor(0, 0, 0);
+  // ==================== ORIGINAL/COPY BADGE ====================
+  const isOriginal = invoice.isOriginal !== false; // Default to true
+  const badgeText = isOriginal ? 'ОРИГИНАЛ' : 'КОПИЕ';
+  const badgeColor = isOriginal 
+    ? { r: 16, g: 185, b: 129 } // Emerald for original
+    : { r: 100, g: 116, b: 139 }; // Gray for copy
 
-  let yPos = margin + 25;
-  doc.setFontSize(10);
+  // ==================== HEADER SECTION ====================
+  
+  // Top accent bar - REMOVED for black & white printing
+  
+  // ==================== ORIGINAL/COPY BADGE (Top Center) ====================
+  doc.setFont('Roboto', 'bold');
+  doc.setFontSize(14);
+  // Black text only, no border for printing
+  doc.setTextColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+  
+  // Draw text centered exactly
+  const badgeTextWidth = doc.getTextWidth(badgeText);
+  const badgeX = (pageWidth - badgeTextWidth) / 2;
+  doc.text(badgeText, badgeX, 18);
+  
+  // Company logo area (left side)
+  let yPos = 24;
+  let logoHeight = 0;
+  
+  // Load and add company logo if available
+  if (invoice.company?.logo) {
+    try {
+      // Fetch logo image using Node.js built-in fetch (Node 18+)
+      const logoResponse = await fetch(invoice.company.logo);
+      if (logoResponse.ok) {
+        const logoArrayBuffer = await logoResponse.arrayBuffer();
+        const logoBuffer = Buffer.from(logoArrayBuffer);
+        const logoBase64 = logoBuffer.toString('base64');
+        const contentType = logoResponse.headers.get('content-type') || 'image/png';
+        const imageFormat = contentType.split('/')[1]?.split(';')[0] || 'png';
+        
+        // Calculate logo dimensions (max 30mm width, maintain aspect ratio)
+        const maxLogoWidth = 30;
+        const maxLogoHeight = 20;
+        
+        // Add logo to PDF (positioned at top left)
+        doc.addImage(logoBase64, imageFormat, margin, yPos, maxLogoWidth, maxLogoHeight);
+        
+        logoHeight = maxLogoHeight;
+      }
+    } catch (error) {
+      console.warn('Could not load company logo:', error);
+      // Continue without logo if loading fails
+    }
+  }
+  
+  // Invoice title section (right side)
+  doc.setFont('Roboto', 'bold');
+  doc.setFontSize(28);
+  doc.setTextColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+  doc.text('ФАКТУРА', pageWidth - margin, yPos, { align: 'right' });
+  
+  // Invoice number
+  yPos += 10;
+  doc.setFontSize(14);
+  doc.setTextColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+  doc.text(`№ ${invoice.invoiceNumber || '---'}`, pageWidth - margin, yPos, { align: 'right' });
+  
+  // Status badge - text only, no background for black & white printing
+  yPos += 8;
+  const status = invoice.status || 'DRAFT';
+  const statusText = status === 'DRAFT' ? 'ЧЕРНОВА' : status === 'ISSUED' ? 'ИЗДАДЕНА' : status === 'CANCELLED' ? 'АНУЛИРАНА' : status === 'PAID' ? 'ПЛАТЕНА' : status;
+  
+  doc.setFontSize(9);
+  doc.setTextColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+  doc.text(`Статус: ${statusText}`, pageWidth - margin, yPos, { align: 'right' });
+  
+  // Company info (left side, below logo if present)
+  yPos = 24 + logoHeight + (logoHeight > 0 ? 5 : 0);
+  if (invoice.company) {
+    doc.setFont('Roboto', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+    doc.text(invoice.company.name || '', margin, yPos);
+    
+    doc.setFont('Roboto', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
+    
+    if (invoice.company.address) {
+      yPos += 6;
+      doc.text(invoice.company.address, margin, yPos);
+    }
+    if (invoice.company.city) {
+      yPos += 5;
+      doc.text(invoice.company.city, margin, yPos);
+    }
+  }
+  
+  // ==================== DATE INFO ====================
+  
+  yPos = 50;
+  // Date info box - black border only for printing
+  doc.setDrawColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(margin, yPos, contentWidth, 18, 3, 3, 'S');
+  
   doc.setFont('Roboto', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
   
   const issueDate = invoice.issueDate ? new Date(invoice.issueDate).toLocaleDateString('bg-BG') : new Date().toLocaleDateString('bg-BG');
-  doc.text(`Дата на издаване: ${issueDate}`, margin, yPos);
-  doc.text(`Място на издаване: ${invoice.placeOfIssue || 'София'}`, pageWidth - margin - 60, yPos);
-  yPos += 7;
-  const supplyDate = invoice.supplyDate || invoice.issueDate || new Date();
-  doc.text(`Дата на дан. събитие: ${new Date(supplyDate).toLocaleDateString('bg-BG')}`, margin, yPos);
-
-  // Company information (Left side)
-  yPos += 15;
-  doc.setDrawColor(200, 200, 200);
-  doc.rect(margin, yPos, contentWidth / 2 - 5, 50);
+  const supplyDate = invoice.supplyDate ? new Date(invoice.supplyDate).toLocaleDateString('bg-BG') : issueDate;
+  const dueDate = invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('bg-BG') : '';
+  
+  // Date columns
+  const colWidth = contentWidth / 4;
+  
+  doc.text('Дата на издаване:', margin + 5, yPos + 7);
+  doc.setTextColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
   doc.setFont('Roboto', 'bold');
-  doc.setFontSize(11);
-  doc.text('ДОСТАВЧИК:', margin + 2, yPos + 6);
+  doc.text(issueDate, margin + 5, yPos + 13);
+  
   doc.setFont('Roboto', 'normal');
+  doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
+  doc.text('Дата на дан. събитие:', margin + colWidth + 5, yPos + 7);
+  doc.setTextColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+  doc.setFont('Roboto', 'bold');
+  doc.text(supplyDate, margin + colWidth + 5, yPos + 13);
+  
+  doc.setFont('Roboto', 'normal');
+  doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
+  doc.text('Място на издаване:', margin + colWidth * 2 + 5, yPos + 7);
+  doc.setTextColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+  doc.setFont('Roboto', 'bold');
+  doc.text(invoice.placeOfIssue || 'София', margin + colWidth * 2 + 5, yPos + 13);
+  
+  if (dueDate) {
+    doc.setFont('Roboto', 'normal');
+    doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
+    doc.text('Падеж:', margin + colWidth * 3 + 5, yPos + 7);
+    doc.setTextColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+    doc.setFont('Roboto', 'bold');
+    doc.text(dueDate, margin + colWidth * 3 + 5, yPos + 13);
+  }
+  
+  // ==================== PARTIES SECTION ====================
+  
+  yPos = 75;
+  const boxWidth = (contentWidth - 10) / 2;
+  const boxHeight = 50;
+  
+  // Supplier box
+  doc.setDrawColor(COLORS.border.r, COLORS.border.g, COLORS.border.b);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(margin, yPos, boxWidth, boxHeight, 3, 3, 'S');
+  
+  // Supplier header - black border only for printing
+  doc.setDrawColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(margin, yPos, boxWidth, 8, 3, 3, 'S');
+  
+  doc.setFont('Roboto', 'bold');
   doc.setFontSize(10);
-  yPos += 6;
+  doc.setTextColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+  doc.text('ДОСТАВЧИК', margin + 5, yPos + 6);
+  
+  // Supplier content
+  let supplierY = yPos + 14;
+  doc.setTextColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+  doc.setFontSize(10);
+  
   if (invoice.company) {
-    const company = invoice.company;
-    yPos += 7;
-    doc.text(company.name || '', margin + 2, yPos);
-    yPos += 7;
-    if (company.address) doc.text(company.address, margin + 2, yPos);
-    yPos += 7;
-    if (company.bulstatNumber) doc.text(`ЕИК: ${company.bulstatNumber}`, margin + 2, yPos);
-    yPos += 7;
-    if (company.vatRegistered && company.vatRegistrationNumber) {
-      doc.text(`ДДС №: ${company.vatRegistrationNumber}`, margin + 2, yPos);
+    doc.text(invoice.company.name || '', margin + 5, supplierY);
+    supplierY += 6;
+    
+    doc.setFont('Roboto', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
+    
+    if (invoice.company.address) {
+      doc.text(invoice.company.address, margin + 5, supplierY);
+      supplierY += 5;
     }
-    yPos += 7;
-    if (company.mol) doc.text(`МОЛ: ${company.mol}`, margin + 2, yPos);
+    
+    if (invoice.company.bulstatNumber) {
+      doc.text(`ЕИК: ${invoice.company.bulstatNumber}`, margin + 5, supplierY);
+      supplierY += 5;
+    }
+    
+    if (invoice.company.vatRegistered && invoice.company.vatRegistrationNumber) {
+      doc.text(`ДДС №: ${invoice.company.vatRegistrationNumber}`, margin + 5, supplierY);
+      supplierY += 5;
+    }
+    
+    if (invoice.company.mol) {
+      doc.text(`МОЛ: ${invoice.company.mol}`, margin + 5, supplierY);
+    }
   }
-
-  // Client information (Right side)
-  const clientStartY = yPos - 41;
-  doc.rect(pageWidth / 2 + 5, clientStartY, contentWidth / 2 - 5, 50);
-  let clientY = clientStartY;
+  
+  // Client box
+  const clientBoxX = margin + boxWidth + 10;
+  doc.setDrawColor(COLORS.border.r, COLORS.border.g, COLORS.border.b);
+  doc.roundedRect(clientBoxX, yPos, boxWidth, boxHeight, 3, 3, 'S');
+  
+  // Client header - black border only for printing
+  doc.setDrawColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(clientBoxX, yPos, boxWidth, 8, 3, 3, 'S');
+  
   doc.setFont('Roboto', 'bold');
-  doc.setFontSize(11);
-  doc.text('ПОЛУЧАТЕЛ:', pageWidth / 2 + 7, clientY + 6);
-  doc.setFont('Roboto', 'normal');
   doc.setFontSize(10);
+  doc.setTextColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+  doc.text('ПОЛУЧАТЕЛ', clientBoxX + 5, yPos + 6);
+  
+  // Client content
+  let clientY = yPos + 14;
+  doc.setTextColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+  doc.setFontSize(10);
+  
   if (invoice.client) {
-    const client = invoice.client;
-    clientY += 13;
-    doc.text(client.name || '', pageWidth / 2 + 7, clientY);
-    clientY += 7;
-    if (client.address) doc.text(client.address, pageWidth / 2 + 7, clientY);
-    clientY += 7;
-    if (client.bulstatNumber) doc.text(`ЕИК: ${client.bulstatNumber}`, pageWidth / 2 + 7, clientY);
-    clientY += 7;
-    if (client.vatNumber) doc.text(`ДДС №: ${client.vatNumber}`, pageWidth / 2 + 7, clientY);
-    clientY += 7;
-    if (client.mol) doc.text(`МОЛ: ${client.mol}`, pageWidth / 2 + 7, clientY);
+    doc.text(invoice.client.name || '', clientBoxX + 5, clientY);
+    clientY += 6;
+    
+    doc.setFont('Roboto', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
+    
+    if (invoice.client.address) {
+      doc.text(invoice.client.address, clientBoxX + 5, clientY);
+      clientY += 5;
+    }
+    
+    if (invoice.client.bulstatNumber) {
+      doc.text(`ЕИК: ${invoice.client.bulstatNumber}`, clientBoxX + 5, clientY);
+      clientY += 5;
+    }
+    
+    if (invoice.client.vatNumber) {
+      doc.text(`ДДС №: ${invoice.client.vatNumber}`, clientBoxX + 5, clientY);
+      clientY += 5;
+    }
+    
+    if (invoice.client.mol) {
+      doc.text(`МОЛ: ${invoice.client.mol}`, clientBoxX + 5, clientY);
+    }
   }
-
-  // Items table
-  yPos += 20;
-  doc.setFillColor(240, 240, 240);
-  doc.rect(margin, yPos, contentWidth, 10, 'F');
+  
+  // ==================== ITEMS TABLE ====================
+  
+  yPos += boxHeight + 10;
+  
+  // Table header - no border, just text for printing
+  const tableHeaderHeight = 10;
+  
+  // Column definitions
+  const cols = {
+    no: { x: margin, w: 10, label: '№' },
+    desc: { x: margin + 10, w: contentWidth * 0.35, label: 'Описание' },
+    unit: { x: margin + 10 + contentWidth * 0.35, w: 15, label: 'Мярка' },
+    qty: { x: margin + 25 + contentWidth * 0.35, w: 15, label: 'Кол.' },
+    price: { x: margin + 40 + contentWidth * 0.35, w: contentWidth * 0.15, label: 'Ед. цена' },
+    vat: { x: margin + 40 + contentWidth * 0.50, w: contentWidth * 0.10, label: 'ДДС' },
+    total: { x: margin + 40 + contentWidth * 0.60, w: contentWidth * 0.20, label: 'Сума' },
+  };
+  
   doc.setFont('Roboto', 'bold');
-  doc.setFontSize(9);
-  const col1Width = contentWidth * 0.35;
-  const col2Width = contentWidth * 0.08;
-  const col3Width = contentWidth * 0.08;
-  const col4Width = contentWidth * 0.12;
-  const col5Width = contentWidth * 0.08;
-  const col6Width = contentWidth * 0.12;
-  const col7Width = contentWidth * 0.17;
-  doc.text('Описание на стоката/услугата', margin + 2, yPos + 7);
-  doc.text('Мярка', margin + col1Width + 2, yPos + 7);
-  doc.text('Кол.', margin + col1Width + col2Width + 2, yPos + 7);
-  doc.text('Ед. цена', margin + col1Width + col2Width + col3Width + 2, yPos + 7);
-  doc.text('ДДС %', margin + col1Width + col2Width + col3Width + col4Width + 2, yPos + 7);
-  doc.text('ДДС', margin + col1Width + col2Width + col3Width + col4Width + col5Width + 2, yPos + 7);
-  doc.text('Сума', margin + col1Width + col2Width + col3Width + col4Width + col5Width + col6Width + 2, yPos + 7);
-  doc.rect(margin, yPos, contentWidth, 10);
+  doc.setFontSize(8);
+  doc.setTextColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+  
+  doc.text(cols.no.label, cols.no.x + 2, yPos + 7);
+  doc.text(cols.desc.label, cols.desc.x + 2, yPos + 7);
+  doc.text(cols.unit.label, cols.unit.x + 2, yPos + 7);
+  doc.text(cols.qty.label, cols.qty.x + 2, yPos + 7);
+  doc.text(cols.price.label, cols.price.x + 2, yPos + 7);
+  doc.text(cols.vat.label, cols.vat.x + 2, yPos + 7);
+  doc.text(cols.total.label, cols.total.x + cols.total.w - 2, yPos + 7, { align: 'right' });
+  
+  yPos += tableHeaderHeight;
+  
+  // Table rows
   doc.setFont('Roboto', 'normal');
+  doc.setFontSize(9);
+  const rowHeight = 9;
   
   if (invoice.items && invoice.items.length > 0) {
-    yPos += 10;
-    invoice.items.forEach((item: any) => {
-      const rowHeight = 8;
-      doc.rect(margin, yPos, contentWidth, rowHeight);
-      doc.line(margin + col1Width, yPos, margin + col1Width, yPos + rowHeight);
-      doc.line(margin + col1Width + col2Width, yPos, margin + col1Width + col2Width, yPos + rowHeight);
-      doc.line(margin + col1Width + col2Width + col3Width, yPos, margin + col1Width + col2Width + col3Width, yPos + rowHeight);
-      doc.line(margin + col1Width + col2Width + col3Width + col4Width, yPos, margin + col1Width + col2Width + col3Width + col4Width, yPos + rowHeight);
-      doc.line(margin + col1Width + col2Width + col3Width + col4Width + col5Width, yPos, margin + col1Width + col2Width + col3Width + col4Width + col5Width, yPos + rowHeight);
-      doc.line(margin + col1Width + col2Width + col3Width + col4Width + col5Width + col6Width, yPos, margin + col1Width + col2Width + col3Width + col4Width + col5Width + col6Width, yPos + rowHeight);
+    invoice.items.forEach((item: any, index: number) => {
+      // Alternating row colors - REMOVED for black & white printing
+      // Just draw border for each row
+      doc.setDrawColor(COLORS.border.r, COLORS.border.g, COLORS.border.b);
+      doc.setLineWidth(0.2);
+      doc.line(margin, yPos, margin + contentWidth, yPos);
+      
+      doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
+      
+      // Row data
+      doc.text((index + 1).toString(), cols.no.x + 4, yPos + 6);
       
       const description = item.description || '';
-      doc.text(description.substring(0, 35), margin + 2, yPos + 5);
-      doc.text(item.unit || 'бр.', margin + col1Width + 2, yPos + 5);
-      doc.text(Number(item.quantity || 0).toString(), margin + col1Width + col2Width + 2, yPos + 5);
-      doc.text(Number(item.price || item.unitPrice || 0).toFixed(2), margin + col1Width + col2Width + col3Width + 2, yPos + 5);
-      doc.text(Number(item.taxRate || 0).toString() + '%', margin + col1Width + col2Width + col3Width + col4Width + 2, yPos + 5);
-      doc.text(Number(item.taxAmount || 0).toFixed(2), margin + col1Width + col2Width + col3Width + col4Width + col5Width + 2, yPos + 5);
-      doc.text(Number(item.total || 0).toFixed(2), margin + col1Width + col2Width + col3Width + col4Width + col5Width + col6Width + 2, yPos + 5);
+      const maxDescWidth = cols.desc.w - 4;
+      const truncatedDesc = description.length > 40 ? description.substring(0, 40) + '...' : description;
+      doc.text(truncatedDesc, cols.desc.x + 2, yPos + 6);
+      
+      doc.text(item.unit || 'бр.', cols.unit.x + 2, yPos + 6);
+      doc.text(Number(item.quantity || 0).toString(), cols.qty.x + 2, yPos + 6);
+      doc.text(Number(item.unitPrice || item.price || 0).toFixed(2), cols.price.x + 2, yPos + 6);
+      doc.text(`${Number(item.taxRate || 0).toFixed(0)}%`, cols.vat.x + 2, yPos + 6);
+      
+      // Calculate item total correctly: quantity * unitPrice * (1 + taxRate/100)
+      const itemQuantity = Number(item.quantity || 0);
+      const itemUnitPrice = Number(item.unitPrice || item.price || 0);
+      const itemTaxRate = Number(item.taxRate || 0);
+      const itemSubtotal = itemQuantity * itemUnitPrice;
+      const itemTax = itemSubtotal * (itemTaxRate / 100);
+      const itemTotal = itemSubtotal + itemTax;
+      
+      doc.setFont('Roboto', 'bold');
+      doc.text(itemTotal.toFixed(2), cols.total.x + cols.total.w - 2, yPos + 6, { align: 'right' });
+      doc.setFont('Roboto', 'normal');
+      
       yPos += rowHeight;
     });
   }
-
-  // Summary section
+  
+  // Table bottom border
+  doc.setDrawColor(COLORS.border.r, COLORS.border.g, COLORS.border.b);
+  doc.line(margin, yPos, margin + contentWidth, yPos);
+  
+  // ==================== TOTALS SECTION ====================
+  
   yPos += 10;
-  const summaryStartX = pageWidth - margin - 80;
-  doc.setFont('Roboto', 'normal');
+  const totalsX = pageWidth - margin - 80;
+  const totalsWidth = 80;
   const currency = invoice.currency || 'EUR';
-  const currencySymbol = currency === 'EUR' ? '€' : currency === 'BGN' ? 'лв.' : currency === 'USD' ? '$' : currency === 'GBP' ? '£' : currency;
   
-  doc.text('Сума без ДДС:', summaryStartX, yPos);
-  doc.text(`${Number(invoice.subtotal || 0).toFixed(2)} ${currencySymbol}`, pageWidth - margin - 15, yPos, { align: 'right' });
-  yPos += 7;
-  doc.text('ДДС:', summaryStartX, yPos);
-  doc.text(`${Number(invoice.taxAmount || 0).toFixed(2)} ${currencySymbol}`, pageWidth - margin - 15, yPos, { align: 'right' });
-  yPos += 7;
-  doc.setFont('Roboto', 'bold');
-  doc.text('Обща сума:', summaryStartX, yPos);
-  doc.text(`${Number(invoice.total || 0).toFixed(2)} ${currencySymbol}`, pageWidth - margin - 15, yPos, { align: 'right' });
-  yPos += 15;
+  // Totals box - black border only for printing
+  doc.setDrawColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(totalsX, yPos, totalsWidth, 35, 3, 3, 'S');
+  
   doc.setFont('Roboto', 'normal');
   doc.setFontSize(9);
-  const currencyWord = currency === 'EUR' ? 'евро' : currency === 'BGN' ? 'лева' : currency;
-  doc.text('Словом: ' + numberToWords(Number(invoice.total || 0)) + ' ' + currencyWord, margin, yPos);
-  yPos += 10;
-  doc.text(`Начин на плащане: ${invoice.paymentMethod || 'Банков превод'}`, margin, yPos);
-
-  // Footer section
-  yPos = pageHeight - margin - 45;
-  doc.setFontSize(8);
-  doc.text('Основание за издаване: чл. 113, ал. 1 от ЗДДС', margin, yPos);
-  yPos += 5;
-  doc.text('Основание за неначисляване на ДДС: чл. 113, ал. 9 от ЗДДС', margin, yPos);
-  yPos += 5;
-  doc.text('Съгласно чл. 6, ал. 1 от Закона за счетоводството и чл. 114 от ЗДДС', margin, yPos);
-  yPos += 5;
-  doc.text('Документът е валиден без подпис и печат съгласно чл. 7 от Закона за счетоводството', margin, yPos);
-  yPos = pageHeight - margin - 30;
-  doc.setFontSize(9);
-  doc.text('Доставчик: .............................', margin, yPos);
-  doc.setFontSize(8);
-  doc.text('(подпис и печат)', margin + 5, yPos + 5);
-  doc.setFontSize(9);
-  doc.text('Получател: .............................', pageWidth - margin - 70, yPos);
-  doc.setFontSize(8);
-  doc.text('(подпис)', pageWidth - margin - 50, yPos + 5);
-
-  // Add watermark "ОРИГИНАЛ" - rotated, semi-transparent, centered
-  // Add it now so it appears on top of all content
-  const centerX = pageWidth / 2;
-  const centerY = pageHeight / 2;
-  const angle = 45; // degrees
-  const fontSize = 80;
-  const watermarkText = 'ОРИГИНАЛ';
+  doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
   
-  // Use lighter color to simulate transparency
-  doc.setTextColor(220, 200, 200); // Light red
+  doc.text('Сума без ДДС:', totalsX + 5, yPos + 8);
+  doc.text(formatCurrency(Number(invoice.subtotal || 0), currency), totalsX + totalsWidth - 5, yPos + 8, { align: 'right' });
   
-  // Use internal PDF commands for rotation
-  const internal = doc.internal;
-  const angleRad = angle * Math.PI / 180;
-  const cos = Math.cos(angleRad);
-  const sin = Math.sin(angleRad);
+  doc.text('ДДС:', totalsX + 5, yPos + 16);
+  doc.text(formatCurrency(Number(invoice.taxAmount || 0), currency), totalsX + totalsWidth - 5, yPos + 16, { align: 'right' });
   
-  // Save graphics state
-  internal.write('q\n');
+  // Total line - black for printing
+  doc.setDrawColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+  doc.setLineWidth(0.5);
+  doc.line(totalsX + 5, yPos + 21, totalsX + totalsWidth - 5, yPos + 21);
   
-  // Apply transformation: translate to center, rotate, then draw text
-  internal.write(`${cos.toFixed(6)} ${sin.toFixed(6)} ${(-sin).toFixed(6)} ${cos.toFixed(6)} ${centerX} ${centerY} cm\n`);
-  
-  // Draw rotated watermark text
   doc.setFont('Roboto', 'bold');
-  doc.setFontSize(fontSize);
-  const textWidth = doc.getTextWidth(watermarkText);
-  doc.text(watermarkText, -textWidth / 2, 0);
+  doc.setFontSize(11);
+  doc.setTextColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+  doc.text('ОБЩО:', totalsX + 5, yPos + 30);
   
-  // Restore graphics state
-  internal.write('Q\n');
+  // Calculate total to ensure it's correct (subtotal + taxAmount)
+  const calculatedTotal = Number(invoice.subtotal || 0) + Number(invoice.taxAmount || 0);
+  const displayTotal = Number(invoice.total || 0) > 0 ? Number(invoice.total || 0) : calculatedTotal;
+  doc.text(formatCurrency(displayTotal, currency), totalsX + totalsWidth - 5, yPos + 30, { align: 'right' });
   
-  // Reset text color
-  doc.setTextColor(0, 0, 0);
+  // Amount in words (left side)
+  doc.setFont('Roboto', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
+  doc.text('Словом:', margin, yPos + 10);
+  doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
+  
+  // Use calculated total for words
+  const totalForWords = displayTotal;
+  const amountInWords = numberToWordsBG(totalForWords);
+  const maxWordsWidth = totalsX - margin - 10;
+  const words = doc.splitTextToSize(amountInWords, maxWordsWidth);
+  doc.text(words, margin, yPos + 17);
+  
+  // Payment method
+  yPos += 25;
+  doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
+  doc.text('Начин на плащане:', margin, yPos);
+  doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
+  doc.text(invoice.paymentMethod || 'Банков превод', margin + 40, yPos);
+  
+  // ==================== BANK DETAILS ====================
+  
+  if (invoice.company?.bankAccount || invoice.company?.bankIban) {
+    yPos += 15;
+    
+    // Bank details - black border only for printing
+    doc.setDrawColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(margin, yPos, contentWidth, 25, 3, 3, 'S');
+    
+    doc.setFont('Roboto', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+    doc.text('БАНКОВИ ДАННИ', margin + 5, yPos + 6);
+    
+    doc.setFont('Roboto', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
+    
+    const bankAccount = invoice.company.bankAccount;
+    let bankY = yPos + 13;
+    
+    if (bankAccount?.bankName || invoice.company.bankName) {
+      doc.text(`Банка: ${bankAccount?.bankName || invoice.company.bankName}`, margin + 5, bankY);
+    }
+    
+    if (bankAccount?.iban || invoice.company.bankIban) {
+      doc.text(`IBAN: ${bankAccount?.iban || invoice.company.bankIban}`, margin + 5 + contentWidth / 3, bankY);
+    }
+    
+    if (bankAccount?.swift || invoice.company.bankSwift) {
+      doc.text(`SWIFT: ${bankAccount?.swift || invoice.company.bankSwift}`, margin + 5 + contentWidth * 2 / 3, bankY);
+    }
+    
+    yPos += 25;
+  }
+  
+  // ==================== NOTES ====================
+  
+  if (invoice.notes) {
+    yPos += 10;
+    
+    doc.setFont('Roboto', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
+    doc.text('БЕЛЕЖКИ:', margin, yPos);
+    
+    doc.setFont('Roboto', 'normal');
+    doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
+    const noteLines = doc.splitTextToSize(invoice.notes, contentWidth);
+    doc.text(noteLines, margin, yPos + 6);
+  }
+  
+  // ==================== FOOTER ====================
+  
+  // Legal text
+  yPos = pageHeight - 50;
+  doc.setFont('Roboto', 'normal');
+  doc.setFontSize(7);
+  doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
+  
+  const legalText = [
+    'Основание за издаване: чл. 113, ал. 1 от ЗДДС',
+    'Съгласно чл. 6, ал. 1 от Закона за счетоводството и чл. 114 от ЗДДС',
+    'Документът е валиден без подпис и печат съгласно чл. 7 от Закона за счетоводството',
+  ];
+  
+  legalText.forEach((text, i) => {
+    doc.text(text, margin, yPos + (i * 4));
+  });
+  
+  // Signature areas
+  yPos = pageHeight - 30;
+  doc.setDrawColor(COLORS.border.r, COLORS.border.g, COLORS.border.b);
+  doc.setLineWidth(0.3);
+  
+  // Supplier signature
+  doc.line(margin, yPos, margin + 60, yPos);
+  doc.setFontSize(8);
+  doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
+  doc.text('Доставчик', margin + 30, yPos + 5, { align: 'center' });
+  doc.setFontSize(7);
+  doc.text('(подпис и печат)', margin + 30, yPos + 9, { align: 'center' });
+  
+  // Client signature
+  doc.line(pageWidth - margin - 60, yPos, pageWidth - margin, yPos);
+  doc.setFontSize(8);
+  doc.text('Получател', pageWidth - margin - 30, yPos + 5, { align: 'center' });
+  doc.setFontSize(7);
+  doc.text('(подпис)', pageWidth - margin - 30, yPos + 9, { align: 'center' });
+  
+  // Bottom accent bar - REMOVED for black & white printing
+  
+  // Generated by - text only, no background for printing
+  doc.setFontSize(6);
+  doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
+  doc.text('Генерирано с FacturaPro', pageWidth / 2, pageHeight - 3, { align: 'center' });
 
   // Generate PDF buffer
   const pdfBuffer = Buffer.from(doc.output('arraybuffer'));

@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
@@ -11,7 +11,7 @@ import cuid from "cuid";
 
 // Schema for invoice update validation
 const invoiceItemSchema = z.object({
-  id: z.number(),
+  id: z.union([z.number(), z.string()]).optional(), // Can be number, string or undefined for new items
   description: z.string().min(1, "Description is required"),
   quantity: z.number().min(0.01, "Quantity must be greater than 0"),
   unitPrice: z.number().min(0, "Unit price cannot be negative"),
@@ -44,24 +44,53 @@ export async function GET(
 
     const supabase = createAdminClient();
     
-    const { data: invoice, error } = await supabase
+    // First, check if invoice exists at all
+    const { data: invoiceCheck, error: checkError } = await supabase
       .from("Invoice")
-      .select(`
-        *,
-        client:Client(id, name, email, phone, address, city, country),
-        company:Company(id, name, email, phone),
-        items:InvoiceItem(*),
-        creditNote:CreditNote(*)
-      `)
+      .select("id, userId")
       .eq("id", id)
-      .eq("userId", session.user.id)
       .single();
 
-    if (error || !invoice) {
+    if (checkError || !invoiceCheck) {
+      console.error("Invoice not found:", id, checkError);
       return Response.json({ error: "Invoice not found" }, { status: 404 });
     }
 
-    return Response.json(invoice);
+    // Check if user has access (owner or admin)
+    if (invoiceCheck.userId !== session.user.id) {
+      console.error("Access denied: user", session.user.id, "tried to access invoice owned by", invoiceCheck.userId);
+      return Response.json({ error: "Access denied" }, { status: 403 });
+    }
+
+    // Fetch full invoice data
+    const { data: invoice, error } = await supabase
+      .from("Invoice")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error || !invoice) {
+      console.error("Error fetching invoice details:", error);
+      return Response.json({ error: "Invoice not found" }, { status: 404 });
+    }
+
+    // Fetch related data separately
+    const [clientResult, companyResult, itemsResult, creditNoteResult] = await Promise.all([
+      supabase.from("Client").select("id, name, email, phone, address, city, country").eq("id", invoice.clientId).single(),
+      supabase.from("Company").select("id, name, email, phone").eq("id", invoice.companyId).single(),
+      supabase.from("InvoiceItem").select("*").eq("invoiceId", id),
+      supabase.from("CreditNote").select("*").eq("invoiceId", id).maybeSingle()
+    ]);
+
+    const fullInvoice = {
+      ...invoice,
+      client: clientResult.data,
+      company: companyResult.data,
+      items: itemsResult.data || [],
+      creditNote: creditNoteResult.data
+    };
+
+    return Response.json(fullInvoice);
   } catch (error) {
     console.error("Error fetching invoice:", error);
     return Response.json(

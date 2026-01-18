@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { Role } from "@prisma/client";
+
+// Define Role type locally since we're not using Prisma on client side
+type Role = 'ADMIN' | 'OWNER' | 'MANAGER' | 'ACCOUNTANT' | 'VIEWER';
 
 export function usePermission(permissionName: string, companyId?: string) {
   const { data: session, status } = useSession();

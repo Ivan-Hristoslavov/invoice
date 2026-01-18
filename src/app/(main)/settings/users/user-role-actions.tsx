@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Role } from "@prisma/client";
 import { useRouter } from "next/navigation";
+
+// Define Role type locally since we're not using Prisma on client side
+type Role = 'ADMIN' | 'OWNER' | 'MANAGER' | 'ACCOUNTANT' | 'VIEWER';
 import { UserCog, Check, X, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {

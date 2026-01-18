@@ -69,7 +69,7 @@ const bottomNavItems = [
   },
   { 
     name: "Помощ", 
-    href: "/settings/help", 
+    href: "/help", 
     icon: HelpCircle,
   },
 ];

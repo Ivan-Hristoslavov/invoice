@@ -266,7 +266,7 @@ export default function AuthLayout({
               initial={{ opacity: 0, y: 30, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-              className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl p-10 sm:p-12 shadow-2xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-slate-200/50 dark:border-slate-700/50"
+              className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl p-8 sm:p-10 shadow-2xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-slate-200/50 dark:border-slate-700/50 overflow-visible"
             >
               {children}
             </motion.div>

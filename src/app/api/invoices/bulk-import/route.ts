@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabase";
 import { z } from "zod";
-import { InvoiceStatus } from "@prisma/client";
+import cuid from "cuid";
+
+// Define InvoiceStatus type locally
+type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'CANCELLED';
 
 // Define validation schema for CSV invoice data
 const invoiceItemSchema = z.object({
@@ -20,8 +23,8 @@ const importInvoiceSchema = z.object({
   companyId: z.string().min(1, "Company is required"),
   issueDate: z.string().min(1, "Issue date is required"),
   dueDate: z.string().min(1, "Due date is required"),
-  status: z.enum(["DRAFT", "UNPAID", "PAID", "OVERDUE", "CANCELLED"]).default("DRAFT"),
-  currency: z.string().min(1, "Currency is required").default("USD"),
+  status: z.enum(["DRAFT", "ISSUED", "CANCELLED"]).default("DRAFT"),
+  currency: z.string().min(1, "Currency is required").default("EUR"),
   notes: z.string().optional(),
   termsAndConditions: z.string().optional(),
   items: z.array(invoiceItemSchema).min(1, "At least one item is required"),
@@ -61,14 +64,14 @@ export async function POST(request: NextRequest) {
     for (const invoiceData of invoicesData) {
       try {
         // Check if client exists and belongs to user
-        const client = await prisma.client.findFirst({
-          where: {
-            id: invoiceData.clientId,
-            userId,
-          },
-        });
+        const { data: client, error: clientError } = await supabaseAdmin
+          .from('Client')
+          .select('id')
+          .eq('id', invoiceData.clientId)
+          .eq('userId', userId)
+          .single();
 
-        if (!client) {
+        if (clientError || !client) {
           errors.push({
             invoiceNumber: invoiceData.invoiceNumber,
             error: `Client with ID ${invoiceData.clientId} not found or does not belong to user`,
@@ -77,14 +80,14 @@ export async function POST(request: NextRequest) {
         }
 
         // Check if company exists and belongs to user
-        const company = await prisma.company.findFirst({
-          where: {
-            id: invoiceData.companyId,
-            userId,
-          },
-        });
+        const { data: company, error: companyError } = await supabaseAdmin
+          .from('Company')
+          .select('id')
+          .eq('id', invoiceData.companyId)
+          .eq('userId', userId)
+          .single();
 
-        if (!company) {
+        if (companyError || !company) {
           errors.push({
             invoiceNumber: invoiceData.invoiceNumber,
             error: `Company with ID ${invoiceData.companyId} not found or does not belong to user`,
@@ -93,12 +96,12 @@ export async function POST(request: NextRequest) {
         }
 
         // Check if invoice number already exists for this company
-        const existingInvoice = await prisma.invoice.findFirst({
-          where: {
-            invoiceNumber: invoiceData.invoiceNumber,
-            companyId: invoiceData.companyId,
-          },
-        });
+        const { data: existingInvoice } = await supabaseAdmin
+          .from('Invoice')
+          .select('id')
+          .eq('invoiceNumber', invoiceData.invoiceNumber)
+          .eq('companyId', invoiceData.companyId)
+          .single();
 
         if (existingInvoice) {
           errors.push({
@@ -112,6 +115,8 @@ export async function POST(request: NextRequest) {
         let subtotal = 0;
         let taxAmount = 0;
 
+        const invoiceId = cuid();
+        
         const items = invoiceData.items.map((item) => {
           const itemSubtotal = Number(item.quantity) * Number(item.unitPrice);
           const itemTaxAmount = itemSubtotal * (Number(item.taxRate) / 100);
@@ -120,45 +125,53 @@ export async function POST(request: NextRequest) {
           taxAmount += itemTaxAmount;
           
           return {
+            id: cuid(),
+            invoiceId,
             description: item.description,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            taxRate: item.taxRate,
-            subtotal: itemSubtotal,
-            taxAmount: itemTaxAmount,
-            total: itemSubtotal + itemTaxAmount,
-            productId: item.productId,
+            quantity: item.quantity.toString(),
+            unitPrice: item.unitPrice.toString(),
+            taxRate: item.taxRate.toString(),
+            subtotal: itemSubtotal.toString(),
+            taxAmount: itemTaxAmount.toString(),
+            total: (itemSubtotal + itemTaxAmount).toString(),
+            productId: item.productId || null,
           };
         });
 
         const total = subtotal + taxAmount;
 
-        // Create the invoice with its items
-        const invoice = await prisma.invoice.create({
-          data: {
+        // Create the invoice
+        const { data: invoice, error: invoiceError } = await supabaseAdmin
+          .from('Invoice')
+          .insert({
+            id: invoiceId,
             invoiceNumber: invoiceData.invoiceNumber,
             clientId: invoiceData.clientId,
             companyId: invoiceData.companyId,
             userId,
-            issueDate: new Date(invoiceData.issueDate),
-            dueDate: new Date(invoiceData.dueDate),
+            issueDate: new Date(invoiceData.issueDate).toISOString(),
+            dueDate: new Date(invoiceData.dueDate).toISOString(),
             status: invoiceData.status as InvoiceStatus,
-            subtotal,
-            taxAmount,
-            total,
+            subtotal: subtotal.toString(),
+            taxAmount: taxAmount.toString(),
+            total: total.toString(),
             currency: invoiceData.currency,
-            notes: invoiceData.notes,
-            termsAndConditions: invoiceData.termsAndConditions,
-            items: {
-              create: items,
-            },
-          },
-          include: {
-            items: true,
-            client: true,
-            company: true,
-          },
-        });
+            notes: invoiceData.notes || null,
+            termsAndConditions: invoiceData.termsAndConditions || null,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (invoiceError) {
+          throw invoiceError;
+        }
+
+        // Create invoice items
+        await supabaseAdmin
+          .from('InvoiceItem')
+          .insert(items);
 
         results.push({
           invoiceNumber: invoice.invoiceNumber,
@@ -166,10 +179,10 @@ export async function POST(request: NextRequest) {
           total: invoice.total,
           status: invoice.status,
         });
-      } catch (error) {
+      } catch (error: any) {
         errors.push({
           invoiceNumber: invoiceData.invoiceNumber,
-          error: error || "An error occurred while processing this invoice",
+          error: error?.message || "An error occurred while processing this invoice",
         });
       }
     }
@@ -188,4 +201,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

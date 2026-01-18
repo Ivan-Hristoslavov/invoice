@@ -250,7 +250,7 @@ export function SubscriptionPlans() {
           description="Идеален за малки бизнеси"
           features={[
             'Неограничени фактури',
-            '1 фирма',
+            '3 фирми',
             'Собствено лого',
             'Професионален PDF',
             'Кредитни известия',
@@ -271,10 +271,7 @@ export function SubscriptionPlans() {
           description="За предприятия и разрастващи се екипи"
           features={[
             'Всичко от Pro',
-            'До 5 фирми',
-            'Потребители с роли',
-            'Експорт за счетоводство',
-            'API достъп (read-only)',
+            'Неограничени фирми',
             'Приоритетна поддръжка'
           ]}
           current={isCurrentPlan('BUSINESS')}

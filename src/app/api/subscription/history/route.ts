@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from '@/lib/auth';
-import { prisma } from "@/lib/db/prisma";
+import { supabaseAdmin } from "@/lib/supabase";
 
 /**
  * API endpoint to fetch subscription history with pagination
@@ -22,16 +22,15 @@ export async function GET(req: Request) {
     const skipItems = (page - 1) * limit;
     
     // Find the user's active subscription
-    const subscription = await prisma.subscription.findFirst({
-      where: {
-        userId: session.user.id,
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
+    const { data: subscription, error: subError } = await supabaseAdmin
+      .from('Subscription')
+      .select('*')
+      .eq('userId', session.user.id)
+      .order('createdAt', { ascending: false })
+      .limit(1)
+      .single();
     
-    if (!subscription) {
+    if (subError || !subscription) {
       return NextResponse.json({ 
         message: "No active subscription found",
         payments: [],
@@ -46,59 +45,31 @@ export async function GET(req: Request) {
     }
     
     // Get payment history with pagination
-    const [payments, paymentCount] = await Promise.all([
-      prisma.subscriptionPayment.findMany({
-        where: {
-          subscriptionId: subscription.id
-        },
-        orderBy: {
-          createdAt: 'desc'
-        },
-        skip: skipItems,
-        take: limit
-      }),
-      prisma.subscriptionPayment.count({
-        where: {
-          subscriptionId: subscription.id
-        }
-      })
-    ]);
+    const { data: payments, count: paymentCount } = await supabaseAdmin
+      .from('SubscriptionPayment')
+      .select('*', { count: 'exact' })
+      .eq('subscriptionId', subscription.id)
+      .order('createdAt', { ascending: false })
+      .range(skipItems, skipItems + limit - 1);
     
     // Get status history with pagination
-    const [history, statusCount] = await Promise.all([
-      prisma.subscriptionHistory.findMany({
-        where: {
-          subscriptionId: subscription.id
-        },
-        orderBy: {
-          createdAt: 'desc'
-        },
-        skip: skipItems,
-        take: limit
-      }),
-      prisma.subscriptionHistory.count({
-        where: {
-          subscriptionId: subscription.id
-        }
-      })
-    ]);
+    const { data: history, count: statusCount } = await supabaseAdmin
+      .from('SubscriptionHistory')
+      .select('*', { count: 'exact' })
+      .eq('subscriptionId', subscription.id)
+      .order('createdAt', { ascending: false })
+      .range(skipItems, skipItems + limit - 1);
     
     // Calculate pagination metadata
-    const totalPaymentPages = Math.ceil(paymentCount / limit);
-    const totalStatusPages = Math.ceil(statusCount / limit);
+    const totalPaymentPages = Math.ceil((paymentCount || 0) / limit);
+    const totalStatusPages = Math.ceil((statusCount || 0) / limit);
     const totalPages = Math.max(totalPaymentPages, totalStatusPages);
-    const totalItems = Math.max(paymentCount, statusCount);
+    const totalItems = Math.max(paymentCount || 0, statusCount || 0);
     
     // Serialize any Decimal values to avoid JSON issues
-    const serializedPayments = payments.map(payment => ({
+    const serializedPayments = (payments || []).map(payment => ({
       ...payment,
-      amount: payment.amount.toString(),
-      createdAt: payment.createdAt.toISOString()
-    }));
-    
-    const serializedHistory = history.map(item => ({
-      ...item,
-      createdAt: item.createdAt.toISOString()
+      amount: payment.amount?.toString() || '0',
     }));
     
     return NextResponse.json({
@@ -106,11 +77,11 @@ export async function GET(req: Request) {
         id: subscription.id,
         plan: subscription.plan,
         status: subscription.status,
-        currentPeriodEnd: subscription.currentPeriodEnd.toISOString(),
+        currentPeriodEnd: subscription.currentPeriodEnd,
         cancelAtPeriodEnd: subscription.cancelAtPeriodEnd
       },
       payments: serializedPayments,
-      history: serializedHistory,
+      history: history || [],
       pagination: {
         page,
         limit,
@@ -123,4 +94,4 @@ export async function GET(req: Request) {
     console.error('Error fetching subscription history:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
-} 
+}

@@ -189,6 +189,10 @@ CREATE TABLE "Invoice" (
     "supplyDate" TIMESTAMP(3),
     "isEInvoice" BOOLEAN NOT NULL DEFAULT false,
     "napStatus" TEXT,
+    "cancelledAt" TIMESTAMP(3),
+    "cancelledBy" TEXT,
+    "creditNoteId" TEXT,
+    "invoiceSequenceId" TEXT,
 
     CONSTRAINT "Invoice_pkey" PRIMARY KEY ("id")
 );
@@ -435,3 +439,6 @@ ALTER TABLE "SubscriptionPayment" ADD CONSTRAINT "SubscriptionPayment_subscripti
 -- AddForeignKey
 ALTER TABLE "SubscriptionHistory" ADD CONSTRAINT "SubscriptionHistory_subscriptionId_fkey" FOREIGN KEY ("subscriptionId") REFERENCES "Subscription"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+
+-- Note: InvoiceSequence, CreditNote, CreditNoteItem, and AuditLog tables
+-- are created via separate migration file: supabase-migration-invoice-sequence.sql

@@ -1,5 +1,26 @@
 import useSWR from 'swr';
-import { Invoice } from '@prisma/client';
+
+// Define Invoice type locally instead of importing from Prisma
+interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  clientId: string;
+  companyId: string;
+  userId: string;
+  issueDate: string;
+  dueDate: string;
+  status: string;
+  subtotal: string;
+  taxAmount: string;
+  discount?: string | null;
+  total: string;
+  notes?: string | null;
+  termsAndConditions?: string | null;
+  currency: string;
+  locale: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);

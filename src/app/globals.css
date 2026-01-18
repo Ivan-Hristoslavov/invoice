@@ -21,6 +21,11 @@
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215 16% 47%;
+    
+    /* Transparency for theme components */
+    --card-opacity: 0.85;
+    --popover-opacity: 0.9;
+    --muted-opacity: 0.7;
 
     --accent: 221 70% 91%;
     --accent-foreground: 221 83% 53%;
@@ -65,6 +70,11 @@
 
     --muted: 217 19% 18%;
     --muted-foreground: 215 20% 65%;
+    
+    /* Transparency for theme components */
+    --card-opacity: 0.8;
+    --popover-opacity: 0.85;
+    --muted-opacity: 0.6;
 
     --accent: 217 91% 60%;
     --accent-foreground: 210 40% 98%;
@@ -94,6 +104,23 @@
   * {
     @apply border-border;
   }
+  
+  /* Smooth theme transition - 1 second slow and smooth */
+  *,
+  *::before,
+  *::after {
+    transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 1000ms;
+  }
+  
+  /* Exclude transform and animations from theme transition */
+  [class*="animate-"],
+  [style*="transform"],
+  [style*="animation"] {
+    transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow;
+  }
+  
   body {
     @apply bg-background text-foreground;
   }
@@ -105,6 +132,33 @@
 }
 
 @layer components {
+  /* Make Radix Themes components slightly transparent - light theme only */
+  :root:not(.dark) [class*="rt-Card"]:not([class*="bg-gradient"]):not([class*="bg-"]),
+  :root:not(.dark) [class*="rt-Popover"],
+  :root:not(.dark) [class*="rt-DropdownMenu"],
+  :root:not(.dark) [class*="rt-Select"] {
+    background-color: hsl(var(--card) / 0.75) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  
+  /* Make muted backgrounds more transparent - light theme only */
+  :root:not(.dark) [class*="rt-Surface"][class*="surface"],
+  :root:not(.dark) [class*="rt-Box"][class*="bg-muted"] {
+    background-color: hsl(var(--muted) / 0.6) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  
+  /* Make buttons slightly transparent (except solid variants) - light theme only */
+  :root:not(.dark) [class*="rt-Button"][class*="soft"],
+  :root:not(.dark) [class*="rt-Button"][class*="surface"],
+  :root:not(.dark) [class*="rt-Button"][class*="outline"] {
+    background-color: hsl(var(--secondary) / 0.75) !important;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  
   .form-container {
     @apply space-y-6;
   }

@@ -6,24 +6,9 @@ import { APP_NAME } from "@/config/constants";
 
 export function SignInFormWrapper() {
   return (
-    <div className="relative w-full overflow-hidden">
+    <div className="relative w-full">
       {/* Animated background elements */}
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        {/* Animated circles */}
-        <motion.div
-          className="absolute top-0 -right-20 w-72 h-72 bg-primary/10 rounded-full"
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ 
-            scale: 1, 
-            opacity: 0.5,
-            y: [0, 15, 0],
-          }}
-          transition={{ 
-            duration: 8, 
-            repeat: Infinity,
-            opacity: { duration: 2 }
-          }}
-        />
+        
         <motion.div
           className="absolute -bottom-32 -left-20 w-96 h-96 bg-primary/5 rounded-full"
           initial={{ scale: 0.8, opacity: 0 }}
@@ -80,7 +65,6 @@ export function SignInFormWrapper() {
             }}
           />
         </svg>
-      </div>
 
       <div className="relative z-10">
         <SignInForm />

@@ -16,7 +16,7 @@ export const PLAN_LIMITS = {
   },
   PRO: {
     maxInvoicesPerMonth: Infinity,
-    maxCompanies: 1,
+    maxCompanies: 10,
     allowCustomBranding: true, // With logo
     allowExport: true, // PDF/CSV export
     allowCreditNotes: true, // Credit notes
@@ -26,7 +26,7 @@ export const PLAN_LIMITS = {
   },
   BUSINESS: {
     maxInvoicesPerMonth: Infinity,
-    maxCompanies: 5,
+    maxCompanies: Infinity, // Unlimited companies
     allowCustomBranding: true, // With logo
     allowExport: true, // PDF/CSV export
     allowCreditNotes: true, // Credit notes
@@ -126,16 +126,22 @@ export async function checkSubscriptionLimits(
 
     case 'companies':
       // Check company count
-      const { count: companyCount } = await supabase
-        .from('Company')
-        .select('*', { count: 'exact', head: true })
-        .eq('userId', userId);
-      
-      if (companyCount && companyCount >= limits.maxCompanies) {
-        return {
-          allowed: false,
-          message: `Вашият ${plan} план позволява максимум ${limits.maxCompanies} ${limits.maxCompanies === 1 ? 'фирма' : 'фирми'}. Надградете до BUSINESS за повече фирми.`,
-        };
+      if (limits.maxCompanies !== Infinity) {
+        const { count: companyCount } = await supabase
+          .from('Company')
+          .select('*', { count: 'exact', head: true })
+          .eq('userId', userId);
+        
+        if (companyCount && companyCount >= limits.maxCompanies) {
+          const upgradeMessage = plan === 'FREE' 
+            ? 'Надградете до PRO за до 10 фирми или до BUSINESS за неограничени фирми.'
+            : 'Надградете до BUSINESS за неограничени фирми.';
+          
+          return {
+            allowed: false,
+            message: `Вашият ${plan} план позволява максимум ${limits.maxCompanies} ${limits.maxCompanies === 1 ? 'фирма' : 'фирми'}. ${upgradeMessage}`,
+          };
+        }
       }
       break;
 

@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db/prisma";
+import { supabaseAdmin } from "@/lib/supabase";
 import { headers } from "next/headers";
 import Stripe from "stripe";
 import { revalidatePath } from "next/cache";
 import { sendPaymentConfirmationEmail } from "@/lib/email";
-import { InvoiceStatus, SubscriptionStatus, PaymentMethod } from "@prisma/client";
+import cuid from "cuid";
+
+// Define types locally since we're not using Prisma
+type SubscriptionStatus = "ACTIVE" | "PAST_DUE" | "UNPAID" | "CANCELED" | "INCOMPLETE" | "INCOMPLETE_EXPIRED" | "TRIALING" | "PAUSED";
+type PaymentStatus = "PAID" | "UNPAID" | "FAILED" | "PENDING" | "REFUNDED" | "VOID";
 
 // Define custom types for easier use
 type SubscriptionPlan = "FREE" | "PRO" | "BUSINESS";
@@ -12,9 +16,9 @@ type PaymentStatus = "PAID" | "FAILED" | "REFUNDED" | "COMPLETED";
 
 // Lazy initialization helper to avoid build-time errors
 function getStripe() {
-  const stripeKey = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY_FIXED;
+  const stripeKey = process.env.STRIPE_SECRET_KEY_FIXED || process.env.STRIPE_SECRET_KEY;
   if (!stripeKey) {
-    throw new Error('STRIPE_SECRET_KEY is not configured');
+    throw new Error('STRIPE_SECRET_KEY_FIXED or STRIPE_SECRET_KEY is not configured');
   }
   return new Stripe(stripeKey, {
     apiVersion: "2025-04-30.basil" as Stripe.LatestApiVersion,
@@ -43,11 +47,16 @@ interface StripeInvoiceWithSubscription extends Stripe.Invoice {
 // Function to log webhook event to database
 async function logWebhookEvent(eventType: string, eventId: string, status: "SUCCESS" | "FAILED", data: any) {
   try {
-    // Use manual SQL insertion if needed due to Prisma client type issues
-    await prisma.$executeRaw`
-      INSERT INTO "WebhookEventLog" ("id", "eventType", "eventId", "status", "payload", "processedAt")
-      VALUES (gen_random_uuid(), ${eventType}, ${eventId}, ${status}, ${JSON.stringify(data)}, now())
-    `;
+    await supabaseAdmin
+      .from('WebhookEventLog')
+      .insert({
+        id: cuid(),
+        eventType,
+        eventId,
+        status,
+        payload: JSON.stringify(data),
+        processedAt: new Date().toISOString(),
+      });
     console.log(`Logged webhook event: ${eventType} (${eventId}) - Status: ${status}`);
   } catch (error) {
     console.error(`Failed to log webhook event: ${error}`);
@@ -57,13 +66,15 @@ async function logWebhookEvent(eventType: string, eventId: string, status: "SUCC
 // Create or update subscription history entry
 async function logSubscriptionHistory(subscriptionId: string, status: SubscriptionStatus, event: string) {
   try {
-    await prisma.subscriptionHistory.create({
-      data: {
+    await supabaseAdmin
+      .from('SubscriptionHistory')
+      .insert({
+        id: cuid(),
         subscriptionId,
         status,
-        event
-      }
-    });
+        event,
+        createdAt: new Date().toISOString(),
+      });
     console.log(`Logged subscription history: ${subscriptionId} - ${event}`);
   } catch (error) {
     console.error(`Failed to log subscription history: ${error}`);
@@ -80,6 +91,7 @@ export async function POST(req: Request) {
     const body = await req.text();
     const headersList = headers();
     const signature = (await headersList).get("stripe-signature") || "";
+    const stripe = getStripe();
 
     try {
       // Verify webhook signature
@@ -856,12 +868,12 @@ export async function POST(req: Request) {
 // Helper function to process a subscription for a user
 async function processSubscriptionForUser(user: any, subscription: StripeSubscriptionWithDetails) {
   // Check if subscription already exists
-  const existingSubscription = await prisma.subscription.findFirst({
-    where: { 
-      stripeSubscriptionId: subscription.id,
-      userId: user.id
-    }
-  });
+  const { data: existingSubscription } = await supabaseAdmin
+    .from('Subscription')
+    .select('id')
+    .eq('stripeSubscriptionId', subscription.id)
+    .eq('userId', user.id)
+    .single();
   
   if (existingSubscription) {
     console.log(`Subscription ${subscription.id} already exists for user ${user.id}`);
@@ -884,45 +896,66 @@ async function processSubscriptionForUser(user: any, subscription: StripeSubscri
       status = "ACTIVE";
   }
   
-  // Determine plan from price amount
-  const priceAmount = subscription.items.data[0]?.price.unit_amount || 0;
-  let plan: SubscriptionPlan;
-  
-  // Plan determination based on EUR prices (in cents):
-  // FREE: 0 EUR
-  // PRO: 13 EUR/month (130 EUR/year) = 1300 cents
-  // BUSINESS: 28 EUR/month (280 EUR/year) = 2800 cents
-  if (priceAmount >= 2800) {
-    plan = "BUSINESS";
-  } else if (priceAmount >= 1300) {
-    plan = "PRO";
-  } else {
-    plan = "FREE";
-  }
-  
   // Get price ID
   const priceId = subscription.items.data[0]?.price.id || "";
+  let plan: SubscriptionPlan;
+  
+  // Determine plan from price ID (preferred method)
+  const proPriceId = process.env.STRIPE_PRO_PRICE_ID;
+  const businessPriceId = process.env.STRIPE_BUISNESS_PRICE_ID;
+  
+  if (businessPriceId && priceId === businessPriceId) {
+    plan = "BUSINESS";
+  } else if (proPriceId && priceId === proPriceId) {
+    plan = "PRO";
+  } else {
+    // Fallback to price amount if price ID doesn't match
+    const priceAmount = subscription.items.data[0]?.price.unit_amount || 0;
+    // Plan determination based on EUR prices (in cents):
+    // FREE: 0 EUR
+    // PRO: 13 EUR/month (130 EUR/year) = 1300 cents
+    // BUSINESS: 28 EUR/month (280 EUR/year) = 2800 cents
+    if (priceAmount >= 2800) {
+      plan = "BUSINESS";
+    } else if (priceAmount >= 1300) {
+      plan = "PRO";
+    } else {
+      plan = "FREE";
+    }
+  }
   
   // Create new subscription
-  const newSubscription = await prisma.subscription.create({
-    data: {
+  const { data: newSubscription, error } = await supabaseAdmin
+    .from('Subscription')
+    .insert({
+      id: cuid(),
       userId: user.id,
       stripeSubscriptionId: subscription.id,
       status: status,
       plan: plan,
       priceId: priceId,
-      currentPeriodStart: new Date(subscription.current_period_start * 1000),
-      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-      cancelAtPeriodEnd: subscription.cancel_at_period_end
-    }
-  });
+      currentPeriodStart: new Date(subscription.current_period_start * 1000).toISOString(),
+      currentPeriodEnd: new Date(subscription.current_period_end * 1000).toISOString(),
+      cancelAtPeriodEnd: subscription.cancel_at_period_end,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    })
+    .select()
+    .single();
+  
+  if (error) {
+    console.error(`Failed to create subscription: ${error}`);
+    return;
+  }
   
   // Record history
-  await logSubscriptionHistory(
-    newSubscription.id,
-    status,
-    `New subscription created with plan ${plan}`
-  );
+  if (newSubscription) {
+    await logSubscriptionHistory(
+      newSubscription.id,
+      status,
+      `New subscription created with plan ${plan}`
+    );
+  }
   
   console.log(`Created new subscription for user ${user.id}`);
 }

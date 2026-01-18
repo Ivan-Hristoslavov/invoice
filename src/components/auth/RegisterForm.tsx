@@ -370,17 +370,17 @@ export function RegisterForm() {
         {/* Submit Button */}
         <motion.div 
           variants={itemVariants} 
-          className="pt-4 flex justify-center"
+          className="pt-4"
         >
           <motion.div
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             transition={{ duration: 0.2 }}
-            className="w-full max-w-sm"
+            className="w-full flex justify-center"
           >
             <Button 
               type="submit" 
-              className="w-full h-12 text-base font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/40 transition-all duration-300"
+              className="w-full max-w-sm h-12 text-base font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/40 transition-all duration-300"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -415,19 +415,18 @@ export function RegisterForm() {
 
         {/* Social Login */}
         <motion.div 
-          variants={itemVariants} 
-          className="flex justify-center"
+          variants={itemVariants}
         >
           <motion.div
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             transition={{ duration: 0.2 }}
-            className="w-full max-w-sm"
+            className="w-full flex justify-center"
           >
             <Button 
               type="button"
               variant="outline" 
-              className="w-full h-12 text-base bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300"
+              className="w-full max-w-sm h-12 text-base bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300"
               onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
             >
               <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">

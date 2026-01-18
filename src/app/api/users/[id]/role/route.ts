@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { Role } from "@prisma/client";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabase";
 import { hasPermission } from "@/lib/permissions";
+
+// Define Role enum since we're not using Prisma anymore
+type Role = 'ADMIN' | 'OWNER' | 'MANAGER' | 'ACCOUNTANT' | 'VIEWER';
+const validRoles: Role[] = ['ADMIN', 'OWNER', 'MANAGER', 'ACCOUNTANT', 'VIEWER'];
 
 export async function PUT(
   request: Request,
@@ -25,11 +28,10 @@ export async function PUT(
       );
     }
     
-    const userId = params.id;
+    const userId = (await params).id;
     const { role, companyId } = await request.json();
     
     // Validate role
-    const validRoles = Object.values(Role);
     if (!validRoles.includes(role)) {
       return NextResponse.json(
         { error: "Invalid role" },
@@ -38,37 +40,59 @@ export async function PUT(
     }
     
     // Check if company exists and user has access
-    const company = await prisma.company.findFirst({
-      where: {
-        id: companyId,
-        userId: session.user.id,
-      },
-    });
+    const { data: company, error: companyError } = await supabaseAdmin
+      .from('Company')
+      .select('id')
+      .eq('id', companyId)
+      .eq('userId', session.user.id)
+      .single();
     
-    if (!company) {
+    if (companyError || !company) {
       return NextResponse.json(
         { error: "Company not found or access denied" },
         { status: 404 }
       );
     }
     
-    // Update user role
-    const userRole = await prisma.userRole.upsert({
-      where: {
-        userId_companyId: {
+    // Check if user role exists
+    const { data: existingRole } = await supabaseAdmin
+      .from('UserRole')
+      .select('id')
+      .eq('userId', userId)
+      .eq('companyId', companyId)
+      .single();
+    
+    let userRole;
+    
+    if (existingRole) {
+      // Update existing role
+      const { data, error } = await supabaseAdmin
+        .from('UserRole')
+        .update({ role, updatedAt: new Date().toISOString() })
+        .eq('id', existingRole.id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      userRole = data;
+    } else {
+      // Create new role
+      const cuid = require('cuid');
+      const { data, error } = await supabaseAdmin
+        .from('UserRole')
+        .insert({
+          id: cuid(),
           userId,
           companyId,
-        },
-      },
-      update: {
-        role,
-      },
-      create: {
-        userId,
-        companyId,
-        role,
-      },
-    });
+          role,
+          updatedAt: new Date().toISOString()
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      userRole = data;
+    }
     
     return NextResponse.json({ userRole });
   } catch (error) {
@@ -100,18 +124,18 @@ export async function DELETE(
       );
     }
     
-    const userId = params.id;
+    const userId = (await params).id;
     const { companyId } = await request.json();
     
     // Check if company exists and user has access
-    const company = await prisma.company.findFirst({
-      where: {
-        id: companyId,
-        userId: session.user.id,
-      },
-    });
+    const { data: company, error: companyError } = await supabaseAdmin
+      .from('Company')
+      .select('id')
+      .eq('id', companyId)
+      .eq('userId', session.user.id)
+      .single();
     
-    if (!company) {
+    if (companyError || !company) {
       return NextResponse.json(
         { error: "Company not found or access denied" },
         { status: 404 }
@@ -119,13 +143,13 @@ export async function DELETE(
     }
     
     // Prevent removing yourself as owner
-    const isOwner = await prisma.userRole.findFirst({
-      where: {
-        userId,
-        companyId,
-        role: "OWNER",
-      },
-    });
+    const { data: isOwner } = await supabaseAdmin
+      .from('UserRole')
+      .select('id')
+      .eq('userId', userId)
+      .eq('companyId', companyId)
+      .eq('role', 'OWNER')
+      .single();
     
     if (isOwner && userId === session.user.id) {
       return NextResponse.json(
@@ -135,12 +159,11 @@ export async function DELETE(
     }
     
     // Delete user role
-    await prisma.userRole.deleteMany({
-      where: {
-        userId,
-        companyId,
-      },
-    });
+    await supabaseAdmin
+      .from('UserRole')
+      .delete()
+      .eq('userId', userId)
+      .eq('companyId', companyId);
     
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -150,4 +173,4 @@ export async function DELETE(
       { status: 500 }
     );
   }
-} 
+}

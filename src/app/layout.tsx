@@ -93,8 +93,8 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <link rel="manifest" href="/site.webmanifest" />
-        <meta name="theme-color" content="#10b981" />
-        <meta name="msapplication-TileColor" content="#10b981" />
+        <meta name="theme-color" content="#00b8d9" />
+        <meta name="msapplication-TileColor" content="#00b8d9" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -136,9 +136,8 @@ export default function RootLayout({
           attribute="class"
           defaultTheme="system"
           enableSystem
-          disableTransitionOnChange
         >
-          <Theme appearance="inherit" accentColor="blue" grayColor="slate" radius="medium">
+          <Theme appearance="inherit" accentColor="cyan" grayColor="slate" radius="full" scaling="90%">
             <AuthProvider>
               {children}
               <Toaster />

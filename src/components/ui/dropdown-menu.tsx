@@ -6,7 +6,16 @@ import { Portal } from "@radix-ui/themes";
 
 const DropdownMenu = RadixDropdownMenu.Root;
 
-const DropdownMenuTrigger = RadixDropdownMenu.Trigger;
+const DropdownMenuTrigger = React.forwardRef<
+  React.ElementRef<typeof RadixDropdownMenu.Trigger>,
+  React.ComponentProps<typeof RadixDropdownMenu.Trigger>
+>((props, ref) => (
+  <RadixDropdownMenu.Trigger
+    ref={ref}
+    {...props}
+  />
+));
+DropdownMenuTrigger.displayName = "DropdownMenuTrigger";
 
 const DropdownMenuGroup = RadixDropdownMenu.Group;
 
