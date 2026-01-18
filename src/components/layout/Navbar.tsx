@@ -55,9 +55,9 @@ export function Navbar() {
     <header className="sticky top-0 z-30 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex items-center justify-between h-16 px-4 md:px-6 lg:px-8">
         {/* Left Section - Page Title & Breadcrumb */}
-        <div className="flex items-center gap-4">
-          {/* Mobile menu spacer */}
-          <div className="w-10 lg:hidden" />
+        <div className="flex items-center gap-4 flex-1 min-w-0">
+          {/* Mobile menu spacer - more space for menu button */}
+          <div className="w-0 lg:hidden" />
           
           {/* Search (hidden on mobile) */}
           <div className="hidden md:flex relative w-64 lg:w-80">
@@ -70,12 +70,12 @@ export function Navbar() {
         </div>
 
         {/* Right Section - Actions */}
-        <div className="flex items-center gap-2">
-          {/* Quick Add Invoice Icon - Always visible for fast access */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Quick Add Invoice Icon - Hidden on small mobile */}
           <Button 
             asChild 
             size="icon" 
-            className="h-10 w-10 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20"
+            className="hidden sm:flex h-10 w-10 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20"
             title="Нова фактура"
           >
             <Link href="/invoices/new">

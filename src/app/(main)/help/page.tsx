@@ -71,6 +71,23 @@ const quickLinks = [
 
 const faqCategories = [
   {
+    title: "Основни въпроси",
+    questions: [
+      {
+        q: "Какво е FacturaPro?",
+        a: "FacturaPro е софтуер за издаване на фактури. Помагаме ви да създавате професионални фактури, да ги изпращате по имейл и да следите кой ви дължи пари."
+      },
+      {
+        q: "Мога ли да приемам плащания чрез FacturaPro?",
+        a: "Не, FacturaPro не е платежна система и не обработва плащания. Плащанията се извършват директно между вас и клиентите ви - чрез банков превод, в брой или друг метод по ваш избор."
+      },
+      {
+        q: "За кого е подходящ FacturaPro?",
+        a: "FacturaPro е идеален за фрийлансъри, малки и средни предприятия, счетоводители, консултанти и всеки, който трябва да издава фактури на клиенти."
+      }
+    ]
+  },
+  {
     title: "Фактуриране",
     questions: [
       {
@@ -130,6 +147,25 @@ export default function HelpPage() {
             Намерете отговори на вашите въпроси и научете как да използвате {APP_NAME}
           </p>
         </div>
+
+        {/* Important Notice */}
+        <Card className="border-2 border-amber-500/30 bg-gradient-to-br from-amber-50/50 to-orange-50/30 dark:from-amber-950/20 dark:to-orange-950/10">
+          <CardContent className="p-6">
+            <div className="flex gap-4 items-start">
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center flex-shrink-0">
+                <FileText className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg mb-1">Какво е {APP_NAME}?</h3>
+                <p className="text-muted-foreground">
+                  {APP_NAME} е <strong>софтуер за издаване на фактури</strong>, а не платежна система. 
+                  Помагаме ви да създавате професионални фактури и да ги изпращате на клиентите си. 
+                  Плащанията се извършват директно между вас и вашите клиенти чрез банков превод или друг метод по ваш избор.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Search */}
         <Card className="border-0 shadow-lg">

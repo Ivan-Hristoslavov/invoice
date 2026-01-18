@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 
 // Helper function to format price without trailing zeros
 // Helper function to format price - removes unnecessary trailing zeros
@@ -325,7 +325,7 @@ function InvoiceItemRow({
   );
 }
 
-export default function NewInvoicePage() {
+function NewInvoiceContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedClientId = searchParams.get("client");
@@ -584,8 +584,8 @@ export default function NewInvoicePage() {
   };
 
   const getCurrencySymbol = (currency: string) => {
-    const symbols: Record<string, string> = { BGN: 'лв', EUR: '€', USD: '$', GBP: '£' };
-    return symbols[currency] || currency;
+    const symbols: Record<string, string> = { EUR: '€' };
+    return symbols[currency] || '€';
   };
 
   // Render step content
@@ -685,21 +685,29 @@ export default function NewInvoicePage() {
             )}
             
             {/* Invoice number */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2 text-sm">
                 <Hash className="h-4 w-4" />
                 Номер на фактура
               </Label>
-              <div className="relative">
-                <Input
-                  value={invoiceData.invoiceNumber}
-                  readOnly
-                  className="font-mono text-lg h-12 bg-muted"
-                />
-                <Badge className="absolute right-3 top-1/2 -translate-y-1/2" variant="secondary">
-                  Автоматичен
-                </Badge>
-              </div>
+              <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-0 shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm opacity-90 mb-1.5">Фактура №</p>
+                      <p className="text-2xl sm:text-3xl font-bold font-mono truncate">{invoiceData.invoiceNumber || '—'}</p>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <Badge variant="secondary" className="bg-white/20 text-white border-0 text-sm sm:text-base px-3 py-1.5">
+                        {invoiceData.currency}
+                      </Badge>
+                      <Badge variant="secondary" className="bg-white/10 text-white/90 border-0 text-xs px-2 py-1">
+                        Автоматичен
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
             
             {/* Company and Currency */}
@@ -738,10 +746,7 @@ export default function NewInvoicePage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="BGN">🇧🇬 BGN - Български лев</SelectItem>
                     <SelectItem value="EUR">🇪🇺 EUR - Евро</SelectItem>
-                    <SelectItem value="USD">🇺🇸 USD - Щатски долар</SelectItem>
-                    <SelectItem value="GBP">🇬🇧 GBP - Британска лира</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -850,15 +855,19 @@ export default function NewInvoicePage() {
             {/* Invoice items */}
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <ShoppingCart className="h-5 w-5" />
-                      Артикули във фактурата
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                      <ShoppingCart className="h-5 w-5 flex-shrink-0" />
+                      <span className="truncate">Артикули във фактурата</span>
                     </CardTitle>
-                    <CardDescription>{items.length} артикул(а)</CardDescription>
+                    <CardDescription className="text-sm mt-1">{items.length} артикул(а)</CardDescription>
                   </div>
-                  <Button variant="outline" onClick={addItem}>
+                  <Button 
+                    variant="outline" 
+                    onClick={addItem}
+                    className="w-full sm:w-auto flex-shrink-0"
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Добави ред
                   </Button>
@@ -1058,16 +1067,16 @@ export default function NewInvoicePage() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild className="rounded-full">
+      <div className="mb-6 sm:mb-8">
+        <div className="flex items-center gap-3 sm:gap-4 mb-2">
+          <Button variant="ghost" size="icon" asChild className="flex-shrink-0 h-9 w-9 rounded-full">
             <Link href="/invoices">
               <ArrowLeft className="h-5 w-5" />
             </Link>
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold">Нова фактура</h1>
-            <p className="text-muted-foreground">Създайте нова фактура за вашите клиенти</p>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold truncate">Нова фактура</h1>
+            <p className="text-sm sm:text-base text-muted-foreground hidden sm:block">Създайте нова фактура за вашите клиенти</p>
           </div>
         </div>
       </div>
@@ -1127,5 +1136,25 @@ export default function NewInvoicePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Loading fallback component
+function NewInvoiceLoading() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+        <p className="text-muted-foreground">Зареждане...</p>
+      </div>
+    </div>
+  );
+}
+
+export default function NewInvoicePage() {
+  return (
+    <Suspense fallback={<NewInvoiceLoading />}>
+      <NewInvoiceContent />
+    </Suspense>
   );
 }

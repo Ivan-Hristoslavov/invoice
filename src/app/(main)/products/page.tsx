@@ -119,7 +119,7 @@ export default async function ProductsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground font-medium">Средна цена</p>
-                <p className="text-2xl font-bold">{avgPrice.toFixed(2)} лв</p>
+                <p className="text-2xl font-bold">{avgPrice.toFixed(2)} €</p>
               </div>
               <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
                 <Euro className="h-5 w-5 text-white" />
@@ -214,7 +214,7 @@ export default async function ProductsPage() {
                           <span className="text-xl font-bold">
                             {product.price.toFixed(2)}
                           </span>
-                          <span className="text-sm text-muted-foreground ml-1">лв</span>
+                          <span className="text-sm text-muted-foreground ml-1">€</span>
                         </div>
                         {product.taxRate > 0 && (
                           <Badge variant="secondary" className="text-xs">

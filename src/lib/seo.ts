@@ -81,7 +81,7 @@ export function generateStructuredData(type: "SoftwareApplication" | "Organizati
       offers: {
         "@type": "Offer",
         price: "0",
-        priceCurrency: "BGN",
+        priceCurrency: "EUR",
       },
       aggregateRating: {
         "@type": "AggregateRating",

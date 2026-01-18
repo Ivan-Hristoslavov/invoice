@@ -125,7 +125,7 @@ export async function sendPaymentConfirmationEmail({
   companyName: string;
 }) {
   try {
-    const currencySymbol = currency === 'EUR' ? '€' : currency === 'BGN' ? 'лв.' : currency === 'USD' ? '$' : currency === 'GBP' ? '£' : currency;
+    const currencySymbol = '€';
     
     const resend = getResend();
     await resend.emails.send({
@@ -166,7 +166,7 @@ export async function sendInvoiceWithoutPaymentLink({
   companyName,
 }: Omit<SendInvoiceEmailParams, 'paymentLink' | 'createAccountUrl' | 'bankDetails'>) {
   try {
-    const currencySymbol = currency === 'EUR' ? '€' : currency === 'BGN' ? 'лв.' : currency === 'USD' ? '$' : currency === 'GBP' ? '£' : currency;
+    const currencySymbol = '€';
     
     const resend = getResend();
     await resend.emails.send({
@@ -211,7 +211,7 @@ export async function sendInvoiceWithPaymentDetails({
   bankDetails,
 }: Omit<SendInvoiceEmailParams, 'createAccountUrl'> & { bankDetails: NonNullable<SendInvoiceEmailParams['bankDetails']> }) {
   try {
-    const currencySymbol = currency === 'EUR' ? '€' : currency === 'BGN' ? 'лв.' : currency === 'USD' ? '$' : currency === 'GBP' ? '£' : currency;
+    const currencySymbol = '€';
     
     const resend = getResend();
     await resend.emails.send({

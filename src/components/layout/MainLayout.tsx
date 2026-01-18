@@ -4,7 +4,6 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Sidebar } from "@/components/layout/Sidebar";
-import { AnimatePresence, motion } from "framer-motion";
 import { BackgroundShapes } from "@/components/ui/background-shapes";
 
 interface MainLayoutProps {
@@ -34,27 +33,18 @@ export function MainLayout({ children }: MainLayoutProps) {
     );
   }
 
-  // Standard layout with navigation
+  // Standard layout with navigation - simplified for faster transitions
   return (
     <div className="flex min-h-screen relative">
       <BackgroundShapes variant="subtle" />
       <Sidebar />
       <div className="flex-1 lg:ml-72 flex flex-col min-h-screen">
         <Navbar />
-        <AnimatePresence mode="wait">
-          <motion.main 
-            key={pathname}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="flex-1 p-4 md:p-6 lg:p-8"
-          >
-            <div className="max-w-7xl mx-auto w-full">
-              {children}
-            </div>
-          </motion.main>
-        </AnimatePresence>
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 animate-in fade-in duration-150 pb-6 sm:pb-8">
+          <div className="max-w-7xl mx-auto w-full">
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   );

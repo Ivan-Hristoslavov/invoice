@@ -132,7 +132,6 @@ export default function NewCompanyPage() {
       });
       
       router.push("/companies");
-      router.refresh();
     } catch (error) {
       console.error("Грешка при създаване на компания:", error);
       toast.error("Грешка", {
@@ -145,23 +144,25 @@ export default function NewCompanyPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" asChild>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <Button variant="ghost" size="sm" asChild className="flex-shrink-0">
             <Link href="/companies">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Назад
+              <span className="hidden sm:inline">Назад</span>
             </Link>
           </Button>
-          <h1 className="text-3xl font-bold">Нова компания</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold truncate">Нова компания</h1>
         </div>
         <Button 
           type="submit" 
           form="company-form" 
           disabled={isLoading}
+          className="w-full sm:w-auto flex-shrink-0"
         >
           <Save className="w-4 h-4 mr-2" />
-          {isLoading ? "Запазване..." : "Запази компания"}
+          <span className="hidden sm:inline">{isLoading ? "Запазване..." : "Запази компания"}</span>
+          <span className="sm:hidden">{isLoading ? "Запазване..." : "Запази"}</span>
         </Button>
       </div>
 
@@ -180,12 +181,14 @@ export default function NewCompanyPage() {
           <Form {...form}>
             <form id="company-form" onSubmit={form.handleSubmit(onSubmit)}>
               <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="basic">Основна информация</TabsTrigger>
-                  <TabsTrigger value="address">Адрес</TabsTrigger>
-                  <TabsTrigger value="tax">Данъчна информация</TabsTrigger>
-                  <TabsTrigger value="banking">Банкова информация</TabsTrigger>
-                </TabsList>
+                <div className="overflow-x-auto -mx-6 px-6">
+                  <TabsList className="inline-flex w-full min-w-max sm:grid sm:grid-cols-4">
+                    <TabsTrigger value="basic" className="whitespace-nowrap text-xs sm:text-sm">Основна</TabsTrigger>
+                    <TabsTrigger value="address" className="whitespace-nowrap text-xs sm:text-sm">Адрес</TabsTrigger>
+                    <TabsTrigger value="tax" className="whitespace-nowrap text-xs sm:text-sm">Данъчна</TabsTrigger>
+                    <TabsTrigger value="banking" className="whitespace-nowrap text-xs sm:text-sm">Банкова</TabsTrigger>
+                  </TabsList>
+                </div>
                 
                 {/* Basic Information Tab */}
                 <TabsContent value="basic" className="space-y-6 pt-4">

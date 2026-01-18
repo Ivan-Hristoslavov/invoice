@@ -541,7 +541,32 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
               </TabsContent>
 
               <TabsContent value="items" className="px-0">
-                <div className="overflow-x-auto">
+                <div className="space-y-4 px-6 pb-6 md:hidden">
+                  {invoice.items.map((item) => (
+                    <div key={item.id} className="rounded-xl border bg-card p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-medium">{item.description}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Количество: {Number.isInteger(Number(item.quantity)) ? Number(item.quantity) : Number(item.quantity).toFixed(2)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Ед. цена: {formatCurrency(Number(item.unitPrice), invoice.currency)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            ДДС: {Number(item.taxRate)}%
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold">
+                            {formatCurrency(Number(item.total), invoice.currency)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b">

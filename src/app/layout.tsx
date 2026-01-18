@@ -126,7 +126,7 @@ export default function RootLayout({
               "offers": {
                 "@type": "Offer",
                 "price": "0",
-                "priceCurrency": "BGN"
+              "priceCurrency": "EUR"
               },
               "aggregateRating": {
                 "@type": "AggregateRating",

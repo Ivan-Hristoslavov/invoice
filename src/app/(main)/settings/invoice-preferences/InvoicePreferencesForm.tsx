@@ -148,10 +148,7 @@ export function InvoicePreferencesForm() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="BGN">BGN - Български лев</SelectItem>
                       <SelectItem value="EUR">EUR - Евро</SelectItem>
-                      <SelectItem value="USD">USD - Щатски долар</SelectItem>
-                      <SelectItem value="GBP">GBP - Британска лира</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormDescription>

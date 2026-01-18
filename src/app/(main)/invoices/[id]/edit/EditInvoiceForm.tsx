@@ -586,10 +586,7 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                       <SelectValue placeholder="Изберете валута" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="BGN">BGN - Български лев</SelectItem>
                       <SelectItem value="EUR">EUR - Евро</SelectItem>
-                      <SelectItem value="USD">USD - Щатски долар</SelectItem>
-                      <SelectItem value="GBP">GBP - Британска лира</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -605,7 +602,86 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="overflow-x-auto">
+                  <div className="space-y-4 md:hidden">
+                    {items.map((item, index) => {
+                      const productName = productNames[item.id] || (item.productId ? products.find(p => p.id === item.productId)?.name : null);
+                      return (
+                        <div key={item.id} className="rounded-xl border bg-card p-4 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium">Артикул {index + 1}</p>
+                              {productName && (
+                                <p className="text-xs text-muted-foreground">Продукт: {productName}</p>
+                              )}
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeItem(index)}
+                              disabled={items.length <= 1}
+                              title={items.length <= 1 ? "Трябва да има поне един артикул" : "Изтрий артикул"}
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Описание</Label>
+                            <Input
+                              placeholder={productName ? `Описание за ${productName}` : "Описание на артикула"}
+                              value={item.description}
+                              onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                            />
+                          </div>
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                            <div className="space-y-2">
+                              <Label>Количество</Label>
+                              <Input
+                                type="number"
+                                min="0.01"
+                                step="0.01"
+                                value={item.quantity}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (value === '' || parseFloat(value) > 0) {
+                                    handleItemChange(index, 'quantity', value);
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  const value = parseFloat(e.target.value);
+                                  if (isNaN(value) || value <= 0) {
+                                    handleItemChange(index, 'quantity', '1');
+                                    toast.error("Количеството трябва да е по-голямо от 0. Автоматично е зададено на 1.");
+                                  }
+                                }}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Ед. цена</Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={item.unitPrice}
+                                onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>ДДС (%)</Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.1"
+                                value={item.taxRate}
+                                onChange={(e) => handleItemChange(index, 'taxRate', e.target.value)}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="hidden md:block overflow-x-auto">
                     <table className="w-full border-collapse">
                       <thead>
                         <tr className="border-b">
