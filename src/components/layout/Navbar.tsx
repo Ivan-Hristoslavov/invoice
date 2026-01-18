@@ -53,11 +53,9 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-30 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex items-center justify-between h-16 px-4 md:px-6 lg:px-8">
+      <div className="flex items-center justify-between h-16 pl-14 pr-4 md:pl-6 md:pr-6 lg:px-8">
         {/* Left Section - Page Title & Breadcrumb */}
         <div className="flex items-center gap-4 flex-1 min-w-0">
-          {/* Mobile menu spacer - more space for menu button */}
-          <div className="w-0 lg:hidden" />
           
           {/* Search (hidden on mobile) */}
           <div className="hidden md:flex relative w-64 lg:w-80">

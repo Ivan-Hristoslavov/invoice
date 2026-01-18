@@ -130,30 +130,34 @@ export default function NewProductPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" asChild>
+      <div className="page-header">
+        <div className="page-header-left">
+          <Button variant="ghost" size="sm" asChild className="back-btn">
             <Link href="/products">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Назад
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline ml-2">Назад</span>
             </Link>
           </Button>
-          <h1 className="text-3xl font-bold">Нов продукт</h1>
+          <h1 className="page-title truncate">Нов продукт</h1>
         </div>
-        <Button 
-          type="submit" 
-          form="product-form" 
-          disabled={isLoading}
-        >
-          <Save className="w-4 h-4 mr-2" />
-          {isLoading ? "Запазване..." : "Запази продукт"}
-        </Button>
+        <div className="page-header-actions">
+          <Button 
+            type="submit" 
+            form="product-form" 
+            disabled={isLoading}
+            className="btn-responsive btn-text"
+          >
+            <Save className="w-4 h-4 mr-2" />
+            <span className="hidden sm:inline">{isLoading ? "Запазване..." : "Запази продукт"}</span>
+            <span className="sm:hidden">{isLoading ? "..." : "Запази"}</span>
+          </Button>
+        </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Детайли за продукта</CardTitle>
-          <CardDescription>
+          <CardTitle className="card-title">Детайли за продукта</CardTitle>
+          <CardDescription className="card-description">
             Добавете нов продукт или услуга към вашия инвентар
           </CardDescription>
         </CardHeader>
