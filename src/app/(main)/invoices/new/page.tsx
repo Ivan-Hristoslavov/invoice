@@ -243,8 +243,8 @@ function ClientCard({
   );
 }
 
-// Invoice item row component
-function InvoiceItemRow({
+// Invoice item card component using Radix UI style
+function InvoiceItemCard({
   item,
   index,
   onUpdate,
@@ -259,66 +259,79 @@ function InvoiceItemRow({
   canRemove: boolean;
   currency: string;
 }) {
-  // Line item total = quantity × unit price (without VAT)
   const itemTotal = item.quantity * item.unitPrice;
+  const itemTax = itemTotal * (item.taxRate / 100);
+  const itemTotalWithTax = itemTotal + itemTax;
   
   return (
-    <div className="group relative bg-card rounded-xl border border-border p-4 hover:border-primary/30 transition-all duration-200">
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary">
-          {index + 1}
+    <div className="group relative bg-gradient-to-br from-card to-card/80 rounded-xl border border-border/60 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-200">
+      {/* Header with number and delete */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border/40 bg-muted/30 rounded-t-xl">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-xs font-bold text-primary-foreground shadow-sm">
+            {index + 1}
+          </div>
+          <span className="text-xs font-medium text-muted-foreground">Артикул</span>
         </div>
-        <Input
-          value={item.description}
-          onChange={(e) => onUpdate("description", e.target.value)}
-          placeholder="Описание на артикула..."
-          className="flex-1 border-0 bg-transparent text-base font-medium focus-visible:ring-0 px-0"
-        />
         {canRemove && (
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            className="opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10 transition-all"
+            className="h-7 w-7 p-0 opacity-40 group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10 transition-all rounded-lg"
             onClick={onRemove}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3.5 w-3.5" />
           </Button>
         )}
       </div>
       
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Количество</Label>
-          <NumericInput
-            allowDecimal={false}
-            value={item.quantity}
-            onChange={(e) => onUpdate("quantity", parseInt(e.target.value) || 1)}
-            className="h-9"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Ед. цена ({currency})</Label>
-          <NumericInput
-            value={item.unitPrice}
-            onChange={(e) => onUpdate("unitPrice", parseFloat(e.target.value) || 0)}
-            className="h-9"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">ДДС (%)</Label>
-          <NumericInput
-            value={item.taxRate}
-            onChange={(e) => onUpdate("taxRate", parseFloat(e.target.value) || 0)}
-            className="h-9"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Сума</Label>
-          <div className="h-9 flex items-center px-3 rounded-md bg-muted font-semibold">
-            {formatPrice(itemTotal)} {currency}
+      {/* Content */}
+      <div className="p-4 space-y-3">
+        {/* Description */}
+        <Input
+          value={item.description}
+          onChange={(e) => onUpdate("description", e.target.value)}
+          placeholder="Описание на артикула..."
+          className="h-9 text-sm font-medium border-border/60 focus:border-primary"
+        />
+        
+        {/* Grid with inputs */}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="space-y-1">
+            <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">К-во</label>
+            <NumericInput
+              allowDecimal={false}
+              value={item.quantity}
+              onChange={(e) => onUpdate("quantity", parseInt(e.target.value) || 1)}
+              className="h-8 text-sm text-center font-medium"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Цена ({currency})</label>
+            <NumericInput
+              value={item.unitPrice}
+              onChange={(e) => onUpdate("unitPrice", parseFloat(e.target.value) || 0)}
+              className="h-8 text-sm font-medium"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">ДДС %</label>
+            <NumericInput
+              value={item.taxRate}
+              onChange={(e) => onUpdate("taxRate", parseFloat(e.target.value) || 0)}
+              className="h-8 text-sm text-center font-medium"
+            />
           </div>
         </div>
+      </div>
+      
+      {/* Footer with total */}
+      <div className="flex items-center justify-between px-4 py-2.5 border-t border-border/40 bg-gradient-to-r from-primary/5 to-primary/10 rounded-b-xl">
+        <span className="text-xs text-muted-foreground">Общо с ДДС</span>
+        <span className="text-base font-bold text-primary">
+          {formatPrice(itemTotalWithTax)} {currency}
+        </span>
       </div>
     </div>
   );
@@ -902,25 +915,27 @@ function NewInvoiceContent() {
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent>
                 {items.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
-                    <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <Package className="h-12 w-12 mx-auto mb-3 opacity-40" />
                     <p className="font-medium">Няма добавени артикули</p>
-                    <p className="text-sm mt-1">Изберете продукт от списъка отгоре или добавете ръчно ред</p>
+                    <p className="text-sm mt-1">Изберете продукт от каталога или добавете ръчно</p>
                   </div>
                 ) : (
-                  items.map((item, index) => (
-                    <InvoiceItemRow
-                      key={item.id}
-                      item={item}
-                      index={index}
-                      onUpdate={(field, value) => updateItem(item.id, field, value)}
-                      onRemove={() => removeItem(item.id)}
-                      canRemove={true}
-                      currency={invoiceData.currency}
-                    />
-                  ))
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                    {items.map((item, index) => (
+                      <InvoiceItemCard
+                        key={item.id}
+                        item={item}
+                        index={index}
+                        onUpdate={(field, value) => updateItem(item.id, field, value)}
+                        onRemove={() => removeItem(item.id)}
+                        canRemove={true}
+                        currency={invoiceData.currency}
+                      />
+                    ))}
+                  </div>
                 )}
               </CardContent>
             </Card>

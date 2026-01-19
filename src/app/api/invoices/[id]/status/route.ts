@@ -5,13 +5,14 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
 // Valid status transitions
-// Note: Database enum values might be: DRAFT, UNPAID, PAID, OVERDUE, CANCELLED
+// Note: Database enum values might be: DRAFT, UNPAID, PAID, OVERDUE, CANCELLED, VOIDED
 // We map ISSUED -> PAID for backward compatibility until DB enum is updated
 const VALID_TRANSITIONS: Record<string, string[]> = {
-  DRAFT: ["ISSUED", "PAID"],  // Draft can be issued
-  ISSUED: ["CANCELLED"],      // Issued can only be cancelled
-  PAID: ["CANCELLED"],        // Paid (old name for ISSUED) can only be cancelled
-  CANCELLED: [],              // Cancelled is final
+  DRAFT: ["ISSUED", "PAID", "VOIDED"],  // Draft can be issued or voided
+  ISSUED: ["CANCELLED"],                 // Issued can only be cancelled
+  PAID: ["CANCELLED"],                   // Paid (old name for ISSUED) can only be cancelled
+  VOIDED: [],                            // Voided is final (but can be deleted)
+  CANCELLED: [],                         // Cancelled is final
 };
 
 // Map new status names to database enum values
@@ -128,15 +129,21 @@ export async function PATCH(
     try {
       const { logAction } = await import("@/lib/audit-log");
       const headers = request.headers;
+      
+      // Determine action type based on new status
+      const actionType = status === "VOIDED" ? "VOID" : 
+                         status === "ISSUED" || status === "PAID" ? "ISSUE" : "UPDATE";
+      
       await logAction({
         userId: session.user.id as string,
-        action: "UPDATE",
+        action: actionType,
         entityType: "INVOICE",
         entityId: id,
         invoiceId: id,
         changes: { 
           previousStatus: invoice.status,
-          newStatus: status 
+          newStatus: status,
+          reason: body.reason || undefined
         },
         ipAddress: headers.get("x-forwarded-for") || headers.get("x-real-ip") || undefined,
         userAgent: headers.get("user-agent") || undefined,

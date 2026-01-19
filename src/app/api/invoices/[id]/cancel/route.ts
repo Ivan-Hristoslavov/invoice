@@ -39,10 +39,10 @@ export async function POST(
       return NextResponse.json({ error: "Фактурата не е намерена" }, { status: 404 });
     }
 
-    // Only ISSUED invoices can be cancelled
-    if (invoice.status !== "ISSUED") {
+    // Only ISSUED invoices can be cancelled (PAID is the old DB enum value for ISSUED)
+    if (invoice.status !== "ISSUED" && invoice.status !== "PAID") {
       return NextResponse.json(
-        { error: "Само издадени (ISSUED) фактури могат да бъдат отменени. За чернови (DRAFT) фактури използвайте изтриване." },
+        { error: "Само издадени фактури могат да бъдат отменени. За чернови използвайте изтриване или анулиране." },
         { status: 400 }
       );
     }
@@ -92,7 +92,6 @@ export async function POST(
         taxAmount: invoice.taxAmount,
         total: invoice.total,
         currency: invoice.currency,
-        status: "ISSUED",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       })

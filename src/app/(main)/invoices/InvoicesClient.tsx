@@ -30,7 +30,8 @@ import {
   MoreHorizontal,
   FileCheck,
   Printer,
-  Trash2
+  Trash2,
+  Ban
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +56,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { StatusChangeModal } from "@/components/invoice/StatusChangeModal";
 import { DeleteInvoiceModal } from "@/components/invoice/DeleteInvoiceModal";
+import { VoidInvoiceModal } from "@/components/invoice/VoidInvoiceModal";
+import { CancelInvoiceModal } from "@/components/invoice/CancelInvoiceModal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { ProFeatureLock, UsageCounter, LockedButton } from "@/components/ui/pro-feature-lock";
@@ -117,6 +120,18 @@ export default function InvoicesClient({
 
   // Modal state for delete
   const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    invoice: Invoice | null;
+  }>({ isOpen: false, invoice: null });
+
+  // Modal state for void (annul)
+  const [voidModal, setVoidModal] = useState<{
+    isOpen: boolean;
+    invoice: Invoice | null;
+  }>({ isOpen: false, invoice: null });
+
+  // Modal state for cancel (issued invoices)
+  const [cancelModal, setCancelModal] = useState<{
     isOpen: boolean;
     invoice: Invoice | null;
   }>({ isOpen: false, invoice: null });
@@ -206,6 +221,89 @@ export default function InvoicesClient({
     setStatusModal({ isOpen: false, invoice: null, newStatus: "" });
   };
 
+  // Open cancel modal
+  const openCancelModal = (invoice: Invoice) => {
+    setCancelModal({ isOpen: true, invoice });
+  };
+
+  // Handle cancel invoice (create credit note) - for ISSUED invoices
+  const handleCancelInvoice = async (reason: string) => {
+    if (!cancelModal.invoice) return;
+    
+    const invoice = cancelModal.invoice;
+    
+    try {
+      const response = await fetch(`/api/invoices/${invoice.id}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        // Update local state
+        setInvoices(prev => 
+          prev.map(inv => 
+            inv.id === invoice.id 
+              ? { ...inv, status: "CANCELLED" }
+              : inv
+          )
+        );
+        toast.success("Фактурата е отменена", {
+          description: `Сторно документ ${data.creditNote?.creditNoteNumber} е създаден успешно`,
+        });
+        router.refresh();
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Грешка при отмяна на фактурата");
+      }
+    } catch (error) {
+      console.error('Error cancelling invoice:', error);
+      toast.error("Грешка при отмяна на фактурата");
+    }
+  };
+
+  // Open void modal
+  const openVoidModal = (invoice: Invoice) => {
+    setVoidModal({ isOpen: true, invoice });
+  };
+
+  // Handle void invoice - for DRAFT invoices (marks as VOIDED but keeps in database)
+  const handleVoidInvoice = async (reason: string) => {
+    if (!voidModal.invoice) return;
+    
+    const invoice = voidModal.invoice;
+    
+    try {
+      const response = await fetch(`/api/invoices/${invoice.id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "VOIDED", reason }),
+      });
+      
+      if (response.ok) {
+        // Update local state
+        setInvoices(prev => 
+          prev.map(inv => 
+            inv.id === invoice.id 
+              ? { ...inv, status: "VOIDED" }
+              : inv
+          )
+        );
+        toast.success("Черновата е анулирана", {
+          description: "Фактурата е маркирана като анулирана",
+        });
+        router.refresh();
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Грешка при анулиране на черновата");
+      }
+    } catch (error) {
+      console.error('Error voiding invoice:', error);
+      toast.error("Грешка при анулиране на черновата");
+    }
+  };
+
   // Filter invoices based on search and status
   const filteredInvoices = useMemo(() => {
     let filtered = invoices;
@@ -231,10 +329,11 @@ export default function InvoicesClient({
   const stats = useMemo(() => {
     const issued = invoices.filter(i => i.status === 'ISSUED' || i.status === 'PAID');
     const draft = invoices.filter(i => i.status === 'DRAFT');
+    const voided = invoices.filter(i => i.status === 'VOIDED');
     const cancelled = invoices.filter(i => i.status === 'CANCELLED');
     const totalValue = issued.reduce((sum, i) => sum + Number(i.total), 0);
     
-    return { issued: issued.length, draft: draft.length, cancelled: cancelled.length, totalValue };
+    return { issued: issued.length, draft: draft.length, voided: voided.length, cancelled: cancelled.length, totalValue };
   }, [invoices]);
 
   const statsCards = [
@@ -269,6 +368,12 @@ export default function InvoicesClient({
 
   const getStatusConfig = (status: string) => {
     switch (status) {
+      case "DRAFT":
+        return {
+          label: "Чернова",
+          icon: Clock,
+          className: "bg-amber-500/10 text-amber-600 border-amber-200 dark:border-amber-800"
+        };
       case "ISSUED":
       case "PAID": // PAID in DB = ISSUED in app
         return {
@@ -276,11 +381,11 @@ export default function InvoicesClient({
           icon: CheckCircle,
           className: "bg-emerald-500/10 text-emerald-600 border-emerald-200 dark:border-emerald-800"
         };
-      case "DRAFT":
+      case "VOIDED":
         return {
-          label: "Чернова",
-          icon: Clock,
-          className: "bg-amber-500/10 text-amber-600 border-amber-200 dark:border-amber-800"
+          label: "Анулирана",
+          icon: XCircle,
+          className: "bg-slate-500/10 text-slate-600 border-slate-200 dark:border-slate-800"
         };
       case "CANCELLED":
         return {
@@ -444,6 +549,12 @@ export default function InvoicesClient({
                   <span className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-emerald-500" />
                     Издадени
+                  </span>
+                </SelectItem>
+                <SelectItem value="VOIDED">
+                  <span className="flex items-center gap-2">
+                    <XCircle className="h-4 w-4 text-slate-500" />
+                    Анулирани
                   </span>
                 </SelectItem>
                 <SelectItem value="CANCELLED">
@@ -720,6 +831,13 @@ export default function InvoicesClient({
                                       </DropdownMenuItem>
                                       {invoice.userId === currentUserId && (
                                         <>
+                                          <DropdownMenuItem
+                                            onClick={() => openVoidModal(invoice)}
+                                            className="text-orange-600 focus:text-orange-600 focus:bg-orange-50"
+                                          >
+                                            <Ban className="mr-2 h-4 w-4" />
+                                            Анулирай
+                                          </DropdownMenuItem>
                                           <DropdownMenuSeparator />
                                           <DropdownMenuItem
                                             onClick={() => openDeleteModal(invoice)}
@@ -730,6 +848,18 @@ export default function InvoicesClient({
                                           </DropdownMenuItem>
                                         </>
                                       )}
+                                    </>
+                                  )}
+                                  {(invoice.status === "ISSUED" || invoice.status === "PAID") && invoice.userId === currentUserId && (
+                                    <>
+                                      <DropdownMenuItem
+                                        onClick={() => openCancelModal(invoice)}
+                                        className="text-red-600 focus:text-red-600"
+                                      >
+                                        <XCircle className="mr-2 h-4 w-4" />
+                                        Отмени фактура
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
                                     </>
                                   )}
                                   <DropdownMenuItem
@@ -819,6 +949,26 @@ export default function InvoicesClient({
           onClose={closeDeleteModal}
           onConfirm={handleDeleteInvoice}
           invoiceNumber={deleteModal.invoice.invoiceNumber}
+        />
+      )}
+
+      {/* Void Invoice Modal */}
+      {voidModal.invoice && (
+        <VoidInvoiceModal
+          isOpen={voidModal.isOpen}
+          onClose={() => setVoidModal({ isOpen: false, invoice: null })}
+          onConfirm={handleVoidInvoice}
+          invoiceNumber={voidModal.invoice.invoiceNumber}
+        />
+      )}
+
+      {/* Cancel Invoice Modal */}
+      {cancelModal.invoice && (
+        <CancelInvoiceModal
+          isOpen={cancelModal.isOpen}
+          onClose={() => setCancelModal({ isOpen: false, invoice: null })}
+          onConfirm={handleCancelInvoice}
+          invoiceNumber={cancelModal.invoice.invoiceNumber}
         />
       )}
     </div>

@@ -37,7 +37,7 @@ const mainNavItems = [
     gradient: "from-emerald-500 to-teal-600"
   },
   { 
-    name: "Кр. известия", 
+    name: "Сторно", 
     href: "/credit-notes", 
     icon: Receipt,
     gradient: "from-red-500 to-rose-600"

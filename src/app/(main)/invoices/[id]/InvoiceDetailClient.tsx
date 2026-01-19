@@ -295,12 +295,14 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "DRAFT":
-        return <AlertTriangle className="h-4 w-4 text-slate-500" />;
+        return <AlertTriangle className="h-4 w-4 text-amber-500" />;
       case "ISSUED":
       case "PAID": // PAID in DB = ISSUED in app
         return <CheckCircle className="h-4 w-4 text-emerald-500" />;
+      case "VOIDED":
+        return <XCircle className="h-4 w-4 text-slate-500" />;
       case "CANCELLED":
-        return <AlertTriangle className="h-4 w-4 text-red-500" />;
+        return <XCircle className="h-4 w-4 text-red-500" />;
       default:
         return null;
     }
@@ -308,11 +310,13 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case "DRAFT":
+        return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800";
       case "ISSUED":
       case "PAID": // PAID in DB = ISSUED in app
         return "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800";
-      case "DRAFT":
-        return "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-700";
+      case "VOIDED":
+        return "bg-slate-100 text-slate-600 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700";
       case "CANCELLED":
         return "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800";
       default:
@@ -327,6 +331,8 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
       case "ISSUED":
       case "PAID": // PAID in DB = ISSUED in app
         return "Издадена";
+      case "VOIDED":
+        return "Анулирана";
       case "CANCELLED":
         return "Отказана";
       default:

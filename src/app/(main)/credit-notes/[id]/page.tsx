@@ -24,8 +24,8 @@ import { format } from "date-fns";
 import { bg } from "date-fns/locale";
 
 export const metadata: Metadata = {
-  title: `Кредитно известие | ${APP_NAME}`,
-  description: "Детайли за кредитно известие",
+  title: `Сторно документ | ${APP_NAME}`,
+  description: "Детайли за сторно документ",
 };
 
 interface CreditNoteItem {
@@ -102,7 +102,7 @@ export default async function CreditNoteDetailPage({
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-xl font-bold">
-              Кредитно известие #{creditNote.creditNoteNumber}
+              Сторно документ #{creditNote.creditNoteNumber}
             </h1>
             <Badge className="bg-red-500/10 text-red-600 border-red-500/20">
               <Receipt className="h-3 w-3 mr-1" />
@@ -140,7 +140,7 @@ export default async function CreditNoteDetailPage({
               {invoice && (
                 <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
                   <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
-                    Кредитно известие към фактура:
+                    Сторно документ към фактура:
                   </p>
                   <Link 
                     href={`/invoices/${invoice.id}`}

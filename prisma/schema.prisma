@@ -328,7 +328,8 @@ model AuditLog {
 enum InvoiceStatus {
   DRAFT      // Draft invoice, can be edited
   ISSUED     // Invoice issued (immutable, cannot be edited)
-  CANCELLED  // Invoice cancelled, credit note created
+  VOIDED     // Draft invoice voided (marked as cancelled before issuing, kept in database)
+  CANCELLED  // Issued invoice cancelled, credit note created
 }
 
 // PaymentMethod enum removed - payment method is now just a text field in Invoice

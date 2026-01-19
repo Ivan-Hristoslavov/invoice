@@ -21,8 +21,8 @@ import { bg } from "date-fns/locale";
 import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
 
 export const metadata: Metadata = {
-  title: `Кредитни известия | ${APP_NAME}`,
-  description: "Преглед на кредитни известия",
+  title: `Сторно документи | ${APP_NAME}`,
+  description: "Преглед на сторно документи",
 };
 
 interface CreditNote {
@@ -122,9 +122,9 @@ export default async function CreditNotesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Кредитни известия</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Сторно документи</h1>
           <p className="text-muted-foreground mt-1">
-            Преглед на издадени кредитни известия за отменени фактури
+            Преглед на издадени сторно документи за отменени фактури
           </p>
         </div>
       </div>
@@ -167,9 +167,9 @@ export default async function CreditNotesPage() {
               <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
                 <Receipt className="h-8 w-8 text-muted-foreground" />
               </div>
-              <h3 className="text-lg font-semibold mb-1">Няма кредитни известия</h3>
+              <h3 className="text-lg font-semibold mb-1">Няма сторно документи</h3>
               <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-                Кредитните известия се създават автоматично при отмяна на издадена фактура
+                Сторно документите се създават автоматично при отмяна на издадена фактура
               </p>
               <Button asChild variant="outline">
                 <Link href="/invoices">
@@ -183,9 +183,9 @@ export default async function CreditNotesPage() {
       ) : (
         <Card className="border-0 shadow-lg">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Списък с кредитни известия</CardTitle>
+            <CardTitle className="text-lg">Списък със сторно документи</CardTitle>
             <CardDescription>
-              Общо {totalCreditNotes} {totalCreditNotes === 1 ? 'известие' : 'известия'}
+              Общо {totalCreditNotes} {totalCreditNotes === 1 ? 'документ' : 'документа'}
             </CardDescription>
           </CardHeader>
           <CardContent>

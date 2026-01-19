@@ -79,6 +79,105 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
   const [client, setClient] = useState<any>(null);
   const [productNames, setProductNames] = useState<Record<string, string>>({});
 
+  // Invoice item card component
+  const InvoiceItemCard = ({
+    item,
+    index,
+    onDescriptionChange,
+    onQuantityChange,
+    onPriceChange,
+    onTaxChange,
+    onRemove,
+    canRemove,
+    productName
+  }: {
+    item: any;
+    index: number;
+    onDescriptionChange: (value: string) => void;
+    onQuantityChange: (value: string) => void;
+    onPriceChange: (value: string) => void;
+    onTaxChange: (value: string) => void;
+    onRemove: () => void;
+    canRemove: boolean;
+    productName?: string;
+  }) => {
+    const itemTotal = parseFloat(item.quantity || 0) * parseFloat(item.unitPrice || 0);
+    const itemTax = itemTotal * (parseFloat(item.taxRate || 0) / 100);
+    const itemTotalWithTax = itemTotal + itemTax;
+    
+    return (
+      <div className="group relative bg-gradient-to-br from-card to-card/80 rounded-xl border border-border/60 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-200">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-2 border-b border-border/40 bg-muted/30 rounded-t-xl">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-xs font-bold text-primary-foreground shadow-sm">
+              {index + 1}
+            </div>
+            <span className="text-xs font-medium text-muted-foreground truncate max-w-[120px]">
+              {productName || 'Артикул'}
+            </span>
+          </div>
+          {canRemove && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 opacity-40 group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10 transition-all rounded-lg"
+              onClick={onRemove}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
+        
+        {/* Content */}
+        <div className="p-4 space-y-3">
+          <Input
+            value={item.description}
+            onChange={(e) => onDescriptionChange(e.target.value)}
+            placeholder="Описание..."
+            className="h-9 text-sm font-medium border-border/60"
+          />
+          
+          <div className="grid grid-cols-3 gap-2">
+            <div className="space-y-1">
+              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">К-во</label>
+              <NumericInput
+                value={item.quantity}
+                onChange={(e) => onQuantityChange(e.target.value)}
+                className="h-8 text-sm text-center font-medium"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Цена</label>
+              <NumericInput
+                value={item.unitPrice}
+                onChange={(e) => onPriceChange(e.target.value)}
+                className="h-8 text-sm font-medium"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">ДДС %</label>
+              <NumericInput
+                value={item.taxRate}
+                onChange={(e) => onTaxChange(e.target.value)}
+                className="h-8 text-sm text-center font-medium"
+              />
+            </div>
+          </div>
+        </div>
+        
+        {/* Footer */}
+        <div className="flex items-center justify-between px-4 py-2.5 border-t border-border/40 bg-gradient-to-r from-primary/5 to-primary/10 rounded-b-xl">
+          <span className="text-xs text-muted-foreground">Общо</span>
+          <span className="text-base font-bold text-primary">
+            {formatPrice(itemTotalWithTax)} {invoiceData.currency}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
   // Fetch invoice data on component mount
   useEffect(() => {
     async function fetchInvoiceData() {
@@ -594,192 +693,76 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
             </Card>
             
             <Card>
-              <CardHeader>
-                <CardTitle>Артикули</CardTitle>
-                <CardDescription>
-                  Редактирайте артикулите във фактурата
-                </CardDescription>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base">Артикули</CardTitle>
+                    <CardDescription className="text-xs">
+                      {items.length} артикул(а)
+                    </CardDescription>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addItem}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Добави
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="space-y-4 md:hidden">
-                    {items.map((item, index) => {
-                      const productName = productNames[item.id] || (item.productId ? products.find(p => p.id === item.productId)?.name : null);
-                      return (
-                        <div key={item.id} className="rounded-xl border bg-card p-4 space-y-3">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium">Артикул {index + 1}</p>
-                              {productName && (
-                                <p className="text-xs text-muted-foreground">Продукт: {productName}</p>
-                              )}
-                            </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeItem(index)}
-                              disabled={items.length <= 1}
-                              title={items.length <= 1 ? "Трябва да има поне един артикул" : "Изтрий артикул"}
-                            >
-                              <Trash2 className="w-4 h-4 text-destructive" />
-                            </Button>
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Описание</Label>
-                            <Input
-                              placeholder={productName ? `Описание за ${productName}` : "Описание на артикула"}
-                              value={item.description}
-                              onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                            />
-                          </div>
-                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                            <div className="space-y-2">
-                              <Label>Количество</Label>
-                              <NumericInput
-                                value={item.quantity}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  if (value === '' || parseFloat(value) > 0) {
-                                    handleItemChange(index, 'quantity', value);
-                                  }
-                                }}
-                                onBlur={(e) => {
-                                  const value = parseFloat(e.target.value);
-                                  if (isNaN(value) || value <= 0) {
-                                    handleItemChange(index, 'quantity', '1');
-                                    toast.error("Количеството трябва да е по-голямо от 0. Автоматично е зададено на 1.");
-                                  }
-                                }}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Ед. цена</Label>
-                              <NumericInput
-                                value={item.unitPrice}
-                                onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>ДДС (%)</Label>
-                              <NumericInput
-                                value={item.taxRate}
-                                onChange={(e) => handleItemChange(index, 'taxRate', e.target.value)}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                {items.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p className="font-medium">Няма артикули</p>
+                    <p className="text-sm mt-1">Добавете артикул към фактурата</p>
                   </div>
-                  <div className="hidden md:block overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="text-left py-3 px-4 font-medium">Описание</th>
-                          <th className="text-right py-3 px-4 font-medium w-24">Количество</th>
-                          <th className="text-right py-3 px-4 font-medium w-32">Ед. цена</th>
-                          <th className="text-right py-3 px-4 font-medium w-32">ДДС (%)</th>
-                          <th className="text-right py-3 px-4 font-medium w-24">Действия</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {items.map((item, index) => {
-                          const productName = productNames[item.id] || (item.productId ? products.find(p => p.id === item.productId)?.name : null);
-                          return (
-                          <tr key={item.id} className="border-b">
-                            <td className="py-3 px-4">
-                              <div className="space-y-1">
-                                {productName && (
-                                  <div className="text-xs text-muted-foreground font-medium">
-                                    Продукт: {productName}
-                                  </div>
-                                )}
-                                <Input
-                                  placeholder={productName ? `Описание за ${productName}` : "Описание на артикула"}
-                                  value={item.description}
-                                  onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                                />
-                              </div>
-                            </td>
-                            <td className="py-3 px-4">
-                              <NumericInput
-                                className="text-right"
-                                value={item.quantity}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  if (value === '' || parseFloat(value) > 0) {
-                                    handleItemChange(index, 'quantity', value);
-                                  }
-                                }}
-                                onBlur={(e) => {
-                                  const value = parseFloat(e.target.value);
-                                  if (isNaN(value) || value <= 0) {
-                                    handleItemChange(index, 'quantity', '1');
-                                    toast.error("Количеството трябва да е по-голямо от 0. Автоматично е зададено на 1.");
-                                  }
-                                }}
-                              />
-                            </td>
-                            <td className="py-3 px-4">
-                              <NumericInput
-                                className="text-right"
-                                value={item.unitPrice}
-                                onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
-                              />
-                            </td>
-                            <td className="py-3 px-4">
-                              <NumericInput
-                                className="text-right"
-                                value={item.taxRate}
-                                onChange={(e) => handleItemChange(index, 'taxRate', e.target.value)}
-                              />
-                            </td>
-                            <td className="py-3 px-4 text-right">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => removeItem(index)}
-                                disabled={items.length <= 1}
-                                title={items.length <= 1 ? "Трябва да има поне един артикул" : "Изтрий артикул"}
-                              >
-                                <Trash2 className="w-4 h-4 text-destructive" />
-                              </Button>
-                            </td>
-                          </tr>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                      {items.map((item, index) => {
+                        const productName = productNames[item.id] || (item.productId ? products.find(p => p.id === item.productId)?.name : null);
+                        return (
+                          <InvoiceItemCard
+                            key={item.id}
+                            item={item}
+                            index={index}
+                            productName={productName}
+                            onDescriptionChange={(value) => handleItemChange(index, 'description', value)}
+                            onQuantityChange={(value) => {
+                              if (value === '' || parseFloat(value) > 0) {
+                                handleItemChange(index, 'quantity', value);
+                              }
+                            }}
+                            onPriceChange={(value) => handleItemChange(index, 'unitPrice', value)}
+                            onTaxChange={(value) => handleItemChange(index, 'taxRate', value)}
+                            onRemove={() => removeItem(index)}
+                            canRemove={items.length > 1}
+                          />
                         );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                  
-                  <div className="flex justify-between">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={addItem}
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Добави артикул
-                    </Button>
+                      })}
+                    </div>
                     
-                    <div className="space-y-2">
-                      <div className="flex justify-between gap-8">
-                        <span className="text-muted-foreground">Междинна сума:</span>
-                        <span className="font-medium">{totals.subtotal} {invoiceData.currency}</span>
-                      </div>
-                      <div className="flex justify-between gap-8">
-                        <span className="text-muted-foreground">ДДС:</span>
-                        <span className="font-medium">{totals.taxAmount} {invoiceData.currency}</span>
-                      </div>
-                      <div className="flex justify-between gap-8 border-t pt-2">
-                        <span className="font-medium">Общо:</span>
-                        <span className="font-bold">{totals.total} {invoiceData.currency}</span>
+                    {/* Totals */}
+                    <div className="flex justify-end pt-4 mt-4 border-t">
+                      <div className="bg-gradient-to-br from-muted/50 to-muted/30 rounded-xl p-4 space-y-2 min-w-[200px]">
+                        <div className="flex justify-between gap-6 text-sm">
+                          <span className="text-muted-foreground">Междинна сума:</span>
+                          <span className="font-medium">{totals.subtotal} {invoiceData.currency}</span>
+                        </div>
+                        <div className="flex justify-between gap-6 text-sm">
+                          <span className="text-muted-foreground">ДДС:</span>
+                          <span className="font-medium">{totals.taxAmount} {invoiceData.currency}</span>
+                        </div>
+                        <div className="flex justify-between gap-6 border-t pt-2">
+                          <span className="font-semibold">Общо:</span>
+                          <span className="font-bold text-primary text-lg">{totals.total} {invoiceData.currency}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
+                  </>
+                )}
               </CardContent>
             </Card>
             
