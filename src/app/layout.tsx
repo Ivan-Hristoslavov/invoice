@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner-toaster";
+import { CookieConsent } from "@/components/gdpr/CookieConsent";
 import { APP_NAME, APP_DESCRIPTION, SEO_KEYWORDS } from "@/config/constants";
 import { Theme } from "@radix-ui/themes";
 import "@radix-ui/themes/styles.css";
@@ -160,6 +161,7 @@ export default function RootLayout({
             <AuthProvider>
               {children}
               <Toaster />
+              <CookieConsent />
             </AuthProvider>
           </Theme>
         </ThemeProvider>

@@ -77,37 +77,23 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
 
   return (
     <div className="space-y-6">
-      {/* Subscription Warning Banner for FREE plan */}
-      {isFree && !canCreateCompany && (
-        <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
-          <Lock className="h-4 w-4 text-amber-600" />
+      {/* Subscription Warning Banner */}
+      {!canCreateCompany && (
+        <Alert className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
+          <XCircle className="h-4 w-4 text-red-600" />
           <AlertDescription className="flex items-center justify-between">
-            <span className="text-amber-800 dark:text-amber-200">
-              Вашият FREE план позволява само <strong>1 компания</strong>. 
-              Надградете до PRO за до 10 компании.
+            <span className="text-red-800 dark:text-red-200">
+              {isFree && (
+                <>Достигнахте лимита от <strong>1 компания</strong> за FREE плана. Надградете до PRO за до 3 компании.</>
+              )}
+              {isPro && (
+                <>Достигнахте лимита от <strong>3 компании</strong> за PRO плана. Надградете до BUSINESS за до 10 компании.</>
+              )}
             </span>
             <Link href="/settings/subscription">
               <Button size="sm" className="ml-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
                 <Crown className="h-4 w-4 mr-2" />
-                Надградете до PRO
-              </Button>
-            </Link>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {isPro && !canCreateCompany && (
-        <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30">
-          <Lock className="h-4 w-4 text-blue-600" />
-          <AlertDescription className="flex items-center justify-between">
-            <span className="text-blue-800 dark:text-blue-200">
-              Вашият PRO план позволява до <strong>10 компании</strong>. 
-              Надградете до BUSINESS за неограничени компании.
-            </span>
-            <Link href="/settings/subscription">
-              <Button size="sm" className="ml-4 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white">
-                <Crown className="h-4 w-4 mr-2" />
-                Надградете до BUSINESS
+                Надградете
               </Button>
             </Link>
           </AlertDescription>
@@ -116,10 +102,10 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
+        <div className="flex-1">
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-bold tracking-tight">Компании</h1>
-            {(isFree || isPro) && !isLoadingUsage && companyUsage.limit !== Infinity && (
+            {!isLoadingUsage && companyUsage.limit !== Infinity && (
               <UsageCounter 
                 used={companyUsage.used} 
                 limit={companyUsage.limit}

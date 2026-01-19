@@ -17,6 +17,11 @@ import {
   Printer,
   FileCheck,
   Edit,
+  History,
+  User,
+  FileText,
+  XCircle,
+  Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -113,6 +118,8 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isChangingStatus, setIsChangingStatus] = useState(false);
   const [showIssueModal, setShowIssueModal] = useState(false);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [isLoadingAuditLogs, setIsLoadingAuditLogs] = useState(false);
   
   // Subscription limit check for email sending
   const { canUseFeature, isLoadingUsage } = useSubscriptionLimit();
@@ -124,6 +131,28 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
       setIsChangingStatus(false);
     };
   }, []);
+
+  // Fetch audit logs when History tab is selected
+  useEffect(() => {
+    if (activeTab === 'history' && auditLogs.length === 0 && !isLoadingAuditLogs) {
+      fetchAuditLogs();
+    }
+  }, [activeTab]);
+
+  const fetchAuditLogs = async () => {
+    setIsLoadingAuditLogs(true);
+    try {
+      const response = await fetch(`/api/audit-logs?invoiceId=${invoice.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setAuditLogs(data.logs || []);
+      }
+    } catch (error) {
+      console.error('Error fetching audit logs:', error);
+    } finally {
+      setIsLoadingAuditLogs(false);
+    }
+  };
 
   // Issue invoice (change status from DRAFT to ISSUED)
   const handleIssueInvoice = async () => {
@@ -468,7 +497,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
             )}
             
           {/* Issued actions */}
-          {(invoice.status === "ISSUED" || invoice.status === "PAID") && (
+          {invoice.status === "ISSUED" && (
             <Button 
               variant="destructive" 
               size="sm"
@@ -516,11 +545,16 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
                 <TabsList className="grid w-full grid-cols-4 mb-2">
                   <TabsTrigger value="details" className="text-base">Детайли</TabsTrigger>
                   <TabsTrigger value="items" className="text-base">Артикули</TabsTrigger>
-                  {/* Payments tab removed - invoices are for issuance only */}
                   <TabsTrigger value="documents" className="text-base">
                     <span className="flex items-center">
                       <Paperclip className="mr-2 h-4 w-4" />
                       Документи
+                    </span>
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="text-base">
+                    <span className="flex items-center">
+                      <History className="mr-2 h-4 w-4" />
+                      История
                     </span>
                   </TabsTrigger>
                 </TabsList>
@@ -720,6 +754,78 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
 
               <TabsContent value="documents" className="p-6 pt-2">
                 <DocumentsTab invoiceId={invoice.id} documents={documents} />
+              </TabsContent>
+
+              <TabsContent value="history" className="p-6 pt-2">
+                {isLoadingAuditLogs ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
+                  </div>
+                ) : auditLogs.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <History className="h-12 w-12 text-muted-foreground/30 mb-4" />
+                    <p className="text-muted-foreground">Няма записана история за тази фактура</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {auditLogs.map((log, index) => (
+                      <div 
+                        key={log.id} 
+                        className="flex gap-4 pb-4 border-b last:border-0"
+                      >
+                        <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${
+                          log.action === 'CREATE' ? 'bg-emerald-500/10 text-emerald-600' :
+                          log.action === 'ISSUE' || log.action === 'UPDATE' ? 'bg-blue-500/10 text-blue-600' :
+                          log.action === 'SEND' ? 'bg-violet-500/10 text-violet-600' :
+                          log.action === 'CANCEL' ? 'bg-red-500/10 text-red-600' :
+                          log.action === 'EXPORT' ? 'bg-amber-500/10 text-amber-600' :
+                          'bg-muted text-muted-foreground'
+                        }`}>
+                          {log.action === 'CREATE' && <FileText className="h-5 w-5" />}
+                          {log.action === 'ISSUE' && <CheckCircle className="h-5 w-5" />}
+                          {log.action === 'UPDATE' && <Edit className="h-5 w-5" />}
+                          {log.action === 'SEND' && <Mail className="h-5 w-5" />}
+                          {log.action === 'CANCEL' && <XCircle className="h-5 w-5" />}
+                          {log.action === 'EXPORT' && <Download className="h-5 w-5" />}
+                          {!['CREATE', 'ISSUE', 'UPDATE', 'SEND', 'CANCEL', 'EXPORT'].includes(log.action) && (
+                            <History className="h-5 w-5" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-sm">
+                              {log.action === 'CREATE' && 'Фактурата е създадена'}
+                              {log.action === 'ISSUE' && 'Фактурата е издадена'}
+                              {log.action === 'UPDATE' && 'Фактурата е обновена'}
+                              {log.action === 'SEND' && 'Фактурата е изпратена'}
+                              {log.action === 'CANCEL' && 'Фактурата е отменена'}
+                              {log.action === 'EXPORT' && 'Фактурата е експортирана'}
+                              {!['CREATE', 'ISSUE', 'UPDATE', 'SEND', 'CANCEL', 'EXPORT'].includes(log.action) && log.action}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {format(new Date(log.createdAt), "d MMM yyyy, HH:mm")}
+                            </span>
+                            {log.ipAddress && (
+                              <span>IP: {log.ipAddress}</span>
+                            )}
+                          </div>
+                          {log.changes && (
+                            <div className="mt-2 text-xs text-muted-foreground bg-muted/50 rounded p-2">
+                              {typeof log.changes === 'string' ? (
+                                <pre className="whitespace-pre-wrap">{log.changes}</pre>
+                              ) : (
+                                <pre className="whitespace-pre-wrap">{JSON.stringify(log.changes, null, 2)}</pre>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </Card>
