@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { Package, Plus, Search, Tag, ArrowUpRight, Euro, Percent } from "lucide-react";
+import { Package, Plus, Search, Tag, ArrowUpRight, Euro, Percent, Lock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,8 @@ import { APP_NAME } from "@/config/constants";
 import { createAdminClient } from "@/lib/supabase/server";
 import { Input } from "@/components/ui/input";
 import { redirect } from "next/navigation";
+import { PLAN_LIMITS } from "@/middleware/subscription";
+import { Progress } from "@/components/ui/progress";
 
 interface Product {
   id: string;
@@ -61,6 +63,20 @@ export default async function ProductsPage() {
     : 0;
   const withTax = productsList.filter((p: Product) => p.taxRate > 0).length;
 
+  // Get user's subscription plan
+  const { data: subscriptions } = await supabase
+    .from("Subscription")
+    .select("*")
+    .eq("userId", session.user.id)
+    .in("status", ["ACTIVE", "TRIALING", "PAST_DUE"])
+    .limit(1);
+  
+  const subscription = subscriptions && subscriptions.length > 0 ? subscriptions[0] : null;
+  const plan = (subscription?.plan || "FREE") as keyof typeof PLAN_LIMITS;
+  const limits = PLAN_LIMITS[plan];
+  const productLimit = limits.maxProducts === Infinity ? -1 : limits.maxProducts;
+  const canCreateProduct = productLimit === -1 || totalProducts < productLimit;
+
   // Generate gradient based on product name
   const getGradient = (name: string) => {
     const gradients = [
@@ -85,18 +101,33 @@ export default async function ProductsPage() {
             Управлявайте вашите продукти и услуги
           </p>
         </div>
-        <RadixButton 
-          asChild 
-          size="3" 
-          variant="solid" 
-          color="green"
-          className="shadow-lg"
-        >
-          <Link href="/products/new">
-            <Plus className="mr-2 h-5 w-5" />
-            Нов продукт
-          </Link>
-        </RadixButton>
+        {canCreateProduct ? (
+          <RadixButton 
+            asChild 
+            size="3" 
+            variant="solid" 
+            color="green"
+            className="shadow-lg"
+          >
+            <Link href="/products/new">
+              <Plus className="mr-2 h-5 w-5" />
+              Нов продукт
+            </Link>
+          </RadixButton>
+        ) : (
+          <RadixButton 
+            asChild 
+            size="3" 
+            variant="soft" 
+            color="gray"
+            className="shadow-lg"
+          >
+            <Link href="/settings/subscription">
+              <Lock className="mr-2 h-4 w-4" />
+              Надграждане за повече продукти
+            </Link>
+          </RadixButton>
+        )}
       </div>
 
       {/* Stats */}
@@ -122,6 +153,37 @@ export default async function ProductsPage() {
           gradient="from-slate-500 to-slate-600"
         />
       </div>
+
+      {/* Usage Limit Info */}
+      {productLimit !== -1 && (
+        <Card className="border-0 shadow-lg bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20">
+          <CardContent className="p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm font-medium">
+                    Използвани продукти: {totalProducts} / {productLimit}
+                  </span>
+                  <span className="text-xs text-muted-foreground px-2 py-0.5 bg-background rounded-full border">
+                    {plan} план
+                  </span>
+                </div>
+                <Progress 
+                  value={(totalProducts / productLimit) * 100} 
+                  className="h-2"
+                />
+              </div>
+              {!canCreateProduct && (
+                <Button asChild variant="default" size="sm">
+                  <Link href="/settings/subscription">
+                    Надграждане
+                  </Link>
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Search */}
       <Card className="border-0 shadow-lg">

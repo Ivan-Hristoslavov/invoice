@@ -24,6 +24,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check subscription limits - брой продукти
+    const { checkSubscriptionLimits } = await import("@/middleware/subscription");
+    const productLimitCheck = await checkSubscriptionLimits(
+      session.user.id as string,
+      'products'
+    );
+    
+    if (!productLimitCheck.allowed) {
+      return NextResponse.json(
+        { error: productLimitCheck.message || "Достигнат е лимитът за продукти за вашия план" },
+        { status: 403 }
+      );
+    }
+
     const json = await request.json();
     const validated = productSchema.parse(json);
 

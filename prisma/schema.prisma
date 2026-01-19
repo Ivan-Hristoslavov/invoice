@@ -455,9 +455,10 @@ enum SubscriptionStatus {
 }
 
 enum SubscriptionPlan {
-  FREE      // Free plan: 3 invoices/month, 1 company, no logo, basic PDF, no export
-  PRO       // Pro plan: unlimited invoices, 1 company, logo, pro PDF, export, credit notes
-  BUSINESS  // Business plan: unlimited invoices, 5 companies, logo, pro PDF, export, credit notes, users, API
+  FREE      // Free plan: 3 invoices/month, 1 company, 5 clients, 10 products, no logo, no export
+  STARTER   // Starter plan: 15 invoices/month, 1 company, 25 clients, 50 products, CSV export
+  PRO       // Pro plan: unlimited invoices, 3 companies, 100 clients, 200 products, logo, PDF+CSV, email
+  BUSINESS  // Business plan: unlimited everything, 10 companies, logo, export, email, 5 users, API
 }
 
 enum PaymentStatus {

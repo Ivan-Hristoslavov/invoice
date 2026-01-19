@@ -16,13 +16,21 @@ export interface UsageData {
     used: number;
     limit: number;
   };
+  clients: {
+    used: number;
+    limit: number;
+  };
+  products: {
+    used: number;
+    limit: number;
+  };
   users: {
     used: number;
     limit: number;
   };
   features: {
     customBranding: boolean;
-    export: boolean;
+    export: boolean | string;
     creditNotes: boolean;
     emailSending: boolean;
     apiAccess: boolean;
@@ -78,6 +86,18 @@ export async function GET(request: NextRequest) {
       .select("*", { count: "exact", head: true })
       .eq("userId", userId);
 
+    // Get client count
+    const { count: clientCount } = await supabase
+      .from("Client")
+      .select("*", { count: "exact", head: true })
+      .eq("userId", userId);
+
+    // Get product count
+    const { count: productCount } = await supabase
+      .from("Product")
+      .select("*", { count: "exact", head: true })
+      .eq("userId", userId);
+
     // Get user/team member count
     const { count: userCount } = await supabase
       .from("UserRole")
@@ -95,6 +115,14 @@ export async function GET(request: NextRequest) {
       companies: {
         used: companyCount || 0,
         limit: limits.maxCompanies === Infinity ? -1 : limits.maxCompanies,
+      },
+      clients: {
+        used: clientCount || 0,
+        limit: limits.maxClients === Infinity ? -1 : limits.maxClients,
+      },
+      products: {
+        used: productCount || 0,
+        limit: limits.maxProducts === Infinity ? -1 : limits.maxProducts,
       },
       users: {
         used: userCount || 1, // At least 1 (the owner)

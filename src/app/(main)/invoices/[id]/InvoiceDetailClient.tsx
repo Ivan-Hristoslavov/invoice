@@ -31,7 +31,6 @@ import { exportInvoiceAsPdf } from "@/lib/invoice-export";
 import { StatusChangeModal } from "@/components/invoice/StatusChangeModal";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { Lock, Crown } from "lucide-react";
-import Link from "next/link";
 import {
   Tooltip,
   TooltipContent,

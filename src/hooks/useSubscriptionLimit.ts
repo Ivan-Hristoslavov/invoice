@@ -22,13 +22,21 @@ export interface UsageData {
     used: number;
     limit: number;
   };
+  clients: {
+    used: number;
+    limit: number;
+  };
+  products: {
+    used: number;
+    limit: number;
+  };
   users: {
     used: number;
     limit: number;
   };
   features: {
     customBranding: boolean;
-    export: boolean;
+    export: boolean | string;
     creditNotes: boolean;
     emailSending: boolean;
     apiAccess: boolean;
@@ -43,16 +51,21 @@ interface UseSubscriptionLimitResult {
   isPro: boolean;
   isBusiness: boolean;
   isFree: boolean;
+  isStarter: boolean;
   // New usage-related properties
   usage: UsageData | null;
   isLoadingUsage: boolean;
   refreshUsage: () => Promise<void>;
   canCreateInvoice: boolean;
   canCreateCompany: boolean;
+  canCreateClient: boolean;
+  canCreateProduct: boolean;
   canAddUser: boolean;
   canUseFeature: (feature: keyof UsageData['features']) => boolean;
   getInvoiceUsage: () => { used: number; limit: number; remaining: number };
   getCompanyUsage: () => { used: number; limit: number; remaining: number };
+  getClientUsage: () => { used: number; limit: number; remaining: number };
+  getProductUsage: () => { used: number; limit: number; remaining: number };
   getUserUsage: () => { used: number; limit: number; remaining: number };
 }
 
@@ -136,6 +149,14 @@ export function useSubscriptionLimit(): UseSubscriptionLimitResult {
     ? (usage.companies.limit === -1 || usage.companies.used < usage.companies.limit)
     : true;
 
+  const canCreateClient = usage 
+    ? (usage.clients.limit === -1 || usage.clients.used < usage.clients.limit)
+    : true;
+
+  const canCreateProduct = usage 
+    ? (usage.products.limit === -1 || usage.products.used < usage.products.limit)
+    : true;
+
   const canAddUser = usage 
     ? (usage.users.used < usage.users.limit)
     : false;
@@ -165,6 +186,26 @@ export function useSubscriptionLimit(): UseSubscriptionLimitResult {
     };
   }, [usage]);
 
+  const getClientUsage = useCallback(() => {
+    if (!usage) return { used: 0, limit: 5, remaining: 5 };
+    const limit = usage.clients.limit === -1 ? Infinity : usage.clients.limit;
+    return {
+      used: usage.clients.used,
+      limit: limit,
+      remaining: limit === Infinity ? Infinity : Math.max(0, limit - usage.clients.used),
+    };
+  }, [usage]);
+
+  const getProductUsage = useCallback(() => {
+    if (!usage) return { used: 0, limit: 10, remaining: 10 };
+    const limit = usage.products.limit === -1 ? Infinity : usage.products.limit;
+    return {
+      used: usage.products.used,
+      limit: limit,
+      remaining: limit === Infinity ? Infinity : Math.max(0, limit - usage.products.used),
+    };
+  }, [usage]);
+
   const getUserUsage = useCallback(() => {
     if (!usage) return { used: 1, limit: 1, remaining: 0 };
     return {
@@ -182,16 +223,21 @@ export function useSubscriptionLimit(): UseSubscriptionLimitResult {
     isPro: plan === 'PRO',
     isBusiness: plan === 'BUSINESS',
     isFree: plan === 'FREE' || plan === null,
+    isStarter: plan === 'STARTER',
     // New usage-related returns
     usage,
     isLoadingUsage,
     refreshUsage,
     canCreateInvoice,
     canCreateCompany,
+    canCreateClient,
+    canCreateProduct,
     canAddUser,
     canUseFeature,
     getInvoiceUsage,
     getCompanyUsage,
+    getClientUsage,
+    getProductUsage,
     getUserUsage,
   };
 } 

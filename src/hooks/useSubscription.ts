@@ -5,7 +5,7 @@ import { loadStripe } from '@stripe/stripe-js';
 
 interface Subscription {
   id: string;
-  plan: 'FREE' | 'PRO' | 'BUSINESS';
+  plan: 'FREE' | 'STARTER' | 'PRO' | 'BUSINESS';
   status: string;
   cancelAtPeriodEnd: boolean;
   currentPeriodEnd: string;
@@ -28,7 +28,7 @@ interface UseSubscriptionReturn {
   subscription: Subscription | null;
   isLoading: boolean;
   error: string | null;
-  createCheckoutSession: (plan: string) => Promise<void>;
+  createCheckoutSession: (plan: string, billingInterval?: 'monthly' | 'yearly') => Promise<void>;
   cancelSubscription: () => Promise<void>;
 }
 
@@ -68,10 +68,10 @@ export function useSubscription(): UseSubscriptionReturn {
     fetchSubscription();
   }, [status]);
 
-  const createCheckoutSession = async (plan: string) => {
+  const createCheckoutSession = async (plan: string, billingInterval: 'monthly' | 'yearly' = 'yearly') => {
     try {
       setIsLoading(true);
-      console.log("Creating checkout session for plan:", plan);
+      console.log("Creating checkout session for plan:", plan, "interval:", billingInterval);
       
       // Get direct Stripe URL instead of creating a checkout session
       const response = await fetch('/api/subscription/direct-link', {
@@ -81,6 +81,7 @@ export function useSubscription(): UseSubscriptionReturn {
         },
         body: JSON.stringify({
           plan,
+          billingInterval,
         }),
       });
 
