@@ -5,11 +5,8 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { 
   FileText, 
-  Users, 
-  Building, 
-  TrendingUp, 
-  ArrowUpRight, 
-  ArrowDownRight,
+  Users,
+  Building,
   Plus,
   Clock,
   CheckCircle,
@@ -17,8 +14,7 @@ import {
   Eye,
   MoreHorizontal,
   Sparkles,
-  Euro,
-  Calendar
+  ArrowUpRight
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +23,7 @@ import { APP_NAME } from "@/config/constants";
 import { createAdminClient } from "@/lib/supabase/server";
 import { format } from "date-fns";
 import { bg } from "date-fns/locale";
+import { StatsCard } from "@/components/dashboard/StatsCard";
 
 type InvoiceStatus = "DRAFT" | "ISSUED" | "CANCELLED";
 
@@ -146,7 +143,7 @@ export default async function DashboardPage() {
       value: totalIssued.toFixed(2),
       currency: "€",
       description: "От издадени фактури",
-      icon: Euro,
+      iconName: "euro",
       trend: "+12.5%",
       trendUp: true,
       gradient: "from-emerald-500 to-teal-600",
@@ -158,7 +155,7 @@ export default async function DashboardPage() {
       value: thisMonthTotal.toFixed(2),
       currency: "€",
       description: `${thisMonthInvoices.length} ${thisMonthInvoices.length === 1 ? 'фактура' : 'фактури'}`,
-      icon: Calendar,
+      iconName: "calendar",
       trend: "+8.2%",
       trendUp: true,
       gradient: "from-blue-500 to-indigo-600",
@@ -170,7 +167,7 @@ export default async function DashboardPage() {
       value: counts.total.toString(),
       currency: "",
       description: `${counts.issued} издадени, ${counts.draft} чернови`,
-      icon: FileText,
+      iconName: "fileText",
       trend: `+${counts.total}`,
       trendUp: true,
       gradient: "from-violet-500 to-purple-600",
@@ -182,7 +179,7 @@ export default async function DashboardPage() {
       value: (clientCount || 0).toString(),
       currency: "",
       description: "Активни клиенти",
-      icon: Users,
+      iconName: "users",
       trend: `+${clientCount || 0}`,
       trendUp: true,
       gradient: "from-amber-500 to-orange-600",
@@ -218,49 +215,21 @@ export default async function DashboardPage() {
 
       {/* Stats Grid */}
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, index) => (
-          <Card 
-            key={stat.title} 
-            className="relative overflow-hidden border border-border/50 shadow-md hover:shadow-lg transition-all duration-300 group"
-          >
-            {/* Animated background gradient */}
-            <div className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-            
-            <CardContent className="relative p-3 sm:p-4">
-              <div className="flex items-start justify-between mb-2 sm:mb-3">
-                <div className="flex-1 min-w-0">
-                  <p className="tiny-text font-medium text-muted-foreground mb-1.5 sm:mb-2">{stat.title}</p>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-lg sm:text-2xl font-bold tracking-tight">{stat.value}</span>
-                    {stat.currency && (
-                      <span className="text-sm sm:text-lg font-semibold text-muted-foreground">{stat.currency}</span>
-                    )}
-                  </div>
-                </div>
-                <div className={`p-1.5 sm:p-2 rounded-lg ${stat.iconBg} flex-shrink-0`}>
-                  <div className={`p-1.5 sm:p-2 rounded-md bg-gradient-to-br ${stat.gradient} shadow-sm`}>
-                    <stat.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
-                  </div>
-                </div>
-              </div>
-              
-              <p className="tiny-text text-muted-foreground mb-2 hidden sm:block">{stat.description}</p>
-              
-              {stat.trend && (
-                <div className="flex items-center gap-1.5 pt-3 border-t border-border/50">
-                  {stat.trendUp ? (
-                    <ArrowUpRight className="h-4 w-4 text-emerald-600 flex-shrink-0" />
-                  ) : (
-                    <ArrowDownRight className="h-4 w-4 text-red-600 flex-shrink-0" />
-                  )}
-                  <span className={`text-sm font-semibold ${stat.trendUp ? 'text-emerald-600' : 'text-red-600'}`}>
-                    {stat.trend}
-                  </span>
-                  <span className="text-xs text-muted-foreground ml-0.5">спрямо миналия месец</span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        {stats.map((stat) => (
+          <StatsCard
+            key={stat.title}
+            title={stat.title}
+            value={parseFloat(stat.value) || 0}
+            currency={stat.currency}
+            description={stat.description}
+            iconName={stat.iconName}
+            trend={stat.trend}
+            trendUp={stat.trendUp}
+            gradient={stat.gradient}
+            bgGradient={stat.bgGradient}
+            iconBg={stat.iconBg}
+            decimals={stat.currency === "€" ? 2 : 0}
+          />
         ))}
       </div>
 

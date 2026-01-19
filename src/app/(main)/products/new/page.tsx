@@ -168,9 +168,13 @@ export default function NewProductPage() {
       }
 
       toast.success("Продуктът е създаден", {
-        description: "Вашият продукт беше създаден успешно."
+        description: "Вашият продукт беше създаден успешно.",
+        action: {
+          label: "Виж продукти",
+          onClick: () => router.push("/products"),
+        },
       });
-      
+
       router.push("/products");
     } catch (error) {
       console.error("Грешка при създаване на продукт:", error);

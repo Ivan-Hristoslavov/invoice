@@ -85,7 +85,7 @@ export async function checkSubscription(req: NextRequest) {
 export async function checkSubscriptionLimits(
   userId: string, 
   feature: 'invoices' | 'companies' | 'customBranding' | 'export' | 'creditNotes' | 'emailSending' | 'apiAccess' | 'users'
-): Promise<{ allowed: boolean; message?: string }> {
+): Promise<{ allowed: boolean; message?: string; plan?: string }> {
   // Get active subscription (or FREE if no subscription)
   const supabase = createAdminClient();
   const { data: subscriptions } = await supabase
@@ -109,15 +109,16 @@ export async function checkSubscriptionLimits(
         startOfMonth.setDate(1);
         startOfMonth.setHours(0, 0, 0, 0);
         
-      const { count: invoiceCount } = await supabase
-        .from('Invoice')
-        .select('*', { count: 'exact', head: true })
-        .eq('userId', userId)
-        .gte('createdAt', startOfMonth.toISOString());
+        const { count: invoiceCount } = await supabase
+          .from('Invoice')
+          .select('*', { count: 'exact', head: true })
+          .eq('userId', userId)
+          .gte('createdAt', startOfMonth.toISOString());
         
-        if (invoiceCount >= limits.maxInvoicesPerMonth) {
+        if (invoiceCount !== null && invoiceCount >= limits.maxInvoicesPerMonth) {
           return {
             allowed: false,
+            plan,
             message: `Вашият ${plan} план позволява максимум ${limits.maxInvoicesPerMonth} фактури на месец. Надградете до PRO за неограничени фактури.`,
           };
         }
@@ -139,6 +140,7 @@ export async function checkSubscriptionLimits(
           
           return {
             allowed: false,
+            plan,
             message: `Вашият ${plan} план позволява максимум ${limits.maxCompanies} ${limits.maxCompanies === 1 ? 'фирма' : 'фирми'}. ${upgradeMessage}`,
           };
         }
@@ -149,6 +151,7 @@ export async function checkSubscriptionLimits(
       if (!limits.allowCustomBranding) {
         return {
           allowed: false,
+          plan,
           message: `Собствено лого е налично само в PRO и BUSINESS плановете. Надградете за да добавите вашето лого.`,
         };
       }
@@ -158,6 +161,7 @@ export async function checkSubscriptionLimits(
       if (!limits.allowExport) {
         return {
           allowed: false,
+          plan,
           message: `Експорт на фактури е наличен само в PRO и BUSINESS плановете. Надградете за да експортирате вашите фактури.`,
         };
       }
@@ -167,6 +171,7 @@ export async function checkSubscriptionLimits(
       if (!limits.allowCreditNotes) {
         return {
           allowed: false,
+          plan,
           message: `Кредитни известия са налични само в PRO и BUSINESS плановете. Надградете за да създавате кредитни известия.`,
         };
       }
@@ -176,6 +181,7 @@ export async function checkSubscriptionLimits(
       if (!limits.allowEmailSending) {
         return {
           allowed: false,
+          plan,
           message: `Изпращане на фактури по имейл е налично само в PRO и BUSINESS плановете. Надградете за да изпращате фактури по имейл.`,
         };
       }
@@ -185,6 +191,7 @@ export async function checkSubscriptionLimits(
       if (!limits.allowApiAccess) {
         return {
           allowed: false,
+          plan,
           message: `API достъп е наличен само в BUSINESS плана. Надградете до BUSINESS за API достъп.`,
         };
       }
@@ -201,11 +208,12 @@ export async function checkSubscriptionLimits(
       if (userCount && userCount >= limits.maxUsers) {
         return {
           allowed: false,
+          plan,
           message: `Вашият ${plan} план позволява максимум ${limits.maxUsers} ${limits.maxUsers === 1 ? 'потребител' : 'потребителя'}. Надградете до BUSINESS за повече потребители.`,
         };
       }
       break;
   }
 
-  return { allowed: true };
+  return { allowed: true, plan };
 } 

@@ -168,9 +168,13 @@ export default function NewCompanyPage() {
       }
 
       toast.success("Компанията е създадена", {
-        description: "Вашата компания беше създадена успешно."
+        description: "Вашата компания беше създадена успешно.",
+        action: {
+          label: "Виж компании",
+          onClick: () => router.push("/companies"),
+        },
       });
-      
+
       router.push("/companies");
     } catch (error) {
       console.error("Грешка при създаване на компания:", error);

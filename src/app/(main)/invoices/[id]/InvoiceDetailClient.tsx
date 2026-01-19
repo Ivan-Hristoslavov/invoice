@@ -29,6 +29,15 @@ import DocumentsTab from "@/components/invoice/DocumentsTab";
 import { getDocuments } from "@/lib/services/document-service";
 import { exportInvoiceAsPdf } from "@/lib/invoice-export";
 import { StatusChangeModal } from "@/components/invoice/StatusChangeModal";
+import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
+import { Lock, Crown } from "lucide-react";
+import Link from "next/link";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 // Payment link functionality removed - invoices are for issuance only
 
 type InvoiceItem = {
@@ -105,6 +114,10 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isChangingStatus, setIsChangingStatus] = useState(false);
   const [showIssueModal, setShowIssueModal] = useState(false);
+  
+  // Subscription limit check for email sending
+  const { canUseFeature, isLoadingUsage } = useSubscriptionLimit();
+  const canSendEmail = canUseFeature('emailSending');
 
   useEffect(() => {
     return () => {
@@ -324,19 +337,47 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
         </CardHeader>
         <CardContent>
           <div className="grid gap-4">
-            <Button 
-              variant="outline" 
-              className="w-full justify-start text-left h-auto py-3"
-              onClick={handleSendInvoiceOnly}
-              disabled={isSendingEmail}
-            >
-              <div className="flex items-center gap-4">
-                <Send className="w-5 h-5 text-gray-600 flex-shrink-0" />
-                <span className="font-medium">
-                  {isSendingEmail ? "Изпращане..." : "Изпрати фактура"}
-                </span>
-              </div>
-            </Button>
+            {canSendEmail ? (
+              <Button 
+                variant="outline" 
+                className="w-full justify-start text-left h-auto py-3"
+                onClick={handleSendInvoiceOnly}
+                disabled={isSendingEmail}
+              >
+                <div className="flex items-center gap-4">
+                  <Send className="w-5 h-5 text-gray-600 flex-shrink-0" />
+                  <span className="font-medium">
+                    {isSendingEmail ? "Изпращане..." : "Изпрати фактура"}
+                  </span>
+                </div>
+              </Button>
+            ) : (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link href="/settings/subscription" className="w-full">
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-start text-left h-auto py-3 border-dashed border-amber-300 dark:border-amber-700"
+                        disabled
+                      >
+                        <div className="flex items-center gap-4 w-full">
+                          <Lock className="w-5 h-5 text-amber-500 flex-shrink-0" />
+                          <span className="font-medium flex-1">Изпрати фактура</span>
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">
+                            PRO
+                          </span>
+                        </div>
+                      </Button>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-sm mb-1">Изпращането на фактури по имейл е налично само в PRO и BUSINESS плановете.</p>
+                    <span className="text-xs text-primary">Надградете сега →</span>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
             
             {invoice.status === "ISSUED" && (
               <Button

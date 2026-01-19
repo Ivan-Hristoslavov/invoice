@@ -56,6 +56,10 @@ import { toast } from "sonner";
 import { StatusChangeModal } from "@/components/invoice/StatusChangeModal";
 import { DeleteInvoiceModal } from "@/components/invoice/DeleteInvoiceModal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
+import { ProFeatureLock, UsageCounter, LockedButton } from "@/components/ui/pro-feature-lock";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Crown, AlertTriangle } from "lucide-react";
 
 interface Invoice {
   id: string;
@@ -92,6 +96,18 @@ export default function InvoicesClient({
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [invoices, setInvoices] = useState(initialInvoices);
   
+  // Subscription limit hook
+  const { 
+    plan, 
+    isFree, 
+    getInvoiceUsage, 
+    canCreateInvoice,
+    isLoadingUsage,
+    refreshUsage
+  } = useSubscriptionLimit();
+  
+  const invoiceUsage = getInvoiceUsage();
+  
   // Modal state for status change
   const [statusModal, setStatusModal] = useState<{
     isOpen: boolean;
@@ -125,6 +141,9 @@ export default function InvoicesClient({
       // Remove invoice from local state
       setInvoices(prev => prev.filter(inv => inv.id !== invoiceId));
       toast.success("Фактурата беше изтрита успешно");
+      
+      // Refresh usage limits after deletion
+      refreshUsage();
       
       // Refresh the page to update the list
       router.refresh();
@@ -280,10 +299,56 @@ export default function InvoicesClient({
 
   return (
     <div className="space-y-6">
+      {/* Subscription Warning Banner for FREE plan */}
+      {!isLoadingUsage && isFree && invoiceUsage.remaining <= 1 && invoiceUsage.remaining > 0 && (
+        <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="flex items-center justify-between">
+            <span className="text-amber-800 dark:text-amber-200">
+              Остава ви само <strong>{invoiceUsage.remaining}</strong> фактура този месец. 
+              Надградете за неограничени фактури.
+            </span>
+            <Link href="/settings/subscription">
+              <Button size="sm" variant="outline" className="ml-4 border-amber-300 text-amber-700 hover:bg-amber-100">
+                <Crown className="h-4 w-4 mr-2" />
+                Надградете
+              </Button>
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {!isLoadingUsage && isFree && !canCreateInvoice && (
+        <Alert className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
+          <XCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="flex items-center justify-between">
+            <span className="text-red-800 dark:text-red-200">
+              Достигнахте лимита от <strong>3 фактури</strong> за този месец. 
+              Надградете до PRO за неограничени фактури.
+            </span>
+            <Link href="/settings/subscription">
+              <Button size="sm" className="ml-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
+                <Crown className="h-4 w-4 mr-2" />
+                Надградете до PRO
+              </Button>
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex-1">
-          <h1 className="text-3xl font-bold tracking-tight">Фактури</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight">Фактури</h1>
+            {isFree && !isLoadingUsage && (
+              <UsageCounter 
+                used={invoiceUsage.used} 
+                limit={invoiceUsage.limit === Infinity ? 0 : invoiceUsage.limit}
+                label="този месец"
+              />
+            )}
+          </div>
           <p className="text-muted-foreground mt-1">
             Управлявайте и проследявайте вашите фактури
           </p>
@@ -297,23 +362,29 @@ export default function InvoicesClient({
               </Link>
             </Button>
           )}
-          <RadixButton 
-            asChild 
-            size="3" 
-            variant="solid" 
-            color="green"
-            className="shadow-lg"
-          >
-            <Link href="/invoices/new">
-              <Plus className="mr-2 h-5 w-5" />
+          {(isLoadingUsage || canCreateInvoice) ? (
+            <RadixButton 
+              asChild 
+              size="3" 
+              variant="solid" 
+              color="green"
+              className="shadow-lg"
+            >
+              <Link href="/invoices/new">
+                <Plus className="mr-2 h-5 w-5" />
+                Нова фактура
+              </Link>
+            </RadixButton>
+          ) : (
+            <LockedButton requiredPlan="PRO">
               Нова фактура
-            </Link>
-          </RadixButton>
+            </LockedButton>
+          )}
         </div>
       </div>
       
       {/* Fast Action Button - Floating */}
-      {canCreateInvoices && (
+      {canCreateInvoices && (isLoadingUsage || canCreateInvoice) && (
         <div className="fixed bottom-8 right-8 z-50">
           <Button
             asChild
@@ -400,7 +471,7 @@ export default function InvoicesClient({
                 {filteredInvoices.length} от {invoices.length} фактури
               </CardDescription>
             </div>
-            {canCreateInvoices && (
+            {canCreateInvoices && (isLoadingUsage || canCreateInvoice) && (
               <Button 
                 asChild 
                 className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all"
@@ -411,6 +482,12 @@ export default function InvoicesClient({
                   <span className="sm:hidden">Нова</span>
                 </Link>
               </Button>
+            )}
+            {canCreateInvoices && !isLoadingUsage && !canCreateInvoice && (
+              <LockedButton requiredPlan="PRO">
+                <span className="hidden sm:inline">Нова фактура</span>
+                <span className="sm:hidden">Нова</span>
+              </LockedButton>
             )}
           </div>
         </CardHeader>
@@ -431,13 +508,18 @@ export default function InvoicesClient({
                   ? "Опитайте да промените филтрите за търсене"
                   : "Създайте първата си фактура, за да започнете да управлявате финансите си"}
               </p>
-              {canCreateInvoices && (
+              {canCreateInvoices && (isLoadingUsage || canCreateInvoice) && (
                 <Button asChild>
                   <Link href="/invoices/new">
                     <Plus className="mr-2 h-4 w-4" />
                     Създай фактура
                   </Link>
                 </Button>
+              )}
+              {canCreateInvoices && !isLoadingUsage && !canCreateInvoice && (
+                <LockedButton requiredPlan="PRO">
+                  Създай фактура
+                </LockedButton>
               )}
             </div>
           ) : (
@@ -520,9 +602,9 @@ export default function InvoicesClient({
                   );
                 })}
               </div>
-              <div className="hidden md:block overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto max-h-[600px] overflow-y-auto">
                 <table className="w-full">
-                <thead>
+                <thead className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                   <tr className="border-b bg-muted/50">
                     <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                       Фактура

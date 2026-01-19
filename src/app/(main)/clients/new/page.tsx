@@ -158,6 +158,10 @@ export default function NewClientPage() {
 
       toast.success("Клиентът е създаден", {
         description: "Вашият клиент беше създаден успешно.",
+        action: {
+          label: "Нова фактура",
+          onClick: () => router.push("/invoices/new"),
+        },
       });
 
       router.push("/clients");

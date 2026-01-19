@@ -50,7 +50,10 @@ import {
   MapPin,
   Hash,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Crown,
+  Lock,
+  AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -75,6 +78,9 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { DEFAULT_VAT_RATE } from "@/config/constants";
+import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
+import { UsageCounter } from "@/components/ui/pro-feature-lock";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Step indicator component
 function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { title: string; icon: React.ReactNode }[] }) {
@@ -334,6 +340,17 @@ function NewInvoiceContent() {
   const [products, setProducts] = useState<any[]>([]);
   const [productSearchQuery, setProductSearchQuery] = useState("");
   
+  // Subscription limit hook
+  const { 
+    isFree, 
+    getInvoiceUsage, 
+    canCreateInvoice,
+    isLoadingUsage,
+    refreshUsage
+  } = useSubscriptionLimit();
+  
+  const invoiceUsage = getInvoiceUsage();
+  
   const [items, setItems] = useState<Array<{
     id: number;
     description: string;
@@ -564,13 +581,31 @@ function NewInvoiceContent() {
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Грешка при създаване");
+        // Handle both formats: { error: "message" } and { error: { message: "message" } }
+        const errorMessage = typeof errorData.error === 'string' 
+          ? errorData.error 
+          : errorData.error?.message || "Грешка при създаване";
+        throw new Error(errorMessage);
       }
       
-      toast.success("Фактурата е създадена успешно!");
+      // Refresh usage data after successful creation
+      refreshUsage();
+      
+      toast.success("Фактурата е създадена успешно!", {
+        action: {
+          label: "Виж фактурата",
+          onClick: () => router.push("/invoices"),
+        },
+      });
       router.push("/invoices");
     } catch (error: any) {
-      toast.error(error.message || "Грешка при създаване на фактура");
+      console.error("Error creating invoice:", error);
+      toast.error(error.message || "Грешка при създаване на фактура", {
+        duration: 5000,
+        description: error.message?.includes("план") 
+          ? "Надградете плана си за повече фактури." 
+          : undefined,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -659,20 +694,20 @@ function NewInvoiceContent() {
             {/* Selected client summary */}
             {selectedClient && (
               <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
-                <CardContent className="p-4 flex items-center justify-between">
+                <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold">
+                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold flex-shrink-0">
                       {selectedClient.name.charAt(0).toUpperCase()}
                     </div>
-                    <div>
-                      <p className="font-medium">{selectedClient.name}</p>
-                      <p className="text-sm text-muted-foreground">{selectedClient.email}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{selectedClient.name}</p>
+                      <p className="text-sm text-muted-foreground truncate">{selectedClient.email}</p>
                     </div>
+                    <Button variant="ghost" size="sm" onClick={() => setCurrentStep(0)} className="flex-shrink-0">
+                      <Edit className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Промяна</span>
+                    </Button>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => setCurrentStep(0)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Промяна
-                  </Button>
                 </CardContent>
               </Card>
             )}
@@ -1060,6 +1095,43 @@ function NewInvoiceContent() {
 
   return (
     <div className="min-h-screen">
+      {/* Subscription limit warning */}
+      {isFree && !isLoadingUsage && !canCreateInvoice && (
+        <Alert className="mb-4 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
+          <AlertTriangle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="flex items-center justify-between">
+            <span className="text-red-800 dark:text-red-200">
+              Достигнахте лимита от <strong>3 фактури</strong> за този месец. 
+              Надградете до PRO за неограничени фактури.
+            </span>
+            <Link href="/settings/subscription">
+              <Button size="sm" className="ml-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
+                <Crown className="h-4 w-4 mr-2" />
+                Надградете до PRO
+              </Button>
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {isFree && !isLoadingUsage && canCreateInvoice && invoiceUsage.remaining === 1 && (
+        <Alert className="mb-4 border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="flex items-center justify-between">
+            <span className="text-amber-800 dark:text-amber-200">
+              Остава ви само <strong>1 фактура</strong> за този месец. 
+              Надградете за неограничени фактури.
+            </span>
+            <Link href="/settings/subscription">
+              <Button size="sm" variant="outline" className="ml-4 border-amber-300 text-amber-700 hover:bg-amber-100">
+                <Crown className="h-4 w-4 mr-2" />
+                Надградете
+              </Button>
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Header */}
       <div className="mb-4 sm:mb-6">
         <div className="flex items-center gap-2 sm:gap-3 mb-2">
@@ -1069,7 +1141,16 @@ function NewInvoiceContent() {
             </Link>
           </Button>
           <div className="flex-1 min-w-0">
-            <h1 className="page-title truncate">Нова фактура</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="page-title truncate">Нова фактура</h1>
+              {isFree && !isLoadingUsage && (
+                <UsageCounter 
+                  used={invoiceUsage.used} 
+                  limit={invoiceUsage.limit === Infinity ? 0 : invoiceUsage.limit}
+                  label="този месец"
+                />
+              )}
+            </div>
             <p className="card-description hidden sm:block">Създайте нова фактура за вашите клиенти</p>
           </div>
         </div>
@@ -1108,6 +1189,19 @@ function NewInvoiceContent() {
               Напред
               <ArrowRight className="h-4 w-4" />
             </Button>
+          ) : !isLoadingUsage && !canCreateInvoice && isFree ? (
+            <Link href="/settings/subscription">
+              <Button
+                className="gap-2 border-dashed border-amber-300 dark:border-amber-700 hover:border-amber-400"
+                variant="outline"
+              >
+                <Lock className="h-4 w-4 text-amber-500" />
+                Създай фактура
+                <span className="ml-1 text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">
+                  PRO
+                </span>
+              </Button>
+            </Link>
           ) : (
             <Button
               onClick={handleSubmit}

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { Settings, LogOut, User, ChevronDown, Plus, Sun, Moon } from "lucide-react";
+import { Settings, LogOut, User, ChevronDown, Plus, Sun, Moon, Command } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +15,7 @@ import {
 import { useTheme } from "next-themes";
 import { Switch } from "@/components/ui/switch";
 import { useState, useEffect, useMemo } from "react";
+import { useCommandPalette } from "@/components/ui/command-palette";
 
 export function Navbar() {
   const { data: session, status } = useSession();
@@ -22,6 +23,7 @@ export function Navbar() {
   const isAuthenticated = status === "authenticated";
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const { setOpen: setCommandPaletteOpen } = useCommandPalette();
 
   useEffect(() => {
     setMounted(true);
@@ -57,6 +59,19 @@ export function Navbar() {
       <div className="flex items-center justify-end h-16 px-4 md:px-6 lg:px-8">
         {/* Right Section - Actions */}
         <div className="flex items-center gap-2">
+          {/* Command Palette Button */}
+          <Button 
+            variant="outline" 
+            className="hidden md:flex h-10 px-3 gap-2 text-muted-foreground hover:text-foreground"
+            onClick={() => setCommandPaletteOpen(true)}
+          >
+            <Command className="h-4 w-4" />
+            <span className="text-sm">Търси...</span>
+            <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium sm:flex">
+              ⌘K
+            </kbd>
+          </Button>
+          
           {/* Quick Add Invoice Icon - Hidden on small mobile */}
           <Button 
             asChild 
