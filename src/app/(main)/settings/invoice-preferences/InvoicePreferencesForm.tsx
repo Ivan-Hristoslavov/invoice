@@ -15,7 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { Input, NumericInput } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -118,12 +118,9 @@ export function InvoicePreferencesForm() {
                 <FormItem>
                   <FormLabel>ДДС ставка по подразбиране (%)</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      min={0}
-                      max={100}
-                      step={0.01}
+                    <NumericInput
                       {...field}
+                      value={field.value}
                       onChange={(e) => field.onChange(Number(e.target.value))}
                     />
                   </FormControl>
@@ -330,10 +327,10 @@ export function InvoicePreferencesForm() {
                 <FormItem>
                   <FormLabel>Автоматично архивиране след (дни)</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      min={0}
+                    <NumericInput
+                      allowDecimal={false}
                       {...field}
+                      value={field.value}
                       onChange={(e) => field.onChange(Number(e.target.value))}
                     />
                   </FormControl>
@@ -351,10 +348,10 @@ export function InvoicePreferencesForm() {
                 <FormItem>
                   <FormLabel>Съхранение на чернови (дни)</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      min={1}
+                    <NumericInput
+                      allowDecimal={false}
                       {...field}
+                      value={field.value}
                       onChange={(e) => field.onChange(Number(e.target.value))}
                     />
                   </FormControl>

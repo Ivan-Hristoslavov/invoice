@@ -122,14 +122,19 @@ export function CancellationSurvey({
               </div>
             </div>
             
-            <DialogFooter>
-              <Button variant="outline" onClick={onClose} disabled={isLoading}>
+            <DialogFooter className="flex-col-reverse sm:flex-row gap-2 sm:gap-3">
+              <Button
+                variant="ghost"
+                onClick={onClose}
+                disabled={isLoading}
+                className="w-full sm:w-auto rounded-full border border-border/60 bg-card/40 hover:bg-muted/60"
+              >
                 Отказ
               </Button>
-              <Button 
-                variant="destructive" 
-                onClick={handleSubmitSurvey} 
+              <Button
+                onClick={handleSubmitSurvey}
                 disabled={isLoading || !reason}
+                className="w-full sm:w-auto rounded-full bg-gradient-to-r from-rose-500 to-red-600 text-white hover:from-rose-600 hover:to-red-700 shadow-lg shadow-red-600/20"
               >
                 {isLoading ? 'Обработка...' : 'Потвърди отказване'}
               </Button>

@@ -91,6 +91,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check subscription limits - брой клиенти
+    const { checkSubscriptionLimits } = await import("@/middleware/subscription");
+    const clientLimitCheck = await checkSubscriptionLimits(
+      session.user.id as string,
+      'clients'
+    );
+    
+    if (!clientLimitCheck.allowed) {
+      return NextResponse.json(
+        { error: clientLimitCheck.message || "Достигнат е лимитът за клиенти за вашия план" },
+        { status: 403 }
+      );
+    }
+
     // Parse and validate the data
     const json = await request.json();
     const validatedData = clientSchema.parse(json);

@@ -2,14 +2,17 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { Building, Plus, Search, Users, Mail, Phone, MapPin, ArrowUpRight, MoreHorizontal } from "lucide-react";
+import { Building, Plus, Search, Users, Mail, Phone, MapPin, ArrowUpRight, MoreHorizontal, Lock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
 import { Button } from "@/components/ui/button";
 import { Button as RadixButton } from "@radix-ui/themes";
 import { APP_NAME } from "@/config/constants";
 import { createAdminClient } from "@/lib/supabase/server";
 import { Input } from "@/components/ui/input";
 import { redirect } from "next/navigation";
+import { PLAN_LIMITS } from "@/middleware/subscription";
+import { Progress } from "@/components/ui/progress";
 
 export const metadata: Metadata = {
   title: `Клиенти | ${APP_NAME}`,
@@ -49,6 +52,20 @@ export default async function ClientsPage() {
     return acc;
   }, {});
 
+  // Get user's subscription plan
+  const { data: subscriptions } = await supabase
+    .from("Subscription")
+    .select("*")
+    .eq("userId", session.user.id)
+    .in("status", ["ACTIVE", "TRIALING", "PAST_DUE"])
+    .limit(1);
+  
+  const subscription = subscriptions && subscriptions.length > 0 ? subscriptions[0] : null;
+  const plan = (subscription?.plan || "FREE") as keyof typeof PLAN_LIMITS;
+  const limits = PLAN_LIMITS[plan];
+  const clientLimit = limits.maxClients === Infinity ? -1 : limits.maxClients;
+  const canCreateClient = clientLimit === -1 || clientsList.length < clientLimit;
+
   // Generate avatar colors based on client name
   const getAvatarGradient = (name: string) => {
     const gradients = [
@@ -73,52 +90,82 @@ export default async function ClientsPage() {
             Управлявайте вашите клиенти и контакти
           </p>
         </div>
-        <RadixButton 
-          asChild 
-          size="3" 
-          variant="solid" 
-          color="green"
-          className="shadow-lg"
-        >
-          <Link href="/clients/new">
-            <Plus className="mr-2 h-5 w-5" />
-            Нов клиент
-          </Link>
-        </RadixButton>
+        {canCreateClient ? (
+          <RadixButton 
+            asChild 
+            size="3" 
+            variant="solid" 
+            color="green"
+            className="shadow-lg"
+          >
+            <Link href="/clients/new">
+              <Plus className="mr-2 h-5 w-5" />
+              Нов клиент
+            </Link>
+          </RadixButton>
+        ) : (
+          <RadixButton 
+            asChild 
+            size="3" 
+            variant="soft" 
+            color="gray"
+            className="shadow-lg"
+          >
+            <Link href="/settings/subscription">
+              <Lock className="mr-2 h-4 w-4" />
+              Надграждане за повече клиенти
+            </Link>
+          </RadixButton>
+        )}
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-amber-500/5 to-orange-600/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Общо клиенти</p>
-                <p className="text-2xl font-bold">{clientsList.length}</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
-                <Users className="h-5 w-5 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500/5 to-indigo-600/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">С фактури</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {Object.keys(clientInvoiceCounts).length}
-                </p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                <Building className="h-5 w-5 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <CardStatsMetric
+          title="Общо клиенти"
+          value={clientsList.length}
+          icon={Users}
+          gradient="from-amber-500 to-orange-600"
+        />
+        <CardStatsMetric
+          title="С фактури"
+          value={Object.keys(clientInvoiceCounts).length}
+          valueClassName="text-blue-600"
+          icon={Building}
+          gradient="from-blue-500 to-indigo-600"
+        />
       </div>
+
+      {/* Usage Limit Info */}
+      {clientLimit !== -1 && (
+        <Card className="border-0 shadow-lg bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20">
+          <CardContent className="p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm font-medium">
+                    Използвани клиенти: {clientsList.length} / {clientLimit}
+                  </span>
+                  <span className="text-xs text-muted-foreground px-2 py-0.5 bg-background rounded-full border">
+                    {plan} план
+                  </span>
+                </div>
+                <Progress 
+                  value={(clientsList.length / clientLimit) * 100} 
+                  className="h-2"
+                />
+              </div>
+              {!canCreateClient && (
+                <Button asChild variant="default" size="sm">
+                  <Link href="/settings/subscription">
+                    Надграждане
+                  </Link>
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Search */}
       <Card className="border-0 shadow-lg">

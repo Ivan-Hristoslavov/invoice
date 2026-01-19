@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -25,7 +25,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CreditCard, CheckCircle, AlertTriangle } from "lucide-react";
 
 const companyInfoSchema = z.object({
   id: z.string().optional(),
@@ -93,15 +92,6 @@ interface CompanyInfoFormProps {
 function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [isStripeLoading, setIsStripeLoading] = useState(false);
-  const [stripeStatus, setStripeStatus] = useState<'connected' | 'not_connected' | 'error' | null>(null);
-
-  const stripeAccountId = defaultValues.stripeAccountId;
-
-  useEffect(() => {
-    if (stripeAccountId) setStripeStatus('connected');
-    else setStripeStatus('not_connected');
-  }, [stripeAccountId]);
 
   const form = useForm<CompanyInfoValues>({
     resolver: zodResolver(companyInfoSchema),
@@ -149,25 +139,6 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
       });
     } finally {
       setIsLoading(false);
-    }
-  }
-
-  async function handleStripeConnect() {
-    setIsStripeLoading(true);
-    try {
-      const res = await fetch('/api/companies/stripe-connect-onboarding', { method: 'POST' });
-      if (!res.ok) throw new Error('Неуспешно генериране на Stripe линк');
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error('Липсва Stripe линк');
-      }
-    } catch (err: any) {
-      setStripeStatus('error');
-      toast.error('Грешка при свързване със Stripe', { description: err.message });
-    } finally {
-      setIsStripeLoading(false);
     }
   }
 
@@ -283,7 +254,7 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
             <FormItem>
               <FormLabel>Държава</FormLabel>
               <FormControl>
-                <Input placeholder="България" defaultValue="България" {...field} />
+                <Input placeholder="България" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -465,31 +436,10 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
           </div>
         </div>
         
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-8">
+        <div className="flex justify-end mt-8">
           <Button type="submit" disabled={isLoading}>
             {isLoading ? "Запазване..." : isNewCompany ? "Създаване на компания" : "Запазване на промените"}
           </Button>
-          {!isNewCompany && (
-            <div className="flex items-center gap-3">
-              {stripeStatus === 'connected' ? (
-                <span className="inline-flex items-center text-green-600"><CheckCircle className="w-5 h-5 mr-1" />Свързан със Stripe</span>
-              ) : stripeStatus === 'not_connected' ? (
-                <span className="inline-flex items-center text-amber-500"><AlertTriangle className="w-5 h-5 mr-1" />Не е свързан със Stripe</span>
-              ) : stripeStatus === 'error' ? (
-                <span className="inline-flex items-center text-red-500"><AlertTriangle className="w-5 h-5 mr-1" />Грешка със Stripe</span>
-              ) : null}
-              <Button
-                type="button"
-                variant="outline"
-                className="flex items-center"
-                onClick={handleStripeConnect}
-                disabled={isStripeLoading || stripeStatus === 'connected'}
-              >
-                <CreditCard className="w-4 h-4 mr-2" />
-                {isStripeLoading ? 'Зареждане...' : (stripeStatus === 'connected' ? 'Свързан' : 'Свържи Stripe акаунт')}
-              </Button>
-            </div>
-          )}
         </div>
       </form>
     </Form>

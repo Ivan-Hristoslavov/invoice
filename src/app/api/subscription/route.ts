@@ -93,12 +93,27 @@ export async function GET() {
 
       console.log('Found subscription:', subscription ? `${subscription.id} (${subscription.plan})` : 'none');
 
+      if (!subscription) {
+        // Default to FREE plan if no subscription exists
+        return NextResponse.json({
+          subscription: {
+            id: 'free-plan',
+            plan: 'FREE',
+            status: 'ACTIVE',
+            cancelAtPeriodEnd: false,
+            currentPeriodEnd: null,
+            paymentHistory: [],
+            history: [],
+          },
+        });
+      }
+
       return NextResponse.json({ 
-        subscription: subscription ? {
+        subscription: {
           ...subscription,
           paymentHistory,
           history
-        } : null 
+        }
       });
     } catch (dbError: any) {
       console.warn('Database error, using mock subscription data:', dbError.message);

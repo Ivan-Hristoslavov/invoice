@@ -5,6 +5,8 @@ import { useSession } from "next-auth/react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { BackgroundShapes } from "@/components/ui/background-shapes";
+import { CommandPaletteProvider } from "@/components/ui/command-palette";
+import { KeyboardShortcutsProvider } from "@/components/ui/keyboard-shortcuts-provider";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -33,19 +35,23 @@ export function MainLayout({ children }: MainLayoutProps) {
     );
   }
 
-  // Standard layout with navigation - simplified for faster transitions
+  // Standard layout with navigation - fixed sidebar on desktop
   return (
-    <div className="flex min-h-screen relative">
-      <BackgroundShapes variant="subtle" />
-      <Sidebar />
-      <div className="flex-1 lg:ml-72 flex flex-col min-h-screen">
-        <Navbar />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 animate-in fade-in duration-150 pb-6 sm:pb-8">
-          <div className="max-w-7xl mx-auto w-full">
-            {children}
+    <KeyboardShortcutsProvider>
+      <CommandPaletteProvider>
+        <div className="flex h-screen overflow-hidden relative">
+          <BackgroundShapes variant="subtle" />
+          <Sidebar />
+          <div className="flex-1 flex flex-col h-screen lg:ml-72 overflow-hidden">
+            <Navbar />
+            <main className="flex-1 p-4 sm:p-6 lg:p-8 animate-in fade-in duration-150 overflow-y-auto overflow-x-hidden">
+              <div className="max-w-7xl mx-auto w-full pb-6 sm:pb-8">
+                {children}
+              </div>
+            </main>
           </div>
-        </main>
-      </div>
-    </div>
+        </div>
+      </CommandPaletteProvider>
+    </KeyboardShortcutsProvider>
   );
 }

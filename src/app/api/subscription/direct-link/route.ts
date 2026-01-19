@@ -5,9 +5,35 @@ import { getStripe } from '@/lib/stripe';
 
 // Get direct Stripe checkout URLs from environment variables
 const STRIPE_URLS = {
-  FREE: null, // Free plan doesn't need Stripe
-  PRO: process.env.STRIPE_PRO_MONTHLY_URL || 'https://buy.stripe.com/test_pro_monthly',
-  BUSINESS: process.env.STRIPE_BUSINESS_MONTHLY_URL || 'https://buy.stripe.com/test_business_monthly',
+  FREE: { monthly: null, yearly: null }, // Free plan doesn't need Stripe
+  STARTER: { 
+    monthly: process.env.STRIPE_STARTER_MONTHLY_URL || null,
+    yearly: process.env.STRIPE_STARTER_YEARLY_URL || null,
+  },
+  PRO: { 
+    monthly: process.env.STRIPE_PRO_MONTHLY_URL || null,
+    yearly: process.env.STRIPE_PRO_YEARLY_URL || null,
+  },
+  BUSINESS: { 
+    monthly: process.env.STRIPE_BUSINESS_MONTHLY_URL || null,
+    yearly: process.env.STRIPE_BUSINESS_YEARLY_URL || null,
+  },
+};
+
+// Price IDs for fallback checkout sessions
+const STRIPE_PRICE_IDS = {
+  STARTER: {
+    monthly: process.env.STRIPE_STARTER_MONTHLY_PRICE_ID,
+    yearly: process.env.STRIPE_STARTER_YEARLY_PRICE_ID,
+  },
+  PRO: {
+    monthly: process.env.STRIPE_PRO_MONTHLY_PRICE_ID || process.env.STRIPE_PRO_PRICE_ID,
+    yearly: process.env.STRIPE_PRO_YEARLY_PRICE_ID,
+  },
+  BUSINESS: {
+    monthly: process.env.STRIPE_BUSINESS_MONTHLY_PRICE_ID || process.env.STRIPE_BUISNESS_PRICE_ID,
+    yearly: process.env.STRIPE_BUSINESS_YEARLY_PRICE_ID,
+  },
 };
 
 // Helper function to serialize objects
@@ -36,9 +62,9 @@ export async function POST(req: Request) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const { plan } = await req.json();
+    const { plan, billingInterval = 'yearly' } = await req.json();
 
-    if (!plan || !['FREE', 'PRO', 'BUSINESS'].includes(plan)) {
+    if (!plan || !['FREE', 'STARTER', 'PRO', 'BUSINESS'].includes(plan)) {
       return new NextResponse('Invalid plan', { status: 400 });
     }
 
@@ -47,23 +73,24 @@ export async function POST(req: Request) {
       return new NextResponse('FREE plan does not require checkout', { status: 400 });
     }
 
+    const interval = billingInterval === 'monthly' ? 'monthly' : 'yearly';
+
     // Get the direct URL for the selected plan
-    const directUrl = STRIPE_URLS[plan as keyof typeof STRIPE_URLS];
-    if (directUrl) {
-      return NextResponse.json({ url: directUrl });
+    const planUrls = STRIPE_URLS[plan as keyof typeof STRIPE_URLS];
+    if (planUrls && typeof planUrls === 'object') {
+      const directUrl = planUrls[interval as keyof typeof planUrls];
+      if (directUrl) {
+        return NextResponse.json({ url: directUrl });
+      }
     }
 
     // Fallback to creating a Checkout session if direct URL is not available
     // Get the price ID for the selected plan
-    let priceId: string | undefined;
-    if (plan === 'PRO') {
-      priceId = process.env.STRIPE_PRO_PRICE_ID;
-    } else if (plan === 'BUSINESS') {
-      priceId = process.env.STRIPE_BUISNESS_PRICE_ID;
-    }
+    const planPrices = STRIPE_PRICE_IDS[plan as keyof typeof STRIPE_PRICE_IDS];
+    const priceId = planPrices?.[interval as keyof typeof planPrices];
     
     if (!priceId) {
-      return new NextResponse('Price ID not configured', { status: 500 });
+      return new NextResponse(`Price ID not configured for ${plan} ${interval}`, { status: 500 });
     }
 
     // Get the Stripe instance

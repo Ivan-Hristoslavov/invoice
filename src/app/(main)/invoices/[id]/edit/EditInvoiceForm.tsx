@@ -40,7 +40,7 @@ import {
   CardTitle,
   CardDescription
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Input, NumericInput } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -636,10 +636,7 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                             <div className="space-y-2">
                               <Label>Количество</Label>
-                              <Input
-                                type="number"
-                                min="0.01"
-                                step="0.01"
+                              <NumericInput
                                 value={item.quantity}
                                 onChange={(e) => {
                                   const value = e.target.value;
@@ -658,20 +655,14 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                             </div>
                             <div className="space-y-2">
                               <Label>Ед. цена</Label>
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.01"
+                              <NumericInput
                                 value={item.unitPrice}
                                 onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
                               />
                             </div>
                             <div className="space-y-2">
                               <Label>ДДС (%)</Label>
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.1"
+                              <NumericInput
                                 value={item.taxRate}
                                 onChange={(e) => handleItemChange(index, 'taxRate', e.target.value)}
                               />
@@ -712,10 +703,7 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                               </div>
                             </td>
                             <td className="py-3 px-4">
-                              <Input
-                                type="number"
-                                min="0.01"
-                                step="0.01"
+                              <NumericInput
                                 className="text-right"
                                 value={item.quantity}
                                 onChange={(e) => {
@@ -734,20 +722,14 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                               />
                             </td>
                             <td className="py-3 px-4">
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.01"
+                              <NumericInput
                                 className="text-right"
                                 value={item.unitPrice}
                                 onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
                               />
                             </td>
                             <td className="py-3 px-4">
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.1"
+                              <NumericInput
                                 className="text-right"
                                 value={item.taxRate}
                                 onChange={(e) => handleItemChange(index, 'taxRate', e.target.value)}

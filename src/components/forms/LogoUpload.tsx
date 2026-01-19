@@ -5,8 +5,10 @@ import Cropper from "react-easy-crop";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Upload, X, Check, Loader2 } from "lucide-react";
+import { Upload, X, Check, Loader2, Lock, Crown } from "lucide-react";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
+import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 
 interface LogoUploadProps {
   currentLogoUrl?: string | null;
@@ -29,7 +31,7 @@ export function LogoUpload({ currentLogoUrl, companyId, onLogoUploaded }: LogoUp
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { checkLimit } = useSubscriptionLimit();
+  const { checkLimit, isFree } = useSubscriptionLimit();
 
   const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
     setCroppedAreaPixels(croppedAreaPixels);
@@ -204,6 +206,28 @@ export function LogoUpload({ currentLogoUrl, companyId, onLogoUploaded }: LogoUp
 
   return (
     <div className="space-y-4">
+      {/* Pro feature notice */}
+      {isFree && (
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+          <div className="h-8 w-8 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+            <Crown className="h-4 w-4 text-amber-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+              PRO функция
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Качването на собствено лого е налично само в PRO и BUSINESS плановете.
+            </p>
+          </div>
+          <Button asChild size="sm" variant="outline" className="flex-shrink-0 border-amber-500/30 text-amber-700 hover:bg-amber-500/10">
+            <Link href="/settings/subscription">
+              Надградете
+            </Link>
+          </Button>
+        </div>
+      )}
+
       <div className="flex items-center gap-6">
         <div className="relative h-24 w-24 rounded overflow-hidden border bg-muted">
           {currentLogoUrl ? (
@@ -217,6 +241,12 @@ export function LogoUpload({ currentLogoUrl, companyId, onLogoUploaded }: LogoUp
               Л
             </div>
           )}
+          {/* Lock overlay for free plan */}
+          {isFree && !currentLogoUrl && (
+            <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+              <Lock className="h-6 w-6 text-muted-foreground" />
+            </div>
+          )}
         </div>
         <div className="flex-1 space-y-2">
           <div className="flex gap-2">
@@ -225,11 +255,21 @@ export function LogoUpload({ currentLogoUrl, companyId, onLogoUploaded }: LogoUp
               variant="outline"
               onClick={() => fileInputRef.current?.click()}
               className="flex items-center gap-2"
+              disabled={isFree}
             >
-              <Upload className="h-4 w-4" />
+              {isFree ? (
+                <Lock className="h-4 w-4" />
+              ) : (
+                <Upload className="h-4 w-4" />
+              )}
               {currentLogoUrl ? "Промени лого" : "Качи лого"}
+              {isFree && (
+                <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0 border-amber-500/30 text-amber-600">
+                  PRO
+                </Badge>
+              )}
             </Button>
-            {currentLogoUrl && (
+            {currentLogoUrl && !isFree && (
               <Button
                 type="button"
                 variant="outline"

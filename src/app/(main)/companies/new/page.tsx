@@ -6,17 +6,23 @@ import Link from "next/link";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Save, Building, FileCheck } from "lucide-react";
+import { 
+  ArrowLeft, 
+  ArrowRight, 
+  Check, 
+  Building2, 
+  MapPin, 
+  Receipt,
+  CreditCard,
+  Mail,
+  Phone
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
 } from "@/components/ui/card";
 import {
   Form,
@@ -28,48 +34,72 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
+
+// Step indicator component
+function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { title: string; icon: React.ReactNode }[] }) {
+  return (
+    <div className="flex items-center justify-center mb-8 gap-2">
+      {steps.map((step, index) => (
+        <div key={index} className="flex items-center gap-2">
+          <div className="flex flex-col items-center gap-2">
+            <div className={`
+              flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300 relative
+              ${index < currentStep 
+                ? 'bg-emerald-500 border-emerald-500 text-white' 
+                : index === currentStep 
+                  ? 'bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/25' 
+                  : 'bg-muted border-muted-foreground/20 text-muted-foreground'}
+            `}>
+              <div className="absolute inset-0 flex items-center justify-center">
+                {index < currentStep ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <div className="flex items-center justify-center h-4 w-4">
+                    {step.icon}
+                  </div>
+                )}
+              </div>
+            </div>
+            <p className={`text-xs font-medium whitespace-nowrap text-center ${index === currentStep ? 'text-foreground' : 'text-muted-foreground'}`}>
+              {step.title}
+            </p>
+          </div>
+          {index < steps.length - 1 && (
+            <div className={`w-8 sm:w-12 md:w-16 h-0.5 transition-all duration-300 ${index < currentStep ? 'bg-emerald-500' : 'bg-muted-foreground/20'}`} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 // Company schema with validation
 const companySchema = z.object({
-  // Basic Info
   name: z.string().min(1, "Името на компанията е задължително"),
   email: z.string().email("Моля, въведете валиден имейл").optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
-  
-  // Address
   address: z.string().optional().or(z.literal("")),
   city: z.string().optional().or(z.literal("")),
   state: z.string().optional().or(z.literal("")),
   zipCode: z.string().optional().or(z.literal("")),
   country: z.string().optional().or(z.literal("")),
-  
-  // Tax Information
   vatNumber: z.string().optional().or(z.literal("")),
   taxIdNumber: z.string().optional().or(z.literal("")),
   registrationNumber: z.string().optional().or(z.literal("")),
-  
-  // Bulgarian-specific fields
   bulstatNumber: z.string().optional().or(z.literal("")),
   vatRegistered: z.boolean().optional().default(false),
   vatRegistrationNumber: z.string().optional().or(z.literal("")),
-  mол: z.string().optional().or(z.literal("")),
+  mol: z.string().optional().or(z.literal("")),
   accountablePerson: z.string().optional().or(z.literal("")),
   uicType: z.enum(["BULSTAT", "EGN"]).default("BULSTAT"),
-  
-  // Banking Details
   bankName: z.string().optional().or(z.literal("")),
   bankAccount: z.string().optional().or(z.literal("")),
   bankSwift: z.string().optional().or(z.literal("")),
@@ -81,8 +111,17 @@ type CompanyFormValues = z.infer<typeof companySchema>;
 export default function NewCompanyPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [confirmed, setConfirmed] = useState(false);
 
-  // Initialize form with default values
+  const steps = [
+    { title: "Основни данни", icon: <Building2 className="h-4 w-4" /> },
+    { title: "Адрес", icon: <MapPin className="h-4 w-4" /> },
+    { title: "Данъчни данни", icon: <Receipt className="h-4 w-4" /> },
+    { title: "Банкова сметка", icon: <CreditCard className="h-4 w-4" /> },
+    { title: "Преглед", icon: <Check className="h-4 w-4" /> },
+  ];
+
   const form = useForm<CompanyFormValues>({
     resolver: zodResolver(companySchema),
     defaultValues: {
@@ -100,7 +139,7 @@ export default function NewCompanyPage() {
       bulstatNumber: "",
       vatRegistered: false,
       vatRegistrationNumber: "",
-      mол: "",
+      mol: "",
       accountablePerson: "",
       uicType: "BULSTAT",
       bankName: "",
@@ -110,7 +149,8 @@ export default function NewCompanyPage() {
     },
   });
 
-  // Handle form submission
+  const formValues = form.watch();
+
   async function onSubmit(data: CompanyFormValues) {
     setIsLoading(true);
     
@@ -128,9 +168,13 @@ export default function NewCompanyPage() {
       }
 
       toast.success("Компанията е създадена", {
-        description: "Вашата компания беше създадена успешно."
+        description: "Вашата компания беше създадена успешно.",
+        action: {
+          label: "Виж компании",
+          onClick: () => router.push("/companies"),
+        },
       });
-      
+
       router.push("/companies");
     } catch (error) {
       console.error("Грешка при създаване на компания:", error);
@@ -142,229 +186,243 @@ export default function NewCompanyPage() {
     }
   }
 
+  // Email validation helper
+  const isValidEmail = (email: string) => {
+    if (!email || email.trim() === "") return true; // Empty is allowed (optional)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const canProceed = () => {
+    switch (currentStep) {
+      case 0:
+        // Step 0: Name is required, email must be valid if provided
+        const nameValid = formValues.name.trim().length > 0;
+        const emailValid = isValidEmail(formValues.email || "");
+        return nameValid && emailValid;
+      case 1:
+        // Step 1: Address fields are optional
+        return true;
+      case 2:
+        // Step 2: Tax info is optional
+        return true;
+      case 3:
+        // Step 3: Bank info is optional
+        return true;
+      default:
+        return true;
+    }
+  };
+
+  // Get validation errors for current step
+  const getStepErrors = () => {
+    const errors: string[] = [];
+    switch (currentStep) {
+      case 0:
+        if (!formValues.name.trim()) {
+          errors.push("Името на компанията е задължително");
+        }
+        if (formValues.email && !isValidEmail(formValues.email)) {
+          errors.push("Моля, въведете валиден имейл адрес");
+        }
+        break;
+    }
+    return errors;
+  };
+
+  const stepErrors = getStepErrors();
+
   return (
-    <div>
-      <div className="page-header">
-        <div className="page-header-left">
-          <Button variant="ghost" size="sm" asChild className="back-btn">
+    <div className="min-h-screen">
+      {/* Header */}
+      <div className="mb-4 sm:mb-6">
+        <div className="flex items-center gap-2 sm:gap-3 mb-2">
+          <Button variant="ghost" size="icon" asChild className="h-8 w-8 rounded-full">
             <Link href="/companies">
-              <ArrowLeft className="w-4 h-4" />
-              <span className="hidden sm:inline ml-2">Назад</span>
+              <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h1 className="page-title truncate">Нова компания</h1>
-        </div>
-        <div className="page-header-actions">
-          <Button 
-            type="submit" 
-            form="company-form" 
-            disabled={isLoading}
-            className="btn-responsive btn-text"
-          >
-            <Save className="w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">{isLoading ? "Запазване..." : "Запази"}</span>
-            <span className="sm:hidden">{isLoading ? "..." : "Запази"}</span>
-          </Button>
+          <div className="flex-1 min-w-0">
+            <h1 className="page-title truncate">Нова компания</h1>
+            <p className="card-description hidden sm:block">Добавете нова компания за издаване на фактури</p>
+          </div>
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="card-title">Данни за компанията</CardTitle>
-          <CardDescription className="card-description">
-            Добавете информацията за вашата компания за фактури
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form id="company-form" onSubmit={form.handleSubmit(onSubmit)}>
-              <Tabs defaultValue="basic" className="w-full">
-                <div className="overflow-x-auto -mx-6 px-6">
-                  <TabsList className="inline-flex w-full min-w-max sm:grid sm:grid-cols-4">
-                    <TabsTrigger value="basic" className="whitespace-nowrap text-xs sm:text-sm">Основна</TabsTrigger>
-                    <TabsTrigger value="address" className="whitespace-nowrap text-xs sm:text-sm">Адрес</TabsTrigger>
-                    <TabsTrigger value="tax" className="whitespace-nowrap text-xs sm:text-sm">Данъчна</TabsTrigger>
-                    <TabsTrigger value="banking" className="whitespace-nowrap text-xs sm:text-sm">Банкова</TabsTrigger>
-                  </TabsList>
+      {/* Step indicator */}
+      <StepIndicator currentStep={currentStep} steps={steps} />
+
+      {/* Form */}
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          {/* Step content - all steps rendered but hidden with CSS */}
+          <div className="mb-8">
+            {/* Step 0: Basic Info */}
+            <div className={currentStep === 0 ? "block" : "hidden"}>
+              <div className="max-w-2xl mx-auto space-y-6">
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-bold mb-2">Основна информация</h2>
+                  <p className="text-muted-foreground">Въведете основните данни за компанията</p>
                 </div>
-                
-                {/* Basic Information Tab */}
-                <TabsContent value="basic" className="space-y-6 pt-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Име на компанията</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Фирма ООД" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+
+                <Card>
+                  <CardContent className="pt-6 space-y-6">
                     <FormField
                       control={form.control}
-                      name="email"
+                      name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Имейл</FormLabel>
+                          <FormLabel className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4" />
+                            Име на компанията *
+                          </FormLabel>
                           <FormControl>
-                            <Input type="email" placeholder="contact@example.com" {...field} />
-                          </FormControl>
-                          <FormDescription>Имейл за контакт за фактури</FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Телефон</FormLabel>
-                          <FormControl>
-                            <Input placeholder="+359 2 123 4567" {...field} />
+                            <Input placeholder="Фирма ООД" className="h-12" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                  </div>
-                </TabsContent>
-                
-                {/* Address Tab */}
-                <TabsContent value="address" className="space-y-6 pt-4">
-                  <FormField
-                    control={form.control}
-                    name="address"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Адрес</FormLabel>
-                        <FormControl>
-                          <Input placeholder="ул. Бизнес 123" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              <Mail className="h-4 w-4" />
+                              Имейл
+                            </FormLabel>
+                            <FormControl>
+                              <Input type="email" placeholder="contact@example.com" className="h-12" {...field} />
+                            </FormControl>
+                            <FormDescription>Имейл за контакт за фактури</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              <Phone className="h-4 w-4" />
+                              Телефон
+                            </FormLabel>
+                            <FormControl>
+                              <Input placeholder="+359 2 123 4567" className="h-12" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* Step 1: Address */}
+            <div className={currentStep === 1 ? "block" : "hidden"}>
+              <div className="max-w-2xl mx-auto space-y-6">
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-bold mb-2">Адрес</h2>
+                  <p className="text-muted-foreground">Въведете адреса на компанията</p>
+                </div>
+
+                <Card>
+                  <CardContent className="pt-6 space-y-6">
                     <FormField
                       control={form.control}
-                      name="city"
+                      name="address"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Град</FormLabel>
+                          <FormLabel>Адрес</FormLabel>
                           <FormControl>
-                            <Input placeholder="Град" {...field} />
+                            <Input placeholder="ул. Бизнес 123" className="h-12" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    
-                    <FormField
-                      control={form.control}
-                      name="state"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Област</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Област" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="zipCode"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Пощенски код</FormLabel>
-                          <FormControl>
-                            <Input placeholder="1000" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="country"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Държава</FormLabel>
-                          <FormControl>
-                            <Input placeholder="България" value="България" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </TabsContent>
-                
-                {/* Tax Information Tab */}
-                <TabsContent value="tax" className="space-y-6 pt-4">
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                    <FormField
-                      control={form.control}
-                      name="vatNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>ДДС номер</FormLabel>
-                          <FormControl>
-                            <Input placeholder="BG123456789" {...field} />
-                          </FormControl>
-                          <FormDescription>ДДС номер на компанията</FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="taxIdNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Данъчен номер</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Данъчен номер" {...field} />
-                          </FormControl>
-                          <FormDescription>Бизнес данъчен идентификатор</FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="registrationNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Регистрационен номер</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Регистрационен номер на компанията" {...field} />
-                          </FormControl>
-                          <FormDescription>Официален регистрационен номер</FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <div className="mt-6">
-                    <h3 className="text-lg font-medium mb-4">Информация за НАП</h3>
-                    
+
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name="city"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Град</FormLabel>
+                            <FormControl>
+                              <Input placeholder="София" className="h-12" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="state"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Област</FormLabel>
+                            <FormControl>
+                              <Input placeholder="София-град" className="h-12" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name="zipCode"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Пощенски код</FormLabel>
+                            <FormControl>
+                              <Input placeholder="1000" className="h-12" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="country"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Държава</FormLabel>
+                            <FormControl>
+                              <Input placeholder="България" className="h-12" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* Step 2: Tax Info */}
+            <div className={currentStep === 2 ? "block" : "hidden"}>
+              <div className="max-w-2xl mx-auto space-y-6">
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-bold mb-2">Данъчна информация</h2>
+                  <p className="text-muted-foreground">Въведете данъчните данни за НАП</p>
+                </div>
+
+                <Card>
+                  <CardContent className="pt-6 space-y-6">
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                       <FormField
                         control={form.control}
@@ -373,28 +431,23 @@ export default function NewCompanyPage() {
                           <FormItem>
                             <FormLabel>БУЛСТАТ/ЕИК</FormLabel>
                             <FormControl>
-                              <Input placeholder="Например: 123456789" {...field} />
+                              <Input placeholder="123456789" className="h-12" {...field} />
                             </FormControl>
-                            <FormDescription>
-                              Уникален български фирмен идентификатор
-                            </FormDescription>
+                            <FormDescription>Уникален български фирмен идентификатор</FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name="uicType"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Тип идентификатор</FormLabel>
-                            <Select 
-                              onValueChange={field.onChange} 
-                              value={field.value}
-                            >
+                            <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
-                                <SelectTrigger>
+                                <SelectTrigger className="h-12">
                                   <SelectValue placeholder="Изберете тип" />
                                 </SelectTrigger>
                               </FormControl>
@@ -403,21 +456,20 @@ export default function NewCompanyPage() {
                                 <SelectItem value="EGN">ЕГН</SelectItem>
                               </SelectContent>
                             </Select>
-                            <FormDescription>
-                              Тип на идентификатора (БУЛСТАТ или ЕГН)
-                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                     </div>
-                    
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 mt-4">
+
+                    <Separator />
+
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                       <FormField
                         control={form.control}
                         name="vatRegistered"
                         render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-lg border p-4">
                             <FormControl>
                               <Checkbox
                                 checked={field.value}
@@ -426,14 +478,12 @@ export default function NewCompanyPage() {
                             </FormControl>
                             <div className="space-y-1 leading-none">
                               <FormLabel>Регистрация по ЗДДС</FormLabel>
-                              <FormDescription>
-                                Компанията е регистрирана по ЗДДС
-                              </FormDescription>
+                              <FormDescription>Компанията е регистрирана по ЗДДС</FormDescription>
                             </div>
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name="vatRegistrationNumber"
@@ -441,35 +491,31 @@ export default function NewCompanyPage() {
                           <FormItem>
                             <FormLabel>ДДС номер</FormLabel>
                             <FormControl>
-                              <Input placeholder="Например: BG123456789" {...field} />
+                              <Input placeholder="BG123456789" className="h-12" {...field} />
                             </FormControl>
-                            <FormDescription>
-                              № по ЗДДС (Задължително, ако е регистрирана по ДДС)
-                            </FormDescription>
+                            <FormDescription>№ по ЗДДС</FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                     </div>
-                    
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 mt-4">
+
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                       <FormField
                         control={form.control}
-                        name="mол"
+                        name="mol"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>МОЛ (Представляващ)</FormLabel>
                             <FormControl>
-                              <Input placeholder="Име на представляващия" {...field} />
+                              <Input placeholder="Име на представляващия" className="h-12" {...field} />
                             </FormControl>
-                            <FormDescription>
-                              Материално отговорно лице / Представляващ компанията
-                            </FormDescription>
+                            <FormDescription>Материално отговорно лице</FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name="accountablePerson"
@@ -477,86 +523,274 @@ export default function NewCompanyPage() {
                           <FormItem>
                             <FormLabel>Счетоводител</FormLabel>
                             <FormControl>
-                              <Input placeholder="Име на счетоводителя" {...field} />
+                              <Input placeholder="Име на счетоводителя" className="h-12" {...field} />
                             </FormControl>
-                            <FormDescription>
-                              Лице, отговорно за счетоводството
-                            </FormDescription>
+                            <FormDescription>Лице, отговорно за счетоводството</FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                     </div>
-                  </div>
-                </TabsContent>
-                
-                {/* Banking Details Tab */}
-                <TabsContent value="banking" className="space-y-6 pt-4">
-                  <FormField
-                    control={form.control}
-                    name="bankName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Име на банката</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Банка Пример" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* Step 3: Bank Info */}
+            <div className={currentStep === 3 ? "block" : "hidden"}>
+              <div className="max-w-2xl mx-auto space-y-6">
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-bold mb-2">Банкова информация</h2>
+                  <p className="text-muted-foreground">Въведете банковите данни за получаване на плащания</p>
+                </div>
+
+                <Card>
+                  <CardContent className="pt-6 space-y-6">
                     <FormField
                       control={form.control}
-                      name="bankAccount"
+                      name="bankName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Номер на сметка</FormLabel>
+                          <FormLabel>Име на банката</FormLabel>
                           <FormControl>
-                            <Input placeholder="Номер на сметка" {...field} />
+                            <Input placeholder="Банка Пример" className="h-12" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={form.control}
-                      name="bankSwift"
+                      name="bankIban"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>SWIFT/BIC код</FormLabel>
+                          <FormLabel>IBAN</FormLabel>
                           <FormControl>
-                            <Input placeholder="SWIFT/BIC код" {...field} />
+                            <Input placeholder="BG00XXXX00000000000000" className="h-12" {...field} />
                           </FormControl>
-                          <FormDescription>Международен банков код</FormDescription>
+                          <FormDescription>Международен номер на банкова сметка</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name="bankSwift"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>SWIFT/BIC код</FormLabel>
+                            <FormControl>
+                              <Input placeholder="XXXXBGSF" className="h-12" {...field} />
+                            </FormControl>
+                            <FormDescription>Международен банков код</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="bankAccount"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Номер на сметка</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Номер на сметка" className="h-12" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* Step 4: Review */}
+            <div className={currentStep === 4 ? "block" : "hidden"}>
+              <div className="max-w-2xl mx-auto space-y-6">
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-bold mb-2">Преглед на данните</h2>
+                  <p className="text-muted-foreground">Проверете информацията преди създаване</p>
+                </div>
+
+                <Card className="overflow-hidden border-2">
+                  <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-xl bg-white/20 flex items-center justify-center">
+                        <Building2 className="h-8 w-8" />
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-bold">{formValues.name || "Без име"}</h3>
+                        {formValues.email && <p className="text-white/80">{formValues.email}</p>}
+                      </div>
+                    </div>
                   </div>
-                  
-                  <FormField
-                    control={form.control}
-                    name="bankIban"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>IBAN</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Международен номер на банкова сметка" {...field} />
-                        </FormControl>
-                        <FormDescription>За международни плащания</FormDescription>
-                        <FormMessage />
-                      </FormItem>
+
+                  <CardContent className="p-6 space-y-6">
+                    {/* Contact Info */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Контакти</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Имейл</p>
+                          <p className="font-medium">{formValues.email || "—"}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Телефон</p>
+                          <p className="font-medium">{formValues.phone || "—"}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Address */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Адрес</h4>
+                      <p className="font-medium">
+                        {[formValues.address, formValues.city, formValues.zipCode, formValues.country]
+                          .filter(Boolean)
+                          .join(", ") || "—"}
+                      </p>
+                    </div>
+
+                    <Separator />
+
+                    {/* Tax Info */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Данъчна информация</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">БУЛСТАТ/ЕИК</p>
+                          <p className="font-medium">{formValues.bulstatNumber || "—"}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">ДДС номер</p>
+                          <p className="font-medium">{formValues.vatRegistrationNumber || "—"}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">МОЛ</p>
+                          <p className="font-medium">{formValues.mol || "—"}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Счетоводител</p>
+                          <p className="font-medium">{formValues.accountablePerson || "—"}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Bank Info */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Банкова информация</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Банка</p>
+                          <p className="font-medium">{formValues.bankName || "—"}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">SWIFT</p>
+                          <p className="font-medium">{formValues.bankSwift || "—"}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-sm text-muted-foreground">IBAN</p>
+                          <p className="font-medium font-mono">{formValues.bankIban || "—"}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Confirmation checkbox */}
+                    <div className="flex items-start space-x-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
+                      <Checkbox
+                        id="confirm-company"
+                        checked={confirmed}
+                        onCheckedChange={(checked) => setConfirmed(checked === true)}
+                        className="mt-0.5"
+                      />
+                      <label
+                        htmlFor="confirm-company"
+                        className="text-sm leading-relaxed cursor-pointer"
+                      >
+                        <span className="font-medium">Потвърждавам,</span> че информацията за компанията е коректна и искам да я създам.
+                      </label>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <div className="flex flex-col gap-4 pt-6 border-t">
+            {/* Validation errors */}
+            {stepErrors.length > 0 && (
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
+                <ul className="text-sm text-destructive space-y-1">
+                  {stepErrors.map((error, index) => (
+                    <li key={index} className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                      {error}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+                disabled={currentStep === 0}
+                className="gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Назад
+              </Button>
+
+              <div className="flex gap-3">
+                {currentStep < 4 ? (
+                  <Button
+                    type="button"
+                    onClick={() => setCurrentStep(currentStep + 1)}
+                    disabled={!canProceed()}
+                    className="gap-2"
+                  >
+                    Напред
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    disabled={isLoading || !confirmed}
+                    className="gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 disabled:opacity-50"
+                  >
+                    {isLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Създаване...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="h-4 w-4" />
+                        Създай компания
+                      </>
                     )}
-                  />
-                </TabsContent>
-              </Tabs>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </form>
+      </Form>
     </div>
   );
-} 
+}

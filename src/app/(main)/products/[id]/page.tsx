@@ -9,7 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input, NumericInput } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -340,9 +340,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                           <span className="absolute inset-y-0 left-3 flex items-center text-muted-foreground">
                             €
                           </span>
-                          <Input 
-                            type="text" 
-                            inputMode="decimal"
+                          <NumericInput 
                             className="pl-7"
                             {...field} 
                           />
@@ -392,9 +390,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                       <FormLabel>ДДС ставка (%)</FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Input 
-                            type="text" 
-                            inputMode="decimal"
+                          <NumericInput 
                             placeholder="Например: 20"
                             {...field} 
                           />

@@ -146,6 +146,7 @@ module.exports = {
         "slide-down": "slide-down 0.3s ease-in-out",
         "scale-in": "scale-in 0.2s ease-in-out",
         "pulse-once": "pulse 1.5s ease-in-out 1",
+        "shimmer": "shimmer 2s infinite",
       },
       keyframes: {
         "fade-in": {
@@ -167,6 +168,9 @@ module.exports = {
         "scale-in": {
           "0%": { transform: "scale(0.95)", opacity: 0 },
           "100%": { transform: "scale(1)", opacity: 1 },
+        },
+        "shimmer": {
+          "100%": { transform: "translateX(100%)" },
         },
       },
     },

@@ -13,6 +13,7 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
+import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
 import { 
   FileText, 
   Plus, 
@@ -55,6 +56,10 @@ import { toast } from "sonner";
 import { StatusChangeModal } from "@/components/invoice/StatusChangeModal";
 import { DeleteInvoiceModal } from "@/components/invoice/DeleteInvoiceModal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
+import { ProFeatureLock, UsageCounter, LockedButton } from "@/components/ui/pro-feature-lock";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Crown, AlertTriangle } from "lucide-react";
 
 interface Invoice {
   id: string;
@@ -91,6 +96,18 @@ export default function InvoicesClient({
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [invoices, setInvoices] = useState(initialInvoices);
   
+  // Subscription limit hook
+  const { 
+    plan, 
+    isFree, 
+    getInvoiceUsage, 
+    canCreateInvoice,
+    isLoadingUsage,
+    refreshUsage
+  } = useSubscriptionLimit();
+  
+  const invoiceUsage = getInvoiceUsage();
+  
   // Modal state for status change
   const [statusModal, setStatusModal] = useState<{
     isOpen: boolean;
@@ -124,6 +141,9 @@ export default function InvoicesClient({
       // Remove invoice from local state
       setInvoices(prev => prev.filter(inv => inv.id !== invoiceId));
       toast.success("Фактурата беше изтрита успешно");
+      
+      // Refresh usage limits after deletion
+      refreshUsage();
       
       // Refresh the page to update the list
       router.refresh();
@@ -217,6 +237,36 @@ export default function InvoicesClient({
     return { issued: issued.length, draft: draft.length, cancelled: cancelled.length, totalValue };
   }, [invoices]);
 
+  const statsCards = [
+    {
+      title: "Общо",
+      value: invoices.length,
+      icon: FileText,
+      gradient: "from-blue-500 to-indigo-600",
+    },
+    {
+      title: "Издадени",
+      value: stats.issued,
+      icon: CheckCircle,
+      gradient: "from-emerald-500 to-teal-600",
+      valueClassName: "text-emerald-600",
+    },
+    {
+      title: "Чернови",
+      value: stats.draft,
+      icon: Clock,
+      gradient: "from-amber-500 to-orange-600",
+      valueClassName: "text-amber-600",
+    },
+    {
+      title: "Стойност",
+      value: formatPrice(stats.totalValue),
+      valueSuffix: "€",
+      icon: Download,
+      gradient: "from-slate-500 to-slate-600",
+    },
+  ];
+
   const getStatusConfig = (status: string) => {
     switch (status) {
       case "ISSUED":
@@ -249,10 +299,56 @@ export default function InvoicesClient({
 
   return (
     <div className="space-y-6">
+      {/* Subscription Warning Banner for FREE plan */}
+      {!isLoadingUsage && isFree && invoiceUsage.remaining <= 1 && invoiceUsage.remaining > 0 && (
+        <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="flex items-center justify-between">
+            <span className="text-amber-800 dark:text-amber-200">
+              Остава ви само <strong>{invoiceUsage.remaining}</strong> фактура този месец. 
+              Надградете за неограничени фактури.
+            </span>
+            <Link href="/settings/subscription">
+              <Button size="sm" variant="outline" className="ml-4 border-amber-300 text-amber-700 hover:bg-amber-100">
+                <Crown className="h-4 w-4 mr-2" />
+                Надградете
+              </Button>
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {!isLoadingUsage && isFree && !canCreateInvoice && (
+        <Alert className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
+          <XCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="flex items-center justify-between">
+            <span className="text-red-800 dark:text-red-200">
+              Достигнахте лимита от <strong>3 фактури</strong> за този месец. 
+              Надградете до PRO за неограничени фактури.
+            </span>
+            <Link href="/settings/subscription">
+              <Button size="sm" className="ml-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
+                <Crown className="h-4 w-4 mr-2" />
+                Надградете до PRO
+              </Button>
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex-1">
-          <h1 className="text-3xl font-bold tracking-tight">Фактури</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight">Фактури</h1>
+            {isFree && !isLoadingUsage && (
+              <UsageCounter 
+                used={invoiceUsage.used} 
+                limit={invoiceUsage.limit === Infinity ? 0 : invoiceUsage.limit}
+                label="този месец"
+              />
+            )}
+          </div>
           <p className="text-muted-foreground mt-1">
             Управлявайте и проследявайте вашите фактури
           </p>
@@ -266,23 +362,29 @@ export default function InvoicesClient({
               </Link>
             </Button>
           )}
-          <RadixButton 
-            asChild 
-            size="3" 
-            variant="solid" 
-            color="green"
-            className="shadow-lg"
-          >
-            <Link href="/invoices/new">
-              <Plus className="mr-2 h-5 w-5" />
+          {(isLoadingUsage || canCreateInvoice) ? (
+            <RadixButton 
+              asChild 
+              size="3" 
+              variant="solid" 
+              color="green"
+              className="shadow-lg"
+            >
+              <Link href="/invoices/new">
+                <Plus className="mr-2 h-5 w-5" />
+                Нова фактура
+              </Link>
+            </RadixButton>
+          ) : (
+            <LockedButton requiredPlan="PRO">
               Нова фактура
-            </Link>
-          </RadixButton>
+            </LockedButton>
+          )}
         </div>
       </div>
       
       {/* Fast Action Button - Floating */}
-      {canCreateInvoices && (
+      {canCreateInvoices && (isLoadingUsage || canCreateInvoice) && (
         <div className="fixed bottom-8 right-8 z-50">
           <Button
             asChild
@@ -297,62 +399,18 @@ export default function InvoicesClient({
       )}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500/5 to-indigo-600/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Общо</p>
-                <p className="text-2xl font-bold">{invoices.length}</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                <FileText className="h-5 w-5 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-emerald-500/5 to-teal-600/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Издадени</p>
-                <p className="text-2xl font-bold text-emerald-600">{stats.issued}</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-                <CheckCircle className="h-5 w-5 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-amber-500/5 to-orange-600/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Чернови</p>
-                <p className="text-2xl font-bold text-amber-600">{stats.draft}</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
-                <Clock className="h-5 w-5 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-slate-500/5 to-slate-600/5">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Стойност</p>
-                <p className="text-2xl font-bold">{formatPrice(stats.totalValue)} €</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center">
-                <Download className="h-5 w-5 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {statsCards.map((stat) => (
+          <CardStatsMetric
+            key={stat.title}
+            title={stat.title}
+            value={stat.value}
+            valueSuffix={stat.valueSuffix}
+            valueClassName={stat.valueClassName}
+            icon={stat.icon}
+            gradient={stat.gradient}
+          />
+        ))}
       </div>
 
       {/* Filters */}
@@ -413,7 +471,7 @@ export default function InvoicesClient({
                 {filteredInvoices.length} от {invoices.length} фактури
               </CardDescription>
             </div>
-            {canCreateInvoices && (
+            {canCreateInvoices && (isLoadingUsage || canCreateInvoice) && (
               <Button 
                 asChild 
                 className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all"
@@ -424,6 +482,12 @@ export default function InvoicesClient({
                   <span className="sm:hidden">Нова</span>
                 </Link>
               </Button>
+            )}
+            {canCreateInvoices && !isLoadingUsage && !canCreateInvoice && (
+              <LockedButton requiredPlan="PRO">
+                <span className="hidden sm:inline">Нова фактура</span>
+                <span className="sm:hidden">Нова</span>
+              </LockedButton>
             )}
           </div>
         </CardHeader>
@@ -444,13 +508,18 @@ export default function InvoicesClient({
                   ? "Опитайте да промените филтрите за търсене"
                   : "Създайте първата си фактура, за да започнете да управлявате финансите си"}
               </p>
-              {canCreateInvoices && (
+              {canCreateInvoices && (isLoadingUsage || canCreateInvoice) && (
                 <Button asChild>
                   <Link href="/invoices/new">
                     <Plus className="mr-2 h-4 w-4" />
                     Създай фактура
                   </Link>
                 </Button>
+              )}
+              {canCreateInvoices && !isLoadingUsage && !canCreateInvoice && (
+                <LockedButton requiredPlan="PRO">
+                  Създай фактура
+                </LockedButton>
               )}
             </div>
           ) : (
@@ -533,9 +602,9 @@ export default function InvoicesClient({
                   );
                 })}
               </div>
-              <div className="hidden md:block overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto max-h-[600px] overflow-y-auto">
                 <table className="w-full">
-                <thead>
+                <thead className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                   <tr className="border-b bg-muted/50">
                     <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                       Фактура
@@ -552,7 +621,7 @@ export default function InvoicesClient({
                     <th className="px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                       Статус
                     </th>
-                    <th className="px-6 py-4 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <th className="px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                       <span className="hidden md:inline">Действия</span>
                       <MoreHorizontal className="h-4 w-4 inline md:hidden" />
                     </th>
@@ -619,9 +688,9 @@ export default function InvoicesClient({
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="flex items-center justify-end">
+                            <div className="flex items-center justify-center">
                               <DropdownMenu>
-                                <DropdownMenuTrigger className="h-8 w-8 p-0 hover:bg-muted">
+                                <DropdownMenuTrigger className="h-8 w-8 p-0 hover:bg-muted rounded-md flex items-center justify-center">
                                   <MoreHorizontal className="h-4 w-4" />
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
