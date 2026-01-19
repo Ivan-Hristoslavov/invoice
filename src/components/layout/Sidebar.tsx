@@ -13,7 +13,8 @@ import {
   X,
   HelpCircle,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  Receipt
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,12 @@ const mainNavItems = [
     href: "/invoices", 
     icon: FileText,
     gradient: "from-emerald-500 to-teal-600"
+  },
+  { 
+    name: "Кр. известия", 
+    href: "/credit-notes", 
+    icon: Receipt,
+    gradient: "from-red-500 to-rose-600"
   },
   { 
     name: "Клиенти", 

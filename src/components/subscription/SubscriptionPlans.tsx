@@ -1,19 +1,17 @@
 "use client";
 
 import { useState } from 'react';
-import { Check, X, Edit, CreditCard, Sparkles, Star, Zap, Crown, FileText, Shield, TrendingUp, ChevronRight } from 'lucide-react';
+import { Check, X, CreditCard, Sparkles, Star, Zap, Crown, FileText, Shield, TrendingUp, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useSubscription } from '@/hooks/useSubscription';
 import { AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CancellationSurvey } from './CancellationSurvey';
 import { toast } from 'sonner';
-import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 
-// Pricing structure - compact features list
+// Pricing structure - 6 items per plan for equal height
 const PLANS = {
   FREE: {
     name: 'FREE',
@@ -22,8 +20,15 @@ const PLANS = {
     yearlyPrice: 0,
     description: 'За стартиране',
     icon: FileText,
-    features: ['3 фактури/мес', '1 фирма', '5 клиенти', '10 продукти'],
-    excluded: ['Лого', 'Експорт', 'Имейл'],
+    color: 'slate',
+    features: [
+      { text: '3 фактури/месец', included: true },
+      { text: '1 фирма', included: true },
+      { text: '5 клиенти', included: true },
+      { text: '10 продукти', included: true },
+      { text: 'Без лого', included: false },
+      { text: 'Без експорт', included: false },
+    ],
   },
   STARTER: {
     name: 'STARTER',
@@ -32,8 +37,15 @@ const PLANS = {
     yearlyPrice: 49.99,
     description: 'За фрийлансъри',
     icon: Zap,
-    features: ['15 фактури/мес', '1 фирма', '25 клиенти', '50 продукти', 'CSV експорт'],
-    excluded: ['Лого', 'Имейл'],
+    color: 'blue',
+    features: [
+      { text: '15 фактури/месец', included: true },
+      { text: '1 фирма', included: true },
+      { text: '25 клиенти', included: true },
+      { text: '50 продукти', included: true },
+      { text: 'CSV експорт', included: true },
+      { text: 'Без имейл', included: false },
+    ],
   },
   PRO: {
     name: 'PRO',
@@ -42,9 +54,16 @@ const PLANS = {
     yearlyPrice: 89.99,
     description: 'За малки бизнеси',
     icon: Star,
+    color: 'emerald',
     popular: true,
-    features: ['∞ фактури', '3 фирми', '100 клиенти', '200 продукти', 'Лого', 'PDF+CSV', 'Имейл'],
-    excluded: [],
+    features: [
+      { text: 'Неограничени фактури', included: true },
+      { text: '3 фирми', included: true },
+      { text: '100 клиенти', included: true },
+      { text: '200 продукти', included: true },
+      { text: 'Лого + PDF/CSV', included: true },
+      { text: 'Имейл изпращане', included: true },
+    ],
   },
   BUSINESS: {
     name: 'BUSINESS',
@@ -53,8 +72,15 @@ const PLANS = {
     yearlyPrice: 199.99,
     description: 'За предприятия',
     icon: Crown,
-    features: ['∞ всичко', '10 фирми', '∞ клиенти', '∞ продукти', '5 потребители', 'API'],
-    excluded: [],
+    color: 'violet',
+    features: [
+      { text: 'Всичко неограничено', included: true },
+      { text: '10 фирми', included: true },
+      { text: '5 потребители', included: true },
+      { text: 'API достъп', included: true },
+      { text: 'Приоритетна поддръжка', included: true },
+      { text: 'Персонализация', included: true },
+    ],
   },
 };
 
@@ -153,7 +179,7 @@ export function SubscriptionPlans() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {error && (
         <Alert variant="destructive" className="py-2">
           <AlertTriangle className="h-4 w-4" />
@@ -164,59 +190,77 @@ export function SubscriptionPlans() {
 
       {/* Current Subscription - Compact */}
       {subscription && subscription.plan !== 'FREE' && (
-        <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 border border-primary/20">
+        <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20">
           <div className="flex items-center gap-3">
-            <CreditCard className="h-4 w-4 text-primary" />
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="text-xs">
-                {PLANS[subscription.plan as PlanKey]?.displayName || subscription.plan}
-              </Badge>
-              <Badge variant={subscription.cancelAtPeriodEnd ? "outline" : "default"} className="text-xs">
-                {subscription.cancelAtPeriodEnd ? 'Анулиран' : 'Активен'}
-              </Badge>
-              <span className="text-xs text-muted-foreground hidden sm:inline">
+            <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
+              <CreditCard className="h-4 w-4 text-primary" />
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-sm">
+                  {PLANS[subscription.plan as PlanKey]?.displayName || subscription.plan}
+                </span>
+                <Badge variant={subscription.cancelAtPeriodEnd ? "outline" : "secondary"} className="text-[10px] h-5">
+                  {subscription.cancelAtPeriodEnd ? 'Изтича' : 'Активен'}
+                </Badge>
+              </div>
+              <span className="text-xs text-muted-foreground">
                 {getSubscriptionEndsText()}
               </span>
             </div>
           </div>
           {subscription.cancelAtPeriodEnd !== true && (
-            <Button variant="ghost" size="sm" onClick={handleCancelButtonClick} disabled={cancelingSubscription} className="text-xs h-7">
+            <Button variant="ghost" size="sm" onClick={handleCancelButtonClick} disabled={cancelingSubscription} className="text-xs h-8 text-muted-foreground hover:text-destructive">
               {cancelingSubscription ? '...' : 'Отказ'}
             </Button>
           )}
         </div>
       )}
 
-      {/* Header + Toggle - Compact */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      {/* Header + Toggle */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 border-0 text-xs">
-            <Sparkles className="h-3 w-3 mr-1" />
-            14 дни безплатен trial
-          </Badge>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+            <Sparkles className="h-4 w-4 text-emerald-500" />
+            <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">14 дни безплатен trial</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className={cn("text-xs transition-colors", !isYearly ? "text-foreground font-medium" : "text-muted-foreground")}>
+        
+        {/* Billing Toggle - Improved Design */}
+        <div className="flex items-center gap-1 p-1 rounded-full bg-muted/50 border">
+          <button
+            onClick={() => setIsYearly(false)}
+            className={cn(
+              "px-4 py-1.5 rounded-full text-sm font-medium transition-all",
+              !isYearly 
+                ? "bg-background shadow-sm text-foreground" 
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
             Месечно
-          </span>
-          <Switch 
-            checked={isYearly} 
-            onCheckedChange={setIsYearly}
-            className="data-[state=checked]:bg-emerald-500 h-5 w-9"
-          />
-          <span className={cn("text-xs transition-colors", isYearly ? "text-foreground font-medium" : "text-muted-foreground")}>
+          </button>
+          <button
+            onClick={() => setIsYearly(true)}
+            className={cn(
+              "px-4 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-2",
+              isYearly 
+                ? "bg-emerald-500 text-white shadow-sm" 
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
             Годишно
-          </span>
-          {isYearly && (
-            <Badge variant="outline" className="text-emerald-600 border-emerald-300 text-[10px] px-1.5 py-0">
+            <span className={cn(
+              "text-[10px] px-1.5 py-0.5 rounded-full font-bold",
+              isYearly ? "bg-white/20" : "bg-emerald-500/20 text-emerald-600"
+            )}>
               -17%
-            </Badge>
-          )}
+            </span>
+          </button>
         </div>
       </div>
 
-      {/* Plans Grid - Compact */}
-      <div id="subscription-plans" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Plans Grid */}
+      <div id="subscription-plans" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {(Object.keys(PLANS) as PlanKey[]).map((planKey) => {
           const plan = PLANS[planKey];
           const isCurrent = isCurrentPlan(planKey);
@@ -226,136 +270,160 @@ export function SubscriptionPlans() {
           const Icon = plan.icon;
 
           return (
-            <Card 
+            <div 
               key={planKey}
               className={cn(
-                "relative flex flex-col transition-all duration-200",
-                isPopular && !isCurrent && "border-emerald-500 shadow-md shadow-emerald-500/10 ring-1 ring-emerald-500/20",
-                isCurrent && "border-primary ring-1 ring-primary/30 bg-primary/5",
-                !isPopular && !isCurrent && "hover:border-muted-foreground/30"
+                "relative flex flex-col rounded-2xl border bg-card p-5 transition-all duration-300",
+                isPopular && !isCurrent && "border-emerald-500/50 shadow-lg shadow-emerald-500/10 scale-[1.02]",
+                isCurrent && "border-primary/50 bg-primary/5 shadow-lg shadow-primary/10",
+                !isPopular && !isCurrent && "hover:border-border/80 hover:shadow-md"
               )}
             >
-              {/* Badges */}
+              {/* Badge */}
               {(isPopular || isCurrent) && (
-                <div className="absolute -top-2.5 left-0 right-0 flex justify-center">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <Badge className={cn(
-                    "text-[10px] px-2 py-0 h-5 border-0 shadow-sm",
+                    "px-3 py-1 text-xs font-medium border-0 shadow-md",
                     isPopular && !isCurrent && "bg-emerald-500 text-white",
                     isCurrent && "bg-primary text-primary-foreground"
                   )}>
                     {isCurrent ? (
-                      <><Check className="h-2.5 w-2.5 mr-0.5" /> Текущ</>
+                      <><Check className="h-3 w-3 mr-1" /> Текущ план</>
                     ) : (
-                      <><Star className="h-2.5 w-2.5 mr-0.5 fill-current" /> Популярен</>
+                      <><Star className="h-3 w-3 mr-1 fill-current" /> Най-популярен</>
                     )}
                   </Badge>
                 </div>
               )}
 
-              <CardHeader className="p-3 pb-2">
-                <div className="flex items-center gap-2">
+              {/* Header */}
+              <div className={cn("pt-2", (isPopular || isCurrent) && "pt-4")}>
+                <div className="flex items-center gap-3 mb-4">
                   <div className={cn(
-                    "h-8 w-8 rounded-md flex items-center justify-center",
-                    planKey === 'FREE' && "bg-slate-100 dark:bg-slate-900 text-slate-500",
-                    planKey === 'STARTER' && "bg-blue-100 dark:bg-blue-950 text-blue-500",
-                    planKey === 'PRO' && "bg-emerald-100 dark:bg-emerald-950 text-emerald-500",
-                    planKey === 'BUSINESS' && "bg-violet-100 dark:bg-violet-950 text-violet-500",
+                    "h-10 w-10 rounded-xl flex items-center justify-center",
+                    planKey === 'FREE' && "bg-slate-100 dark:bg-slate-800 text-slate-500",
+                    planKey === 'STARTER' && "bg-blue-100 dark:bg-blue-900/50 text-blue-500",
+                    planKey === 'PRO' && "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-500",
+                    planKey === 'BUSINESS' && "bg-violet-100 dark:bg-violet-900/50 text-violet-500",
                   )}>
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-5 w-5" />
                   </div>
                   <div>
-                    <CardTitle className="text-sm font-semibold">{plan.displayName}</CardTitle>
-                    <p className="text-[10px] text-muted-foreground">{plan.description}</p>
+                    <h3 className="font-semibold text-base">{plan.displayName}</h3>
+                    <p className="text-xs text-muted-foreground">{plan.description}</p>
                   </div>
                 </div>
                 
                 {/* Price */}
-                <div className="mt-2">
-                  <div className="flex items-baseline gap-0.5">
-                    <span className="text-2xl font-bold">
+                <div className="mb-5">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-bold tracking-tight">
                       {price === 0 ? '0' : price.toFixed(2)}
                     </span>
-                    <span className="text-xs text-muted-foreground">лв/мес</span>
+                    <span className="text-sm text-muted-foreground">€/мес</span>
                   </div>
-                  {isYearly && savings > 0 && (
-                    <p className="text-[10px] text-emerald-600 dark:text-emerald-400">
-                      Спестявате {savings.toFixed(0)} лв/год
-                    </p>
-                  )}
+                  <div className="h-5">
+                    {isYearly && savings > 0 ? (
+                      <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                        Спестявате {savings.toFixed(0)}€ годишно
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        {planKey === 'FREE' ? 'Завинаги безплатен' : 'Таксува се месечно'}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </CardHeader>
+              </div>
 
-              <CardContent className="p-3 pt-0 flex-1">
-                <ul className="space-y-1">
+              {/* Features */}
+              <div className="flex-1 mb-5">
+                <ul className="space-y-2.5">
                   {plan.features.map((feature, index) => (
-                    <li key={index} className="flex items-center gap-1.5 text-xs">
-                      <Check className="h-3 w-3 text-emerald-500 shrink-0" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                  {plan.excluded.map((feature, index) => (
-                    <li key={`ex-${index}`} className="flex items-center gap-1.5 text-xs text-muted-foreground/50">
-                      <X className="h-3 w-3 shrink-0" />
-                      <span>{feature}</span>
+                    <li 
+                      key={index} 
+                      className={cn(
+                        "flex items-center gap-2.5 text-sm",
+                        !feature.included && "text-muted-foreground/60"
+                      )}
+                    >
+                      {feature.included ? (
+                        <div className="h-5 w-5 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                          <Check className="h-3 w-3 text-emerald-500" />
+                        </div>
+                      ) : (
+                        <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center shrink-0">
+                          <X className="h-3 w-3 text-muted-foreground/50" />
+                        </div>
+                      )}
+                      <span>{feature.text}</span>
                     </li>
                   ))}
                 </ul>
-              </CardContent>
+              </div>
 
-              <CardFooter className="p-3 pt-0">
+              {/* Button */}
+              <div>
                 {isCurrent ? (
-                  <Button variant="outline" size="sm" className="w-full h-8 text-xs" disabled>
+                  <Button variant="outline" className="w-full h-10" disabled>
+                    <Check className="h-4 w-4 mr-2" />
                     Текущ план
                   </Button>
                 ) : planKey === 'FREE' ? (
-                  <Button variant="outline" size="sm" className="w-full h-8 text-xs" disabled>
-                    Безплатен
+                  <Button variant="outline" className="w-full h-10" disabled>
+                    Безплатен план
                   </Button>
                 ) : subscription && subscription.plan !== 'FREE' ? (
                   <Button 
-                    size="sm"
                     className={cn(
-                      "w-full h-8 text-xs",
-                      isPopular && "bg-emerald-500 hover:bg-emerald-600 text-white"
+                      "w-full h-10 font-medium",
+                      isPopular && "bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-500/20"
                     )}
                     variant={isPopular ? "default" : "outline"}
                     onClick={() => handleEditSubscription(planKey)} 
                     disabled={isLoading || editingSubscription}
                   >
-                    Смяна <ChevronRight className="h-3 w-3 ml-0.5" />
+                    Смени плана
+                    <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 ) : (
                   <Button 
-                    size="sm"
                     className={cn(
-                      "w-full h-8 text-xs",
-                      isPopular && "bg-emerald-500 hover:bg-emerald-600 text-white"
+                      "w-full h-10 font-medium",
+                      isPopular && "bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-500/20"
                     )}
                     variant={isPopular ? "default" : "outline"}
                     onClick={() => handleSubscribe(planKey)} 
                     disabled={isLoading}
                   >
-                    Избери <ChevronRight className="h-3 w-3 ml-0.5" />
+                    Започни сега
+                    <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 )}
-              </CardFooter>
-            </Card>
+              </div>
+            </div>
           );
         })}
       </div>
 
-      {/* Trust Badges - Compact single line */}
-      <div className="flex flex-wrap justify-center gap-4 pt-2 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1">
-          <Shield className="h-3.5 w-3.5 text-emerald-500" />
+      {/* Trust Badges */}
+      <div className="flex flex-wrap justify-center gap-6 pt-4 pb-2">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+            <Shield className="h-4 w-4 text-emerald-500" />
+          </div>
           <span>НАП съвместим</span>
         </div>
-        <div className="flex items-center gap-1">
-          <Shield className="h-3.5 w-3.5 text-blue-500" />
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+            <Shield className="h-4 w-4 text-blue-500" />
+          </div>
           <span>GDPR</span>
         </div>
-        <div className="flex items-center gap-1">
-          <TrendingUp className="h-3.5 w-3.5 text-violet-500" />
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="h-8 w-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
+            <TrendingUp className="h-4 w-4 text-violet-500" />
+          </div>
           <span>500+ компании</span>
         </div>
       </div>

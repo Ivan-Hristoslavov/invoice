@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { Building, Plus, Search, Users, Mail, Phone, MapPin, ArrowUpRight, MoreHorizontal, Lock } from "lucide-react";
+import { Building, Plus, Search, Users, Mail, Phone, MapPin, ArrowUpRight, Lock, AlertTriangle, XCircle, Crown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,8 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { Input } from "@/components/ui/input";
 import { redirect } from "next/navigation";
 import { PLAN_LIMITS } from "@/middleware/subscription";
-import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { UsageCounter } from "@/components/ui/pro-feature-lock";
 
 export const metadata: Metadata = {
   title: `Клиенти | ${APP_NAME}`,
@@ -65,6 +66,9 @@ export default async function ClientsPage() {
   const limits = PLAN_LIMITS[plan];
   const clientLimit = limits.maxClients === Infinity ? -1 : limits.maxClients;
   const canCreateClient = clientLimit === -1 || clientsList.length < clientLimit;
+  const clientsRemaining = clientLimit === -1 ? Infinity : clientLimit - clientsList.length;
+  const isApproachingLimit = clientLimit !== -1 && clientsRemaining > 0 && clientsRemaining <= 2;
+  const isAtLimit = clientLimit !== -1 && clientsRemaining <= 0;
 
   // Generate avatar colors based on client name
   const getAvatarGradient = (name: string) => {
@@ -82,10 +86,62 @@ export default async function ClientsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Soft Upgrade Prompts */}
+      {isApproachingLimit && (
+        <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="flex items-center justify-between">
+            <span className="text-amber-800 dark:text-amber-200">
+              {clientsRemaining === 1 ? (
+                <>Остава ви само <strong>1 клиент</strong> в {plan} плана.</>
+              ) : (
+                <>Остават ви само <strong>{clientsRemaining} клиента</strong> в {plan} плана.</>
+              )}
+              {' '}Надградете за повече клиенти.
+            </span>
+            <Link href="/settings/subscription">
+              <Button size="sm" variant="outline" className="ml-4 border-amber-300 text-amber-700 hover:bg-amber-100">
+                <Crown className="h-4 w-4 mr-2" />
+                Надградете
+              </Button>
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {isAtLimit && (
+        <Alert className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
+          <XCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="flex items-center justify-between">
+            <span className="text-red-800 dark:text-red-200">
+              Достигнахте лимита от <strong>{clientLimit} клиента</strong> за {plan} плана.
+              {plan === 'FREE' && ' Надградете до STARTER за до 25 клиента или до PRO за до 100.'}
+              {plan === 'STARTER' && ' Надградете до PRO за до 100 клиента или до BUSINESS за неограничени.'}
+              {plan === 'PRO' && ' Надградете до BUSINESS за неограничени клиенти.'}
+            </span>
+            <Link href="/settings/subscription">
+              <Button size="sm" className="ml-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
+                <Crown className="h-4 w-4 mr-2" />
+                Надградете
+              </Button>
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Клиенти</h1>
+        <div className="flex-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight">Клиенти</h1>
+            {clientLimit !== -1 && (
+              <UsageCounter 
+                used={clientsList.length} 
+                limit={clientLimit}
+                label=""
+              />
+            )}
+          </div>
           <p className="text-muted-foreground mt-1">
             Управлявайте вашите клиенти и контакти
           </p>
@@ -135,37 +191,6 @@ export default async function ClientsPage() {
           gradient="from-blue-500 to-indigo-600"
         />
       </div>
-
-      {/* Usage Limit Info */}
-      {clientLimit !== -1 && (
-        <Card className="border-0 shadow-lg bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20">
-          <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-sm font-medium">
-                    Използвани клиенти: {clientsList.length} / {clientLimit}
-                  </span>
-                  <span className="text-xs text-muted-foreground px-2 py-0.5 bg-background rounded-full border">
-                    {plan} план
-                  </span>
-                </div>
-                <Progress 
-                  value={(clientsList.length / clientLimit) * 100} 
-                  className="h-2"
-                />
-              </div>
-              {!canCreateClient && (
-                <Button asChild variant="default" size="sm">
-                  <Link href="/settings/subscription">
-                    Надграждане
-                  </Link>
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Search */}
       <Card className="border-0 shadow-lg">

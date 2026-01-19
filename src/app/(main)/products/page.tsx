@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { Package, Plus, Search, Tag, ArrowUpRight, Euro, Percent, Lock } from "lucide-react";
+import { Package, Plus, Search, Tag, ArrowUpRight, Euro, Percent, Lock, AlertTriangle, XCircle, Crown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,8 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { Input } from "@/components/ui/input";
 import { redirect } from "next/navigation";
 import { PLAN_LIMITS } from "@/middleware/subscription";
-import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { UsageCounter } from "@/components/ui/pro-feature-lock";
 
 interface Product {
   id: string;
@@ -76,6 +77,9 @@ export default async function ProductsPage() {
   const limits = PLAN_LIMITS[plan];
   const productLimit = limits.maxProducts === Infinity ? -1 : limits.maxProducts;
   const canCreateProduct = productLimit === -1 || totalProducts < productLimit;
+  const productsRemaining = productLimit === -1 ? Infinity : productLimit - totalProducts;
+  const isApproachingLimit = productLimit !== -1 && productsRemaining > 0 && productsRemaining <= 2;
+  const isAtLimit = productLimit !== -1 && productsRemaining <= 0;
 
   // Generate gradient based on product name
   const getGradient = (name: string) => {
@@ -93,10 +97,62 @@ export default async function ProductsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Soft Upgrade Prompts */}
+      {isApproachingLimit && (
+        <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="flex items-center justify-between">
+            <span className="text-amber-800 dark:text-amber-200">
+              {productsRemaining === 1 ? (
+                <>Остава ви само <strong>1 продукт</strong> в {plan} плана.</>
+              ) : (
+                <>Остават ви само <strong>{productsRemaining} продукта</strong> в {plan} плана.</>
+              )}
+              {' '}Надградете за повече продукти.
+            </span>
+            <Link href="/settings/subscription">
+              <Button size="sm" variant="outline" className="ml-4 border-amber-300 text-amber-700 hover:bg-amber-100">
+                <Crown className="h-4 w-4 mr-2" />
+                Надградете
+              </Button>
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {isAtLimit && (
+        <Alert className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
+          <XCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="flex items-center justify-between">
+            <span className="text-red-800 dark:text-red-200">
+              Достигнахте лимита от <strong>{productLimit} продукта</strong> за {plan} плана.
+              {plan === 'FREE' && ' Надградете до STARTER за до 50 продукта или до PRO за до 200.'}
+              {plan === 'STARTER' && ' Надградете до PRO за до 200 продукта или до BUSINESS за неограничени.'}
+              {plan === 'PRO' && ' Надградете до BUSINESS за неограничени продукти.'}
+            </span>
+            <Link href="/settings/subscription">
+              <Button size="sm" className="ml-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
+                <Crown className="h-4 w-4 mr-2" />
+                Надградете
+              </Button>
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Продукти</h1>
+        <div className="flex-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight">Продукти</h1>
+            {productLimit !== -1 && (
+              <UsageCounter 
+                used={totalProducts} 
+                limit={productLimit}
+                label=""
+              />
+            )}
+          </div>
           <p className="text-muted-foreground mt-1">
             Управлявайте вашите продукти и услуги
           </p>
@@ -153,37 +209,6 @@ export default async function ProductsPage() {
           gradient="from-slate-500 to-slate-600"
         />
       </div>
-
-      {/* Usage Limit Info */}
-      {productLimit !== -1 && (
-        <Card className="border-0 shadow-lg bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20">
-          <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-sm font-medium">
-                    Използвани продукти: {totalProducts} / {productLimit}
-                  </span>
-                  <span className="text-xs text-muted-foreground px-2 py-0.5 bg-background rounded-full border">
-                    {plan} план
-                  </span>
-                </div>
-                <Progress 
-                  value={(totalProducts / productLimit) * 100} 
-                  className="h-2"
-                />
-              </div>
-              {!canCreateProduct && (
-                <Button asChild variant="default" size="sm">
-                  <Link href="/settings/subscription">
-                    Надграждане
-                  </Link>
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Search */}
       <Card className="border-0 shadow-lg">

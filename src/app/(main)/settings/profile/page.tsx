@@ -11,6 +11,7 @@ import {
   CardTitle 
 } from "@/components/ui/card";
 import { ProfileForm } from "./ProfileForm";
+import { GdprSection } from "./GdprSection";
 
 export const metadata: Metadata = {
   title: `Настройки на профила | ${APP_NAME}`,
@@ -85,6 +86,9 @@ export default async function ProfileSettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* GDPR Section */}
+      <GdprSection userEmail={session.user.email || ""} />
     </div>
   );
 } 

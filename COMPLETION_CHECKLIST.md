@@ -29,15 +29,17 @@
   - [x] Генериране на credit note number
   - [x] Копиране на invoice items в credit note items
 
-- [ ] **UI за създаване на CreditNote**
+- [x] **UI за създаване на CreditNote**
   - [x] Добави "Отмени фактура" бутон в InvoiceDetailClient
-  - [ ] Модал за потвърждение с причина за отмяна
+  - [x] Модал за потвърждение с причина за отмяна
   - [x] Показване на credit note след създаване
-  - [ ] Страница за преглед на credit notes
+  - [x] Страница за преглед на credit notes (`/credit-notes`)
+  - [x] Детайлна страница за credit note (`/credit-notes/[id]`)
 
-- [ ] **PDF export за CreditNote**
-  - [ ] Разшири `invoice-export.ts` за credit notes
-  - [ ] Генериране на PDF с правилен формат
+- [x] **PDF export за CreditNote**
+  - [x] Разшири `invoice-export.ts` за credit notes
+  - [x] Генериране на PDF с правилен формат
+  - [x] API endpoint `/api/credit-notes/[id]/export-pdf`
 
 #### 1.3 InvoiceSequence логика
 - [x] **Автоматично номериране**
@@ -61,9 +63,10 @@
   - [x] Логване при cancel → credit note
   - [x] Логване на IP адрес и user agent
 
-- [ ] **UI за преглед на audit logs**
-  - [ ] Страница `/settings/audit-logs` (опционално)
-  - [ ] Показване на история на промени в InvoiceDetailClient
+- [x] **UI за преглед на audit logs**
+  - [x] Страница `/settings/audit-logs`
+  - [x] Показване на история на промени в InvoiceDetailClient (таб "История")
+  - [x] API endpoint `/api/audit-logs`
 
 ### 2. 🔄 Миграция към Supabase (завършване)
 
@@ -106,11 +109,11 @@
 
 ### 4. 📝 Документация
 
-- [ ] **Обнови README.md**
-  - [ ] Премахни Payment references
-  - [ ] Добави информация за CreditNote
-  - [ ] Добави информация за InvoiceSequence
-  - [ ] Обнови feature list
+- [x] **Обнови README.md**
+  - [x] Премахни Payment references
+  - [x] Добави информация за CreditNote
+  - [x] Добави информация за InvoiceSequence
+  - [x] Обнови feature list
 
 - [ ] **API документация**
   - [ ] Документирай новите endpoints
@@ -195,13 +198,23 @@
 
 ## 🎯 ОЦЕНКА ЗА ЗАВЪРШВАНЕ
 
-**Текущо състояние:** ~70% готово
+**Текущо състояние:** ~90% готово
+
+**Завършени:**
+- [x] CreditNote функционалност (списък, детайли, PDF)
+- [x] AuditLog функционалност (API, UI в настройки, История таб във фактури)
+- [x] InvoiceSequence логика
+- [x] Immutable invoices
+- [x] GDPR (cookie consent, експорт данни, изтриване акаунт)
+- [x] Subscription лимити и upgrade prompts
+- [x] README.md обновен
 
 **Остават:**
-- Критични задачи: ~15-20 часа работа
-- Средни задачи: ~10 часа работа
-- Ниски задачи: ~5 часа работа
+- API документация
+- User guide
+- Unit/Integration/E2E тестове
+- Performance оптимизации
 
-**Общо:** ~30-35 часа работа за пълно завършване
+**Общо:** ~10-15 часа работа за пълно завършване
 
-**Минимално за launch:** ~15-20 часа (само критичните задачи)
+**Готово за launch:** Да, основната функционалност е завършена

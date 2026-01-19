@@ -126,6 +126,47 @@ export async function exportInvoiceAsPdf(invoiceId: string, isCopy: boolean = fa
   }
 }
 
+// Експорт на единично кредитно известие като PDF
+export async function exportCreditNoteAsPdf(creditNoteId: string): Promise<void> {
+  try {
+    const response = await fetch(`/api/credit-notes/${creditNoteId}/export-pdf`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Credit Note PDF export error:', errorText);
+      throw new Error('Грешка при експортирането на кредитното известие като PDF');
+    }
+    
+    const blob = await response.blob();
+    
+    const contentDisposition = response.headers.get('Content-Disposition');
+    let filename = `Kreditno-Izvestie-${creditNoteId}.pdf`;
+    
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+      if (filenameMatch && filenameMatch[1]) {
+        filename = filenameMatch[1].replace(/['"]/g, '');
+      }
+    }
+    
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Error in exportCreditNoteAsPdf:', error);
+    throw error;
+  }
+}
+
 // Генерира PDF за фактура и връща Buffer (за server-side usage)
 export async function exportInvoicePdfBuffer(invoiceId: string): Promise<{ buffer: Buffer, filename: string }> {
   const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/invoices/export-pdf?invoiceId=${invoiceId}`);
