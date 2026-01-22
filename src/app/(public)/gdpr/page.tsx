@@ -8,7 +8,7 @@ import { APP_NAME } from "@/config/constants";
 
 export const metadata: Metadata = genMeta({
   title: "GDPR Съответствие",
-  description: "Информация за GDPR съответствието на FacturaPro",
+  description: "Информация за GDPR съответствието на Invoicy",
 });
 
 export default function GDPRPage() {

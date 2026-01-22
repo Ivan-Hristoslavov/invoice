@@ -27,7 +27,7 @@ function getAppUrl(): string {
     "";
 
   if (!rawUrl || rawUrl.startsWith("${")) {
-    return "https://facturapro.bg";
+    return "https://invoicy.bg";
   }
 
   if (rawUrl.startsWith("http://") || rawUrl.startsWith("https://")) {
@@ -76,7 +76,7 @@ export const metadata: Metadata = {
     title: `${APP_NAME} - Професионална система за фактуриране`,
     description: APP_DESCRIPTION,
     images: ['/og-image.png'],
-    creator: '@facturapro',
+    creator: '@invoicy_bg',
   },
   robots: {
     index: true,

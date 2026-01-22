@@ -8,7 +8,7 @@ import { APP_NAME } from "@/config/constants";
 
 export const metadata: Metadata = genMeta({
   title: "Интеграции",
-  description: "Интегрирайте FacturaPro с вашите любими инструменти за по-ефективна работа",
+  description: "Интегрирайте Invoicy с вашите любими инструменти за по-ефективна работа",
 });
 
 const integrations = [
@@ -36,7 +36,7 @@ const integrations = [
   {
     icon: BarChart3,
     title: "API",
-    description: "Интегрирайте FacturaPro във вашите собствени системи чрез RESTful API.",
+    description: "Интегрирайте Invoicy във вашите собствени системи чрез RESTful API.",
     status: "Скоро",
     comingSoon: true
   },

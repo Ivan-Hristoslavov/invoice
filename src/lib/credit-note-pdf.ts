@@ -208,12 +208,21 @@ export async function generateCreditNotePdfServer(creditNote: any): Promise<Buff
       doc.text(`ДДС №: ${creditNote.company.vatRegistrationNumber}`, margin + 5, supplierY);
       supplierY += 4;
     }
+    if (creditNote.company.mol) {
+      doc.text(`МОЛ: ${creditNote.company.mol}`, margin + 5, supplierY);
+      supplierY += 4;
+    }
     if (creditNote.company.address) {
       doc.text(creditNote.company.address, margin + 5, supplierY);
       supplierY += 4;
     }
     if (creditNote.company.city) {
-      doc.text(`${creditNote.company.city}${creditNote.company.country ? ', ' + creditNote.company.country : ''}`, margin + 5, supplierY);
+      doc.text(creditNote.company.city, margin + 5, supplierY);
+      supplierY += 4;
+    }
+    if (creditNote.company.phone) {
+      doc.text(`Тел.: ${creditNote.company.phone}`, margin + 5, supplierY);
+      supplierY += 4;
     }
   }
   
@@ -249,8 +258,12 @@ export async function generateCreditNotePdfServer(creditNote: any): Promise<Buff
       doc.text(`ЕИК: ${creditNote.client.bulstatNumber}`, clientBoxX + 5, clientY);
       clientY += 4;
     }
-    if (creditNote.client.vatRegistrationNumber) {
-      doc.text(`ДДС №: ${creditNote.client.vatRegistrationNumber}`, clientBoxX + 5, clientY);
+    if (creditNote.client.vatRegistrationNumber || creditNote.client.vatNumber) {
+      doc.text(`ДДС №: ${creditNote.client.vatRegistrationNumber || creditNote.client.vatNumber}`, clientBoxX + 5, clientY);
+      clientY += 4;
+    }
+    if (creditNote.client.mol) {
+      doc.text(`МОЛ: ${creditNote.client.mol}`, clientBoxX + 5, clientY);
       clientY += 4;
     }
     if (creditNote.client.address) {
@@ -258,7 +271,12 @@ export async function generateCreditNotePdfServer(creditNote: any): Promise<Buff
       clientY += 4;
     }
     if (creditNote.client.city) {
-      doc.text(`${creditNote.client.city}${creditNote.client.country ? ', ' + creditNote.client.country : ''}`, clientBoxX + 5, clientY);
+      doc.text(creditNote.client.city, clientBoxX + 5, clientY);
+      clientY += 4;
+    }
+    if (creditNote.client.phone) {
+      doc.text(`Тел.: ${creditNote.client.phone}`, clientBoxX + 5, clientY);
+      clientY += 4;
     }
   }
   

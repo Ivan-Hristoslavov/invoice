@@ -1,79 +1,72 @@
 import { supabaseAdmin } from "@/lib/supabase";
 
 /**
- * Generates the next invoice number for a company based on Bulgarian requirements.
- * Invoice numbers reset at the start of each year and increment from 1.
+ * Generates the next invoice number for a user.
+ * Invoice numbers are 10 digits, starting from user's startingInvoiceNumber or 1.
+ * Format: 0000000001, 0000000002, etc.
  */
-export async function generateNextInvoiceNumber(companyId: string): Promise<string> {
+export async function generateNextInvoiceNumber(userId: string): Promise<string> {
   try {
-    const currentYear = new Date().getFullYear();
-    const startOfYear = new Date(currentYear, 0, 1).toISOString();
-    
-    // Find the last invoice for this company in the current year
+    // Get user's starting invoice number
+    const { data: user, error: userError } = await supabaseAdmin
+      .from('User')
+      .select('startingInvoiceNumber')
+      .eq('id', userId)
+      .single();
+
+    if (userError) {
+      console.error("Error fetching user:", userError);
+    }
+
+    // Find the last invoice for this user
     const { data: lastInvoice, error } = await supabaseAdmin
       .from('Invoice')
       .select('invoiceNumber')
-      .eq('companyId', companyId)
-      .gte('createdAt', startOfYear)
-      .order('createdAt', { ascending: false })
+      .eq('userId', userId)
+      .order('invoiceNumber', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
-    // If no invoice exists for this year, start from 1
+    let nextNumber: number;
+
     if (error || !lastInvoice) {
-      return formatInvoiceNumber(1, currentYear);
+      // No invoice exists - use user's starting number or default to 1
+      nextNumber = user?.startingInvoiceNumber || 1;
+    } else {
+      // Extract the number from the last invoice number (remove leading zeros)
+      const lastNumber = parseInt(lastInvoice.invoiceNumber, 10);
+      nextNumber = lastNumber + 1;
     }
 
-    // Extract the number from the last invoice number
-    const lastNumber = extractNumberFromInvoiceNumber(lastInvoice.invoiceNumber);
-    
-    // Increment the number
-    return formatInvoiceNumber(lastNumber + 1, currentYear);
+    return formatInvoiceNumber(nextNumber);
   } catch (error) {
     // If database is unavailable, return a default number
     console.error("Error generating invoice number:", error);
-    const currentYear = new Date().getFullYear();
-    return formatInvoiceNumber(1, currentYear);
+    return formatInvoiceNumber(1);
   }
 }
 
 /**
- * Formats the invoice number according to Bulgarian requirements.
- * Format: YYYYNNNNNN where YYYY is the year and NNNNNN is a 6-digit sequential number
+ * Formats the invoice number as 10 digits.
+ * Format: 0000000001, 0000000002, etc.
  */
-function formatInvoiceNumber(number: number, year: number): string {
-  // Pad the number to 6 digits
-  const paddedNumber = number.toString().padStart(6, '0');
-  return `${year}${paddedNumber}`;
-}
-
-/**
- * Extracts the sequential number from an invoice number
- */
-function extractNumberFromInvoiceNumber(invoiceNumber: string): number {
-  // Last 6 characters represent the sequential number
-  const numberPart = invoiceNumber.slice(-6);
-  return parseInt(numberPart, 10);
+function formatInvoiceNumber(number: number): string {
+  // Pad the number to 10 digits
+  return number.toString().padStart(10, '0');
 }
 
 /**
  * Validates if an invoice number follows the correct format
  */
 export function isValidInvoiceNumber(invoiceNumber: string): boolean {
-  // Should be exactly 10 digits (4 for year + 6 for sequence)
+  // Should be exactly 10 digits
   if (!/^\d{10}$/.test(invoiceNumber)) {
     return false;
   }
 
-  // First 4 digits should be a valid year (2000-2099)
-  const year = parseInt(invoiceNumber.slice(0, 4), 10);
-  if (year < 2000 || year > 2099) {
-    return false;
-  }
-
-  // Sequence number should be between 1 and 999999
-  const sequence = parseInt(invoiceNumber.slice(4), 10);
-  if (sequence < 1 || sequence > 999999) {
+  // Number should be between 1 and 9999999999
+  const number = parseInt(invoiceNumber, 10);
+  if (number < 1 || number > 9999999999) {
     return false;
   }
 

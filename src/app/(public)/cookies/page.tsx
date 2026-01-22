@@ -8,7 +8,7 @@ import { APP_NAME } from "@/config/constants";
 
 export const metadata: Metadata = genMeta({
   title: "Политика за бисквитки",
-  description: "Информация за използването на бисквитки в FacturaPro",
+  description: "Информация за използването на бисквитки в Invoicy",
 });
 
 export default function CookiesPage() {

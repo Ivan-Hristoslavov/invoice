@@ -25,11 +25,10 @@ export function MainLayout({ children }: MainLayoutProps) {
     );
   }
 
-  // If on home page and not authenticated
+  // If on home page and not authenticated - landing page has its own background
   if (pathname === "/" && !isAuthenticated) {
     return (
       <main className="min-h-screen relative">
-        <BackgroundShapes variant="vibrant" />
         {children}
       </main>
     );
@@ -39,12 +38,14 @@ export function MainLayout({ children }: MainLayoutProps) {
   return (
     <KeyboardShortcutsProvider>
       <CommandPaletteProvider>
-        <div className="flex h-screen overflow-hidden relative">
+        <div className="h-screen overflow-hidden relative">
           <BackgroundShapes variant="subtle" />
-          <Sidebar />
-          <div className="flex-1 flex flex-col h-screen lg:ml-72 overflow-hidden">
-            <Navbar />
-            <main className="flex-1 p-4 sm:p-6 lg:p-8 animate-in fade-in duration-150 overflow-y-auto overflow-x-hidden">
+          {/* Navbar at top - full width */}
+          <Navbar />
+          {/* Content area with sidebar */}
+          <div className="flex h-[calc(100vh-4rem)]">
+            <Sidebar />
+            <main className="flex-1 lg:ml-72 p-4 sm:p-6 lg:p-8 animate-in fade-in duration-150 overflow-y-auto overflow-x-hidden">
               <div className="max-w-7xl mx-auto w-full pb-6 sm:pb-8">
                 {children}
               </div>

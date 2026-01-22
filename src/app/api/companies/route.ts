@@ -25,7 +25,7 @@ const companySchema = z.object({
   bulstatNumber: z.string().optional().or(z.literal("")),
   vatRegistered: z.boolean().optional().default(false),
   vatRegistrationNumber: z.string().optional().or(z.literal("")),
-  mол: z.string().optional().or(z.literal("")),
+  mol: z.string().optional().or(z.literal("")),
   accountablePerson: z.string().optional().or(z.literal("")),
   uicType: z.enum(["BULSTAT", "EGN"]).optional().default("BULSTAT"),
   

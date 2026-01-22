@@ -385,7 +385,7 @@ export default function InvoicesClient({
         return {
           label: "Анулирана",
           icon: XCircle,
-          className: "bg-slate-500/10 text-slate-600 border-slate-200 dark:border-slate-800"
+          className: "bg-purple-500/10 text-purple-600 border-purple-200 dark:border-purple-800"
         };
       case "CANCELLED":
         return {
@@ -520,8 +520,8 @@ export default function InvoicesClient({
 
       {/* Filters */}
       <Card className="border-0 shadow-lg">
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
@@ -553,7 +553,7 @@ export default function InvoicesClient({
                 </SelectItem>
                 <SelectItem value="VOIDED">
                   <span className="flex items-center gap-2">
-                    <XCircle className="h-4 w-4 text-slate-500" />
+                    <XCircle className="h-4 w-4 text-purple-500" />
                     Анулирани
                   </span>
                 </SelectItem>
@@ -668,9 +668,10 @@ export default function InvoicesClient({
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-bold">{formatPrice(Number(invoice.total))} €</p>
-                          <Badge variant="outline" className={`${statusConfig.className} mt-2`}>
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border mt-2 ${statusConfig.className}`}>
+                            <StatusIcon className="h-3 w-3" />
                             {statusConfig.label}
-                          </Badge>
+                          </span>
                         </div>
                       </div>
                       <div className="mt-4 flex flex-wrap gap-2">
@@ -698,7 +699,7 @@ export default function InvoicesClient({
                             Издай
                           </Button>
                         )}
-                        {invoice.userId === currentUserId && invoice.status === "DRAFT" && (
+                        {invoice.userId === currentUserId && (
                           <Button
                             size="sm"
                             variant="destructive"
@@ -715,24 +716,24 @@ export default function InvoicesClient({
               </div>
               <div className="hidden md:block overflow-x-auto max-h-[600px] overflow-y-auto">
                 <table className="w-full">
-                <thead className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                  <tr className="border-b bg-muted/50">
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <thead>
+                  <tr className="border-b border-border/50">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Фактура
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Клиент
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden md:table-cell">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">
                       Дата
                     </th>
-                    <th className="px-6 py-4 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Сума
                     </th>
-                    <th className="px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <th className="px-6 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Статус
                     </th>
-                    <th className="px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <th className="px-6 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       <span className="hidden md:inline">Действия</span>
                       <MoreHorizontal className="h-4 w-4 inline md:hidden" />
                     </th>
@@ -793,77 +794,94 @@ export default function InvoicesClient({
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex justify-center">
-                              <Badge variant="outline" className={`${statusConfig.className} px-3 py-1`}>
+                              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${statusConfig.className}`}>
+                                <StatusIcon className="h-3 w-3" />
                                 {statusConfig.label}
-                              </Badge>
+                              </span>
                             </div>
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center justify-center">
                               <DropdownMenu>
-                                <DropdownMenuTrigger className="h-8 w-8 p-0 hover:bg-muted rounded-md flex items-center justify-center">
+                                <DropdownMenuTrigger 
+                                  className="h-8 w-8 p-0 hover:bg-muted rounded-md flex items-center justify-center"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                  }}
+                                >
                                   <MoreHorizontal className="h-4 w-4" />
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem asChild>
-                                    <Link href={`/invoices/${invoice.id}`}>
-                                      <Eye className="mr-2 h-4 w-4" />
-                                      Преглед
-                                    </Link>
-                                  </DropdownMenuItem>
                                   {invoice.userId === currentUserId && invoice.status === "DRAFT" && (
                                     <DropdownMenuItem asChild>
-                                      <Link href={`/invoices/${invoice.id}/edit`}>
+                                      <Link href={`/invoices/${invoice.id}/edit`} onClick={(e) => e.stopPropagation()}>
                                         <Edit className="mr-2 h-4 w-4" />
                                         Редактиране
                                       </Link>
                                     </DropdownMenuItem>
                                   )}
-                                  <DropdownMenuSeparator />
                                   {invoice.status === "DRAFT" && (
                                     <>
                                       <DropdownMenuItem
-                                        onClick={() => openStatusModal(invoice, "ISSUED")}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          openStatusModal(invoice, "ISSUED");
+                                        }}
                                         className="text-emerald-600 focus:text-emerald-600"
                                       >
                                         <FileCheck className="mr-2 h-4 w-4" />
                                         Издай фактура
                                       </DropdownMenuItem>
                                       {invoice.userId === currentUserId && (
-                                        <>
-                                          <DropdownMenuItem
-                                            onClick={() => openVoidModal(invoice)}
-                                            className="text-orange-600 focus:text-orange-600 focus:bg-orange-50"
-                                          >
-                                            <Ban className="mr-2 h-4 w-4" />
-                                            Анулирай
-                                          </DropdownMenuItem>
-                                          <DropdownMenuSeparator />
-                                          <DropdownMenuItem
-                                            onClick={() => openDeleteModal(invoice)}
-                                            className="text-red-600 focus:text-red-600"
-                                          >
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                            Изтрий фактура
-                                          </DropdownMenuItem>
-                                        </>
+                                        <DropdownMenuItem
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            openVoidModal(invoice);
+                                          }}
+                                          className="text-purple-600 focus:text-purple-600 focus:bg-purple-50"
+                                        >
+                                          <Ban className="mr-2 h-4 w-4" />
+                                          Анулирай
+                                        </DropdownMenuItem>
                                       )}
                                     </>
                                   )}
                                   {(invoice.status === "ISSUED" || invoice.status === "PAID") && invoice.userId === currentUserId && (
-                                    <>
-                                      <DropdownMenuItem
-                                        onClick={() => openCancelModal(invoice)}
-                                        className="text-red-600 focus:text-red-600"
-                                      >
-                                        <XCircle className="mr-2 h-4 w-4" />
-                                        Отмени фактура
-                                      </DropdownMenuItem>
-                                      <DropdownMenuSeparator />
-                                    </>
+                                    <DropdownMenuItem
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openCancelModal(invoice);
+                                      }}
+                                      className="text-red-600 focus:text-red-600"
+                                    >
+                                      <XCircle className="mr-2 h-4 w-4" />
+                                      Отмени фактура
+                                    </DropdownMenuItem>
                                   )}
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem asChild>
+                                    <Link href={`/invoices/${invoice.id}`} onClick={(e) => e.stopPropagation()}>
+                                      <Eye className="mr-2 h-4 w-4" />
+                                      Преглед
+                                    </Link>
+                                  </DropdownMenuItem>
+                                  {/* Delete option for all invoice states */}
+                                  {invoice.userId === currentUserId && (
+                                    <DropdownMenuItem
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openDeleteModal(invoice);
+                                      }}
+                                      className="text-red-600 focus:text-red-600"
+                                    >
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Изтрий фактура
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuSeparator />
                                   <DropdownMenuItem
-                                    onClick={async () => {
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
                                       try {
                                         // Fetch PDF and open in new tab for printing
                                         const response = await fetch(`/api/invoices/export-pdf?invoiceId=${invoice.id}`);
@@ -901,7 +919,8 @@ export default function InvoicesClient({
                                     Принтирай
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
-                                    onClick={async () => {
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
                                       try {
                                         const { exportInvoiceAsPdf } = await import("@/lib/invoice-export");
                                         await exportInvoiceAsPdf(invoice.id);

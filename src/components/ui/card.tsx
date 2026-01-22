@@ -1,15 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { Card as RadixCard, Box, Heading, Text } from "@radix-ui/themes";
+import { Box, Heading, Text } from "@radix-ui/themes";
 
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <RadixCard
+  <div
     ref={ref}
-    className={`backdrop-blur-sm bg-card/75 dark:bg-card dark:backdrop-blur-none ${className || ""}`}
+    className={`glass-card rounded-xl shadow-xl shadow-black/5 ${className || ""}`}
     {...props}
   />
 ));

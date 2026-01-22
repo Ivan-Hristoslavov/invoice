@@ -23,6 +23,7 @@ import { CheckoutButton } from "@/components/subscription/CheckoutButton";
 import { useSession } from "next-auth/react";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { useRouter } from "next/navigation";
+import { BackgroundShapes } from "@/components/ui/background-shapes";
 
 const fadeInUp = {
   initial: { opacity: 0, y: 60 },
@@ -204,7 +205,7 @@ export default function HomePage() {
               "worstRating": "1"
             },
             "description": "Професионална система за фактуриране за български бизнеси с пълна НАП съвместимост",
-            "url": process.env.NEXT_PUBLIC_APP_URL || 'https://facturapro.bg',
+            "url": process.env.NEXT_PUBLIC_APP_URL || 'https://invoicy.bg',
             "inLanguage": "bg-BG",
             "featureList": [
               "Създаване на професионални фактури",
@@ -228,7 +229,7 @@ export default function HomePage() {
             "@context": "https://schema.org",
             "@type": "Organization",
             "name": APP_NAME,
-            "url": process.env.NEXT_PUBLIC_APP_URL || 'https://facturapro.bg',
+            "url": process.env.NEXT_PUBLIC_APP_URL || 'https://invoicy.bg',
             "logo": process.env.NEXT_PUBLIC_APP_URL + "/logo.png",
             "description": "Професионална система за фактуриране за български бизнеси",
             "address": {
@@ -236,40 +237,19 @@ export default function HomePage() {
               "addressCountry": "BG"
             },
             "sameAs": [
-              "https://www.facebook.com/facturapro",
-              "https://twitter.com/facturapro",
-              "https://www.linkedin.com/company/facturapro"
+              "https://www.facebook.com/invoicy.bg",
+              "https://twitter.com/invoicy_bg",
+              "https://www.linkedin.com/company/invoicy"
             ]
           })
         }}
       />
-      <div className="min-h-screen bg-background overflow-hidden">
-      {/* Animated Background */}
-      <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-background" />
-        <motion.div 
-          className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-br from-emerald-500/10 to-transparent rounded-full blur-3xl"
-          animate={{ 
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-            rotate: [0, 90, 0]
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-        />
-        <motion.div 
-          className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-gradient-to-tr from-blue-500/10 to-transparent rounded-full blur-3xl"
-          animate={{ 
-            scale: [1.2, 1, 1.2],
-            opacity: [0.2, 0.4, 0.2],
-          }}
-          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-        />
-        {/* Grid Pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8882_1px,transparent_1px),linear-gradient(to_bottom,#8882_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
-      </div>
+      <div className="min-h-screen overflow-x-hidden flex flex-col">
+      {/* Background - same as functional pages */}
+      <BackgroundShapes variant="vibrant" />
 
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 w-full glass-card !rounded-none !border-t-0 !border-l-0 !border-r-0">
           <div className="container mx-auto flex items-center justify-between h-16 px-4 md:px-6">
           <motion.div 
             initial={{ opacity: 0, x: -20 }}
@@ -414,7 +394,7 @@ export default function HomePage() {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <Card className="border-2 border-amber-500/30 bg-gradient-to-br from-amber-50/50 to-orange-50/30 dark:from-amber-950/20 dark:to-orange-950/10 shadow-xl">
+            <Card className="glass-card border-2 border-amber-500/30 shadow-xl">
               <CardContent className="p-8 md:p-12">
                 <div className="flex flex-col md:flex-row gap-8 items-start">
                   <div className="flex-shrink-0">
@@ -461,7 +441,7 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-24 px-4 bg-muted/30">
+      <section className="py-24 px-4">
         <div className="container mx-auto max-w-6xl">
           <motion.div 
             initial={{ opacity: 0, y: 40 }}
@@ -488,15 +468,15 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
               >
-                <Card className="h-full border-0 shadow-lg hover:shadow-xl transition-all duration-300 group hover:-translate-y-1 bg-card/50 backdrop-blur">
-                  <CardContent className="p-6">
-                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                <Card className="h-full glass-card border shadow-lg hover:shadow-xl transition-all duration-300 group hover:-translate-y-1 overflow-hidden">
+                  <CardContent className="p-6 pt-8">
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative z-10`}>
                       <feature.icon className="h-6 w-6 text-white" />
-              </div>
+                    </div>
                     <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
                     <p className="text-muted-foreground">{feature.description}</p>
-            </CardContent>
-          </Card>
+                  </CardContent>
+                </Card>
               </motion.div>
             ))}
           </div>
@@ -539,7 +519,7 @@ export default function HomePage() {
                     </span>
                   </div>
                 )}
-                <Card className={`h-full ${plan.popular ? 'border-2 border-emerald-500 shadow-xl shadow-emerald-500/10' : 'border shadow-lg'} hover:shadow-xl transition-all duration-300`}>
+                <Card className={`h-full glass-card ${plan.popular ? 'border-2 border-emerald-500 shadow-xl shadow-emerald-500/10' : 'border shadow-lg'} hover:shadow-xl transition-all duration-300`}>
                   <CardContent className="p-8">
                     <h3 className="text-xl font-semibold mb-2">{plan.name}</h3>
                     <p className="text-muted-foreground text-sm mb-6">{plan.description}</p>
@@ -587,7 +567,7 @@ export default function HomePage() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-24 px-4 bg-muted/30">
+      <section className="py-24 px-4">
         <div className="container mx-auto max-w-6xl">
           <motion.div 
             initial={{ opacity: 0, y: 40 }}
@@ -605,7 +585,7 @@ export default function HomePage() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {testimonials.map((testimonial, index) => (
               <motion.div
                 key={testimonial.name}
@@ -614,25 +594,42 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
               >
-                <Card className="h-full border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-card/50 backdrop-blur">
-                  <CardContent className="p-6">
+                <Card className="h-full glass-card border-0 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 group relative overflow-hidden">
+                  {/* Decorative gradient accent */}
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 opacity-80" />
+                  
+                  <CardContent className="p-8">
+                    {/* Quote icon */}
+                    <div className="mb-6">
+                      <svg className="w-10 h-10 text-emerald-500/20" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+                      </svg>
+                    </div>
+                    
+                    {/* Rating */}
                     <div className="flex gap-1 mb-4">
                       {[...Array(testimonial.rating)].map((_, i) => (
-                        <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                        <Star key={i} className="h-5 w-5 fill-amber-400 text-amber-400 drop-shadow-sm" />
                       ))}
                     </div>
-                    <p className="text-muted-foreground mb-6 italic">"{testimonial.content}"</p>
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-emerald-600 flex items-center justify-center text-white font-semibold text-sm">
+                    
+                    {/* Content */}
+                    <p className="text-foreground/90 mb-8 text-base leading-relaxed">
+                      "{testimonial.content}"
+                    </p>
+                    
+                    {/* Author */}
+                    <div className="flex items-center gap-4 pt-6 border-t border-border/50">
+                      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-emerald-500/25">
                         {testimonial.avatar}
                       </div>
-                    <div>
-                        <div className="font-semibold text-sm">{testimonial.name}</div>
-                        <div className="text-xs text-muted-foreground">{testimonial.role}</div>
+                      <div>
+                        <div className="font-semibold text-foreground">{testimonial.name}</div>
+                        <div className="text-sm text-muted-foreground">{testimonial.role}</div>
                       </div>
-                </div>
-              </CardContent>
-            </Card>
+                    </div>
+                  </CardContent>
+                </Card>
               </motion.div>
             ))}
           </div>
@@ -664,12 +661,12 @@ export default function HomePage() {
           >
             {[
               {
-                q: "Какво е FacturaPro?",
-                a: "FacturaPro е софтуер за издаване на фактури, предназначен за български бизнеси. Помагаме ви да създавате професионални фактури, да ги изпращате по имейл и да следите кой ви дължи пари."
+                q: "Какво е Invoicy?",
+                a: "Invoicy е софтуер за издаване на фактури, предназначен за български бизнеси. Помагаме ви да създавате професионални фактури, да ги изпращате по имейл и да следите кой ви дължи пари."
               },
               {
-                q: "Мога ли да приемам плащания чрез FacturaPro?",
-                a: "Не, FacturaPro не е платежна система и не обработва плащания. Ние ви помагаме да издавате фактури, но плащанията се извършват директно между вас и клиентите ви - чрез банков превод, в брой или друг метод по ваш избор."
+                q: "Мога ли да приемам плащания чрез Invoicy?",
+                a: "Не, Invoicy не е платежна система и не обработва плащания. Ние ви помагаме да издавате фактури, но плащанията се извършват директно между вас и клиентите ви - чрез банков превод, в брой или друг метод по ваш избор."
               },
               {
                 q: "Какво представлява кредитното известие?",
@@ -677,14 +674,14 @@ export default function HomePage() {
               },
               {
                 q: "Съвместима ли е системата с изискванията на НАП?",
-                a: "Да, FacturaPro е напълно съвместима с българските данъчни изисквания. Фактурите съдържат всички задължителни реквизити съгласно ЗДДС и Закона за счетоводството."
+                a: "Да, Invoicy е напълно съвместима с българските данъчни изисквания. Фактурите съдържат всички задължителни реквизити съгласно ЗДДС и Закона за счетоводството."
               },
               {
                 q: "Мога ли да използвам системата за няколко фирми?",
                 a: "Да, в зависимост от вашия план можете да управлявате от 1 до неограничен брой компании от един акаунт."
               }
             ].map((faq, index) => (
-              <Card key={index} className="border shadow-sm">
+              <Card key={index} className="glass-card border-0 shadow-lg">
                 <CardContent className="p-6">
                   <h3 className="font-semibold text-lg mb-2">{faq.q}</h3>
                   <p className="text-muted-foreground">{faq.a}</p>
@@ -703,15 +700,13 @@ export default function HomePage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="relative rounded-3xl bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-12 md:p-16 text-center text-white overflow-hidden"
+            className="relative rounded-3xl glass-card p-12 md:p-16 text-center overflow-hidden !border-2 !border-emerald-500/20"
           >
-            {/* Background Pattern */}
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff10_1px,transparent_1px),linear-gradient(to_bottom,#ffffff10_1px,transparent_1px)] bg-[size:24px_24px]" />
             <div className="relative z-10">
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
                 Готови ли сте да започнете?
               </h2>
-              <p className="text-lg text-white/80 mb-8 max-w-xl mx-auto">
+              <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
                 Присъединете се към хилядите бизнеси, които вече използват {APP_NAME} за професионално фактуриране.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -721,7 +716,7 @@ export default function HomePage() {
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" asChild className="text-base h-12 px-8 border-slate-600 text-white hover:bg-slate-700">
+                <Button size="lg" variant="outline" asChild className="text-base h-12 px-8">
                   <Link href="/signin">
                     Вход в системата
                   </Link>
@@ -733,7 +728,7 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t py-16 px-4 bg-muted/20">
+      <footer className="border-t py-16 px-4 mt-auto glass-card !rounded-none !border-l-0 !border-r-0 !border-b-0">
         <div className="container mx-auto max-w-6xl">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
               <div>
@@ -779,13 +774,13 @@ export default function HomePage() {
               © {new Date().getFullYear()} {APP_NAME}. Всички права запазени.
             </p>
             <div className="flex items-center gap-4">
-              <Link href="https://www.facebook.com/facturapro" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Facebook">
+              <Link href="https://www.facebook.com/invoicy.bg" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Facebook">
                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
               </Link>
-              <Link href="https://twitter.com/facturapro" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Twitter">
+              <Link href="https://twitter.com/invoicy_bg" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Twitter">
                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>
               </Link>
-              <Link href="https://www.linkedin.com/company/facturapro" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="LinkedIn">
+              <Link href="https://www.linkedin.com/company/invoicy" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="LinkedIn">
                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
               </Link>
             </div>

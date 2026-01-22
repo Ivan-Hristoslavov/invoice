@@ -513,14 +513,14 @@ export default function NewClientPage() {
                 </div>
 
                 <Card className="overflow-hidden border-2">
-                  <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-6">
+                  <div className="p-6">
                     <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold">
+                      <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center text-2xl font-bold">
                         {formValues.name.charAt(0).toUpperCase() || "?"}
                       </div>
                       <div>
                         <h3 className="text-2xl font-bold">{formValues.name || "Без име"}</h3>
-                        {formValues.email && <p className="text-white/80">{formValues.email}</p>}
+                        {formValues.email && <p className="text-muted-foreground">{formValues.email}</p>}
                       </div>
                     </div>
                   </div>

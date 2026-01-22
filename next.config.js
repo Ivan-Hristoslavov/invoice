@@ -34,6 +34,18 @@ const nextConfig = {
       use: ['@svgr/webpack'],
     });
 
+    // Exclude pdf-generator from client bundles (it uses Node.js 'fs' module)
+    // This prevents Next.js from trying to bundle server-only code for the client
+    if (!isServer) {
+      const webpack = require('webpack');
+      config.plugins.push(
+        new webpack.IgnorePlugin({
+          resourceRegExp: /pdf-generator$/,
+          contextRegExp: /lib$/,
+        })
+      );
+    }
+
     // Оптимизация само за production build
     if (!dev && !isServer) {
       config.optimization.splitChunks.cacheGroups = {

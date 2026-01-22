@@ -14,7 +14,9 @@ import {
   HelpCircle,
   LogOut,
   ChevronRight,
-  Receipt
+  Receipt,
+  ArrowDownCircle,
+  ArrowUpCircle
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -37,10 +39,16 @@ const mainNavItems = [
     gradient: "from-emerald-500 to-teal-600"
   },
   { 
-    name: "Сторно", 
+    name: "Кредитни", 
     href: "/credit-notes", 
-    icon: Receipt,
+    icon: ArrowDownCircle,
     gradient: "from-red-500 to-rose-600"
+  },
+  { 
+    name: "Дебитни", 
+    href: "/debit-notes", 
+    icon: ArrowUpCircle,
+    gradient: "from-emerald-500 to-teal-600"
   },
   { 
     name: "Клиенти", 
@@ -126,15 +134,17 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile Menu Button - Aligned with navbar center (navbar h-16 = 64px, center at 32px; button h-10 = 40px, so top = 32px - 20px = 12px = top-3) */}
-      <Button 
-        variant="ghost" 
-        size="icon" 
-        className="fixed top-3 left-4 z-50 lg:hidden h-10 w-10 bg-background/95 backdrop-blur-md border border-border shadow-lg hover:bg-muted"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-      </Button>
+      {/* Mobile Menu Button - Only visible when sidebar is hidden (mobile) */}
+      {isMobile && (
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="fixed top-3 left-4 z-[60] h-10 w-10 bg-background/95 backdrop-blur-md border border-border shadow-lg hover:bg-muted"
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </Button>
+      )}
 
       {/* Backdrop */}
       <AnimatePresence>
@@ -152,7 +162,7 @@ export function Sidebar() {
       {/* Sidebar - Fixed and always visible on desktop (lg+), collapsible on mobile only */}
       <motion.aside 
         className={cn(
-          "fixed top-0 left-0 z-40 h-full w-72 bg-card border-r flex flex-col",
+          "fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] w-72 flex flex-col glass-card !rounded-none !border-r !border-l-0 !border-t-0 !border-b-0 shrink-0",
           "lg:translate-x-0",
           isMobile && !isOpen && "-translate-x-full"
         )}
@@ -160,19 +170,9 @@ export function Sidebar() {
         animate={{ x: isMobile && !isOpen ? "-100%" : 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
-        {/* Logo */}
-        <div className="p-6 border-b">
-          <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-600/25">
-              <FileText className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-xl font-bold tracking-tight">{APP_NAME}</span>
-          </Link>
-        </div>
-
         {/* Main Navigation */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
+        <nav className="flex-1 px-4 pt-2 pb-4 space-y-1 overflow-y-auto">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-2">
             Меню
           </p>
           {mainNavItems.map((item) => {
@@ -257,11 +257,10 @@ export function Sidebar() {
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
-        </div>
-
-        {/* Version */}
-        <div className="px-6 py-3 text-xs text-muted-foreground">
-          {APP_NAME} v1.0.0
+          {/* Version */}
+          <div className="mt-3 text-center text-xs text-muted-foreground">
+            {APP_NAME} v1.0.0
+          </div>
         </div>
       </motion.aside>
     </>

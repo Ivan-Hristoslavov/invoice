@@ -12,7 +12,7 @@ export const PLAN_LIMITS = {
     allowCustomBranding: false, // No logo
     allowExport: false, // No export
     allowCreditNotes: false, // No credit notes
-    allowEmailSending: false, // No email sending
+    allowEmailSending: true, // TEMPORARILY UNLOCKED FOR TESTING
     maxUsers: 1,
     allowApiAccess: false,
     storageLimit: 50 * 1024 * 1024, // 50MB
@@ -25,7 +25,7 @@ export const PLAN_LIMITS = {
     allowCustomBranding: false, // No logo
     allowExport: 'csv', // CSV only
     allowCreditNotes: false, // No credit notes
-    allowEmailSending: false, // No email sending
+    allowEmailSending: true, // TEMPORARILY UNLOCKED FOR TESTING
     maxUsers: 1,
     allowApiAccess: false,
     storageLimit: 200 * 1024 * 1024, // 200MB

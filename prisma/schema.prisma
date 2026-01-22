@@ -29,6 +29,7 @@ model User {
   
   // Invoice preferences
   defaultVatRate Decimal  @default(20.00) @db.Decimal(5, 2)
+  startingInvoiceNumber Int?  // Starting invoice number for migration from other apps (e.g., 1 for 0000000001)
   
   accounts      Account[]
   sessions      Session[]
@@ -40,6 +41,7 @@ model User {
   userRoles     UserRole[]
   subscriptions Subscription[]
   creditNotes   CreditNote[]
+  debitNotes    DebitNote[]
   auditLogs     AuditLog[]
 }
 
@@ -104,7 +106,7 @@ model Company {
   bulstatNumber     String?   // Bulgarian company identifier (ЕИК/БУЛСТАТ)
   vatRegistered     Boolean   @default(false) // Whether company is VAT registered (Регистрация по ЗДДС)
   vatRegistrationNumber String? // VAT registration number (№ по ЗДДС)
-  mол               String?   // MOL - Manager/Representative (Представляващ/МОЛ)
+  mol               String?   // MOL - Manager/Representative (Представляващ/МОЛ)
   accountablePerson String?   // Person responsible for the accounting
   napUserName       String?   // Username for the NAP portal
   napPassword       String?   // Encrypted password for NAP portal
@@ -121,6 +123,7 @@ model Company {
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   invoices          Invoice[]
   creditNotes       CreditNote[]
+  debitNotes        DebitNote[]
   invoiceSequences  InvoiceSequence[]
   userRoles         UserRole[]
 }
@@ -142,7 +145,7 @@ model Client {
   bulstatNumber     String?   // Bulgarian company identifier (ЕИК/БУЛСТАТ)
   vatRegistered     Boolean   @default(false) // Whether client is VAT registered
   vatRegistrationNumber String? // VAT registration number (№ по ЗДДС)
-  mол               String?   // MOL - Manager/Representative
+  mol               String?   // MOL - Manager/Representative
   uicType           String?   @default("BULSTAT") // Valid values: "BULSTAT" or "EGN"
   
   taxComplianceSystem String?  @default("general") // Tax system: "bulgarian", "eu", or "general"
@@ -155,6 +158,7 @@ model Client {
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   invoices          Invoice[]
   creditNotes       CreditNote[]
+  debitNotes        DebitNote[]
 }
 
 model Product {
@@ -231,9 +235,10 @@ model Invoice {
   documents       Document[]
   sequence        InvoiceSequence? @relation(fields: [invoiceSequenceId], references: [id]) // Sequence used for numbering
   creditNote      CreditNote? // Credit note created from this invoice
+  debitNotes      DebitNote[] // Debit notes related to this invoice
   auditLogs       AuditLog[]
   
-  @@unique([invoiceNumber, companyId])
+  @@unique([invoiceNumber, userId])
 }
 
 model InvoiceItem {
@@ -267,11 +272,11 @@ model InvoiceSequence {
   @@unique([companyId, year])
 }
 
-// CreditNote: Created when an invoice is cancelled
+// CreditNote: Created when an invoice is cancelled or manually
 model CreditNote {
   id              String   @id @default(cuid())
   creditNoteNumber String   @unique
-  invoiceId       String   @unique // Reference to cancelled invoice
+  invoiceId       String?  @unique // Optional reference to cancelled invoice (can be created manually)
   companyId       String
   clientId        String
   userId           String
@@ -285,7 +290,7 @@ model CreditNote {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   
-  invoice          Invoice  @relation(fields: [invoiceId], references: [id])
+  invoice          Invoice? @relation(fields: [invoiceId], references: [id])
   company          Company  @relation(fields: [companyId], references: [id])
   client           Client   @relation(fields: [clientId], references: [id])
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -306,6 +311,47 @@ model CreditNoteItem {
   total         Decimal  @db.Decimal(10, 2)
   
   creditNote    CreditNote @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
+}
+
+// DebitNote: Created when replacing a product but customer needs to pay more
+model DebitNote {
+  id              String   @id @default(cuid())
+  debitNoteNumber String   @unique
+  invoiceId       String?  // Optional reference to related invoice
+  companyId       String
+  clientId        String
+  userId           String
+  issueDate        DateTime
+  reason           String?  // Reason for debit note (e.g., product replacement with additional payment)
+  subtotal         Decimal  @db.Decimal(10, 2)
+  taxAmount        Decimal  @db.Decimal(10, 2)
+  total            Decimal  @db.Decimal(10, 2)
+  currency         String   @default("EUR")
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  invoice          Invoice?  @relation(fields: [invoiceId], references: [id])
+  company          Company  @relation(fields: [companyId], references: [id])
+  client           Client   @relation(fields: [clientId], references: [id])
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items            DebitNoteItem[]
+  
+  @@unique([debitNoteNumber, companyId])
+}
+
+model DebitNoteItem {
+  id            String   @id @default(cuid())
+  debitNoteId  String
+  description   String
+  quantity      Decimal  @db.Decimal(10, 2)
+  unitPrice     Decimal  @db.Decimal(10, 2)
+  taxRate       Decimal  @default(0) @db.Decimal(5, 2)
+  subtotal      Decimal  @db.Decimal(10, 2)
+  taxAmount     Decimal  @db.Decimal(10, 2)
+  total         Decimal  @db.Decimal(10, 2)
+  
+  debitNote    DebitNote @relation(fields: [debitNoteId], references: [id], onDelete: Cascade)
 }
 
 // AuditLog: Tracks all changes to invoices and system events

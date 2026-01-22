@@ -68,16 +68,50 @@ export default async function CreditNoteDetailPage({
     notFound();
   }
 
-  // Fetch related data
+  // Fetch related data with all fields
   const [invoiceResult, clientResult, companyResult] = await Promise.all([
-    supabase.from("Invoice").select("id, invoiceNumber, issueDate").eq("id", creditNote.invoiceId).single(),
-    supabase.from("Client").select("*").eq("id", creditNote.clientId).single(),
-    supabase.from("Company").select("*").eq("id", creditNote.companyId).single(),
+    creditNote.invoiceId
+      ? supabase.from("Invoice").select("id, invoiceNumber, issueDate").eq("id", creditNote.invoiceId).eq("userId", session.user.id).maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+    creditNote.clientId
+      ? supabase
+          .from("Client")
+          .select("id, name, email, phone, address, city, country, bulstatNumber, vatNumber, vatRegistrationNumber, mol")
+          .eq("id", creditNote.clientId)
+          .eq("userId", session.user.id)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+    creditNote.companyId
+      ? supabase
+          .from("Company")
+          .select("id, name, email, phone, address, city, country, bulstatNumber, vatRegistrationNumber, mol")
+          .eq("id", creditNote.companyId)
+          .eq("userId", session.user.id)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
   ]);
+
+  // Handle errors and extract data
+  if (clientResult.error) {
+    console.error("Error fetching client:", clientResult.error);
+    console.error("Client ID:", creditNote.clientId);
+  }
+  if (companyResult.error) {
+    console.error("Error fetching company:", companyResult.error);
+    console.error("Company ID:", creditNote.companyId);
+  }
 
   const invoice = invoiceResult.data;
   const client = clientResult.data;
   const company = companyResult.data;
+
+  // Debug logging (remove in production if needed)
+  if (!client && creditNote.clientId) {
+    console.warn("Client not found for ID:", creditNote.clientId);
+  }
+  if (!company && creditNote.companyId) {
+    console.warn("Company not found for ID:", creditNote.companyId);
+  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('bg-BG', {
@@ -111,9 +145,11 @@ export default async function CreditNoteDetailPage({
           </div>
           
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => window.print()}>
-              <Printer className="w-4 h-4 mr-1.5" />
-              Принт
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/api/credit-notes/${id}/export-pdf`} target="_blank">
+                <Printer className="w-4 h-4 mr-1.5" />
+                Принт
+              </Link>
             </Button>
             <Button variant="outline" size="sm" asChild>
               <Link href={`/api/credit-notes/${id}/export-pdf`} target="_blank">
@@ -169,11 +205,13 @@ export default async function CreditNoteDetailPage({
                   </h3>
                   {company ? (
                     <div className="space-y-1 text-sm">
-                      <p className="font-medium">{company.name}</p>
+                      {company.name && <p className="font-medium">Фирма: {company.name}</p>}
                       {company.bulstatNumber && <p>ЕИК: {company.bulstatNumber}</p>}
                       {company.vatRegistrationNumber && <p>ДДС №: {company.vatRegistrationNumber}</p>}
-                      {company.address && <p>{company.address}</p>}
-                      {company.city && <p>{company.city}, {company.country}</p>}
+                      {company.mol && <p>МОЛ: {company.mol}</p>}
+                      {company.address && <p>Адрес: {company.address}</p>}
+                      {company.city && <p>Град: {company.city}{company.country ? `, ${company.country}` : ''}</p>}
+                      {company.phone && <p>Тел.: {company.phone}</p>}
                     </div>
                   ) : (
                     <p className="text-muted-foreground text-sm">Няма информация</p>
@@ -188,11 +226,15 @@ export default async function CreditNoteDetailPage({
                   </h3>
                   {client ? (
                     <div className="space-y-1 text-sm">
-                      <p className="font-medium">{client.name}</p>
+                      {client.name && <p className="font-medium">Фирма: {client.name}</p>}
                       {client.bulstatNumber && <p>ЕИК: {client.bulstatNumber}</p>}
-                      {client.vatRegistrationNumber && <p>ДДС №: {client.vatRegistrationNumber}</p>}
-                      {client.address && <p>{client.address}</p>}
-                      {client.city && <p>{client.city}, {client.country}</p>}
+                      {(client.vatRegistrationNumber || client.vatNumber) && (
+                        <p>ДДС №: {client.vatRegistrationNumber || client.vatNumber}</p>
+                      )}
+                      {client.mol && <p>МОЛ: {client.mol}</p>}
+                      {client.address && <p>Адрес: {client.address}</p>}
+                      {client.city && <p>Град: {client.city}{client.country ? `, ${client.country}` : ''}</p>}
+                      {client.phone && <p>Тел.: {client.phone}</p>}
                     </div>
                   ) : (
                     <p className="text-muted-foreground text-sm">Няма информация</p>

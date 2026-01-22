@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -34,6 +34,12 @@ const preferencesSchema = z.object({
   // Настройки за номерация
   invoicePrefix: z.string().max(10).optional(),
   resetNumberingYearly: z.boolean().default(true),
+  startingInvoiceNumber: z
+    .number()
+    .int()
+    .min(1, "Началният номер трябва да е поне 1")
+    .max(9999999999, "Началният номер не може да надхвърля 9999999999")
+    .optional(),
   
   // Настройки за валута
   defaultCurrency: z.string().default("EUR"),
@@ -56,6 +62,7 @@ type PreferencesFormValues = z.infer<typeof preferencesSchema>;
 export function InvoicePreferencesForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingDefaults, setIsLoadingDefaults] = useState(true);
 
   const form = useForm<PreferencesFormValues>({
     resolver: zodResolver(preferencesSchema),
@@ -69,6 +76,34 @@ export function InvoicePreferencesForm() {
       keepDraftDays: 30,
     },
   });
+
+  // Load default values from API
+  useEffect(() => {
+    async function loadDefaults() {
+      try {
+        const response = await fetch("/api/settings/invoice-preferences");
+        if (response.ok) {
+          const data = await response.json();
+          form.reset({
+            defaultVatRate: data.defaultVatRate || DEFAULT_VAT_RATE,
+            resetNumberingYearly: true,
+            defaultCurrency: "EUR",
+            showAmountInWords: true,
+            showCompanyLogo: true,
+            autoArchiveAfterDays: 365,
+            keepDraftDays: 30,
+            startingInvoiceNumber: data.startingInvoiceNumber,
+          });
+        }
+      } catch (error) {
+        console.error("Error loading invoice preferences:", error);
+      } finally {
+        setIsLoadingDefaults(false);
+      }
+    }
+
+    loadDefaults();
+  }, [form]);
 
   async function onSubmit(data: PreferencesFormValues) {
     setIsLoading(true);
@@ -98,6 +133,17 @@ export function InvoicePreferencesForm() {
     } finally {
       setIsLoading(false);
     }
+  }
+
+  if (isLoadingDefaults) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Зареждане на настройки...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -206,6 +252,29 @@ export function InvoicePreferencesForm() {
               )}
             />
           </div>
+
+          <FormField
+            control={form.control}
+            name="startingInvoiceNumber"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Начален номер на фактура (за миграция)</FormLabel>
+                <FormControl>
+                  <NumericInput
+                    allowDecimal={false}
+                    {...field}
+                    value={field.value || ''}
+                    onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                    placeholder="Напр. 1 за 0000000001"
+                  />
+                </FormControl>
+                <FormDescription>
+                  Задайте начален номер, ако мигрирате от друга система. Следващите фактури ще започват от този номер. Формат: 10 цифри (0000000001, 0000000002, ...)
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
         <Separator />

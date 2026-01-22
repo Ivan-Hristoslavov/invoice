@@ -2,7 +2,7 @@
  * Global application constants
  */
 
-export const APP_NAME = "FacturaPro";
+export const APP_NAME = "Invoicy";
 
 // App metadata
 export const APP_DESCRIPTION = "Професионална система за фактуриране за български бизнеси. Създавайте фактури, управлявайте клиенти и проследявайте плащания с пълна НАП съвместимост.";

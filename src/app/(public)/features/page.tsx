@@ -8,7 +8,7 @@ import { APP_NAME } from "@/config/constants";
 
 export const metadata: Metadata = genMeta({
   title: "Функции",
-  description: "Разгледайте всички функции на FacturaPro - професионална система за фактуриране с НАП съвместимост",
+  description: "Разгледайте всички функции на Invoicy - професионална система за фактуриране с НАП съвместимост",
 });
 
 const features = [

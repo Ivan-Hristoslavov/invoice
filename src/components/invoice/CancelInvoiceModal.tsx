@@ -83,7 +83,7 @@ export function CancelInvoiceModal({
       onClick={handleOverlayClick}
     >
       <div
-        className="relative bg-background border rounded-lg shadow-lg w-full max-w-md mx-4 p-6 animate-in zoom-in-95 slide-in-from-bottom-2"
+        className="glass-card relative rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 animate-in zoom-in-95 slide-in-from-bottom-2"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}

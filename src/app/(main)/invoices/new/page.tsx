@@ -731,7 +731,7 @@ function NewInvoiceContent() {
                 <Hash className="h-4 w-4" />
                 Номер на фактура
               </Label>
-              <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-0 shadow-lg">
+              <Card className="solid-card bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-0 shadow-lg">
                 <CardContent className="p-6">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex-1 min-w-0">
@@ -952,15 +952,15 @@ function NewInvoiceContent() {
             </div>
             
             {/* Invoice preview */}
-            <Card className="overflow-hidden border-2">
+            <Card className="solid-card overflow-hidden border-2 bg-white dark:bg-slate-900">
               {/* Header */}
-              <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-6">
+              <div className="p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
-                    <p className="text-sm opacity-90 mb-1">Фактура №</p>
+                    <p className="text-sm text-muted-foreground mb-1">Фактура №</p>
                     <p className="text-3xl font-bold font-mono">{invoiceData.invoiceNumber}</p>
                   </div>
-                  <Badge variant="secondary" className="bg-white/20 text-white border-0 text-base px-4 py-2">
+                  <Badge variant="secondary" className="text-base px-4 py-2">
                     {invoiceData.currency}
                   </Badge>
                 </div>

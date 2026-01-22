@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { Settings, LogOut, User, ChevronDown, Plus, Sun, Moon, Command } from "lucide-react";
+import { Settings, LogOut, User, ChevronDown, Plus, Sun, Moon, Command, FileText } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +16,7 @@ import { useTheme } from "next-themes";
 import { Switch } from "@/components/ui/switch";
 import { useState, useEffect, useMemo } from "react";
 import { useCommandPalette } from "@/components/ui/command-palette";
+import { APP_NAME } from "@/config/constants";
 
 export function Navbar() {
   const { data: session, status } = useSession();
@@ -55,10 +56,19 @@ export function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-30 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex items-center justify-end h-16 px-4 md:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 w-full glass-card !rounded-none !border-t-0 !border-l-0 !border-r-0">
+      <div className="flex items-center h-16">
+        {/* Logo - Left side - Fixed width matching sidebar, starts from edge */}
+        <Link href="/dashboard" className="flex items-center justify-center gap-3 w-72 h-full shrink-0 border-r border-border/50">
+          <div className="h-10 w-10 rounded-xl bg-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-600/25">
+            <FileText className="h-5 w-5 text-white" />
+          </div>
+          <span className="text-xl font-bold tracking-tight">{APP_NAME}</span>
+        </Link>
+        {/* Spacer */}
+        <div className="flex-1" />
         {/* Right Section - Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 px-4 md:px-6">
           {/* Command Palette Button */}
           <Button 
             variant="outline" 

@@ -43,7 +43,7 @@ const companyInfoSchema = z.object({
   bulstatNumber: z.string().optional().or(z.literal("")),
   vatRegistered: z.boolean(),
   vatRegistrationNumber: z.string().optional().or(z.literal("")),
-  mол: z.string().optional().or(z.literal("")),
+  mol: z.string().optional().or(z.literal("")),
   accountablePerson: z.string().optional().or(z.literal("")),
   uicType: z.enum(["BULSTAT", "EGN"]).optional(),
   stripeAccountId: z.string().optional().or(z.literal("")),
@@ -402,7 +402,7 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 mt-4">
             <FormField
               control={form.control}
-              name="mол"
+              name="mol"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>МОЛ (Представляващ)</FormLabel>

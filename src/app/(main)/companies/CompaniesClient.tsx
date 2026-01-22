@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Building, Plus, Search, Mail, Phone, MapPin, ArrowUpRight, FileText, CheckCircle2, Crown, XCircle, Lock } from "lucide-react";
+import { Building, Plus, Search, Mail, Phone, MapPin, FileText, CheckCircle2, Crown, XCircle, LayoutGrid, List } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { UsageCounter, LockedButton } from "@/components/ui/pro-feature-lock";
 import { useState, useMemo } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface Company {
   id: string;
@@ -31,6 +39,7 @@ interface CompaniesClientProps {
 
 export default function CompaniesClient({ companies, invoiceCounts }: CompaniesClientProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   
   // Subscription limit hook
   const { 
@@ -60,20 +69,6 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
   const totalCompanies = companies.length;
   const vatRegistered = companies.filter(c => c.vatRegistered).length;
   const totalInvoices = Object.values(invoiceCounts).reduce((a, b) => a + b, 0);
-
-  // Generate gradient based on company name
-  const getGradient = (name: string) => {
-    const gradients = [
-      "from-slate-500 to-slate-600",
-      "from-blue-500 to-indigo-600",
-      "from-emerald-500 to-teal-600",
-      "from-amber-500 to-orange-600",
-      "from-cyan-500 to-teal-600",
-      "from-cyan-500 to-blue-600",
-    ];
-    const index = name.charCodeAt(0) % gradients.length;
-    return gradients[index];
-  };
 
   return (
     <div className="space-y-6">
@@ -161,17 +156,37 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
         />
       </div>
 
-      {/* Search */}
+      {/* Search & View Toggle */}
       <Card className="border-0 shadow-lg">
-        <CardContent className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-            <Input 
-              placeholder="Търсене по име, ЕИК или ДДС номер..." 
-              className="pl-10 h-11 border-border"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center">
+            <div className="relative flex-1 w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input 
+                placeholder="Търсене по име, ЕИК или ДДС номер..." 
+                className="pl-10 h-11 border-border"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50">
+              <Button
+                variant={viewMode === "cards" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("cards")}
+                className="h-9 px-3"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === "table" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("table")}
+                className="h-9 px-3"
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -209,73 +224,111 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
             </div>
           </CardContent>
         </Card>
-      ) : (
+      ) : viewMode === "cards" ? (
+        /* Cards View */
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredCompanies.map((company) => (
             <Link key={company.id} href={`/settings/company`}>
-              <Card className="h-full border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group cursor-pointer">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${getGradient(company.name)} flex items-center justify-center text-white font-bold text-lg shadow-lg`}>
-                      {company.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-semibold truncate group-hover:text-primary transition-colors">
-                            {company.name}
-                          </h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            {company.bulstatNumber && (
-                              <Badge variant="outline" className="text-xs">
-                                ЕИК: {company.bulstatNumber}
-                              </Badge>
-                            )}
-                            {company.vatRegistered && (
-                              <Badge variant="secondary" className="text-xs bg-emerald-500/10 text-emerald-600">
-                                ДДС
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                      
-                      <div className="mt-3 space-y-1.5">
-                        {company.email && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Mail className="h-3.5 w-3.5" />
-                            <span className="truncate">{company.email}</span>
-                          </div>
-                        )}
-                        {company.phone && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Phone className="h-3.5 w-3.5" />
-                            <span>{company.phone}</span>
-                          </div>
-                        )}
-                        {(company.city || company.country) && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <MapPin className="h-3.5 w-3.5" />
-                            <span>{[company.city, company.country].filter(Boolean).join(", ")}</span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {invoiceCounts[company.id] > 0 && (
-                        <div className="mt-4 pt-3 border-t">
-                          <span className="text-xs font-medium text-muted-foreground">
-                            {invoiceCounts[company.id]} {invoiceCounts[company.id] === 1 ? 'фактура' : 'фактури'}
-                          </span>
-                        </div>
-                      )}
-                    </div>
+              <Card className="h-full min-h-[140px] border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group cursor-pointer">
+                <CardContent className="p-5 h-full flex flex-col items-center text-center">
+                  {/* Name */}
+                  <h3 className="font-semibold text-lg group-hover:text-primary transition-colors truncate w-full">
+                    {company.name}
+                  </h3>
+                  
+                  {/* Badges */}
+                  <div className="flex items-center justify-center gap-2 mt-2 flex-wrap">
+                    {company.bulstatNumber && (
+                      <Badge variant="outline" className="text-xs">
+                        ЕИК: {company.bulstatNumber}
+                      </Badge>
+                    )}
+                    {company.vatRegistered && (
+                      <Badge variant="secondary" className="text-xs bg-emerald-500/10 text-emerald-600">
+                        ДДС
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  {/* Contact Info */}
+                  <div className="mt-2 space-y-1 text-sm text-muted-foreground w-full">
+                    {company.email && <p className="truncate">{company.email}</p>}
+                    {company.phone && <p>{company.phone}</p>}
+                    {(company.city || company.country) && (
+                      <p>{[company.city, company.country].filter(Boolean).join(", ")}</p>
+                    )}
+                  </div>
+                  
+                  {/* Invoice Count */}
+                  <div className="mt-auto pt-3 w-full border-t">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {invoiceCounts[company.id] || 0} {(invoiceCounts[company.id] || 0) === 1 ? 'фактура' : 'фактури'}
+                    </span>
                   </div>
                 </CardContent>
               </Card>
             </Link>
           ))}
         </div>
+      ) : (
+        /* Table View */
+        <Card className="border-0 shadow-lg overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-b border-border/50">
+                <TableHead className="font-medium text-muted-foreground">Компания</TableHead>
+                <TableHead className="font-medium text-muted-foreground">ЕИК</TableHead>
+                <TableHead className="font-medium text-muted-foreground">Имейл</TableHead>
+                <TableHead className="font-medium text-muted-foreground">Телефон</TableHead>
+                <TableHead className="font-medium text-muted-foreground text-center">ДДС</TableHead>
+                <TableHead className="font-medium text-muted-foreground text-center">Фактури</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredCompanies.map((company) => (
+                <TableRow 
+                  key={company.id} 
+                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => window.location.href = `/settings/company`}
+                >
+                  <TableCell>
+                    <div>
+                      <p className="font-medium">{company.name}</p>
+                      {(company.city || company.country) && (
+                        <p className="text-xs text-muted-foreground">
+                          {[company.city, company.country].filter(Boolean).join(", ")}
+                        </p>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {company.bulstatNumber || "-"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {company.email || "-"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {company.phone || "-"}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {company.vatRegistered ? (
+                      <Badge variant="secondary" className="text-xs bg-emerald-500/10 text-emerald-600">
+                        ДДС
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                      {invoiceCounts[company.id] || 0}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );

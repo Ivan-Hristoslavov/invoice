@@ -8,7 +8,7 @@ import { APP_NAME } from "@/config/constants";
 
 export const metadata: Metadata = genMeta({
   title: "API Документация",
-  description: "Интегрирайте FacturaPro във вашите собствени системи чрез RESTful API",
+  description: "Интегрирайте Invoicy във вашите собствени системи чрез RESTful API",
 });
 
 export default function APIPage() {

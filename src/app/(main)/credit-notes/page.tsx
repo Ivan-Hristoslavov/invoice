@@ -9,7 +9,8 @@ import {
   Receipt,
   Calendar,
   Building,
-  Users
+  Users,
+  Plus
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -84,14 +85,21 @@ export default async function CreditNotesPage() {
   const creditNotes: CreditNote[] = [];
   
   if (creditNotesData && creditNotesData.length > 0) {
-    const invoiceIds = [...new Set(creditNotesData.map(cn => cn.invoiceId))];
-    const clientIds = [...new Set(creditNotesData.map(cn => cn.clientId))];
-    const companyIds = [...new Set(creditNotesData.map(cn => cn.companyId))];
+    // Filter out null values before querying
+    const invoiceIds = [...new Set(creditNotesData.map(cn => cn.invoiceId).filter((id): id is string => id !== null))];
+    const clientIds = [...new Set(creditNotesData.map(cn => cn.clientId).filter((id): id is string => id !== null))];
+    const companyIds = [...new Set(creditNotesData.map(cn => cn.companyId).filter((id): id is string => id !== null))];
 
     const [invoicesResult, clientsResult, companiesResult] = await Promise.all([
-      supabase.from("Invoice").select("id, invoiceNumber").in("id", invoiceIds),
-      supabase.from("Client").select("id, name").in("id", clientIds),
-      supabase.from("Company").select("id, name").in("id", companyIds),
+      invoiceIds.length > 0 
+        ? supabase.from("Invoice").select("id, invoiceNumber").in("id", invoiceIds)
+        : Promise.resolve({ data: [], error: null }),
+      clientIds.length > 0
+        ? supabase.from("Client").select("id, name").in("id", clientIds)
+        : Promise.resolve({ data: [], error: null }),
+      companyIds.length > 0
+        ? supabase.from("Company").select("id, name").in("id", companyIds)
+        : Promise.resolve({ data: [], error: null }),
     ]);
 
     const invoicesMap = new Map((invoicesResult.data || []).map(i => [i.id, i]));
@@ -101,7 +109,7 @@ export default async function CreditNotesPage() {
     for (const cn of creditNotesData) {
       creditNotes.push({
         ...cn,
-        invoice: invoicesMap.get(cn.invoiceId),
+        invoice: cn.invoiceId ? invoicesMap.get(cn.invoiceId) : undefined,
         client: clientsMap.get(cn.clientId),
         company: companiesMap.get(cn.companyId),
       });
@@ -122,11 +130,17 @@ export default async function CreditNotesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Сторно документи</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Кредитни известия</h1>
           <p className="text-muted-foreground mt-1">
-            Преглед на издадени сторно документи за отменени фактури
+            Преглед на издадени кредитни известия за отменени фактури
           </p>
         </div>
+        <Button asChild>
+          <Link href="/credit-notes/new">
+            <Plus className="mr-2 h-4 w-4" />
+            Ново кредитно известие
+          </Link>
+        </Button>
       </div>
 
       {/* Stats */}
@@ -167,14 +181,14 @@ export default async function CreditNotesPage() {
               <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
                 <Receipt className="h-8 w-8 text-muted-foreground" />
               </div>
-              <h3 className="text-lg font-semibold mb-1">Няма сторно документи</h3>
+              <h3 className="text-lg font-semibold mb-1">Няма кредитни известия</h3>
               <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-                Сторно документите се създават автоматично при отмяна на издадена фактура
+                Кредитните известия се използват за възстановяване на пари при връщане на продукт
               </p>
-              <Button asChild variant="outline">
-                <Link href="/invoices">
-                  <FileText className="mr-2 h-4 w-4" />
-                  Към фактурите
+              <Button asChild>
+                <Link href="/credit-notes/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Създай кредитно известие
                 </Link>
               </Button>
             </div>
@@ -203,9 +217,16 @@ export default async function CreditNotesPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         <p className="font-semibold text-sm truncate">{creditNote.creditNoteNumber}</p>
-                        <Badge variant="outline" className="text-xs">
-                          За: {creditNote.invoice?.invoiceNumber || 'N/A'}
-                        </Badge>
+                        {creditNote.invoiceId && (
+                          <Badge variant="outline" className="text-xs">
+                            За: {creditNote.invoice?.invoiceNumber || 'N/A'}
+                          </Badge>
+                        )}
+                        {!creditNote.invoiceId && (
+                          <Badge variant="outline" className="text-xs text-muted-foreground">
+                            Самостоятелно
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">

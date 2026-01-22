@@ -8,7 +8,7 @@ import { APP_NAME } from "@/config/constants";
 
 export const metadata: Metadata = genMeta({
   title: "Условия за ползване",
-  description: "Условията за ползване на FacturaPro",
+  description: "Условията за ползване на Invoicy",
 });
 
 export default function TermsPage() {

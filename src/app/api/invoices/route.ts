@@ -264,19 +264,18 @@ export async function POST(request: NextRequest) {
         
         for (let attempt = 0; attempt < maxRetries; attempt++) {
           try {
-            // Get next invoice number using InvoiceSequence
+            // Get next invoice number using InvoiceSequence (per-user numbering, 10-digit format)
             const { getNextInvoiceSequence } = await import("@/lib/invoice-sequence");
             const { invoiceNumber, sequence } = await getNextInvoiceSequence(
-              validatedData.companyId,
-              company.bulstatNumber || undefined
+              session.user.id as string
             );
             
-            // Check if invoice number already exists (race condition check)
+            // Check if invoice number already exists for this user (race condition check)
             const { data: existingInvoice } = await supabase
               .from("Invoice")
               .select("id")
               .eq("invoiceNumber", invoiceNumber)
-              .eq("companyId", validatedData.companyId)
+              .eq("userId", session.user.id)
               .single();
             
             if (existingInvoice) {

@@ -10,7 +10,7 @@ import { ShieldAlert } from "lucide-react";
 import UsersClient from "./UsersClient";
 
 export const metadata = {
-  title: "Управление на потребители - FacturaPro",
+  title: "Управление на потребители - Invoicy",
   description: "Управлявайте потребителите и ролите им във вашата организация",
 };
 

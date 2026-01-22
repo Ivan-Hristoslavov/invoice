@@ -1,13 +1,41 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import { exportInvoicePdfBuffer } from './invoice-export';
 import { createAdminClient } from './supabase/server';
 
 // Lazy initialization helper to avoid build-time errors
-function getResend() {
-  if (!process.env.RESEND_API_KEY) {
-    throw new Error('RESEND_API_KEY is not configured');
+function getSmtpTransporter() {
+  const smtpServer = process.env.SMTP_SERVER;
+  const smtpPort = process.env.SMTP_PORT;
+  const smtpSecurity = process.env.SMTP_SECURITY;
+  const smtpUsername = process.env.SMTP_USERNAME;
+  const smtpPassword = process.env.SMTP_PASSWORD;
+
+  if (!smtpServer || !smtpPort || !smtpUsername || !smtpPassword) {
+    throw new Error('SMTP configuration is incomplete. Please check SMTP_SERVER, SMTP_PORT, SMTP_USERNAME, and SMTP_PASSWORD environment variables.');
   }
-  return new Resend(process.env.RESEND_API_KEY);
+
+  const port = parseInt(smtpPort, 10);
+  const isSecure = smtpSecurity === 'SSL' || port === 465;
+
+  return nodemailer.createTransport({
+    host: smtpServer,
+    port: port,
+    secure: isSecure, // true for 465, false for other ports
+    auth: {
+      user: smtpUsername,
+      pass: smtpPassword,
+    },
+    ...(smtpSecurity === 'TLS' && !isSecure ? { requireTLS: true } : {}),
+  });
+}
+
+function getFromAddress(): string {
+  // Use SMTP_FROM_ADDRESS if available, otherwise fall back to EMAIL_FROM_ADDRESS
+  const fromAddress = process.env.SMTP_FROM_ADDRESS || process.env.EMAIL_FROM_ADDRESS;
+  if (!fromAddress) {
+    throw new Error('SMTP_FROM_ADDRESS or EMAIL_FROM_ADDRESS is not configured');
+  }
+  return fromAddress;
 }
 
 interface SendInvoiceEmailParams {
@@ -84,7 +112,28 @@ export async function sendInvoiceEmail({ to, invoiceNumber, type, paymentLink }:
         throw new Error('Invoice not found or access denied');
       }
       
-      const pdf = await exportInvoicePdfBuffer(invoice.id);
+      // Fetch bank account if company exists
+      let bankAccount = null;
+      if (invoice.company) {
+        const { data: bankData } = await supabase
+          .from('BankAccount')
+          .select('*')
+          .eq('companyId', invoice.company.id)
+          .limit(1)
+          .single();
+        bankAccount = bankData;
+      }
+      
+      // Prepare full invoice data for PDF generation (same format as export-pdf route)
+      const fullInvoice = {
+        ...invoice,
+        company: invoice.company ? { ...invoice.company, bankAccount } : null,
+        items: invoice.items || [],
+        isOriginal: true,
+      };
+      
+      // Pass invoice data directly to avoid HTTP request (server-side)
+      const pdf = await exportInvoicePdfBuffer(invoice.id, fullInvoice);
       attachments.push({
         filename: pdf.filename,
         content: pdf.buffer,
@@ -93,16 +142,18 @@ export async function sendInvoiceEmail({ to, invoiceNumber, type, paymentLink }:
       console.error('PDF not attached:', err);
     }
 
-    const resend = getResend();
-    const data = await resend.emails.send({
-      from: process.env.EMAIL_FROM_ADDRESS!,
+    const transporter = getSmtpTransporter();
+    const mailOptions = {
+      from: getFromAddress(),
       to,
       subject,
       html: content,
-      ...(attachments.length > 0 ? { attachments } : {}),
-    });
+      attachments: attachments.length > 0 ? attachments : undefined,
+    };
 
-    return { success: true, data };
+    const info = await transporter.sendMail(mailOptions);
+
+    return { success: true, data: info };
   } catch (error) {
     console.error('Error sending invoice email:', error);
     throw error;
@@ -127,9 +178,16 @@ export async function sendPaymentConfirmationEmail({
   try {
     const currencySymbol = '€';
     
-    const resend = getResend();
-    await resend.emails.send({
-      from: `${process.env.NEXT_PUBLIC_APP_NAME} <invoices@${process.env.NEXT_PUBLIC_APP_DOMAIN}>`,
+    const transporter = getSmtpTransporter();
+    const fromAddress = getFromAddress();
+    
+    // Format from address with app name if available
+    const from = process.env.NEXT_PUBLIC_APP_NAME && process.env.NEXT_PUBLIC_APP_DOMAIN
+      ? `${process.env.NEXT_PUBLIC_APP_NAME} <${fromAddress}>`
+      : fromAddress;
+
+    await transporter.sendMail({
+      from,
       to,
       subject: `Потвърждение за плащане на фактура #${invoiceNumber}`,
       html: `
@@ -168,9 +226,16 @@ export async function sendInvoiceWithoutPaymentLink({
   try {
     const currencySymbol = '€';
     
-    const resend = getResend();
-    await resend.emails.send({
-      from: `${process.env.NEXT_PUBLIC_APP_NAME} <invoices@${process.env.NEXT_PUBLIC_APP_DOMAIN}>`,
+    const transporter = getSmtpTransporter();
+    const fromAddress = getFromAddress();
+    
+    // Format from address with app name if available
+    const from = process.env.NEXT_PUBLIC_APP_NAME && process.env.NEXT_PUBLIC_APP_DOMAIN
+      ? `${process.env.NEXT_PUBLIC_APP_NAME} <${fromAddress}>`
+      : fromAddress;
+
+    await transporter.sendMail({
+      from,
       to,
       subject: `Фактура #${invoiceNumber} от ${companyName}`,
       html: `
@@ -213,9 +278,16 @@ export async function sendInvoiceWithPaymentDetails({
   try {
     const currencySymbol = '€';
     
-    const resend = getResend();
-    await resend.emails.send({
-      from: `${process.env.NEXT_PUBLIC_APP_NAME} <invoices@${process.env.NEXT_PUBLIC_APP_DOMAIN}>`,
+    const transporter = getSmtpTransporter();
+    const fromAddress = getFromAddress();
+    
+    // Format from address with app name if available
+    const from = process.env.NEXT_PUBLIC_APP_NAME && process.env.NEXT_PUBLIC_APP_DOMAIN
+      ? `${process.env.NEXT_PUBLIC_APP_NAME} <${fromAddress}>`
+      : fromAddress;
+
+    await transporter.sendMail({
+      from,
       to,
       subject: `Фактура #${invoiceNumber} от ${companyName} - Информация за плащане`,
       html: `
@@ -262,4 +334,4 @@ export async function sendInvoiceWithPaymentDetails({
     console.error('Error sending invoice email:', error);
     throw error;
   }
-} 
+}

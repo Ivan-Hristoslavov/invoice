@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 import { APP_NAME } from '@/config/constants';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://facturapro.bg';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://invoicy.bg';
 
   return [
     {

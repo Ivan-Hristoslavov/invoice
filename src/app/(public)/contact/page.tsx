@@ -11,7 +11,7 @@ import { APP_NAME } from "@/config/constants";
 
 export const metadata: Metadata = genMeta({
   title: "Контакти",
-  description: "Свържете се с екипа на FacturaPro. Отговорим на всички ваши въпроси",
+  description: "Свържете се с екипа на Invoicy. Отговорим на всички ваши въпроси",
 });
 
 export default function ContactPage() {
@@ -85,8 +85,8 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <div className="font-semibold mb-1">Имейл</div>
-                    <a href="mailto:info@facturapro.bg" className="text-muted-foreground hover:text-emerald-600 transition-colors">
-                      info@facturapro.bg
+                    <a href="mailto:info@invoicy.bg" className="text-muted-foreground hover:text-emerald-600 transition-colors">
+                      info@invoicy.bg
                     </a>
                   </div>
                 </div>

@@ -29,7 +29,7 @@ export async function POST(
         *,
         items:InvoiceItem(*),
         client:Client(id, name),
-        company:Company(id, name)
+        company:Company(id, name, bulstatNumber)
       `)
       .eq("id", id)
       .eq("userId", session.user.id)
@@ -66,14 +66,27 @@ export async function POST(
       // No body provided, use default reason
     }
 
-    // Generate credit note number
+    // Generate credit note number using Bulgarian format (per-user, like invoices)
+    const { generateBulgarianInvoiceNumber } = await import("@/lib/bulgarian-invoice");
     const currentYear = new Date().getFullYear();
+    const startOfYear = new Date(currentYear, 0, 1).toISOString();
+    
+    // Count credit notes for this user in the current year
     const { count: creditNoteCount } = await supabaseAdmin
       .from("CreditNote")
       .select("*", { count: "exact", head: true })
-      .eq("companyId", invoice.companyId);
+      .eq("userId", session.user.id)
+      .gte("createdAt", startOfYear);
     
-    const creditNoteNumber = `CN-${currentYear}-${((creditNoteCount || 0) + 1).toString().padStart(6, '0')}`;
+    const sequence = (creditNoteCount || 0) + 1;
+    // Get company EIK for Bulgarian numbering format
+    const { data: company } = await supabaseAdmin
+      .from("Company")
+      .select("bulstatNumber")
+      .eq("id", invoice.companyId)
+      .single();
+    const companyEik = company?.bulstatNumber || undefined;
+    const creditNoteNumber = generateBulgarianInvoiceNumber(sequence, companyEik, 'credit-note');
 
     // Create credit note
     const creditNoteId = cuid();

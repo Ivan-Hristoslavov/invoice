@@ -19,6 +19,18 @@ interface KeyboardShortcutsHelpProps {
 
 export function KeyboardShortcutsHelp({ trigger }: KeyboardShortcutsHelpProps) {
   const [open, setOpen] = React.useState(false);
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  // Check if mobile on mount and resize
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024); // lg breakpoint
+    };
+    
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // Open with ? key
   React.useEffect(() => {
@@ -45,11 +57,18 @@ export function KeyboardShortcutsHelp({ trigger }: KeyboardShortcutsHelpProps) {
       {trigger ? (
         <DialogTrigger asChild>{trigger}</DialogTrigger>
       ) : (
-        <DialogTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8" title="Keyboard shortcuts">
-            <Keyboard className="h-4 w-4" />
-          </Button>
-        </DialogTrigger>
+        isMobile && (
+          <DialogTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8" 
+              title="Keyboard shortcuts"
+            >
+              <Keyboard className="h-4 w-4" />
+            </Button>
+          </DialogTrigger>
+        )
       )}
       <DialogContent className="max-w-md">
         <DialogHeader>

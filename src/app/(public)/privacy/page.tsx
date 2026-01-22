@@ -8,7 +8,7 @@ import { APP_NAME } from "@/config/constants";
 
 export const metadata: Metadata = genMeta({
   title: "Политика за поверителност",
-  description: "Политиката за поверителност на FacturaPro",
+  description: "Политиката за поверителност на Invoicy",
 });
 
 export default function PrivacyPage() {

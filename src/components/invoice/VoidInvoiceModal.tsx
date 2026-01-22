@@ -83,7 +83,7 @@ export function VoidInvoiceModal({
       onClick={handleOverlayClick}
     >
       <div
-        className="relative bg-background border rounded-lg shadow-lg w-full max-w-md mx-4 p-6 animate-in zoom-in-95 slide-in-from-bottom-2"
+        className="glass-card relative rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 animate-in zoom-in-95 slide-in-from-bottom-2"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
@@ -98,8 +98,8 @@ export function VoidInvoiceModal({
 
         {/* Header */}
         <div className="flex flex-col items-center text-center mb-6">
-          <div className="rounded-full bg-orange-100 dark:bg-orange-950/30 p-3 mb-4">
-            <Ban className="h-8 w-8 text-orange-600 dark:text-orange-500" />
+          <div className="rounded-full bg-purple-100 dark:bg-purple-950/30 p-3 mb-4">
+            <Ban className="h-8 w-8 text-purple-600 dark:text-purple-500" />
           </div>
           <h2 className="text-xl font-semibold mb-2">
             Анулиране на чернова
@@ -113,14 +113,14 @@ export function VoidInvoiceModal({
         </div>
 
         {/* Info box */}
-        <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/50 rounded-lg p-4 mb-6">
+        <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-900/50 rounded-lg p-4 mb-6">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-500 flex-shrink-0 mt-0.5" />
+            <AlertTriangle className="h-5 w-5 text-purple-600 dark:text-purple-500 flex-shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <p className="text-sm font-medium text-orange-900 dark:text-orange-200">
+              <p className="text-sm font-medium text-purple-900 dark:text-purple-200">
                 Какво е анулиране?
               </p>
-              <p className="text-sm text-orange-800 dark:text-orange-300">
+              <p className="text-sm text-purple-800 dark:text-purple-300">
                 Фактурата ще бъде маркирана като анулирана, но ще остане видима
                 в списъка. Можете да я изтриете по-късно, ако желаете.
               </p>
@@ -162,7 +162,7 @@ export function VoidInvoiceModal({
           </Button>
           <Button
             variant="solid"
-            color="orange"
+            color="purple"
             onClick={handleConfirm}
             disabled={isLoading || !reason.trim()}
             size="3"

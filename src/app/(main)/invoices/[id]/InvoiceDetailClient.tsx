@@ -300,7 +300,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
       case "PAID": // PAID in DB = ISSUED in app
         return <CheckCircle className="h-4 w-4 text-emerald-500" />;
       case "VOIDED":
-        return <XCircle className="h-4 w-4 text-slate-500" />;
+        return <XCircle className="h-4 w-4 text-purple-500" />;
       case "CANCELLED":
         return <XCircle className="h-4 w-4 text-red-500" />;
       default:
@@ -316,7 +316,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
       case "PAID": // PAID in DB = ISSUED in app
         return "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800";
       case "VOIDED":
-        return "bg-slate-100 text-slate-600 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700";
+        return "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800";
       case "CANCELLED":
         return "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800";
       default:

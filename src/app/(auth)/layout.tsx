@@ -186,41 +186,50 @@ export default function AuthLayout({
 
       {/* Right side - Form with full section animation */}
       <div className="w-full lg:w-1/2 relative overflow-hidden bg-background">
-        {/* Animated Background - Full Section */}
+        {/* Animated Background - Glassmorphism style */}
         <div className="absolute inset-0">
           {/* Base gradient */}
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" />
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-100 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" />
           
-          {/* Animated circles */}
+          {/* Vibrant animated blobs */}
           <motion.div 
-            className="absolute -top-40 -right-40 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-3xl"
+            className="absolute -top-20 -right-20 w-[600px] h-[600px] rounded-full blur-3xl"
+            style={{ background: 'radial-gradient(circle, rgba(16, 185, 129, 0.4) 0%, rgba(20, 184, 166, 0.2) 40%, transparent 70%)' }}
             animate={{ 
-              scale: [1, 1.3, 1],
+              scale: [1, 1.2, 1],
               x: [0, 40, 0],
               y: [0, -30, 0]
             }}
             transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
           />
           <motion.div 
-            className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-3xl"
+            className="absolute -bottom-20 -left-20 w-[500px] h-[500px] rounded-full blur-3xl"
+            style={{ background: 'radial-gradient(circle, rgba(59, 130, 246, 0.35) 0%, rgba(99, 102, 241, 0.2) 40%, transparent 70%)' }}
             animate={{ 
-              scale: [1.3, 1, 1.3],
+              scale: [1.2, 1, 1.2],
               x: [0, -40, 0],
               y: [0, 30, 0]
             }}
             transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
           />
           <motion.div 
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-slate-200/30 dark:bg-slate-700/10 rounded-full blur-3xl"
+            className="absolute top-1/2 left-1/3 w-[400px] h-[400px] rounded-full blur-3xl"
+            style={{ background: 'radial-gradient(circle, rgba(168, 85, 247, 0.3) 0%, transparent 60%)' }}
             animate={{ 
-              scale: [1, 1.2, 1],
-              opacity: [0.3, 0.6, 0.3]
+              scale: [1, 1.15, 1],
+              opacity: [0.5, 0.8, 0.5]
             }}
             transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
           />
-          
-          {/* Subtle grid pattern */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#00000005_1px,transparent_1px),linear-gradient(to_bottom,#00000005_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:32px_32px]" />
+          <motion.div 
+            className="absolute top-1/4 right-1/4 w-[300px] h-[300px] rounded-full blur-3xl"
+            style={{ background: 'radial-gradient(circle, rgba(236, 72, 153, 0.25) 0%, transparent 60%)' }}
+            animate={{ 
+              scale: [1.1, 1, 1.1],
+              y: [0, 20, 0]
+            }}
+            transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+          />
         </div>
 
         {/* Form Container */}
@@ -261,12 +270,12 @@ export default function AuthLayout({
               </Link>
             </motion.div>
             
-            {/* Form Card */}
+            {/* Form Card - Glassmorphism */}
             <motion.div 
               initial={{ opacity: 0, y: 30, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-              className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl p-8 sm:p-10 shadow-2xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-slate-200/50 dark:border-slate-700/50 overflow-visible"
+              className="glass-card rounded-3xl p-8 sm:p-10 shadow-2xl overflow-visible"
             >
               {children}
             </motion.div>

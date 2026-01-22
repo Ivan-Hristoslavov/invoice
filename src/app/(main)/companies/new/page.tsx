@@ -619,14 +619,14 @@ export default function NewCompanyPage() {
                 </div>
 
                 <Card className="overflow-hidden border-2">
-                  <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-6">
+                  <div className="p-6">
                     <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-xl bg-white/20 flex items-center justify-center">
+                      <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center">
                         <Building2 className="h-8 w-8" />
                       </div>
                       <div>
                         <h3 className="text-2xl font-bold">{formValues.name || "Без име"}</h3>
-                        {formValues.email && <p className="text-white/80">{formValues.email}</p>}
+                        {formValues.email && <p className="text-muted-foreground">{formValues.email}</p>}
                       </div>
                     </div>
                   </div>

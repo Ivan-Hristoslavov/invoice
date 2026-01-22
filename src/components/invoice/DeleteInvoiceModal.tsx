@@ -18,13 +18,34 @@ export function DeleteInvoiceModal({
   invoiceNumber,
 }: DeleteInvoiceModalProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
+
+  // Start countdown when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setCountdown(3);
+      const interval = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev === null || prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(interval);
+    } else {
+      setCountdown(null);
+    }
+  }, [isOpen]);
 
   // Handle ESC key to close
   useEffect(() => {
     if (!isOpen) return;
 
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !isLoading) {
+      if (e.key === "Escape" && !isLoading && countdown === 0) {
         onClose();
       }
     };
@@ -37,9 +58,11 @@ export function DeleteInvoiceModal({
       document.removeEventListener("keydown", handleEscape);
       document.body.style.overflow = "unset";
     };
-  }, [isOpen, isLoading, onClose]);
+  }, [isOpen, isLoading, countdown, onClose]);
 
   const handleConfirm = async () => {
+    if (countdown !== 0 || isLoading) return;
+    
     setIsLoading(true);
     try {
       await onConfirm();
@@ -52,12 +75,14 @@ export function DeleteInvoiceModal({
   };
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget && !isLoading) {
+    if (e.target === e.currentTarget && !isLoading && countdown === 0) {
       onClose();
     }
   };
 
   if (!isOpen) return null;
+
+  const isDeleteEnabled = countdown === 0 && !isLoading;
 
   return (
     <div
@@ -65,14 +90,14 @@ export function DeleteInvoiceModal({
       onClick={handleOverlayClick}
     >
       <div
-        className="relative bg-background border rounded-lg shadow-lg w-full max-w-md mx-4 p-6 animate-in zoom-in-95 slide-in-from-bottom-2"
+        className="glass-card relative rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 animate-in zoom-in-95 slide-in-from-bottom-2"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
         <button
           onClick={onClose}
-          disabled={isLoading}
-          className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100 transition-opacity focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
+          disabled={isLoading || countdown !== 0}
+          className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100 transition-opacity focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-30"
           aria-label="Close"
         >
           <X className="h-4 w-4" />
@@ -112,12 +137,24 @@ export function DeleteInvoiceModal({
           </div>
         </div>
 
+        {/* Countdown display */}
+        {countdown !== null && countdown > 0 && (
+          <div className="flex flex-col items-center justify-center mb-6">
+            <div className="text-6xl font-bold text-red-600 dark:text-red-500 mb-2 animate-pulse">
+              {countdown}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Бутонът за изтриване ще стане активен след {countdown} секунди
+            </p>
+          </div>
+        )}
+
         {/* Buttons */}
         <div className="flex flex-row justify-between items-center gap-4 border-t pt-6">
           <Button
             variant="ghost"
             onClick={onClose}
-            disabled={isLoading}
+            disabled={isLoading || countdown !== 0}
             size="3"
             className="flex-1"
           >
@@ -127,10 +164,10 @@ export function DeleteInvoiceModal({
             variant="solid"
             color="red"
             onClick={handleConfirm}
-            disabled={isLoading}
+            disabled={!isDeleteEnabled}
             size="3"
             loading={isLoading}
-            className="flex-1"
+            className="flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {!isLoading && (
               <>

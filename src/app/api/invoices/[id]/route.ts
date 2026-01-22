@@ -253,14 +253,6 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
       );
     }
     
-    // Only allow deletion of DRAFT invoices
-    if (existingInvoice.status !== "DRAFT") {
-      return NextResponse.json(
-        { error: "Можете да изтриете само фактури в статус DRAFT. За отмяна на издадена фактура използвайте функцията за създаване на кредитно известие." },
-        { status: 400 }
-      );
-    }
-    
     // Delete related invoice items (cascade should handle this, but we do it explicitly)
     await supabase
       .from("InvoiceItem")

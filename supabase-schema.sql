@@ -1,23 +1,53 @@
--- CreateEnum
-CREATE TYPE "InvoiceStatus" AS ENUM ('DRAFT', 'UNPAID', 'PAID', 'OVERDUE', 'CANCELLED');
+-- CreateEnum: InvoiceStatus (only if it doesn't exist)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'InvoiceStatus') THEN
+        CREATE TYPE "InvoiceStatus" AS ENUM ('DRAFT', 'UNPAID', 'PAID', 'OVERDUE', 'CANCELLED');
+    END IF;
+END $$;
 
--- CreateEnum
-CREATE TYPE "PaymentMethod" AS ENUM ('BANK_TRANSFER', 'CASH', 'CREDIT_CARD', 'APPLE_PAY', 'GOOGLE_PAY', 'WIRE_TRANSFER', 'OTHER');
+-- CreateEnum: PaymentMethod (only if it doesn't exist)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'PaymentMethod') THEN
+        CREATE TYPE "PaymentMethod" AS ENUM ('BANK_TRANSFER', 'CASH', 'CREDIT_CARD', 'APPLE_PAY', 'GOOGLE_PAY', 'WIRE_TRANSFER', 'OTHER');
+    END IF;
+END $$;
 
--- CreateEnum
-CREATE TYPE "Role" AS ENUM ('ADMIN', 'OWNER', 'MANAGER', 'ACCOUNTANT', 'VIEWER');
+-- CreateEnum: Role (only if it doesn't exist)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'Role') THEN
+        CREATE TYPE "Role" AS ENUM ('ADMIN', 'OWNER', 'MANAGER', 'ACCOUNTANT', 'VIEWER');
+    END IF;
+END $$;
 
--- CreateEnum
-CREATE TYPE "SubscriptionStatus" AS ENUM ('ACTIVE', 'PAST_DUE', 'UNPAID', 'CANCELED', 'INCOMPLETE', 'INCOMPLETE_EXPIRED', 'TRIALING', 'PAUSED');
+-- CreateEnum: SubscriptionStatus (only if it doesn't exist)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'SubscriptionStatus') THEN
+        CREATE TYPE "SubscriptionStatus" AS ENUM ('ACTIVE', 'PAST_DUE', 'UNPAID', 'CANCELED', 'INCOMPLETE', 'INCOMPLETE_EXPIRED', 'TRIALING', 'PAUSED');
+    END IF;
+END $$;
 
--- CreateEnum
-CREATE TYPE "SubscriptionPlan" AS ENUM ('BASIC', 'PRO', 'VIP');
+-- CreateEnum: SubscriptionPlan (only if it doesn't exist)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'SubscriptionPlan') THEN
+        CREATE TYPE "SubscriptionPlan" AS ENUM ('BASIC', 'PRO', 'VIP');
+    END IF;
+END $$;
 
--- CreateEnum
-CREATE TYPE "PaymentStatus" AS ENUM ('PAID', 'UNPAID', 'FAILED', 'PENDING', 'REFUNDED', 'VOID');
+-- CreateEnum: PaymentStatus (only if it doesn't exist)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'PaymentStatus') THEN
+        CREATE TYPE "PaymentStatus" AS ENUM ('PAID', 'UNPAID', 'FAILED', 'PENDING', 'REFUNDED', 'VOID');
+    END IF;
+END $$;
 
--- CreateTable
-CREATE TABLE "User" (
+-- CreateTable: User (only if it doesn't exist)
+CREATE TABLE IF NOT EXISTS "User" (
     "id" TEXT NOT NULL,
     "name" TEXT,
     "email" TEXT,
@@ -34,7 +64,7 @@ CREATE TABLE "User" (
 );
 
 -- CreateTable
-CREATE TABLE "Account" (
+CREATE TABLE IF NOT EXISTS "Account" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "type" TEXT NOT NULL,
@@ -52,7 +82,7 @@ CREATE TABLE "Account" (
 );
 
 -- CreateTable
-CREATE TABLE "Session" (
+CREATE TABLE IF NOT EXISTS "Session" (
     "id" TEXT NOT NULL,
     "sessionToken" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -62,14 +92,14 @@ CREATE TABLE "Session" (
 );
 
 -- CreateTable
-CREATE TABLE "VerificationToken" (
+CREATE TABLE IF NOT EXISTS "VerificationToken" (
     "identifier" TEXT NOT NULL,
     "token" TEXT NOT NULL,
     "expires" TIMESTAMP(3) NOT NULL
 );
 
 -- CreateTable
-CREATE TABLE "Company" (
+CREATE TABLE IF NOT EXISTS "Company" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "email" TEXT,
@@ -107,7 +137,7 @@ CREATE TABLE "Company" (
 );
 
 -- CreateTable
-CREATE TABLE "Client" (
+CREATE TABLE IF NOT EXISTS "Client" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "email" TEXT,
@@ -134,7 +164,7 @@ CREATE TABLE "Client" (
 );
 
 -- CreateTable
-CREATE TABLE "Product" (
+CREATE TABLE IF NOT EXISTS "Product" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
@@ -149,7 +179,7 @@ CREATE TABLE "Product" (
 );
 
 -- CreateTable
-CREATE TABLE "ProductTranslation" (
+CREATE TABLE IF NOT EXISTS "ProductTranslation" (
     "id" TEXT NOT NULL,
     "productId" TEXT NOT NULL,
     "locale" TEXT NOT NULL,
@@ -161,7 +191,7 @@ CREATE TABLE "ProductTranslation" (
 );
 
 -- CreateTable
-CREATE TABLE "Invoice" (
+CREATE TABLE IF NOT EXISTS "Invoice" (
     "id" TEXT NOT NULL,
     "invoiceNumber" TEXT NOT NULL,
     "clientId" TEXT NOT NULL,
@@ -198,7 +228,7 @@ CREATE TABLE "Invoice" (
 );
 
 -- CreateTable
-CREATE TABLE "InvoiceItem" (
+CREATE TABLE IF NOT EXISTS "InvoiceItem" (
     "id" TEXT NOT NULL,
     "invoiceId" TEXT NOT NULL,
     "productId" TEXT,
@@ -214,7 +244,7 @@ CREATE TABLE "InvoiceItem" (
 );
 
 -- CreateTable
-CREATE TABLE "Payment" (
+CREATE TABLE IF NOT EXISTS "Payment" (
     "id" TEXT NOT NULL,
     "invoiceId" TEXT NOT NULL,
     "amount" DECIMAL(10,2) NOT NULL,
@@ -231,7 +261,7 @@ CREATE TABLE "Payment" (
 );
 
 -- CreateTable
-CREATE TABLE "Document" (
+CREATE TABLE IF NOT EXISTS "Document" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "size" INTEGER NOT NULL,
@@ -245,7 +275,7 @@ CREATE TABLE "Document" (
 );
 
 -- CreateTable
-CREATE TABLE "Permission" (
+CREATE TABLE IF NOT EXISTS "Permission" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
@@ -256,7 +286,7 @@ CREATE TABLE "Permission" (
 );
 
 -- CreateTable
-CREATE TABLE "UserRole" (
+CREATE TABLE IF NOT EXISTS "UserRole" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "role" "Role" NOT NULL DEFAULT 'VIEWER',
@@ -268,7 +298,7 @@ CREATE TABLE "UserRole" (
 );
 
 -- CreateTable
-CREATE TABLE "RolePermission" (
+CREATE TABLE IF NOT EXISTS "RolePermission" (
     "id" TEXT NOT NULL,
     "role" "Role" NOT NULL,
     "permissionId" TEXT NOT NULL,
@@ -279,7 +309,7 @@ CREATE TABLE "RolePermission" (
 );
 
 -- CreateTable
-CREATE TABLE "Subscription" (
+CREATE TABLE IF NOT EXISTS "Subscription" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "stripeSubscriptionId" TEXT NOT NULL,
@@ -297,7 +327,7 @@ CREATE TABLE "Subscription" (
 );
 
 -- CreateTable
-CREATE TABLE "SubscriptionPayment" (
+CREATE TABLE IF NOT EXISTS "SubscriptionPayment" (
     "id" TEXT NOT NULL,
     "subscriptionId" TEXT NOT NULL,
     "stripeInvoiceId" TEXT NOT NULL,
@@ -312,7 +342,7 @@ CREATE TABLE "SubscriptionPayment" (
 );
 
 -- CreateTable
-CREATE TABLE "SubscriptionHistory" (
+CREATE TABLE IF NOT EXISTS "SubscriptionHistory" (
     "id" TEXT NOT NULL,
     "subscriptionId" TEXT NOT NULL,
     "status" "SubscriptionStatus" NOT NULL,
@@ -323,7 +353,7 @@ CREATE TABLE "SubscriptionHistory" (
 );
 
 -- CreateTable
-CREATE TABLE "WebhookEventLog" (
+CREATE TABLE IF NOT EXISTS "WebhookEventLog" (
     "id" TEXT NOT NULL,
     "eventType" TEXT NOT NULL,
     "eventId" TEXT NOT NULL,
@@ -335,110 +365,156 @@ CREATE TABLE "WebhookEventLog" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+CREATE UNIQUE INDEX IF NOT EXISTS "User_email_key" ON "User"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_stripeCustomerId_key" ON "User"("stripeCustomerId");
+CREATE UNIQUE INDEX IF NOT EXISTS "User_stripeCustomerId_key" ON "User"("stripeCustomerId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Account_provider_providerAccountId_key" ON "Account"("provider", "providerAccountId");
+CREATE UNIQUE INDEX IF NOT EXISTS "Account_provider_providerAccountId_key" ON "Account"("provider", "providerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Session_sessionToken_key" ON "Session"("sessionToken");
+CREATE UNIQUE INDEX IF NOT EXISTS "Session_sessionToken_key" ON "Session"("sessionToken");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "VerificationToken_token_key" ON "VerificationToken"("token");
+CREATE UNIQUE INDEX IF NOT EXISTS "VerificationToken_token_key" ON "VerificationToken"("token");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "VerificationToken_identifier_token_key" ON "VerificationToken"("identifier", "token");
+CREATE UNIQUE INDEX IF NOT EXISTS "VerificationToken_identifier_token_key" ON "VerificationToken"("identifier", "token");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ProductTranslation_productId_locale_key" ON "ProductTranslation"("productId", "locale");
+CREATE UNIQUE INDEX IF NOT EXISTS "ProductTranslation_productId_locale_key" ON "ProductTranslation"("productId", "locale");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Invoice_invoiceNumber_companyId_key" ON "Invoice"("invoiceNumber", "companyId");
+CREATE UNIQUE INDEX IF NOT EXISTS "Invoice_invoiceNumber_companyId_key" ON "Invoice"("invoiceNumber", "companyId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Permission_name_key" ON "Permission"("name");
+CREATE UNIQUE INDEX IF NOT EXISTS "Permission_name_key" ON "Permission"("name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "UserRole_userId_companyId_key" ON "UserRole"("userId", "companyId");
+CREATE UNIQUE INDEX IF NOT EXISTS "UserRole_userId_companyId_key" ON "UserRole"("userId", "companyId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "RolePermission_role_permissionId_key" ON "RolePermission"("role", "permissionId");
+CREATE UNIQUE INDEX IF NOT EXISTS "RolePermission_role_permissionId_key" ON "RolePermission"("role", "permissionId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Subscription_stripeSubscriptionId_key" ON "Subscription"("stripeSubscriptionId");
+CREATE UNIQUE INDEX IF NOT EXISTS "Subscription_stripeSubscriptionId_key" ON "Subscription"("stripeSubscriptionId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "SubscriptionPayment_stripeInvoiceId_key" ON "SubscriptionPayment"("stripeInvoiceId");
+CREATE UNIQUE INDEX IF NOT EXISTS "SubscriptionPayment_stripeInvoiceId_key" ON "SubscriptionPayment"("stripeInvoiceId");
 
 -- CreateIndex
-CREATE INDEX "WebhookEventLog_eventType_status_idx" ON "WebhookEventLog"("eventType", "status");
+CREATE INDEX IF NOT EXISTS "WebhookEventLog_eventType_status_idx" ON "WebhookEventLog"("eventType", "status");
 
 -- CreateIndex
-CREATE INDEX "WebhookEventLog_eventId_idx" ON "WebhookEventLog"("eventId");
+CREATE INDEX IF NOT EXISTS "WebhookEventLog_eventId_idx" ON "WebhookEventLog"("eventId");
 
--- AddForeignKey
-ALTER TABLE "Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Company" ADD CONSTRAINT "Company_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Client" ADD CONSTRAINT "Client_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Product" ADD CONSTRAINT "Product_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "ProductTranslation" ADD CONSTRAINT "ProductTranslation_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Invoice" ADD CONSTRAINT "Invoice_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "Client"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Invoice" ADD CONSTRAINT "Invoice_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "Company"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Invoice" ADD CONSTRAINT "Invoice_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "InvoiceItem" ADD CONSTRAINT "InvoiceItem_invoiceId_fkey" FOREIGN KEY ("invoiceId") REFERENCES "Invoice"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "InvoiceItem" ADD CONSTRAINT "InvoiceItem_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Payment" ADD CONSTRAINT "Payment_invoiceId_fkey" FOREIGN KEY ("invoiceId") REFERENCES "Invoice"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Document" ADD CONSTRAINT "Document_invoiceId_fkey" FOREIGN KEY ("invoiceId") REFERENCES "Invoice"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Document" ADD CONSTRAINT "Document_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "UserRole" ADD CONSTRAINT "UserRole_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "UserRole" ADD CONSTRAINT "UserRole_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "Company"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "RolePermission" ADD CONSTRAINT "RolePermission_permissionId_fkey" FOREIGN KEY ("permissionId") REFERENCES "Permission"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Subscription" ADD CONSTRAINT "Subscription_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "SubscriptionPayment" ADD CONSTRAINT "SubscriptionPayment_subscriptionId_fkey" FOREIGN KEY ("subscriptionId") REFERENCES "Subscription"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "SubscriptionHistory" ADD CONSTRAINT "SubscriptionHistory_subscriptionId_fkey" FOREIGN KEY ("subscriptionId") REFERENCES "Subscription"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- AddForeignKey: All foreign keys with existence checks
+DO $$ 
+BEGIN
+    -- Account -> User
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'Account_userId_fkey') THEN
+        ALTER TABLE "Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+    
+    -- Session -> User
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'Session_userId_fkey') THEN
+        ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+    
+    -- Company -> User
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'Company_userId_fkey') THEN
+        ALTER TABLE "Company" ADD CONSTRAINT "Company_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+    
+    -- Client -> User
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'Client_userId_fkey') THEN
+        ALTER TABLE "Client" ADD CONSTRAINT "Client_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+    
+    -- Product -> User
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'Product_userId_fkey') THEN
+        ALTER TABLE "Product" ADD CONSTRAINT "Product_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+    
+    -- ProductTranslation -> Product
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ProductTranslation_productId_fkey') THEN
+        ALTER TABLE "ProductTranslation" ADD CONSTRAINT "ProductTranslation_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+    
+    -- Invoice -> Client
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'Invoice_clientId_fkey') THEN
+        ALTER TABLE "Invoice" ADD CONSTRAINT "Invoice_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "Client"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+    
+    -- Invoice -> Company
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'Invoice_companyId_fkey') THEN
+        ALTER TABLE "Invoice" ADD CONSTRAINT "Invoice_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "Company"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+    
+    -- Invoice -> User
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'Invoice_userId_fkey') THEN
+        ALTER TABLE "Invoice" ADD CONSTRAINT "Invoice_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+    
+    -- InvoiceItem -> Invoice
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'InvoiceItem_invoiceId_fkey') THEN
+        ALTER TABLE "InvoiceItem" ADD CONSTRAINT "InvoiceItem_invoiceId_fkey" FOREIGN KEY ("invoiceId") REFERENCES "Invoice"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+    
+    -- InvoiceItem -> Product
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'InvoiceItem_productId_fkey') THEN
+        ALTER TABLE "InvoiceItem" ADD CONSTRAINT "InvoiceItem_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+    
+    -- Payment -> Invoice
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'Payment_invoiceId_fkey') THEN
+        ALTER TABLE "Payment" ADD CONSTRAINT "Payment_invoiceId_fkey" FOREIGN KEY ("invoiceId") REFERENCES "Invoice"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+    
+    -- Document -> Invoice
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'Document_invoiceId_fkey') THEN
+        ALTER TABLE "Document" ADD CONSTRAINT "Document_invoiceId_fkey" FOREIGN KEY ("invoiceId") REFERENCES "Invoice"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+    
+    -- Document -> User
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'Document_userId_fkey') THEN
+        ALTER TABLE "Document" ADD CONSTRAINT "Document_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+    
+    -- UserRole -> User
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'UserRole_userId_fkey') THEN
+        ALTER TABLE "UserRole" ADD CONSTRAINT "UserRole_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+    
+    -- UserRole -> Company
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'UserRole_companyId_fkey') THEN
+        ALTER TABLE "UserRole" ADD CONSTRAINT "UserRole_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "Company"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+    
+    -- RolePermission -> Permission
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'RolePermission_permissionId_fkey') THEN
+        ALTER TABLE "RolePermission" ADD CONSTRAINT "RolePermission_permissionId_fkey" FOREIGN KEY ("permissionId") REFERENCES "Permission"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+    
+    -- Subscription -> User
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'Subscription_userId_fkey') THEN
+        ALTER TABLE "Subscription" ADD CONSTRAINT "Subscription_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+    
+    -- SubscriptionPayment -> Subscription
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'SubscriptionPayment_subscriptionId_fkey') THEN
+        ALTER TABLE "SubscriptionPayment" ADD CONSTRAINT "SubscriptionPayment_subscriptionId_fkey" FOREIGN KEY ("subscriptionId") REFERENCES "Subscription"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+    
+    -- SubscriptionHistory -> Subscription
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'SubscriptionHistory_subscriptionId_fkey') THEN
+        ALTER TABLE "SubscriptionHistory" ADD CONSTRAINT "SubscriptionHistory_subscriptionId_fkey" FOREIGN KEY ("subscriptionId") REFERENCES "Subscription"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+END $$;
 
 
 -- Note: InvoiceSequence, CreditNote, CreditNoteItem, and AuditLog tables
 -- are created via separate migration file: supabase-migration-invoice-sequence.sql
+-- Note: DebitNote and DebitNoteItem tables
+-- are created via separate migration file: supabase-migration-debit-notes.sql

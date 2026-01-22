@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { APP_NAME, APP_DESCRIPTION, SEO_KEYWORDS } from "@/config/constants";
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://facturapro.bg';
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://invoicy.bg';
 
 export function generateMetadata({
   title,

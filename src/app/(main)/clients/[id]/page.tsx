@@ -11,7 +11,7 @@ import { Metadata } from "next";
 import { APP_NAME } from "@/config/constants";
 
 // Define the invoice status type
-type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'CANCELLED';
+type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'PAID' | 'VOIDED' | 'CANCELLED';
 
 // Define the invoice type
 interface Invoice {
@@ -243,11 +243,11 @@ export default async function ClientDetailPage(props: { params: { id: string } }
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b">
-                        <th className="text-left pb-3 px-2">Фактура</th>
-                        <th className="text-left pb-3 px-2">Дата</th>
-                        <th className="text-left pb-3 px-2">Сума</th>
-                        <th className="text-left pb-3 px-2">Статус</th>
+                      <tr className="border-b border-border/50">
+                        <th className="text-left pb-3 px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">Фактура</th>
+                        <th className="text-left pb-3 px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">Дата</th>
+                        <th className="text-left pb-3 px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">Сума</th>
+                        <th className="text-left pb-3 px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">Статус</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -339,22 +339,28 @@ export default async function ClientDetailPage(props: { params: { id: string } }
 function getStatusStyles(status: InvoiceStatus) {
   switch (status) {
     case "ISSUED":
-      return "bg-emerald-100 text-emerald-800";
+    case "PAID":
+      return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400";
     case "DRAFT":
-      return "bg-amber-100 text-amber-800";
+      return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400";
+    case "VOIDED":
+      return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400";
     case "CANCELLED":
-      return "bg-red-100 text-red-800";
+      return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
     default:
-      return "bg-gray-100 text-gray-800";
+      return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400";
   }
 }
 
 function getStatusText(status: InvoiceStatus) {
   switch (status) {
     case "ISSUED":
+    case "PAID":
       return "Издадена";
     case "DRAFT":
       return "Чернова";
+    case "VOIDED":
+      return "Анулирана";
     case "CANCELLED":
       return "Отказана";
     default:
