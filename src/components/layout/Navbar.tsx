@@ -56,10 +56,10 @@ export function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full glass-card !rounded-none !border-t-0 !border-l-0 !border-r-0">
+    <header className="sticky top-0 z-50 w-full glass-card !rounded-none !border-t-0 !border-l-0 !border-r-0" role="banner">
       <div className="flex items-center h-16">
         {/* Logo - Left side - Fixed width matching sidebar, starts from edge */}
-        <Link href="/dashboard" className="flex items-center justify-center gap-3 w-72 h-full shrink-0 border-r border-border/50">
+        <Link href="/dashboard" aria-label="Начална страница" className="flex items-center justify-center gap-3 w-72 h-full shrink-0 border-r border-border/50">
           <div className="h-10 w-10 rounded-xl bg-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-600/25">
             <FileText className="h-5 w-5 text-white" />
           </div>
@@ -74,6 +74,7 @@ export function Navbar() {
             variant="outline" 
             className="hidden md:flex h-10 px-3 gap-2 text-muted-foreground hover:text-foreground"
             onClick={() => setCommandPaletteOpen(true)}
+            aria-label="Отвори командна палитра (⌘K)"
           >
             <Command className="h-4 w-4" />
             <span className="text-sm">Търси...</span>
@@ -88,15 +89,16 @@ export function Navbar() {
             size="icon" 
             className="hidden sm:flex h-10 w-10 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20"
             title="Нова фактура"
+            aria-label="Нова фактура"
           >
             <Link href="/invoices/new">
-              <Plus className="h-5 w-5" />
+              <Plus className="h-5 w-5" aria-hidden="true" />
             </Link>
           </Button>
 
           {/* User Menu */}
           <DropdownMenu>
-            <DropdownMenuTrigger>
+            <DropdownMenuTrigger aria-label="Потребителско меню">
               <div className="h-10 pl-2 pr-3 gap-2 hover:bg-muted rounded-md flex items-center cursor-pointer">
                 <div className="h-8 w-8 rounded-full bg-emerald-600 flex items-center justify-center text-white text-sm font-semibold">
                   {session?.user?.name?.charAt(0).toUpperCase() || 'U'}
@@ -130,6 +132,7 @@ export function Navbar() {
                     <Switch 
                       checked={isDark}
                       onCheckedChange={handleThemeToggle}
+                      aria-label="Превключи тъмна тема"
                     />
                   )}
                   <Moon className="h-4 w-4 text-muted-foreground" />

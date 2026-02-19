@@ -117,6 +117,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isChangingStatus, setIsChangingStatus] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
   const [showIssueModal, setShowIssueModal] = useState(false);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [isLoadingAuditLogs, setIsLoadingAuditLogs] = useState(false);
@@ -289,6 +290,26 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
       toast.error("Грешка при отмяна на фактурата");
     } finally {
       setIsSendingEmail(false);
+    }
+  };
+
+  const handleDuplicateInvoice = async () => {
+    setIsDuplicating(true);
+    try {
+      const response = await fetch(`/api/invoices/${invoice.id}/duplicate`, { method: "POST" });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Грешка при дублиране");
+      }
+      const data = await response.json();
+      toast.success("Фактурата е дублирана успешно", {
+        description: `Нова чернова ${data.invoiceNumber} е създадена`,
+      });
+      router.push(`/invoices/${data.id}`);
+    } catch (error: any) {
+      toast.error(error.message || "Грешка при дублиране на фактурата");
+    } finally {
+      setIsDuplicating(false);
     }
   };
 
@@ -516,6 +537,15 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
           )}
             
           {/* Common actions */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDuplicateInvoice}
+            disabled={isDuplicating}
+          >
+            <Copy className="w-4 h-4 mr-1.5" />
+            {isDuplicating ? "..." : "Дублирай"}
+          </Button>
           <Button variant="outline" size="sm" onClick={handlePrintInvoice}>
             <Printer className="w-4 h-4 mr-1.5" />
             Принт

@@ -91,27 +91,9 @@ export default async function CreditNoteDetailPage({
       : Promise.resolve({ data: null, error: null }),
   ]);
 
-  // Handle errors and extract data
-  if (clientResult.error) {
-    console.error("Error fetching client:", clientResult.error);
-    console.error("Client ID:", creditNote.clientId);
-  }
-  if (companyResult.error) {
-    console.error("Error fetching company:", companyResult.error);
-    console.error("Company ID:", creditNote.companyId);
-  }
-
   const invoice = invoiceResult.data;
   const client = clientResult.data;
   const company = companyResult.data;
-
-  // Debug logging (remove in production if needed)
-  if (!client && creditNote.clientId) {
-    console.warn("Client not found for ID:", creditNote.clientId);
-  }
-  if (!company && creditNote.companyId) {
-    console.warn("Company not found for ID:", creditNote.companyId);
-  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('bg-BG', {

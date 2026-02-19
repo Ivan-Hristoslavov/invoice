@@ -14,14 +14,17 @@ import {
   Eye,
   MoreHorizontal,
   Sparkles,
-  ArrowUpRight
+  ArrowUpRight,
+  MinusCircle,
+  PlusCircle,
+  Activity,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Button as RadixButton } from "@radix-ui/themes";
 import { APP_NAME } from "@/config/constants";
 import { createAdminClient } from "@/lib/supabase/server";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { bg } from "date-fns/locale";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 
@@ -45,6 +48,33 @@ interface InvoiceWithClient {
   };
 }
 
+const actionLabels: Record<string, string> = {
+  CREATE: "Създаде",
+  UPDATE: "Обнови",
+  CANCEL: "Отмени",
+  SEND: "Изпрати",
+  EXPORT: "Експортира",
+  DELETE: "Изтри",
+};
+
+const entityLabels: Record<string, string> = {
+  INVOICE: "фактура",
+  CREDIT_NOTE: "кредитно известие",
+  DEBIT_NOTE: "дебитно известие",
+  CLIENT: "клиент",
+  COMPANY: "компания",
+  PRODUCT: "продукт",
+};
+
+function calcTrend(current: number, previous: number): { text: string; up: boolean } {
+  if (previous === 0) {
+    return current > 0 ? { text: "+100%", up: true } : { text: "Нов", up: true };
+  }
+  const pct = ((current - previous) / previous) * 100;
+  const sign = pct >= 0 ? "+" : "";
+  return { text: `${sign}${pct.toFixed(1)}%`, up: pct >= 0 };
+}
+
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   
@@ -63,15 +93,18 @@ export default async function DashboardPage() {
     .limit(5);
   
   // Get client data for the invoices
-  const clientIds = [...new Set((recentInvoicesData || []).map((inv: any) => inv.clientId))];
+  interface InvoiceRow { id: string; invoiceNumber: string; issueDate: string; dueDate: string; total: number; status: string; clientId: string; createdAt?: string; }
+  interface ClientRow { id: string; name: string; }
+
+  const clientIds = [...new Set((recentInvoicesData || []).map((inv: InvoiceRow) => inv.clientId))];
   const { data: clientsData } = await supabase
     .from("Client")
     .select("id, name")
     .in("id", clientIds.length > 0 ? clientIds : ['']);
   
-  const clientsMap = new Map((clientsData || []).map((c: any) => [c.id, c]));
+  const clientsMap = new Map((clientsData || []).map((c: ClientRow) => [c.id, c]));
   
-  const recentInvoices: InvoiceWithClient[] = (recentInvoicesData || []).map((inv: any) => {
+  const recentInvoices: InvoiceWithClient[] = (recentInvoicesData || []).map((inv: InvoiceRow) => {
     const client = clientsMap.get(inv.clientId);
     return {
       id: inv.id,
@@ -94,14 +127,11 @@ export default async function DashboardPage() {
     .eq("userId", session.user.id);
   
   // Calculate invoice counts
-  const invoiceCounts = (allInvoices || []).reduce((acc: any, invoice: any) => {
+  const invoiceCounts = (allInvoices || []).reduce((acc: Record<string, number>, invoice: InvoiceRow) => {
     const status = invoice.status as InvoiceStatus;
-    if (!acc[status]) {
-      acc[status] = 0;
-    }
-    acc[status]++;
+    acc[status] = (acc[status] || 0) + 1;
     return acc;
-  }, {});
+  }, {} as Record<string, number>);
   
   const counts = {
     total: allInvoices?.length || 0,
@@ -111,31 +141,93 @@ export default async function DashboardPage() {
   };
   
   // Get total from issued invoices
-  const issuedInvoices = (allInvoices || []).filter((inv: any) => inv.status === 'ISSUED');
-  const totalIssued = issuedInvoices.reduce((sum: number, inv: any) => sum + Number(inv.total || 0), 0);
+  const issuedInvoices = (allInvoices || []).filter((inv: InvoiceRow) => inv.status === 'ISSUED');
+  const totalIssued = issuedInvoices.reduce((sum: number, inv: InvoiceRow) => sum + Number(inv.total || 0), 0);
   
-  // This month's invoices
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
+  // Current month boundaries
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   
   const thisMonthInvoices = (allInvoices || []).filter(
-    (inv: any) => new Date(inv.createdAt) >= startOfMonth
+    (inv: InvoiceRow) => new Date(inv.createdAt!) >= startOfMonth
   );
   const thisMonthTotal = thisMonthInvoices
-    .filter((inv: any) => inv.status === 'ISSUED')
-    .reduce((sum: number, inv: any) => sum + Number(inv.total || 0), 0);
+    .filter((inv: InvoiceRow) => inv.status === 'ISSUED')
+    .reduce((sum: number, inv: InvoiceRow) => sum + Number(inv.total || 0), 0);
+
+  // Previous month invoices for trend calculation
+  const prevMonthInvoices = (allInvoices || []).filter(
+    (inv: InvoiceRow) => {
+      const d = new Date(inv.createdAt!);
+      return d >= startOfPrevMonth && d < startOfMonth;
+    }
+  );
+  const prevMonthTotal = prevMonthInvoices
+    .filter((inv: InvoiceRow) => inv.status === 'ISSUED')
+    .reduce((sum: number, inv: InvoiceRow) => sum + Number(inv.total || 0), 0);
+  const prevMonthIssuedTotal = prevMonthInvoices
+    .filter((inv: InvoiceRow) => inv.status === 'ISSUED')
+    .reduce((sum: number, inv: InvoiceRow) => sum + Number(inv.total || 0), 0);
+
+  // Overall issued total trend (current month issued vs prev month issued)
+  const currentMonthIssuedTotal = thisMonthInvoices
+    .filter((inv: InvoiceRow) => inv.status === 'ISSUED')
+    .reduce((sum: number, inv: InvoiceRow) => sum + Number(inv.total || 0), 0);
+  const totalTrend = calcTrend(currentMonthIssuedTotal, prevMonthIssuedTotal);
+
+  // This month total trend
+  const thisMonthTotalTrend = calcTrend(thisMonthTotal, prevMonthTotal);
+
+  // Invoice count trend
+  const thisMonthCount = thisMonthInvoices.length;
+  const prevMonthCount = prevMonthInvoices.length;
+  const countTrend = calcTrend(thisMonthCount, prevMonthCount);
   
-  // Get client and company counts
+  // Client counts and trend
   const { count: clientCount } = await supabase
     .from("Client")
     .select("*", { count: "exact", head: true })
     .eq("userId", session.user.id);
-  
+
+  const { count: clientsThisMonth } = await supabase
+    .from("Client")
+    .select("*", { count: "exact", head: true })
+    .eq("userId", session.user.id)
+    .gte("createdAt", startOfMonth.toISOString());
+
+  const { count: clientsPrevMonth } = await supabase
+    .from("Client")
+    .select("*", { count: "exact", head: true })
+    .eq("userId", session.user.id)
+    .gte("createdAt", startOfPrevMonth.toISOString())
+    .lt("createdAt", startOfMonth.toISOString());
+
+  const clientTrend = calcTrend(clientsThisMonth || 0, clientsPrevMonth || 0);
+
   const { count: companyCount } = await supabase
     .from("Company")
     .select("*", { count: "exact", head: true })
     .eq("userId", session.user.id);
+
+  // Credit note & debit note counts
+  const { count: creditNoteCount } = await supabase
+    .from("CreditNote")
+    .select("*", { count: "exact", head: true })
+    .eq("userId", session.user.id);
+
+  const { count: debitNoteCount } = await supabase
+    .from("DebitNote")
+    .select("*", { count: "exact", head: true })
+    .eq("userId", session.user.id);
+
+  // Audit log (last 5 entries)
+  const { data: auditLogs } = await supabase
+    .from("AuditLog")
+    .select("id, action, entityType, entityId, createdAt")
+    .eq("userId", session.user.id)
+    .order("createdAt", { ascending: false })
+    .limit(5);
 
   const stats = [
     {
@@ -144,8 +236,8 @@ export default async function DashboardPage() {
       currency: "€",
       description: "От издадени фактури",
       iconName: "euro",
-      trend: "+12.5%",
-      trendUp: true,
+      trend: totalTrend.text,
+      trendUp: totalTrend.up,
       gradient: "from-emerald-500 to-teal-600",
       bgGradient: "from-emerald-500/10 via-emerald-500/5 to-transparent",
       iconBg: "bg-emerald-500/20"
@@ -156,8 +248,8 @@ export default async function DashboardPage() {
       currency: "€",
       description: `${thisMonthInvoices.length} ${thisMonthInvoices.length === 1 ? 'фактура' : 'фактури'}`,
       iconName: "calendar",
-      trend: "+8.2%",
-      trendUp: true,
+      trend: thisMonthTotalTrend.text,
+      trendUp: thisMonthTotalTrend.up,
       gradient: "from-blue-500 to-indigo-600",
       bgGradient: "from-blue-500/10 via-blue-500/5 to-transparent",
       iconBg: "bg-blue-500/20"
@@ -168,8 +260,8 @@ export default async function DashboardPage() {
       currency: "",
       description: `${counts.issued} издадени, ${counts.draft} чернови`,
       iconName: "fileText",
-      trend: `+${counts.total}`,
-      trendUp: true,
+      trend: countTrend.text,
+      trendUp: countTrend.up,
       gradient: "from-violet-500 to-purple-600",
       bgGradient: "from-violet-500/10 via-violet-500/5 to-transparent",
       iconBg: "bg-violet-500/20"
@@ -180,8 +272,8 @@ export default async function DashboardPage() {
       currency: "",
       description: "Активни клиенти",
       iconName: "users",
-      trend: `+${clientCount || 0}`,
-      trendUp: true,
+      trend: clientTrend.text,
+      trendUp: clientTrend.up,
       gradient: "from-amber-500 to-orange-600",
       bgGradient: "from-amber-500/10 via-amber-500/5 to-transparent",
       iconBg: "bg-amber-500/20"
@@ -252,6 +344,30 @@ export default async function DashboardPage() {
               <div className="flex-1 text-left min-w-0">
                 <p className="small-text font-medium truncate">Нова фактура</p>
                 <p className="tiny-text text-muted-foreground hidden sm:block">Създайте фактура</p>
+              </div>
+            </Link>
+            <Link 
+              href="/credit-notes/new"
+              className="flex items-center w-full p-2.5 sm:p-3 rounded-lg sm:rounded-xl hover:bg-muted/50 transition-colors group"
+            >
+              <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center mr-2.5 sm:mr-3 shadow-sm">
+                <MinusCircle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+              </div>
+              <div className="flex-1 text-left min-w-0">
+                <p className="small-text font-medium truncate">Ново кредитно известие</p>
+                <p className="tiny-text text-muted-foreground hidden sm:block">Създайте кредитно известие</p>
+              </div>
+            </Link>
+            <Link 
+              href="/debit-notes/new"
+              className="flex items-center w-full p-2.5 sm:p-3 rounded-lg sm:rounded-xl hover:bg-muted/50 transition-colors group"
+            >
+              <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center mr-2.5 sm:mr-3 shadow-sm">
+                <PlusCircle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+              </div>
+              <div className="flex-1 text-left min-w-0">
+                <p className="small-text font-medium truncate">Ново дебитно известие</p>
+                <p className="tiny-text text-muted-foreground hidden sm:block">Създайте дебитно известие</p>
               </div>
             </Link>
             <Link 
@@ -373,6 +489,118 @@ export default async function DashboardPage() {
                     </div>
                   </Link>
                 ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Summary counts + Activity */}
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
+        {/* Credit & Debit Note Summary */}
+        <Card className="lg:col-span-1 border border-border/50 shadow-md">
+          <CardHeader className="pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
+            <CardTitle className="card-title">Известия</CardTitle>
+            <CardDescription className="card-description">Кредитни и дебитни известия</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 px-3 sm:px-6 pb-3 sm:pb-6">
+            <Link
+              href="/credit-notes"
+              className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/50 transition-all duration-200 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-sm">
+                  <MinusCircle className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="small-text font-medium">Кредитни известия</p>
+                  <p className="tiny-text text-muted-foreground">{creditNoteCount || 0} общо</p>
+                </div>
+              </div>
+              <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            </Link>
+            <Link
+              href="/debit-notes"
+              className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/50 transition-all duration-200 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-sm">
+                  <PlusCircle className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="small-text font-medium">Дебитни известия</p>
+                  <p className="tiny-text text-muted-foreground">{debitNoteCount || 0} общо</p>
+                </div>
+              </div>
+              <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* Recent Activity (Audit Log) */}
+        <Card className="lg:col-span-2 border border-border/50 shadow-md">
+          <CardHeader className="flex flex-row items-center justify-between pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
+            <div className="min-w-0 flex-1">
+              <CardTitle className="card-title">Последна активност</CardTitle>
+              <CardDescription className="card-description">Скорошни действия в системата</CardDescription>
+            </div>
+            <Button variant="ghost" size="sm" asChild className="tiny-text flex-shrink-0">
+              <Link href="/settings/audit-logs" className="flex items-center gap-1">
+                <span className="hidden sm:inline">Всички</span>
+                <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {!auditLogs || auditLogs.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="h-14 w-14 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+                  <Activity className="h-7 w-7 text-muted-foreground" />
+                </div>
+                <p className="text-base font-semibold mb-1">Няма активност</p>
+                <p className="text-sm text-muted-foreground max-w-xs">
+                  Тук ще се показват последните ви действия
+                </p>
+              </div>
+            ) : (
+              <div className="relative">
+                <div className="absolute left-[19px] top-3 bottom-3 w-px bg-border/70" />
+                <div className="space-y-4">
+                  {auditLogs.map((log: { id: string; action: string; entityType: string; entityId?: string; createdAt: string }) => {
+                    const actionLabel = actionLabels[log.action] || log.action;
+                    const entityLabel = entityLabels[log.entityType] || log.entityType;
+                    const timeAgo = formatDistanceToNow(new Date(log.createdAt), {
+                      addSuffix: true,
+                      locale: bg,
+                    });
+
+                    return (
+                      <div key={log.id} className="flex items-start gap-3 relative">
+                        <div className="h-[38px] w-[38px] rounded-full bg-muted border-2 border-background flex items-center justify-center flex-shrink-0 z-10">
+                          {log.action === "CREATE" && <Plus className="h-4 w-4 text-emerald-600" />}
+                          {log.action === "UPDATE" && <FileText className="h-4 w-4 text-blue-600" />}
+                          {log.action === "CANCEL" && <XCircle className="h-4 w-4 text-red-600" />}
+                          {log.action === "SEND" && <ArrowUpRight className="h-4 w-4 text-violet-600" />}
+                          {log.action === "EXPORT" && <FileText className="h-4 w-4 text-amber-600" />}
+                          {log.action === "DELETE" && <XCircle className="h-4 w-4 text-red-600" />}
+                          {!["CREATE", "UPDATE", "CANCEL", "SEND", "EXPORT", "DELETE"].includes(log.action) && (
+                            <Activity className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0 pt-1">
+                          <p className="text-sm">
+                            <span className="font-medium">{actionLabel}</span>
+                            {" "}
+                            <span className="text-muted-foreground">{entityLabel}</span>
+                          </p>
+                          <p className="tiny-text text-muted-foreground mt-0.5">
+                            {timeAgo}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </CardContent>

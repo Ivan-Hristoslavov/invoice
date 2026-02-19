@@ -6,7 +6,6 @@ import { authOptions } from "@/lib/auth";
 
 const profileSchema = z.object({
   name: z.string().min(2),
-  email: z.string().email(),
 });
 
 export async function PUT(request: NextRequest) {
@@ -24,29 +23,12 @@ export async function PUT(request: NextRequest) {
     const validated = profileSchema.parse(json);
 
     const supabase = createAdminClient();
-    
-    // Check if email is being changed and if it's already taken
-    if (validated.email !== session.user.email) {
-      const { data: existingUser } = await supabase
-        .from("User")
-        .select("id")
-        .eq("email", validated.email)
-        .single();
 
-      if (existingUser && existingUser.id !== session.user.id) {
-        return NextResponse.json(
-          { error: "Имейлът вече се използва" },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Update user profile
+    // Update only name; email is not changeable from profile
     const { data: updatedUser, error: updateError } = await supabase
       .from("User")
       .update({
         name: validated.name,
-        email: validated.email,
         updatedAt: new Date().toISOString(),
       })
       .eq("id", session.user.id)

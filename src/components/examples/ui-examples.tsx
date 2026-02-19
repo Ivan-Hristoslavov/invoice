@@ -4,13 +4,13 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loading } from '@/components/ui/loading';
-import { EmptyState, EmptyInvoicesList } from '@/components/ui/empty-state';
+import { EmptyState } from '@/components/ui/empty-state';
 import { SuccessAnimation, SuccessDialog } from '@/components/ui/success-animation';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { FormLayout, FormField, FormSection } from '@/components/forms/form-layout';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { FileIcon, AlertTriangleIcon, PlusIcon } from 'lucide-react';
+import { FileIcon, AlertTriangleIcon, PlusIcon, FileText } from 'lucide-react';
 
 export default function UIExamples() {
   const [isLoading, setIsLoading] = useState(false);
@@ -95,14 +95,17 @@ export default function UIExamples() {
               <EmptyState 
                 title="Няма резултати" 
                 description="Не бяха намерени резултати, отговарящи на вашите критерии."
-                icon={<FileIcon className="w-8 h-8" />}
-                actionText="Изчистване на филтрите"
-                onAction={() => alert('Филтрите са изчистени')}
+                icon={FileIcon}
+                actionLabel="Изчистване на филтрите"
+                actionOnClick={() => alert('Филтрите са изчистени')}
               />
               
-              <EmptyInvoicesList 
-                onCreateNew={() => alert('Създаване на нова фактура')}
-                compact
+              <EmptyState 
+                icon={FileText}
+                title="Нямате фактури"
+                description="Създайте първата си фактура, за да започнете да следите вашите плащания."
+                actionLabel="Създаване на фактура"
+                actionOnClick={() => alert('Създаване на нова фактура')}
               />
             </CardContent>
           </Card>

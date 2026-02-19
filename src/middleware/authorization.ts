@@ -158,20 +158,16 @@ export async function withAuthorization(
         .eq('id', resourceId)
         .single();
       
-      // Ако ресурсът съществува и потребителят не е собственик
-      if (!error && resource && resource.userId !== session.user.id) {
-        // Проверяваме дали е разрешен достъп на същия потребител
-        if (!options.allowSameUser || resource.userId !== session.user.id) {
-          return NextResponse.json(
-            formatApiError(
-              'FORBIDDEN',
-              'Нямате достъп до този ресурс',
-              undefined,
-              ApiStatusCode.FORBIDDEN
-            ),
-            { status: ApiStatusCode.FORBIDDEN }
-          );
-        }
+      if (!error && resource && resource.userId !== session.user.id && !options.allowSameUser) {
+        return NextResponse.json(
+          formatApiError(
+            'FORBIDDEN',
+            'Нямате достъп до този ресурс',
+            undefined,
+            ApiStatusCode.FORBIDDEN
+          ),
+          { status: ApiStatusCode.FORBIDDEN }
+        );
       }
     }
   }

@@ -335,3 +335,46 @@ export async function sendInvoiceWithPaymentDetails({
     throw error;
   }
 }
+
+export async function sendPasswordResetEmail({
+  to,
+  name,
+  resetUrl,
+}: {
+  to: string;
+  name: string;
+  resetUrl: string;
+}) {
+  const transporter = getSmtpTransporter();
+  const fromAddress = getFromAddress();
+  const appName = process.env.NEXT_PUBLIC_APP_NAME || "Invoicy";
+
+  const from = process.env.NEXT_PUBLIC_APP_DOMAIN
+    ? `${appName} <${fromAddress}>`
+    : fromAddress;
+
+  await transporter.sendMail({
+    from,
+    to,
+    subject: `Възстановяване на парола - ${appName}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Здравейте, ${name}!</h2>
+        <p>Получихме заявка за възстановяване на вашата парола.</p>
+        <p>Кликнете бутона по-долу, за да зададете нова парола:</p>
+        <div style="margin: 30px 0; text-align: center;">
+          <a href="${resetUrl}" style="display: inline-block; padding: 14px 32px; background-color: #059669; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+            Задай нова парола
+          </a>
+        </div>
+        <p style="font-size: 14px; color: #6b7280;">
+          Линкът е валиден 1 час. Ако не сте заявили възстановяване на парола, игнорирайте този имейл.
+        </p>
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;" />
+        <p style="font-size: 12px; color: #9ca3af;">
+          Това е автоматично генериран имейл от ${appName}. Моля, не отговаряйте.
+        </p>
+      </div>
+    `,
+  });
+}

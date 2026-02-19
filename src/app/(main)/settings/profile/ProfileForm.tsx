@@ -20,7 +20,7 @@ import { toast } from "sonner";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Името трябва да е поне 2 символа"),
-  email: z.string().email("Моля, въведете валиден имейл адрес"),
+  email: z.string().email().optional(), // Display only, not submitted
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -42,13 +42,12 @@ export function ProfileForm({ defaultValues }: ProfileFormProps) {
     setIsLoading(true);
     
     try {
-      // In a real app, this would send the data to the server
       const response = await fetch("/api/user/profile", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ name: data.name }),
       });
 
       if (!response.ok) {
@@ -97,10 +96,17 @@ export function ProfileForm({ defaultValues }: ProfileFormProps) {
             <FormItem>
               <FormLabel>Имейл</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="vashiat.email@example.com" {...field} />
+                <Input
+                  type="email"
+                  placeholder="vashiat.email@example.com"
+                  {...field}
+                  disabled
+                  className="bg-muted cursor-not-allowed opacity-100"
+                  readOnly
+                />
               </FormControl>
               <FormDescription>
-                Този имейл ще се използва за известия за акаунта
+                Регистрационният имейл не може да се променя от тук
               </FormDescription>
               <FormMessage />
             </FormItem>

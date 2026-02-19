@@ -49,7 +49,15 @@ export async function getNextInvoiceSequence(
       if (invoices && invoices.length > 0) {
         // Extract number from existing invoice (remove leading zeros)
         const lastNumber = parseInt(invoices[0].invoiceNumber, 10);
-        nextSequence = lastNumber + 1;
+        const calculatedNext = lastNumber + 1;
+        
+        // If user has set a starting invoice number and the calculated next is less than it,
+        // use the starting number instead (for migration scenarios)
+        if (user?.startingInvoiceNumber && calculatedNext < user.startingInvoiceNumber) {
+          nextSequence = user.startingInvoiceNumber;
+        } else {
+          nextSequence = calculatedNext;
+        }
       } else {
         // No invoices yet - use user's starting number or default to 1
         nextSequence = user?.startingInvoiceNumber || 1;

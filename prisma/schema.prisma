@@ -43,6 +43,7 @@ model User {
   creditNotes   CreditNote[]
   debitNotes    DebitNote[]
   auditLogs     AuditLog[]
+  passwordResetTokens PasswordResetToken[]
 }
 
 model Account {
@@ -78,6 +79,19 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expires   DateTime
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
 }
 
 // Invoice-related models

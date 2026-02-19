@@ -141,8 +141,9 @@ export function Sidebar() {
           size="icon" 
           className="fixed top-3 left-4 z-[60] h-10 w-10 bg-background/95 backdrop-blur-md border border-border shadow-lg hover:bg-muted"
           onClick={() => setIsOpen(!isOpen)}
+          aria-label={isOpen ? "Затвори менюто" : "Отвори менюто"}
         >
-          {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          {isOpen ? <X className="w-5 h-5" aria-hidden="true" /> : <Menu className="w-5 h-5" aria-hidden="true" />}
         </Button>
       )}
 
@@ -171,7 +172,7 @@ export function Sidebar() {
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
         {/* Main Navigation */}
-        <nav className="flex-1 px-4 pt-2 pb-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-4 pt-2 pb-4 space-y-1 overflow-y-auto" role="navigation" aria-label="Основна навигация">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-2">
             Меню
           </p>
@@ -181,6 +182,7 @@ export function Sidebar() {
               <Link 
                 key={item.name}
                 href={item.href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
                   active 
@@ -197,11 +199,11 @@ export function Sidebar() {
                   <item.icon className={cn(
                     "h-5 w-5",
                     active ? "text-white" : "text-muted-foreground"
-                  )} />
+                  )} aria-hidden="true" />
                 </div>
                 <span>{item.name}</span>
                 {active && (
-                  <ChevronRight className="h-4 w-4 ml-auto" />
+                  <ChevronRight className="h-4 w-4 ml-auto" aria-hidden="true" />
                 )}
               </Link>
             );
@@ -219,6 +221,7 @@ export function Sidebar() {
               <Link 
                 key={item.name}
                 href={item.href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200",
                   active 
@@ -226,7 +229,7 @@ export function Sidebar() {
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 )}
               >
-                <item.icon className="h-5 w-5" />
+                <item.icon className="h-5 w-5" aria-hidden="true" />
                 <span>{item.name}</span>
               </Link>
             );
@@ -253,8 +256,9 @@ export function Sidebar() {
               className="h-8 w-8"
               onClick={() => signOut({ callbackUrl: "/" })}
               title="Изход"
+              aria-label="Изход"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
           {/* Version */}

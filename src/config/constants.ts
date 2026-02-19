@@ -27,4 +27,23 @@ export const SEO_KEYWORDS = [
 // Default values
 export const DEFAULT_VAT_RATE = 20; // Default Bulgarian VAT rate
 
+// Supported currencies
+export const CURRENCIES: Record<string, { symbol: string; name: string; locale: string }> = {
+  BGN: { symbol: "лв", name: "Лев", locale: "bg-BG" },
+  EUR: { symbol: "€", name: "Евро", locale: "bg-BG" },
+  USD: { symbol: "$", name: "Долар", locale: "en-US" },
+};
+
+export function getCurrencySymbol(code: string): string {
+  return CURRENCIES[code]?.symbol || code;
+}
+
+// Invoice status labels and colors
+export const INVOICE_STATUS = {
+  DRAFT: { label: "Чернова", color: "amber" },
+  ISSUED: { label: "Издадена", color: "emerald" },
+  VOIDED: { label: "Анулирана", color: "purple" },
+  CANCELLED: { label: "Отказана", color: "red" },
+} as const;
+
 // Social links and contact information can be added here

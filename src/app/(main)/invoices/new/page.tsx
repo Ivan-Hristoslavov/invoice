@@ -286,42 +286,46 @@ function InvoiceItemCard({
         )}
       </div>
       
-      {/* Content */}
-      <div className="p-4 space-y-3">
-        {/* Description */}
-        <Input
-          value={item.description}
-          onChange={(e) => onUpdate("description", e.target.value)}
-          placeholder="Описание на артикула..."
-          className="h-9 text-sm font-medium border-border/60 focus:border-primary"
-        />
-        
-        {/* Grid with inputs */}
-        <div className="grid grid-cols-3 gap-2">
-          <div className="space-y-1">
-            <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">К-во</label>
-            <NumericInput
-              allowDecimal={false}
-              value={item.quantity}
-              onChange={(e) => onUpdate("quantity", parseInt(e.target.value) || 1)}
-              className="h-8 text-sm text-center font-medium"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Цена ({currency})</label>
-            <NumericInput
-              value={item.unitPrice}
-              onChange={(e) => onUpdate("unitPrice", parseFloat(e.target.value) || 0)}
-              className="h-8 text-sm font-medium"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">ДДС %</label>
-            <NumericInput
-              value={item.taxRate}
-              onChange={(e) => onUpdate("taxRate", parseFloat(e.target.value) || 0)}
-              className="h-8 text-sm text-center font-medium"
-            />
+      {/* Content: description first, then quantity/price/vat in fixed order */}
+      <div className="p-4 space-y-4">
+        <div className="space-y-1.5">
+          <label className="block text-xs font-medium text-muted-foreground">Описание</label>
+          <Input
+            value={item.description}
+            onChange={(e) => onUpdate("description", e.target.value)}
+            placeholder="Описание на артикула..."
+            className="h-10 text-sm font-medium border-border/60 focus:border-primary w-full"
+          />
+        </div>
+        <div className="border-t border-border/50 pt-4">
+          <p className="text-xs font-medium text-muted-foreground mb-3">Количество и цена</p>
+          <div className="grid grid-cols-1 min-[375px]:grid-cols-3 gap-3">
+            <div className="space-y-1.5">
+              <label className="block text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">К-во</label>
+              <NumericInput
+                allowDecimal={false}
+                value={item.quantity}
+                onChange={(e) => onUpdate("quantity", parseInt(e.target.value) || 1)}
+                className="h-9 sm:h-8 text-sm text-center font-medium w-full"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">Цена</label>
+              <NumericInput
+                value={item.unitPrice}
+                onChange={(e) => onUpdate("unitPrice", parseFloat(e.target.value) || 0)}
+                className="h-9 sm:h-8 text-sm font-medium w-full"
+                placeholder={currency}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">ДДС %</label>
+              <NumericInput
+                value={item.taxRate}
+                onChange={(e) => onUpdate("taxRate", parseFloat(e.target.value) || 0)}
+                className="h-9 sm:h-8 text-sm text-center font-medium w-full"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -625,8 +629,8 @@ function NewInvoiceContent() {
   };
 
   const getCurrencySymbol = (currency: string) => {
-    const symbols: Record<string, string> = { EUR: '€' };
-    return symbols[currency] || '€';
+    const symbols: Record<string, string> = { BGN: 'лв', EUR: '€', USD: '$' };
+    return symbols[currency] || currency;
   };
 
   // Render step content
@@ -727,22 +731,22 @@ function NewInvoiceContent() {
             
             {/* Invoice number */}
             <div className="space-y-3">
-              <Label className="flex items-center gap-2 text-sm">
-                <Hash className="h-4 w-4" />
-                Номер на фактура
+              <Label className="flex items-center gap-2 text-sm font-medium">
+                <Hash className="h-4 w-4 flex-shrink-0" />
+                <span>Номер на фактура</span>
               </Label>
               <Card className="solid-card bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-0 shadow-lg">
-                <CardContent className="p-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm opacity-90 mb-1.5">Фактура №</p>
-                      <p className="text-2xl sm:text-3xl font-bold font-mono truncate">{invoiceData.invoiceNumber || '—'}</p>
+                      <p className="text-xs sm:text-sm opacity-90 mb-1.5">Фактура №</p>
+                      <p className="text-xl sm:text-2xl md:text-3xl font-bold font-mono truncate">{invoiceData.invoiceNumber || '—'}</p>
                     </div>
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <Badge variant="secondary" className="bg-white/20 text-white border-0 text-sm sm:text-base px-3 py-1.5">
+                    <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                      <Badge variant="secondary" className="bg-white/20 text-white border-0 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5 whitespace-nowrap">
                         {invoiceData.currency}
                       </Badge>
-                      <Badge variant="secondary" className="bg-white/10 text-white/90 border-0 text-xs px-2 py-1">
+                      <Badge variant="secondary" className="bg-white/10 text-white/90 border-0 text-xs px-2 py-1 whitespace-nowrap">
                         Автоматичен
                       </Badge>
                     </div>
@@ -754,15 +758,15 @@ function NewInvoiceContent() {
             {/* Company and Currency */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
-                  Вашата фирма
+                <Label className="flex items-center gap-2 text-sm font-medium">
+                  <Building2 className="h-4 w-4 flex-shrink-0" />
+                  <span>Вашата фирма</span>
                 </Label>
                 <Select
                   value={invoiceData.companyId}
                   onValueChange={(value) => handleInputChange('companyId', value)}
                 >
-                  <SelectTrigger className="h-12">
+                  <SelectTrigger className="h-12 w-full">
                     <SelectValue placeholder="Изберете фирма" />
                   </SelectTrigger>
                   <SelectContent>
@@ -775,19 +779,21 @@ function NewInvoiceContent() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  Валута
+                <Label className="flex items-center gap-2 text-sm font-medium">
+                  <DollarSign className="h-4 w-4 flex-shrink-0" />
+                  <span>Валута</span>
                 </Label>
                 <Select
                   value={invoiceData.currency}
                   onValueChange={(value) => handleInputChange('currency', value)}
                 >
-                  <SelectTrigger className="h-12">
+                  <SelectTrigger className="h-12 w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="BGN">🇧🇬 BGN - Лев</SelectItem>
                     <SelectItem value="EUR">🇪🇺 EUR - Евро</SelectItem>
+                    <SelectItem value="USD">🇺🇸 USD - Долар</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -796,42 +802,42 @@ function NewInvoiceContent() {
             {/* Dates */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Дата на издаване
+                <Label className="flex items-center gap-2 text-sm font-medium">
+                  <Calendar className="h-4 w-4 flex-shrink-0" />
+                  <span>Дата на издаване</span>
                 </Label>
                 <Input
                   type="date"
                   value={invoiceData.issueDate}
                   onChange={(e) => handleInputChange('issueDate', e.target.value)}
-                  className="h-12"
+                  className="h-12 w-full"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  Краен срок за плащане
+                <Label className="flex items-center gap-2 text-sm font-medium">
+                  <Clock className="h-4 w-4 flex-shrink-0" />
+                  <span>Краен срок за плащане</span>
                 </Label>
                 <Input
                   type="date"
                   value={invoiceData.dueDate}
                   onChange={(e) => handleInputChange('dueDate', e.target.value)}
-                  className="h-12"
+                  className="h-12 w-full"
                 />
               </div>
             </div>
             
             {/* Payment method */}
             <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <CreditCard className="h-4 w-4" />
-                Начин на плащане
+              <Label className="flex items-center gap-2 text-sm font-medium">
+                <CreditCard className="h-4 w-4 flex-shrink-0" />
+                <span>Начин на плащане</span>
               </Label>
               <Select
                 value={invoiceData.paymentMethod}
                 onValueChange={(value) => handleInputChange('paymentMethod', value)}
               >
-                <SelectTrigger className="h-12">
+                <SelectTrigger className="h-12 w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1107,6 +1113,44 @@ function NewInvoiceContent() {
         return null;
     }
   };
+
+  // Block invoice creation until at least one company exists
+  if (!isLoadingData && companies.length === 0) {
+    return (
+      <div className="min-h-screen">
+        <div className="mb-4">
+          <Button variant="ghost" size="icon" asChild className="h-8 w-8 rounded-full">
+            <Link href="/invoices">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
+        <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-950/50">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+                <Building2 className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <CardTitle>Нужна е поне една компания</CardTitle>
+                <CardDescription className="mt-1">
+                  За да създавате фактури, първо трябва да добавите вашата фирма (компания). След това ще можете да продължите.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardFooter>
+            <Button asChild className="bg-primary hover:bg-primary/90">
+              <Link href="/companies/new">
+                <Building2 className="mr-2 h-4 w-4" />
+                Създай компания
+              </Link>
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">

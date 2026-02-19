@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatPrice } from "@/lib/utils";
@@ -27,11 +27,14 @@ import {
   Clock,
   XCircle,
   ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
   MoreHorizontal,
   FileCheck,
   Printer,
   Trash2,
-  Ban
+  Ban,
+  Copy
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -98,6 +101,10 @@ export default function InvoicesClient({
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [invoices, setInvoices] = useState(initialInvoices);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortField, setSortField] = useState<"date" | "amount" | "number">("date");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const ITEMS_PER_PAGE = 15;
   
   // Subscription limit hook
   const { 
@@ -322,8 +329,35 @@ export default function InvoicesClient({
       filtered = filtered.filter((invoice) => invoice.status === statusFilter);
     }
 
+    filtered.sort((a, b) => {
+      let cmp = 0;
+      switch (sortField) {
+        case "date":
+          cmp = new Date(a.issueDate).getTime() - new Date(b.issueDate).getTime();
+          break;
+        case "amount":
+          cmp = Number(a.total) - Number(b.total);
+          break;
+        case "number":
+          cmp = a.invoiceNumber.localeCompare(b.invoiceNumber, undefined, { numeric: true });
+          break;
+      }
+      return sortDirection === "asc" ? cmp : -cmp;
+    });
+
     return filtered;
-  }, [invoices, searchQuery, statusFilter]);
+  }, [invoices, searchQuery, statusFilter, sortField, sortDirection]);
+
+  const paginatedInvoices = useMemo(() => {
+    return filteredInvoices.slice(
+      (currentPage - 1) * ITEMS_PER_PAGE,
+      currentPage * ITEMS_PER_PAGE
+    );
+  }, [filteredInvoices, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, sortField, sortDirection]);
 
   // Stats
   const stats = useMemo(() => {
@@ -565,6 +599,24 @@ export default function InvoicesClient({
                 </SelectItem>
               </SelectContent>
             </Select>
+            <Select value={`${sortField}-${sortDirection}`} onValueChange={(val) => {
+              const [field, dir] = val.split("-");
+              setSortField(field as any);
+              setSortDirection(dir as any);
+            }}>
+              <SelectTrigger className="w-full sm:w-[200px] h-11">
+                <ArrowUpDown className="mr-2 h-4 w-4" />
+                <SelectValue placeholder="Сортирай" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date-desc">Дата (нови първо)</SelectItem>
+                <SelectItem value="date-asc">Дата (стари първо)</SelectItem>
+                <SelectItem value="amount-desc">Сума (намаляваща)</SelectItem>
+                <SelectItem value="amount-asc">Сума (нарастваща)</SelectItem>
+                <SelectItem value="number-desc">Номер (намаляващ)</SelectItem>
+                <SelectItem value="number-asc">Номер (нарастващ)</SelectItem>
+              </SelectContent>
+            </Select>
             {canCreateInvoices && (
               <ExportDialogWrapper clients={clients} companies={companies} />
             )}
@@ -636,7 +688,7 @@ export default function InvoicesClient({
           ) : (
             <>
               <div className="space-y-3 px-4 pb-4 md:hidden">
-                {filteredInvoices.map((invoice) => {
+                {paginatedInvoices.map((invoice) => {
                   const statusConfig = getStatusConfig(invoice.status);
                   const StatusIcon = statusConfig.icon;
                   return (
@@ -741,7 +793,7 @@ export default function InvoicesClient({
                 </thead>
                 <tbody className="divide-y">
                   <AnimatePresence>
-                    {filteredInvoices.map((invoice, index) => {
+                    {paginatedInvoices.map((invoice, index) => {
                       const statusConfig = getStatusConfig(invoice.status);
                       const StatusIcon = statusConfig.icon;
                       
@@ -865,6 +917,28 @@ export default function InvoicesClient({
                                       Преглед
                                     </Link>
                                   </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      try {
+                                        const response = await fetch(`/api/invoices/${invoice.id}/duplicate`, { method: "POST" });
+                                        if (!response.ok) {
+                                          const error = await response.json();
+                                          throw new Error(error.error || "Грешка при дублиране");
+                                        }
+                                        const data = await response.json();
+                                        toast.success("Фактурата е дублирана", {
+                                          description: `Нова чернова ${data.invoiceNumber} е създадена`,
+                                        });
+                                        router.push(`/invoices/${data.id}`);
+                                      } catch (error: any) {
+                                        toast.error(error.message || "Грешка при дублиране на фактурата");
+                                      }
+                                    }}
+                                  >
+                                    <Copy className="mr-2 h-4 w-4" />
+                                    Дублирай
+                                  </DropdownMenuItem>
                                   {/* Delete option for all invoice states */}
                                   {invoice.userId === currentUserId && (
                                     <DropdownMenuItem
@@ -944,6 +1018,34 @@ export default function InvoicesClient({
                 </tbody>
                 </table>
               </div>
+              {filteredInvoices.length > ITEMS_PER_PAGE && (
+                <div className="flex items-center justify-between px-6 py-4 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    Показване {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filteredInvoices.length)} от {filteredInvoices.length}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm font-medium px-2">
+                      {currentPage} / {Math.ceil(filteredInvoices.length / ITEMS_PER_PAGE)}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredInvoices.length / ITEMS_PER_PAGE), p + 1))}
+                      disabled={currentPage >= Math.ceil(filteredInvoices.length / ITEMS_PER_PAGE)}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </CardContent>

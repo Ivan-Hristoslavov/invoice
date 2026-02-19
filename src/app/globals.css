@@ -320,3 +320,29 @@
     @apply px-4 sm:px-6 md:px-8;
   }
 }
+
+/* Skip-to-content link for keyboard navigation */
+.skip-to-content {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  z-index: 9999;
+}
+.skip-to-content:focus {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  width: auto;
+  height: auto;
+  padding: 0.75rem 1.5rem;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-radius: var(--radius);
+  font-weight: 600;
+  z-index: 9999;
+  outline: none;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}

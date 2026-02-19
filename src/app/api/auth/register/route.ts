@@ -1,10 +1,20 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import cuid from "cuid";
 import { createAdminClient } from "@/lib/supabase/server";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req.headers);
+    const limiter = rateLimit(`register:${ip}`, { windowMs: 300_000, maxRequests: 5 });
+    if (!limiter.success) {
+      return NextResponse.json(
+        { message: "Твърде много заявки. Моля, опитайте отново след няколко минути." },
+        { status: 429 }
+      );
+    }
+
     const { name, email, password } = await req.json();
 
     if (!name || !email || !password) {

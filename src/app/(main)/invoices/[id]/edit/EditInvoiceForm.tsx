@@ -130,46 +130,51 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
           )}
         </div>
         
-        {/* Content */}
-        <div className="p-4 space-y-3">
-          <Input
-            value={item.description}
-            onChange={(e) => onDescriptionChange(e.target.value)}
-            placeholder="Описание..."
-            className="h-9 text-sm font-medium border-border/60"
-          />
-          
-          <div className="grid grid-cols-3 gap-2">
-            <div className="space-y-1">
-              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">К-во</label>
+        {/* Content: description first, then quantity/price/vat */}
+        <div className="p-4 space-y-4">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-muted-foreground">Описание</label>
+            <Input
+              value={item.description}
+              onChange={(e) => onDescriptionChange(e.target.value)}
+              placeholder="Описание на артикула..."
+              className="h-10 text-sm font-medium border-border/60 w-full"
+            />
+          </div>
+          <div className="border-t border-border/50 pt-4">
+            <p className="text-xs font-medium text-muted-foreground mb-3">Количество и цена</p>
+            <div className="grid grid-cols-1 min-[375px]:grid-cols-3 gap-3">
+            <div className="space-y-1.5">
+              <label className="block text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">К-во</label>
               <NumericInput
                 value={item.quantity}
                 onChange={(e) => onQuantityChange(e.target.value)}
-                className="h-8 text-sm text-center font-medium"
+                className="h-9 sm:h-8 text-sm text-center font-medium w-full"
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Цена</label>
+            <div className="space-y-1.5">
+              <label className="block text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">Цена</label>
               <NumericInput
                 value={item.unitPrice}
                 onChange={(e) => onPriceChange(e.target.value)}
-                className="h-8 text-sm font-medium"
+                className="h-9 sm:h-8 text-sm font-medium w-full"
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">ДДС %</label>
+            <div className="space-y-1.5">
+              <label className="block text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">ДДС %</label>
               <NumericInput
                 value={item.taxRate}
                 onChange={(e) => onTaxChange(e.target.value)}
-                className="h-8 text-sm text-center font-medium"
+                className="h-9 sm:h-8 text-sm text-center font-medium w-full"
               />
             </div>
+          </div>
           </div>
         </div>
         
         {/* Footer */}
         <div className="flex items-center justify-between px-4 py-2.5 border-t border-border/40 bg-gradient-to-r from-primary/5 to-primary/10 rounded-b-xl">
-          <span className="text-xs text-muted-foreground">Общо</span>
+          <span className="text-xs text-muted-foreground">Общо с ДДС</span>
           <span className="text-base font-bold text-primary">
             {formatPrice(itemTotalWithTax)} {invoiceData.currency}
           </span>
@@ -614,35 +619,38 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <div className="space-y-2">
-                    <Label htmlFor="invoiceNumber">Номер на фактура</Label>
+                    <Label htmlFor="invoiceNumber" className="text-sm font-medium">Номер на фактура</Label>
                     <Input 
                       id="invoiceNumber" 
                       value={invoiceData.invoiceNumber}
                       readOnly
-                      className="bg-muted"
+                      className="bg-muted h-10 sm:h-11 w-full"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="issueDate">Дата на издаване</Label>
+                    <Label htmlFor="issueDate" className="text-sm font-medium">Дата на издаване</Label>
                     <Input 
                       id="issueDate" 
                       type="date" 
                       value={invoiceData.issueDate}
                       onChange={(e) => handleInputChange('issueDate', e.target.value)}
+                      className="h-10 sm:h-11 w-full"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="dueDate">Краен срок</Label>
+                    <Label htmlFor="dueDate" className="text-sm font-medium">Краен срок</Label>
                     <Input 
                       id="dueDate" 
                       type="date" 
                       value={invoiceData.dueDate}
                       onChange={(e) => handleInputChange('dueDate', e.target.value)}
+                      className="h-10 sm:h-11 w-full"
                     />
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {/* Company and Client fields with proper label alignment */}
                   <div className="space-y-2">
                     <Label htmlFor="client">Клиент</Label>
                     <Input 
@@ -685,7 +693,9 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                       <SelectValue placeholder="Изберете валута" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="BGN">BGN - Лев</SelectItem>
                       <SelectItem value="EUR">EUR - Евро</SelectItem>
+                      <SelectItem value="USD">USD - Долар</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
