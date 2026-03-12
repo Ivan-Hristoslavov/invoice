@@ -586,7 +586,12 @@ function NewInvoiceContent() {
           companyId: invoiceData.companyId,
           issueDate: invoiceData.issueDate,
           dueDate: invoiceData.dueDate,
+          supplyDate: invoiceData.supplyDate,
           currency: invoiceData.currency,
+          placeOfIssue: invoiceData.placeOfIssue,
+          paymentMethod: invoiceData.paymentMethod,
+          isEInvoice: invoiceData.isEInvoice,
+          isOriginal: invoiceData.isOriginal,
           items: validItems.map(item => ({
             description: item.description,
             quantity: Number(item.quantity),
@@ -827,6 +832,34 @@ function NewInvoiceContent() {
               </div>
             </div>
             
+            {/* Supply date and place of issue */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2 text-sm font-medium">
+                  <Calendar className="h-4 w-4 flex-shrink-0" />
+                  <span>Дата на данъчното събитие</span>
+                </Label>
+                <Input
+                  type="date"
+                  value={invoiceData.supplyDate}
+                  onChange={(e) => handleInputChange('supplyDate', e.target.value)}
+                  className="h-12 w-full"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2 text-sm font-medium">
+                  <MapPin className="h-4 w-4 flex-shrink-0" />
+                  <span>Място на издаване</span>
+                </Label>
+                <Input
+                  value={invoiceData.placeOfIssue}
+                  onChange={(e) => handleInputChange('placeOfIssue', e.target.value)}
+                  placeholder="напр. София"
+                  className="h-12 w-full"
+                />
+              </div>
+            </div>
+
             {/* Payment method */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-sm font-medium">
@@ -1191,96 +1224,100 @@ function NewInvoiceContent() {
         </Alert>
       )}
 
-      {/* Header */}
-      <div className="mb-4 sm:mb-6">
-        <div className="flex items-center gap-2 sm:gap-3 mb-2">
-          <Button variant="ghost" size="icon" asChild className="back-btn h-8 w-8 rounded-full">
-            <Link href="/invoices">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3">
-              <h1 className="page-title truncate">Нова фактура</h1>
-              {isFree && !isLoadingUsage && (
-                <UsageCounter 
-                  used={invoiceUsage.used} 
-                  limit={invoiceUsage.limit === Infinity ? 0 : invoiceUsage.limit}
-                  label="този месец"
-                />
-              )}
+      <div className="max-w-5xl mx-auto">
+        {/* Header */}
+        <div className="mb-4 sm:mb-6">
+          <div className="flex items-center gap-2 sm:gap-3 mb-2">
+            <Button variant="ghost" size="icon" asChild className="back-btn h-8 w-8 rounded-full">
+              <Link href="/invoices">
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
+            </Button>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3">
+                <h1 className="page-title truncate">Нова фактура</h1>
+                {isFree && !isLoadingUsage && (
+                  <UsageCounter 
+                    used={invoiceUsage.used} 
+                    limit={invoiceUsage.limit === Infinity ? 0 : invoiceUsage.limit}
+                    label="този месец"
+                  />
+                )}
+              </div>
+              <p className="card-description hidden sm:block">Създайте нова фактура за вашите клиенти</p>
             </div>
-            <p className="card-description hidden sm:block">Създайте нова фактура за вашите клиенти</p>
           </div>
         </div>
-      </div>
 
-      {/* Step indicator */}
-      <StepIndicator currentStep={currentStep} steps={steps} />
-
-      {/* Step content */}
-      <div className="mb-8">
-        {renderStepContent()}
-      </div>
-
-      {/* Navigation */}
-      <div className="flex items-center justify-between pt-6 border-t">
-        <Button
-          variant="outline"
-          onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-          disabled={currentStep === 0}
-          className="gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Назад
-        </Button>
-        
-        <div className="flex gap-3">
-          {currentStep < 3 ? (
-            <Button
-              onClick={() => setCurrentStep(currentStep + 1)}
-              disabled={
-                (currentStep === 0 && !selectedClient) ||
-                (currentStep === 1 && !invoiceData.companyId)
-              }
-              className="gap-2"
-            >
-              Напред
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          ) : !isLoadingUsage && !canCreateInvoice && isFree ? (
-            <Link href="/settings/subscription">
+        {/* Wizard shell */}
+        <Card className="rounded-2xl border-border/60 bg-gradient-to-br from-card/80 via-card to-card/90 shadow-xl shadow-primary/5">
+          <CardHeader className="pb-4 border-b border-border/40">
+            <StepIndicator currentStep={currentStep} steps={steps} />
+          </CardHeader>
+          <CardContent className="pt-6">
+            {renderStepContent()}
+          </CardContent>
+          <CardFooter className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-6 border-t border-border/40 mt-4">
+            <div className="flex justify-start">
               <Button
-                className="gap-2 border-dashed border-amber-300 dark:border-amber-700 hover:border-amber-400"
                 variant="outline"
+                onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+                disabled={currentStep === 0}
+                className="gap-2"
               >
-                <Lock className="h-4 w-4 text-amber-500" />
-                Създай фактура
-                <span className="ml-1 text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">
-                  PRO
-                </span>
+                <ArrowLeft className="h-4 w-4" />
+                Назад
               </Button>
-            </Link>
-          ) : (
-            <Button
-              onClick={handleSubmit}
-              disabled={isLoading}
-              className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-            >
-              {isLoading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Създаване...
-                </>
+            </div>
+            
+            <div className="flex justify-end gap-3 w-full sm:w-auto">
+              {currentStep < 3 ? (
+                <Button
+                  onClick={() => setCurrentStep(currentStep + 1)}
+                  disabled={
+                    (currentStep === 0 && !selectedClient) ||
+                    (currentStep === 1 && !invoiceData.companyId)
+                  }
+                  className="gap-2"
+                >
+                  Напред
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              ) : !isLoadingUsage && !canCreateInvoice && isFree ? (
+                <Link href="/settings/subscription">
+                  <Button
+                    className="gap-2 border-dashed border-amber-300 dark:border-amber-700 hover:border-amber-400"
+                    variant="outline"
+                  >
+                    <Lock className="h-4 w-4 text-amber-500" />
+                    Създай фактура
+                    <span className="ml-1 text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">
+                      PRO
+                    </span>
+                  </Button>
+                </Link>
               ) : (
-                <>
-                  <Check className="h-4 w-4" />
-                  Създай фактура
-                </>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={isLoading}
+                  className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Създаване...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4" />
+                      Създай фактура
+                    </>
+                  )}
+                </Button>
               )}
-            </Button>
-          )}
-        </div>
+            </div>
+          </CardFooter>
+        </Card>
       </div>
     </div>
   );

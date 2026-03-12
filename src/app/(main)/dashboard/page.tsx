@@ -27,6 +27,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { format, formatDistanceToNow } from "date-fns";
 import { bg } from "date-fns/locale";
 import { StatsCard } from "@/components/dashboard/StatsCard";
+import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
 
 type InvoiceStatus = "DRAFT" | "ISSUED" | "CANCELLED";
 
@@ -327,87 +328,8 @@ export default async function DashboardPage() {
 
       {/* Quick Actions & Recent Invoices */}
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
-        {/* Quick Actions */}
-        <Card className="lg:col-span-1 border border-border/50 shadow-md">
-          <CardHeader className="pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
-            <CardTitle className="card-title">Бързи действия</CardTitle>
-            <CardDescription className="card-description">Често използвани операции</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-1.5 px-3 sm:px-6 pb-3 sm:pb-6">
-            <Link 
-              href="/invoices/new"
-              className="flex items-center w-full p-2.5 sm:p-3 rounded-lg sm:rounded-xl hover:bg-muted/50 transition-colors group"
-            >
-              <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mr-2.5 sm:mr-3 shadow-sm">
-                <Plus className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-              </div>
-              <div className="flex-1 text-left min-w-0">
-                <p className="small-text font-medium truncate">Нова фактура</p>
-                <p className="tiny-text text-muted-foreground hidden sm:block">Създайте фактура</p>
-              </div>
-            </Link>
-            <Link 
-              href="/credit-notes/new"
-              className="flex items-center w-full p-2.5 sm:p-3 rounded-lg sm:rounded-xl hover:bg-muted/50 transition-colors group"
-            >
-              <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center mr-2.5 sm:mr-3 shadow-sm">
-                <MinusCircle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-              </div>
-              <div className="flex-1 text-left min-w-0">
-                <p className="small-text font-medium truncate">Ново кредитно известие</p>
-                <p className="tiny-text text-muted-foreground hidden sm:block">Създайте кредитно известие</p>
-              </div>
-            </Link>
-            <Link 
-              href="/debit-notes/new"
-              className="flex items-center w-full p-2.5 sm:p-3 rounded-lg sm:rounded-xl hover:bg-muted/50 transition-colors group"
-            >
-              <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center mr-2.5 sm:mr-3 shadow-sm">
-                <PlusCircle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-              </div>
-              <div className="flex-1 text-left min-w-0">
-                <p className="small-text font-medium truncate">Ново дебитно известие</p>
-                <p className="tiny-text text-muted-foreground hidden sm:block">Създайте дебитно известие</p>
-              </div>
-            </Link>
-            <Link 
-              href="/clients/new"
-              className="flex items-center w-full p-2.5 sm:p-3 rounded-lg sm:rounded-xl hover:bg-muted/50 transition-colors group"
-            >
-              <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mr-2.5 sm:mr-3 shadow-sm">
-                <Users className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-              </div>
-              <div className="flex-1 text-left min-w-0">
-                <p className="small-text font-medium truncate">Нов клиент</p>
-                <p className="tiny-text text-muted-foreground hidden sm:block">Добавете клиент</p>
-              </div>
-            </Link>
-            <Link 
-              href="/companies/new"
-              className="flex items-center w-full p-2.5 sm:p-3 rounded-lg sm:rounded-xl hover:bg-muted/50 transition-colors group"
-            >
-              <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mr-2.5 sm:mr-3 shadow-sm">
-                <Building className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-              </div>
-              <div className="flex-1 text-left min-w-0">
-                <p className="small-text font-medium truncate">Нова компания</p>
-                <p className="tiny-text text-muted-foreground hidden sm:block">Добавете фирма</p>
-              </div>
-            </Link>
-            <Link 
-              href="/products/new"
-              className="flex items-center w-full p-2.5 sm:p-3 rounded-lg sm:rounded-xl hover:bg-muted/50 transition-colors group"
-            >
-              <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center mr-2.5 sm:mr-3 shadow-sm">
-                <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-              </div>
-              <div className="flex-1 text-left min-w-0">
-                <p className="small-text font-medium truncate">Нов продукт</p>
-                <p className="tiny-text text-muted-foreground hidden sm:block">Добавете услуга</p>
-              </div>
-            </Link>
-          </CardContent>
-        </Card>
+        {/* Quick Actions - only show when usage loaded and user is allowed */}
+        <DashboardQuickActions />
 
         {/* Recent Invoices */}
         <Card className="lg:col-span-2 border border-border/50 shadow-md">

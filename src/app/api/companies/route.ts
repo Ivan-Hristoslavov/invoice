@@ -96,22 +96,47 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
-    
+
     const supabase = createAdminClient();
+    const bulstat = validatedData.bulstatNumber?.trim() || "";
+    if (bulstat) {
+      const { data: byBulstat } = await supabase
+        .from("Company")
+        .select("id")
+        .ilike("bulstatNumber", bulstat)
+        .limit(1)
+        .maybeSingle();
+      if (byBulstat) {
+        return NextResponse.json(
+          { error: "Фирма с този ЕИК/БУЛСТАТ вече е регистрирана в платформата. Един ЕИК може да бъде свързан само с един акаунт." },
+          { status: 409 }
+        );
+      }
+    }
     const companyId = cuid();
-    
+    const payload = {
+      ...validatedData,
+      bulstatNumber: validatedData.bulstatNumber?.trim() || validatedData.bulstatNumber || null,
+    };
+
     const { data: company, error } = await supabase
       .from("Company")
       .insert({
         id: companyId,
-        ...validatedData,
+        ...payload,
         userId: session.user.id,
         updatedAt: new Date().toISOString(),
       })
       .select()
       .single();
-    
+
     if (error) {
+      if (error.code === "23505") {
+        return NextResponse.json(
+          { error: "Фирма с този ЕИК/БУЛСТАТ вече е регистрирана в платформата." },
+          { status: 409 }
+        );
+      }
       throw error;
     }
 

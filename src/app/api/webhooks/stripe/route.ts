@@ -92,14 +92,23 @@ export async function POST(req: Request) {
     const signature = (await headersList).get("stripe-signature") || "";
     const stripe = getStripe();
 
+    // In production, webhook secret is required to prevent fake payment/activation
+    const isProduction = process.env.NODE_ENV === "production";
+    if (isProduction && !webhookSecret) {
+      console.error("STRIPE_WEBHOOK_SECRET is not set in production");
+      return NextResponse.json(
+        { error: "Webhook not configured" },
+        { status: 500 }
+      );
+    }
+
     try {
-      // Verify webhook signature
+      // Verify webhook signature (required in production)
       event = webhookSecret
         ? stripe.webhooks.constructEvent(body, signature, webhookSecret)
         : JSON.parse(body);
     } catch (err: any) {
       console.error(`⚠️  Webhook signature verification failed: ${err.message}`);
-      // Try to extract event ID and type from body for logging
       let eventData;
       try {
         eventData = JSON.parse(body);

@@ -296,6 +296,7 @@ export async function POST(request: NextRequest) {
               userId: session.user.id,
               issueDate: new Date(validatedData.issueDate).toISOString(),
               dueDate: new Date(validatedData.dueDate).toISOString(),
+              supplyDate: validatedData.supplyDate ? new Date(validatedData.supplyDate).toISOString() : new Date(validatedData.issueDate).toISOString(),
               status: "DRAFT", // Always DRAFT when created
               subtotal: subtotal.toString(),
               taxAmount: taxAmount.toString(),
@@ -304,6 +305,10 @@ export async function POST(request: NextRequest) {
               termsAndConditions: validatedData.termsAndConditions || null,
               currency: validatedData.currency || "EUR",
               locale: validatedData.locale || "bg",
+              placeOfIssue: validatedData.placeOfIssue || "София",
+              paymentMethod: validatedData.paymentMethod || "BANK_TRANSFER",
+              isEInvoice: validatedData.isEInvoice || false,
+              isOriginal: validatedData.isOriginal !== false,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             };

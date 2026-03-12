@@ -81,23 +81,23 @@ function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { t
   );
 }
 
-// Company schema with validation
+// Company schema with validation (Bulgarian: name, address, city, Bulstat/EIK, MOL required)
 const companySchema = z.object({
   name: z.string().min(1, "Името на компанията е задължително"),
   email: z.string().email("Моля, въведете валиден имейл").optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
-  address: z.string().optional().or(z.literal("")),
-  city: z.string().optional().or(z.literal("")),
+  address: z.string().min(1, "Адресът е задължителен"),
+  city: z.string().min(1, "Градът е задължителен"),
   state: z.string().optional().or(z.literal("")),
   zipCode: z.string().optional().or(z.literal("")),
   country: z.string().optional().or(z.literal("")),
   vatNumber: z.string().optional().or(z.literal("")),
   taxIdNumber: z.string().optional().or(z.literal("")),
   registrationNumber: z.string().optional().or(z.literal("")),
-  bulstatNumber: z.string().optional().or(z.literal("")),
+  bulstatNumber: z.string().min(1, "Булстат/ЕИК е задължителен"),
   vatRegistered: z.boolean().optional().default(false),
   vatRegistrationNumber: z.string().optional().or(z.literal("")),
-  mol: z.string().optional().or(z.literal("")),
+  mol: z.string().min(1, "МОЛ (материално отговорно лице) е задължително"),
   accountablePerson: z.string().optional().or(z.literal("")),
   uicType: z.enum(["BULSTAT", "EGN"]).default("BULSTAT"),
   bankName: z.string().optional().or(z.literal("")),
@@ -195,19 +195,22 @@ export default function NewCompanyPage() {
 
   const canProceed = () => {
     switch (currentStep) {
-      case 0:
-        // Step 0: Name is required, email must be valid if provided
+      case 0: {
         const nameValid = formValues.name.trim().length > 0;
         const emailValid = isValidEmail(formValues.email || "");
         return nameValid && emailValid;
-      case 1:
-        // Step 1: Address fields are optional
-        return true;
-      case 2:
-        // Step 2: Tax info is optional
-        return true;
+      }
+      case 1: {
+        const addressValid = (formValues.address ?? "").trim().length > 0;
+        const cityValid = (formValues.city ?? "").trim().length > 0;
+        return addressValid && cityValid;
+      }
+      case 2: {
+        const bulstatValid = (formValues.bulstatNumber ?? "").trim().length > 0;
+        const molValid = (formValues.mol ?? "").trim().length > 0;
+        return bulstatValid && molValid;
+      }
       case 3:
-        // Step 3: Bank info is optional
         return true;
       default:
         return true;
@@ -219,12 +222,16 @@ export default function NewCompanyPage() {
     const errors: string[] = [];
     switch (currentStep) {
       case 0:
-        if (!formValues.name.trim()) {
-          errors.push("Името на компанията е задължително");
-        }
-        if (formValues.email && !isValidEmail(formValues.email)) {
-          errors.push("Моля, въведете валиден имейл адрес");
-        }
+        if (!formValues.name.trim()) errors.push("Името на компанията е задължително");
+        if (formValues.email && !isValidEmail(formValues.email)) errors.push("Моля, въведете валиден имейл адрес");
+        break;
+      case 1:
+        if (!(formValues.address ?? "").trim()) errors.push("Адресът е задължителен");
+        if (!(formValues.city ?? "").trim()) errors.push("Градът е задължителен");
+        break;
+      case 2:
+        if (!(formValues.bulstatNumber ?? "").trim()) errors.push("Булстат/ЕИК е задължителен");
+        if (!(formValues.mol ?? "").trim()) errors.push("МОЛ (материално отговорно лице) е задължително");
         break;
     }
     return errors;
@@ -340,7 +347,7 @@ export default function NewCompanyPage() {
                       name="address"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Адрес</FormLabel>
+                          <FormLabel>Адрес *</FormLabel>
                           <FormControl>
                             <Input placeholder="ул. Бизнес 123" className="h-12" {...field} />
                           </FormControl>
@@ -355,7 +362,7 @@ export default function NewCompanyPage() {
                         name="city"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Град</FormLabel>
+                            <FormLabel>Град *</FormLabel>
                             <FormControl>
                               <Input placeholder="София" className="h-12" {...field} />
                             </FormControl>
@@ -429,7 +436,7 @@ export default function NewCompanyPage() {
                         name="bulstatNumber"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>БУЛСТАТ/ЕИК</FormLabel>
+                            <FormLabel>БУЛСТАТ/ЕИК *</FormLabel>
                             <FormControl>
                               <Input placeholder="123456789" className="h-12" {...field} />
                             </FormControl>
@@ -506,7 +513,7 @@ export default function NewCompanyPage() {
                         name="mol"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>МОЛ (Представляващ)</FormLabel>
+                            <FormLabel>МОЛ (Представляващ) *</FormLabel>
                             <FormControl>
                               <Input placeholder="Име на представляващия" className="h-12" {...field} />
                             </FormControl>
@@ -732,11 +739,11 @@ export default function NewCompanyPage() {
           <div className="flex flex-col gap-4 pt-6 border-t">
             {/* Validation errors */}
             {stepErrors.length > 0 && (
-              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
-                <ul className="text-sm text-destructive space-y-1">
+              <div className="rounded-lg border-2 border-red-300 bg-red-100 p-3 shadow-md dark:border-red-500 dark:bg-white/90 dark:backdrop-blur-xl dark:shadow-lg">
+                <ul className="text-sm font-medium text-red-800 space-y-1 dark:text-red-700">
                   {stepErrors.map((error, index) => (
                     <li key={index} className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                      <span className="w-1.5 h-1.5 shrink-0 rounded-full bg-red-500 dark:bg-red-600" />
                       {error}
                     </li>
                   ))}

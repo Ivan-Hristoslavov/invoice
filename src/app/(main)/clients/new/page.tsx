@@ -81,13 +81,13 @@ function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { t
   );
 }
 
-// Define validation schema for client
+// Define validation schema for client (Bulgarian invoice: recipient name + address required)
 const clientSchema = z.object({
   name: z.string().min(1, "Името на клиента е задължително"),
   email: z.string().email("Моля, въведете валиден имейл").optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
-  address: z.string().optional().or(z.literal("")),
-  city: z.string().optional().or(z.literal("")),
+  address: z.string().min(1, "Адресът е задължителен за издаване на фактури"),
+  city: z.string().min(1, "Градът е задължителен"),
   state: z.string().optional().or(z.literal("")),
   zipCode: z.string().optional().or(z.literal("")),
   country: z.string().optional().or(z.literal("")),
@@ -184,16 +184,17 @@ export default function NewClientPage() {
 
   const canProceed = () => {
     switch (currentStep) {
-      case 0:
-        // Step 0: Name is required, email must be valid if provided
+      case 0: {
         const nameValid = formValues.name.trim().length > 0;
         const emailValid = isValidEmail(formValues.email || "");
         return nameValid && emailValid;
-      case 1:
-        // Step 1: Address fields are optional, no required validation
-        return true;
+      }
+      case 1: {
+        const addressValid = (formValues.address ?? "").trim().length > 0;
+        const cityValid = (formValues.city ?? "").trim().length > 0;
+        return addressValid && cityValid;
+      }
       case 2:
-        // Step 2: Tax info is optional, no required validation
         return true;
       default:
         return true;
@@ -205,12 +206,12 @@ export default function NewClientPage() {
     const errors: string[] = [];
     switch (currentStep) {
       case 0:
-        if (!formValues.name.trim()) {
-          errors.push("Името на клиента е задължително");
-        }
-        if (formValues.email && !isValidEmail(formValues.email)) {
-          errors.push("Моля, въведете валиден имейл адрес");
-        }
+        if (!formValues.name.trim()) errors.push("Името на клиента е задължително");
+        if (formValues.email && !isValidEmail(formValues.email)) errors.push("Моля, въведете валиден имейл адрес");
+        break;
+      case 1:
+        if (!(formValues.address ?? "").trim()) errors.push("Адресът е задължителен за издаване на фактури");
+        if (!(formValues.city ?? "").trim()) errors.push("Градът е задължителен");
         break;
     }
     return errors;
@@ -325,7 +326,7 @@ export default function NewClientPage() {
                       name="address"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Адрес</FormLabel>
+                          <FormLabel>Адрес *</FormLabel>
                           <FormControl>
                             <Input placeholder="ул. Пример 123" className="h-12" {...field} />
                           </FormControl>
@@ -340,7 +341,7 @@ export default function NewClientPage() {
                         name="city"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Град</FormLabel>
+                            <FormLabel>Град *</FormLabel>
                             <FormControl>
                               <Input placeholder="София" className="h-12" {...field} />
                             </FormControl>
@@ -602,34 +603,22 @@ export default function NewClientPage() {
           </div>
 
           {/* Navigation */}
-          <div className="flex flex-col gap-4 pt-6 border-t">
-            {/* Validation errors */}
-            {stepErrors.length > 0 && (
-              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
-                <ul className="text-sm text-destructive space-y-1">
-                  {stepErrors.map((error, index) => (
-                    <li key={index} className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
-                      {error}
-                    </li>
-                  ))}
-                </ul>
+          <div className="pt-6 border-t">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex justify-start">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+                  disabled={currentStep === 0}
+                  className="gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Назад
+                </Button>
               </div>
-            )}
 
-            <div className="flex items-center justify-between">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-                disabled={currentStep === 0}
-                className="gap-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Назад
-              </Button>
-
-              <div className="flex gap-3">
+              <div className="flex justify-end gap-3 w-full sm:w-auto">
                 {currentStep < 3 ? (
                   <Button
                     type="button"

@@ -22,10 +22,10 @@
     --muted: 210 40% 96.1%;
     --muted-foreground: 215 16% 47%;
     
-    /* Transparency for theme components */
-    --card-opacity: 0.85;
-    --popover-opacity: 0.9;
-    --muted-opacity: 0.7;
+    /* Opaque surfaces for clear component boundaries */
+    --card-opacity: 1;
+    --popover-opacity: 1;
+    --muted-opacity: 1;
 
     --accent: 221 70% 91%;
     --accent-foreground: 221 83% 53%;
@@ -39,7 +39,7 @@
     --warning: 38 92% 50%;
     --warning-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
+    --border: 214.3 31.8% 85%;
     --input: 214.3 31.8% 91.4%;
     --ring: 221 83% 53%;
 
@@ -71,10 +71,10 @@
     --muted: 217 19% 18%;
     --muted-foreground: 215 20% 65%;
     
-    /* Transparency for theme components */
-    --card-opacity: 0.8;
-    --popover-opacity: 0.85;
-    --muted-opacity: 0.6;
+    /* Opaque surfaces for clear component boundaries */
+    --card-opacity: 1;
+    --popover-opacity: 1;
+    --muted-opacity: 1;
 
     --accent: 217 91% 60%;
     --accent-foreground: 210 40% 98%;
@@ -146,24 +146,24 @@
 
 @layer components {
   /* ============================================
-     GLASSMORPHISM - Glass effect for components
+     Cards & surfaces - solid backgrounds, clear borders
      ============================================ */
   
   .glass-card {
-    background: rgba(255, 255, 255, 0.45) !important;
-    backdrop-filter: blur(20px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    background: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
   
   .dark .glass-card {
-    background: rgba(15, 23, 42, 0.6) !important;
-    backdrop-filter: blur(20px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
   
-  /* Solid card - no glass effect, for gradient backgrounds */
+  /* Legacy alias - same as glass-card (solid) for gradient backgrounds */
   .solid-card {
     background: inherit !important;
     backdrop-filter: none !important;
@@ -253,31 +253,33 @@
     @apply flex-shrink-0 h-8 sm:h-9;
   }
   
-  /* Make Radix Themes components slightly transparent - light theme only */
+  /* Radix Themes - solid backgrounds and clear borders */
   :root:not(.dark) [class*="rt-Card"]:not([class*="bg-gradient"]):not([class*="bg-"]),
   :root:not(.dark) [class*="rt-Popover"],
   :root:not(.dark) [class*="rt-DropdownMenu"],
   :root:not(.dark) [class*="rt-Select"] {
-    background-color: hsl(var(--card) / 0.75) !important;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background-color: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
   }
   
-  /* Make muted backgrounds more transparent - light theme only */
+  .dark [class*="rt-Card"]:not([class*="bg-gradient"]):not([class*="bg-"]),
+  .dark [class*="rt-Popover"],
+  .dark [class*="rt-DropdownMenu"],
+  .dark [class*="rt-Select"] {
+    border: 1px solid hsl(var(--border)) !important;
+  }
+  
   :root:not(.dark) [class*="rt-Surface"][class*="surface"],
   :root:not(.dark) [class*="rt-Box"][class*="bg-muted"] {
-    background-color: hsl(var(--muted) / 0.6) !important;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background-color: hsl(var(--muted)) !important;
+    border: 1px solid hsl(var(--border)) !important;
   }
   
-  /* Make buttons slightly transparent (except solid variants) - light theme only */
   :root:not(.dark) [class*="rt-Button"][class*="soft"],
   :root:not(.dark) [class*="rt-Button"][class*="surface"],
   :root:not(.dark) [class*="rt-Button"][class*="outline"] {
-    background-color: hsl(var(--secondary) / 0.75) !important;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    background-color: hsl(var(--secondary)) !important;
+    border: 1px solid hsl(var(--border)) !important;
   }
   
   .form-container {
@@ -301,7 +303,7 @@
   }
   
   .empty-state {
-    @apply flex flex-col items-center justify-center p-8 text-center bg-muted/50 rounded-lg border border-dashed border-muted;
+    @apply flex flex-col items-center justify-center p-8 text-center bg-muted rounded-xl border-2 border-dashed border-border;
   }
   
   .empty-state-icon {
@@ -345,4 +347,44 @@
   z-index: 9999;
   outline: none;
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+/* Toast (Sonner) - force opaque backgrounds */
+[data-sonner-toast] {
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) !important;
+  opacity: 1 !important;
+}
+[data-sonner-toast][data-type="error"] {
+  background: rgb(254 226 226) !important;
+  border-color: rgb(252 165 165) !important;
+}
+.dark [data-sonner-toast][data-type="error"] {
+  background: rgb(69 10 10) !important;
+  border-color: rgb(127 29 29) !important;
+}
+[data-sonner-toast][data-type="success"] {
+  background: rgb(236 253 245) !important;
+  border-color: rgb(167 243 208) !important;
+}
+.dark [data-sonner-toast][data-type="success"] {
+  background: rgb(6 39 25) !important;
+  border-color: rgb(22 101 52) !important;
+}
+[data-sonner-toast][data-type="warning"] {
+  background: rgb(255 251 235) !important;
+  border-color: rgb(253 230 138) !important;
+}
+.dark [data-sonner-toast][data-type="warning"] {
+  background: rgb(69 49 7) !important;
+  border-color: rgb(161 98 7) !important;
+}
+[data-sonner-toast][data-type="info"] {
+  background: rgb(239 246 255) !important;
+  border-color: rgb(191 219 254) !important;
+}
+.dark [data-sonner-toast][data-type="info"] {
+  background: rgb(23 37 84) !important;
+  border-color: rgb(30 64 175) !important;
 }

@@ -18,7 +18,7 @@ const COLORS = {
 };
 
 // Helper function to convert number to words in Bulgarian
-function numberToWordsBG(num: number): string {
+function numberToWordsBG(num: number, currency: string = 'EUR'): string {
   const units = ['', 'един', 'два', 'три', 'четири', 'пет', 'шест', 'седем', 'осем', 'девет'];
   const unitsF = ['', 'една', 'две', 'три', 'четири', 'пет', 'шест', 'седем', 'осем', 'девет'];
   const teens = ['десет', 'единадесет', 'дванадесет', 'тринадесет', 'четиринадесет', 'петнадесет', 'шестнадесет', 'седемнадесет', 'осемнадесет', 'деветнадесет'];
@@ -97,25 +97,37 @@ function numberToWordsBG(num: number): string {
   }
   
   // Add currency word for integer part
+  const currencyWordMap: Record<string, string> = {
+    'EUR': 'евро', 'BGN': 'лева', 'USD': 'щатски долара', 'GBP': 'британски лири',
+  };
+  const centsWordMap: Record<string, [string, string]> = {
+    'EUR': ['евроцент', 'евроцента'],
+    'BGN': ['стотинка', 'стотинки'],
+    'USD': ['цент', 'цента'],
+    'GBP': ['пени', 'пени'],
+  };
+  const currWord = currencyWordMap[currency] || currency;
+  const [centsSing, centsPlur] = centsWordMap[currency] || ['цент', 'цента'];
+
   if (intPart > 0) {
-    result += ' евро';
+    result += ' ' + currWord;
   }
-  
+
   if (decimal > 0) {
     // Convert decimal to words (cents/stotinki)
     if (decimal === 1) {
-      result += ' и един евроцент';
+      result += ' и един ' + centsSing;
     } else if (decimal < 10) {
-      result += ' и ' + unitsF[decimal] + ' евроцента';
+      result += ' и ' + unitsF[decimal] + ' ' + centsPlur;
     } else if (decimal < 20) {
-      result += ' и ' + teens[decimal - 10] + ' евроцента';
+      result += ' и ' + teens[decimal - 10] + ' ' + centsPlur;
     } else if (decimal < 100) {
       const t = Math.floor(decimal / 10);
       const unit = decimal % 10;
       if (unit === 0) {
-        result += ' и ' + tens[t] + ' евроцента';
+        result += ' и ' + tens[t] + ' ' + centsPlur;
       } else {
-        result += ' и ' + tens[t] + ' и ' + unitsF[unit] + ' евроцента';
+        result += ' и ' + tens[t] + ' и ' + unitsF[unit] + ' ' + centsPlur;
       }
     }
   }
@@ -128,16 +140,34 @@ function formatCurrency(amount: number, currency: string): string {
   const formatted = amount.toFixed(2);
   const symbols: Record<string, string> = {
     'EUR': '€',
+    'BGN': 'лв.',
+    'USD': '$',
+    'GBP': '£',
   };
-  return `${formatted} ${symbols[currency] || '€'}`;
+  return `${formatted} ${symbols[currency] || currency}`;
 }
 
-// Get currency word
+// Get currency word (for amount-in-words section)
 function getCurrencyWord(currency: string): string {
   const words: Record<string, string> = {
     'EUR': 'евро',
+    'BGN': 'лева',
+    'USD': 'щатски долара',
+    'GBP': 'британски лири',
   };
-  return words[currency] || 'евро';
+  return words[currency] || currency;
+}
+
+// Get currency cents word
+function getCurrencyCentsWord(currency: string, count: number): string {
+  const words: Record<string, [string, string]> = { // [singular, plural]
+    'EUR': ['евроцент', 'евроцента'],
+    'BGN': ['стотинка', 'стотинки'],
+    'USD': ['цент', 'цента'],
+    'GBP': ['пени', 'пени'],
+  };
+  const pair = words[currency] || ['цент', 'цента'];
+  return count === 1 ? pair[0] : pair[1];
 }
 
 // Server-side PDF generation function
@@ -564,7 +594,7 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
   
   // Use calculated total for words
   const totalForWords = displayTotal;
-  const amountInWords = numberToWordsBG(totalForWords);
+  const amountInWords = numberToWordsBG(totalForWords, invoice.currency || 'EUR');
   const maxWordsWidth = totalsX - margin - 10;
   const words = doc.splitTextToSize(amountInWords, maxWordsWidth);
   doc.text(words, margin, yPos + 17);
@@ -574,7 +604,13 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
   doc.setTextColor(COLORS.muted.r, COLORS.muted.g, COLORS.muted.b);
   doc.text('Начин на плащане:', margin, yPos);
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
-  doc.text(invoice.paymentMethod || 'Банков превод', margin + 40, yPos);
+  const paymentMethodLabels: Record<string, string> = {
+    'BANK_TRANSFER': 'Банков превод',
+    'CARD': 'Карта',
+    'CASH': 'В брой',
+    'OTHER': 'Друго',
+  };
+  doc.text(paymentMethodLabels[invoice.paymentMethod] || invoice.paymentMethod || 'Банков превод', margin + 40, yPos);
   
   // ==================== BANK DETAILS ====================
   

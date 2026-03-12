@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { cn } from "@/lib/utils";
+import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 
 interface CommandItem {
   id: string;
@@ -48,8 +49,64 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const [search, setSearch] = React.useState("");
   const [selectedIndex, setSelectedIndex] = React.useState(0);
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const {
+    isLoadingUsage,
+    canCreateInvoice,
+    canCreateCompany,
+    canCreateClient,
+    canCreateProduct,
+  } = useSubscriptionLimit();
 
-  const commands: CommandItem[] = React.useMemo(() => [
+  const commands: CommandItem[] = React.useMemo(() => {
+    const createCommands: CommandItem[] = [];
+    if (!isLoadingUsage) {
+      if (canCreateInvoice) {
+        createCommands.push({
+          id: "new-invoice",
+          title: "Нова фактура",
+          description: "Създай нова фактура",
+          icon: Plus,
+          action: () => router.push("/invoices/new"),
+          keywords: ["new", "create", "invoice", "нова", "създай", "фактура"],
+          category: "create",
+        });
+      }
+      if (canCreateClient) {
+        createCommands.push({
+          id: "new-client",
+          title: "Нов клиент",
+          description: "Добави нов клиент",
+          icon: Plus,
+          action: () => router.push("/clients/new"),
+          keywords: ["new", "create", "client", "нов", "добави", "клиент"],
+          category: "create",
+        });
+      }
+      if (canCreateCompany) {
+        createCommands.push({
+          id: "new-company",
+          title: "Нова компания",
+          description: "Добави нова компания",
+          icon: Plus,
+          action: () => router.push("/companies/new"),
+          keywords: ["new", "create", "company", "нова", "добави", "компания"],
+          category: "create",
+        });
+      }
+      if (canCreateProduct) {
+        createCommands.push({
+          id: "new-product",
+          title: "Нов продукт",
+          description: "Добави нов продукт",
+          icon: Plus,
+          action: () => router.push("/products/new"),
+          keywords: ["new", "create", "product", "нов", "добави", "продукт"],
+          category: "create",
+        });
+      }
+    }
+
+    return [
     // Navigation
     {
       id: "dashboard",
@@ -96,43 +153,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       keywords: ["products", "продукти", "услуги"],
       category: "navigation",
     },
-    // Create
-    {
-      id: "new-invoice",
-      title: "Нова фактура",
-      description: "Създай нова фактура",
-      icon: Plus,
-      action: () => router.push("/invoices/new"),
-      keywords: ["new", "create", "invoice", "нова", "създай", "фактура"],
-      category: "create",
-    },
-    {
-      id: "new-client",
-      title: "Нов клиент",
-      description: "Добави нов клиент",
-      icon: Plus,
-      action: () => router.push("/clients/new"),
-      keywords: ["new", "create", "client", "нов", "добави", "клиент"],
-      category: "create",
-    },
-    {
-      id: "new-company",
-      title: "Нова компания",
-      description: "Добави нова компания",
-      icon: Plus,
-      action: () => router.push("/companies/new"),
-      keywords: ["new", "create", "company", "нова", "добави", "компания"],
-      category: "create",
-    },
-    {
-      id: "new-product",
-      title: "Нов продукт",
-      description: "Добави нов продукт",
-      icon: Plus,
-      action: () => router.push("/products/new"),
-      keywords: ["new", "create", "product", "нов", "добави", "продукт"],
-      category: "create",
-    },
+    ...createCommands,
     // Settings
     {
       id: "settings",
@@ -180,7 +201,8 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       keywords: ["logout", "signout", "изход", "излез"],
       category: "actions",
     },
-  ], [router, theme, setTheme]);
+  ];
+  }, [router, theme, setTheme, isLoadingUsage, canCreateInvoice, canCreateCompany, canCreateClient, canCreateProduct]);
 
   const filteredCommands = React.useMemo(() => {
     if (!search) return commands;

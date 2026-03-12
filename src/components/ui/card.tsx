@@ -9,7 +9,7 @@ const Card = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={`glass-card rounded-xl shadow-xl shadow-black/5 ${className || ""}`}
+    className={`glass-card rounded-xl shadow-md ${className || ""}`}
     {...props}
   />
 ));

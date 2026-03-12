@@ -16,6 +16,7 @@ import { useTheme } from "next-themes";
 import { Switch } from "@/components/ui/switch";
 import { useState, useEffect, useMemo } from "react";
 import { useCommandPalette } from "@/components/ui/command-palette";
+import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { APP_NAME } from "@/config/constants";
 
 export function Navbar() {
@@ -25,6 +26,7 @@ export function Navbar() {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const { setOpen: setCommandPaletteOpen } = useCommandPalette();
+  const { isLoadingUsage, canCreateInvoice } = useSubscriptionLimit();
 
   useEffect(() => {
     setMounted(true);
@@ -56,7 +58,7 @@ export function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full glass-card !rounded-none !border-t-0 !border-l-0 !border-r-0" role="banner">
+    <header className="sticky top-0 z-50 w-full glass-card !rounded-none !border-t-0 !border-x-0 border-b border-border" role="banner">
       <div className="flex items-center h-16">
         {/* Logo - Left side - Fixed width matching sidebar, starts from edge */}
         <Link href="/dashboard" aria-label="Начална страница" className="flex items-center justify-center gap-3 w-72 h-full shrink-0 border-r border-border/50">
@@ -83,18 +85,20 @@ export function Navbar() {
             </kbd>
           </Button>
           
-          {/* Quick Add Invoice Icon - Hidden on small mobile */}
-          <Button 
-            asChild 
-            size="icon" 
-            className="hidden sm:flex h-10 w-10 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20"
-            title="Нова фактура"
-            aria-label="Нова фактура"
-          >
-            <Link href="/invoices/new">
-              <Plus className="h-5 w-5" aria-hidden="true" />
-            </Link>
-          </Button>
+          {/* Quick Add Invoice Icon - only when usage loaded and allowed */}
+          {!isLoadingUsage && canCreateInvoice && (
+            <Button 
+              asChild 
+              size="icon" 
+              className="hidden sm:flex h-10 w-10 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20"
+              title="Нова фактура"
+              aria-label="Нова фактура"
+            >
+              <Link href="/invoices/new">
+                <Plus className="h-5 w-5" aria-hidden="true" />
+              </Link>
+            </Button>
+          )}
 
           {/* User Menu */}
           <DropdownMenu>

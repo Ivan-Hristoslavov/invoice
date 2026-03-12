@@ -490,6 +490,14 @@ All issues below have been resolved:
 14. **Status Color Map** - Added `INVOICE_STATUS` constant and `getCurrencySymbol` helper to constants.
 15. **Health Check & .env.example** - `GET /api/health` endpoint (checks DB, SMTP, Stripe config). `.env.example` with all required variables documented.
 
+### Abuse prevention (BULSTAT uniqueness)
+- **One company per ЕИК/БУЛСТАТ** – A given BULSTAT can be registered only once on the platform. This stops users from creating multiple accounts with the same company and bypassing subscription limits.
+- **Implementation:**  
+  - `supabase-migration-company-bulstat-unique.sql` – unique partial index on `Company(bulstatNumber)` (only when non-empty).  
+  - `POST /api/companies` – before insert, checks if another company (any user) already has this BULSTAT; returns 409 with message in Bulgarian if duplicate.  
+  - `PUT /api/companies/[id]` – new route for updating a company; same BULSTAT check (excluding current company).  
+- **Advice:** Keep email as the main account identifier (already non-editable in profile). Optionally add: rate limit on company creation per user, or require email verification before allowing company add. The BULSTAT rule is the main protection against one company being used across many accounts.
+
 ### New Files Created
 - `src/lib/rate-limit.ts` - In-memory rate limiter
 - `src/app/api/health/route.ts` - Health check endpoint
@@ -499,6 +507,8 @@ All issues below have been resolved:
 - `src/app/api/invoices/[id]/duplicate/route.ts` - Invoice duplication API
 - `src/components/notes/NoteForm.tsx` - Shared note form component
 - `supabase-migration-password-reset-token.sql` - DB migration
+- `supabase-migration-company-bulstat-unique.sql` - Unique BULSTAT per company
+- `src/app/api/companies/[id]/route.ts` - GET/PUT company (with BULSTAT uniqueness)
 - `.env.example` - Environment variables template
 
 ### Updated Score: ~7.5/10

@@ -159,9 +159,11 @@ export default function RootLayout({
         >
           <Theme appearance="inherit" accentColor="cyan" grayColor="slate" radius="full" scaling="90%">
             <AuthProvider>
-              {children}
-              <Toaster />
-              <CookieConsent />
+              <div className="min-h-screen flex flex-col">
+                <div className="flex-1">{children}</div>
+                <Toaster />
+                <CookieConsent />
+              </div>
             </AuthProvider>
           </Theme>
         </ThemeProvider>

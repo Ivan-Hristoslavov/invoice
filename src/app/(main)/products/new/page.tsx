@@ -531,11 +531,11 @@ export default function NewProductPage() {
           <div className="flex flex-col gap-4 pt-6 border-t">
             {/* Validation errors */}
             {stepErrors.length > 0 && (
-              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
-                <ul className="text-sm text-destructive space-y-1">
+              <div className="rounded-lg border-2 border-red-300 bg-red-100 p-3 shadow-md dark:border-red-500 dark:bg-white/90 dark:backdrop-blur-xl dark:shadow-lg">
+                <ul className="text-sm font-medium text-red-800 space-y-1 dark:text-red-700">
                   {stepErrors.map((error, index) => (
                     <li key={index} className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                      <span className="w-1.5 h-1.5 shrink-0 rounded-full bg-red-500 dark:bg-red-600" />
                       {error}
                     </li>
                   ))}

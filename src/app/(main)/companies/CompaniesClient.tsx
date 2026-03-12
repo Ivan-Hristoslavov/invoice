@@ -112,7 +112,7 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
             Управлявайте вашите фирми и компании
           </p>
         </div>
-        {canCreateCompany ? (
+        {!isLoadingUsage && canCreateCompany && (
           <RadixButton 
             asChild 
             size="3" 
@@ -125,7 +125,8 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
               Нова компания
             </Link>
           </RadixButton>
-        ) : (
+        )}
+        {!isLoadingUsage && !canCreateCompany && (
           <LockedButton requiredPlan={isFree ? "PRO" : "BUSINESS"}>
             Нова компания
           </LockedButton>

@@ -31,19 +31,18 @@ const companyInfoSchema = z.object({
   name: z.string().min(2, "Името на компанията е задължително"),
   email: z.string().email("Моля, въведете валиден имейл адрес").optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
-  address: z.string().optional().or(z.literal("")),
-  city: z.string().optional().or(z.literal("")),
+  address: z.string().min(1, "Адресът е задължителен"),
+  city: z.string().min(1, "Градът е задължителен"),
   state: z.string().optional().or(z.literal("")),
   zipCode: z.string().optional().or(z.literal("")),
   country: z.string().optional().or(z.literal("")),
   vatNumber: z.string().optional().or(z.literal("")),
   taxIdNumber: z.string().optional().or(z.literal("")),
   registrationNumber: z.string().optional().or(z.literal("")),
-  // Bulgarian-specific fields
-  bulstatNumber: z.string().optional().or(z.literal("")),
+  bulstatNumber: z.string().min(1, "Булстат/ЕИК е задължителен"),
   vatRegistered: z.boolean(),
   vatRegistrationNumber: z.string().optional().or(z.literal("")),
-  mol: z.string().optional().or(z.literal("")),
+  mol: z.string().min(1, "МОЛ (материално отговорно лице) е задължително"),
   accountablePerson: z.string().optional().or(z.literal("")),
   uicType: z.enum(["BULSTAT", "EGN"]).optional(),
   stripeAccountId: z.string().optional().or(z.literal("")),
@@ -150,7 +149,7 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Име на компанията</FormLabel>
+              <FormLabel>Име на компанията *</FormLabel>
               <FormControl>
                 <Input placeholder="Име на вашата компания" {...field} />
               </FormControl>
@@ -194,7 +193,7 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
           name="address"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Адрес</FormLabel>
+              <FormLabel>Адрес *</FormLabel>
               <FormControl>
                 <Input placeholder="ул. Бизнес 123" {...field} />
               </FormControl>
@@ -209,7 +208,7 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
             name="city"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Град</FormLabel>
+                <FormLabel>Град *</FormLabel>
                 <FormControl>
                   <Input placeholder="Град" {...field} />
                 </FormControl>
@@ -318,7 +317,7 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
               name="bulstatNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>БУЛСТАТ/ЕИК</FormLabel>
+                  <FormLabel>БУЛСТАТ/ЕИК *</FormLabel>
                   <FormControl>
                     <Input placeholder="Например: 123456789" {...field} />
                   </FormControl>
@@ -405,7 +404,7 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
               name="mol"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>МОЛ (Представляващ)</FormLabel>
+                  <FormLabel>МОЛ (Представляващ) *</FormLabel>
                   <FormControl>
                     <Input placeholder="Име на представляващия" {...field} />
                   </FormControl>

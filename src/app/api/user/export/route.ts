@@ -121,6 +121,7 @@ export async function GET(request: NextRequest) {
         ...company,
         // Remove sensitive fields
         napPassword: undefined,
+        napUserName: undefined,
       })) || [],
       clients: clientsResult.data || [],
       products: productsResult.data || [],

@@ -163,7 +163,7 @@ export function Sidebar() {
       {/* Sidebar - Fixed and always visible on desktop (lg+), collapsible on mobile only */}
       <motion.aside 
         className={cn(
-          "fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] w-72 flex flex-col glass-card !rounded-none !border-r !border-l-0 !border-t-0 !border-b-0 shrink-0",
+          "fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] w-72 flex flex-col glass-card !rounded-none !border-l-0 !border-t-0 !border-b-0 border-r border-border shrink-0",
           "lg:translate-x-0",
           isMobile && !isOpen && "-translate-x-full"
         )}

@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls /Users/ivanivanov/Documents/MyProjects/invoice/src/app/\\\\\\(main\\\\\\)/invoices/)",
+      "Bash(ls /Users/ivanivanov/Documents/MyProjects/invoice/src/app/\\\\\\(main\\\\\\)/invoices/new/ && ls /Users/ivanivanov/Documents/MyProjects/invoice/src/app/\\\\\\(main\\\\\\)/invoices/\\\\[id\\\\]/)",
+      "Bash(ls /Users/ivanivanov/Documents/MyProjects/invoice/src/app/api/invoices/\\\\[id\\\\]/)",
+      "Bash(ls /Users/ivanivanov/Documents/MyProjects/invoice/src/app/\\\\\\(main\\\\\\)/invoices/\\\\[id\\\\]/edit/)",
+      "Bash(grep -n \"placeOfIssue\\\\|supplyDate\\\\|paymentMethod\\\\|isEInvoice\\\\|isOriginal\" /Users/ivanivanov/Documents/MyProjects/invoice/src/app/\\\\\\(main\\\\\\)/invoices/\\\\[id\\\\]/edit/EditInvoiceForm.tsx | head -30)",
+      "Bash(grep -n \"fetch.*PUT\\\\|method.*PUT\\\\|body.*JSON\\\\|handleSubmit\\\\|onSubmit\" /Users/ivanivanov/Documents/MyProjects/invoice/src/app/\\\\\\(main\\\\\\)/invoices/\\\\[id\\\\]/edit/EditInvoiceForm.tsx | head -20)",
+      "Bash(grep -n \"invoiceData\\\\s*=\" /Users/ivanivanov/Documents/MyProjects/invoice/src/app/\\\\\\(main\\\\\\)/invoices/\\\\[id\\\\]/edit/EditInvoiceForm.tsx | head -20)",
+      "Bash(grep -n \"useState\\\\|invoiceData\" /Users/ivanivanov/Documents/MyProjects/invoice/src/app/\\\\\\(main\\\\\\)/invoices/\\\\[id\\\\]/edit/EditInvoiceForm.tsx | head -30)",
+      "Bash(grep -n \"setInvoiceData\\\\|invoiceData\\\\s*=\" /Users/ivanivanov/Documents/MyProjects/invoice/src/app/\\\\\\(main\\\\\\)/invoices/\\\\[id\\\\]/edit/EditInvoiceForm.tsx | grep -v \"invoiceData\\\\.\" | head -20)",
+      "Bash(grep -n \"CREDIT_CARD\\\\|CARD\" /Users/ivanivanov/Documents/MyProjects/invoice/src/app/\\\\\\(main\\\\\\)/invoices/\\\\[id\\\\]/edit/EditInvoiceForm.tsx | head -10)",
+      "Bash(grep -n \"paymentMethod\\\\|placeOfIssue\\\\|supplyDate\" /Users/ivanivanov/Documents/MyProjects/invoice/src/app/\\\\\\(main\\\\\\)/invoices/\\\\[id\\\\]/edit/EditInvoiceForm.tsx | head -20)",
+      "Bash(grep -n \"issueDate\\\\|dueDate\\\\|currency\\\\|notes\" /Users/ivanivanov/Documents/MyProjects/invoice/src/app/\\\\\\(main\\\\\\)/invoices/\\\\[id\\\\]/edit/EditInvoiceForm.tsx | grep -v \"setInvoiceData\\\\|invoiceData\\\\.\" | head -20)",
+      "Bash(grep -n \"^import\\\\|from.*select\\\\|from.*input\" /Users/ivanivanov/Documents/MyProjects/invoice/src/app/\\\\\\(main\\\\\\)/invoices/\\\\[id\\\\]/edit/EditInvoiceForm.tsx | head -20)",
+      "Bash(npx tsc --noEmit --incremental false 2>&1 | head -60)",
+      "Bash(npx tsc --noEmit --incremental false 2>&1 | grep -E \"pdf-generator|invoices/new|invoices/\\\\[id\\\\]|forms\\\\.ts|CookieConsent|EditInvoice\" | head -20)",
+      "Bash(npx tsc --noEmit 2>&1 | grep -E \"use-form-validation|docs/guides/invoices\" | head -30)",
+      "Bash(npx tsc --noEmit 2>&1 | grep -E \"use-form-validation|docs/guides/invoices|encryption\" | head -20)",
+      "Bash(npx tsc --noEmit 2>&1 | grep -v \"node_modules\" | head -30)",
+      "Bash(npx tsc --noEmit 2>&1 | grep -E \"use-form-validation|docs/guides/invoices\")",
+      "Bash(ls -la /Users/ivanivanov/Documents/MyProjects/invoice/src/app/\\\\\\(main\\\\\\)/invoices/\\\\[id\\\\\\)/)"
+    ]
+  }
+}

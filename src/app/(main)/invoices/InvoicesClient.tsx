@@ -523,7 +523,7 @@ export default function InvoicesClient({
       </div>
       
       {/* Fast Action Button - Floating */}
-      {canCreateInvoices && (isLoadingUsage || canCreateInvoice) && (
+      {canCreateInvoices && !isLoadingUsage && canCreateInvoice && (
         <div className="fixed bottom-8 right-8 z-50">
           <Button
             asChild

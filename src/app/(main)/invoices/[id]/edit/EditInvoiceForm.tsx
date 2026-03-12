@@ -66,8 +66,13 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
     invoiceNumber: "",
     issueDate: "",
     dueDate: "",
+    supplyDate: "",
     companyId: "",
     currency: "EUR",
+    placeOfIssue: "София",
+    paymentMethod: "BANK_TRANSFER",
+    isEInvoice: false,
+    isOriginal: true,
     notes: "",
     termsAndConditions: "",
     status: ""
@@ -207,8 +212,13 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
           invoiceNumber: data.invoiceNumber,
           issueDate: new Date(data.issueDate).toISOString().substr(0, 10),
           dueDate: new Date(data.dueDate).toISOString().substr(0, 10),
+          supplyDate: data.supplyDate ? new Date(data.supplyDate).toISOString().substr(0, 10) : new Date(data.issueDate).toISOString().substr(0, 10),
           companyId: data.companyId,
-          currency: data.currency,
+          currency: data.currency || "EUR",
+          placeOfIssue: data.placeOfIssue || "София",
+          paymentMethod: data.paymentMethod || "BANK_TRANSFER",
+          isEInvoice: data.isEInvoice || false,
+          isOriginal: data.isOriginal !== false,
           notes: data.notes || "",
           termsAndConditions: data.termsAndConditions || "",
           status: data.status
@@ -424,7 +434,12 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
         companyId: invoiceData.companyId,
         issueDate: invoiceData.issueDate,
         dueDate: invoiceData.dueDate,
+        supplyDate: invoiceData.supplyDate,
         currency: invoiceData.currency,
+        placeOfIssue: invoiceData.placeOfIssue,
+        paymentMethod: invoiceData.paymentMethod,
+        isEInvoice: invoiceData.isEInvoice,
+        isOriginal: invoiceData.isOriginal,
         notes: invoiceData.notes,
         termsAndConditions: invoiceData.termsAndConditions,
         items: items.map(item => ({
@@ -685,7 +700,7 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                 
                 <div className="space-y-2">
                   <Label htmlFor="currency">Валута</Label>
-                  <Select 
+                  <Select
                     value={invoiceData.currency}
                     onValueChange={(value) => handleInputChange('currency', value)}
                   >
@@ -696,6 +711,47 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                       <SelectItem value="BGN">BGN - Лев</SelectItem>
                       <SelectItem value="EUR">EUR - Евро</SelectItem>
                       <SelectItem value="USD">USD - Долар</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="supplyDate" className="text-sm font-medium">Дата на данъчното събитие</Label>
+                    <Input
+                      id="supplyDate"
+                      type="date"
+                      value={invoiceData.supplyDate}
+                      onChange={(e) => handleInputChange('supplyDate', e.target.value)}
+                      className="h-10 sm:h-11 w-full"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="placeOfIssue" className="text-sm font-medium">Място на издаване</Label>
+                    <Input
+                      id="placeOfIssue"
+                      value={invoiceData.placeOfIssue}
+                      onChange={(e) => handleInputChange('placeOfIssue', e.target.value)}
+                      placeholder="напр. София"
+                      className="h-10 sm:h-11 w-full"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="paymentMethod">Начин на плащане</Label>
+                  <Select
+                    value={invoiceData.paymentMethod}
+                    onValueChange={(value) => handleInputChange('paymentMethod', value)}
+                  >
+                    <SelectTrigger id="paymentMethod">
+                      <SelectValue placeholder="Начин на плащане" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="BANK_TRANSFER">Банков превод</SelectItem>
+                      <SelectItem value="CASH">В брой</SelectItem>
+                      <SelectItem value="CREDIT_CARD">Кредитна/дебитна карта</SelectItem>
+                      <SelectItem value="OTHER">Друго</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
