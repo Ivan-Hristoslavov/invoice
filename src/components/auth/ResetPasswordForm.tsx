@@ -120,7 +120,7 @@ export function ResetPasswordForm() {
           </p>
         </motion.div>
         <motion.div variants={itemVariants} className="flex justify-center">
-          <Button asChild className="w-full max-w-sm h-12 bg-emerald-600 hover:bg-emerald-700 text-white">
+          <Button asChild className="w-full max-w-sm h-12 gradient-primary hover:opacity-90 text-white border-0">
             <Link href="/signin">
               Влезте в профила си
               <ArrowRight className="ml-2 h-5 w-5" />
@@ -192,7 +192,7 @@ export function ResetPasswordForm() {
         <motion.div variants={itemVariants} className="pt-4">
           <Button
             type="submit"
-            className="w-full h-12 text-base font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30"
+            className="w-full h-12 text-base font-semibold gradient-primary hover:opacity-90 text-white border-0 shadow-lg"
             disabled={isLoading}
           >
             {isLoading ? (

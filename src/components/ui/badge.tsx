@@ -1,38 +1,53 @@
 "use client";
 
 import * as React from "react";
-import { Badge as RadixBadge } from "@radix-ui/themes";
-import type { BadgeProps as RadixBadgeProps } from "@radix-ui/themes";
+import { Chip } from "@heroui/react";
 
-export interface BadgeProps extends Omit<RadixBadgeProps, "variant"> {
-  variant?: "default" | "secondary" | "destructive" | "outline" | "success" | "warning" | "info";
+export interface BadgeProps extends React.ComponentProps<typeof Chip> {
+  variant?:
+    | "default"
+    | "secondary"
+    | "destructive"
+    | "outline-solid"
+    | "outline"
+    | "success"
+    | "warning"
+    | "info";
 }
 
-function Badge({ variant = "default", className, ...props }: BadgeProps) {
-  // Map shadcn variants to Radix variants
-  const radixVariant = 
-    variant === "secondary" ? "soft" :
-    variant === "destructive" ? "solid" :
-    variant === "outline" ? "outline" :
-    variant === "success" ? "solid" :
-    variant === "warning" ? "solid" :
-    variant === "info" ? "solid" :
-    "solid";
+const chipColorMap: Record<string, "primary" | "secondary" | "danger" | "success" | "warning"> = {
+  default: "primary",
+  secondary: "secondary",
+  destructive: "danger",
+  success: "success",
+  warning: "warning",
+  info: "secondary",
+  outline: "secondary",
+  "outline-solid": "secondary",
+};
 
-  const color = 
-    variant === "destructive" ? "red" :
-    variant === "success" ? "green" :
-    variant === "warning" ? "amber" :
-    variant === "info" ? "blue" :
-    undefined;
+const chipVariantMap: Record<string, "solid" | "soft" | "outline"> = {
+  default: "solid",
+  secondary: "soft",
+  destructive: "soft",
+  success: "soft",
+  warning: "soft",
+  info: "soft",
+  outline: "outline",
+  "outline-solid": "outline",
+};
 
+function Badge({ variant = "default", className, children, ...props }: BadgeProps) {
   return (
-    <RadixBadge
-      variant={radixVariant}
-      color={color}
+    <Chip
+      color={chipColorMap[variant] ?? "primary"}
+      variant={chipVariantMap[variant] ?? "solid"}
       className={className}
+      size="sm"
       {...props}
-    />
+    >
+      {children}
+    </Chip>
   );
 }
 

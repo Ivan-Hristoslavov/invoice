@@ -95,7 +95,7 @@ function GuideCard({ guide }) {
           Време за четене: {guide.timeToRead}
         </div>
         <Button variant="ghost" size="sm" asChild>
-          <Link href={`/docs/guides/${guide.id}`}>
+          <Link href={`/docs/guides/${guide.id}`} className="flex items-center whitespace-nowrap">
             Прочети
             <ChevronRightIcon className="ml-1 h-4 w-4" />
           </Link>
@@ -111,7 +111,7 @@ export default function GuidesPage() {
       <div className="max-w-5xl mx-auto">
         <div className="mb-6 flex items-center">
           <Button variant="ghost" size="sm" asChild className="mr-2">
-            <Link href="/docs">
+            <Link href="/docs" className="flex items-center whitespace-nowrap">
               <ArrowLeftIcon className="mr-2 h-4 w-4" />
               Документация
             </Link>
@@ -130,7 +130,7 @@ export default function GuidesPage() {
           <input
             type="text"
             placeholder="Търсене в ръководства..."
-            className="w-full md:w-2/3 px-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full md:w-2/3 px-4 py-2 border border-input rounded-md focus:outline-hidden focus:ring-2 focus:ring-primary"
           />
         </div>
         

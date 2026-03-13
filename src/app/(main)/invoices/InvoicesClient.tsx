@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Button as RadixButton } from "@radix-ui/themes";
 import { 
   Card, 
   CardContent, 
@@ -27,8 +26,6 @@ import {
   Clock,
   XCircle,
   ArrowUpDown,
-  ChevronLeft,
-  ChevronRight,
   MoreHorizontal,
   FileCheck,
   Printer,
@@ -38,6 +35,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Pagination } from "@/components/ui/pagination";
 import { format } from "date-fns";
 import { bg } from "date-fns/locale";
 import ExportDialogWrapper from "./ExportDialogWrapper";
@@ -65,6 +63,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { ProFeatureLock, UsageCounter, LockedButton } from "@/components/ui/pro-feature-lock";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Table } from "@heroui/react";
 import { Crown, AlertTriangle } from "lucide-react";
 
 interface Invoice {
@@ -466,7 +465,7 @@ export default function InvoicesClient({
               Надградете до PRO за неограничени фактури.
             </span>
             <Link href="/settings/subscription">
-              <Button size="sm" className="ml-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
+              <Button size="sm" className="ml-4 bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
                 <Crown className="h-4 w-4 mr-2" />
                 Надградете до PRO
               </Button>
@@ -502,18 +501,18 @@ export default function InvoicesClient({
             </Button>
           )}
           {(isLoadingUsage || canCreateInvoice) ? (
-            <RadixButton 
+            <Button 
               asChild 
               size="3" 
               variant="solid" 
               color="green"
               className="shadow-lg"
             >
-              <Link href="/invoices/new">
+              <Link href="/invoices/new" className="flex items-center whitespace-nowrap">
                 <Plus className="mr-2 h-5 w-5" />
                 Нова фактура
               </Link>
-            </RadixButton>
+            </Button>
           ) : (
             <LockedButton requiredPlan="PRO">
               Нова фактура
@@ -528,7 +527,7 @@ export default function InvoicesClient({
           <Button
             asChild
             size="lg"
-            className="h-14 w-14 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xl shadow-emerald-600/30 hover:shadow-emerald-600/40 transition-all hover:scale-110"
+            className="h-14 w-14 rounded-full gradient-primary hover:opacity-90 text-white border-0 shadow-2xl transition-all hover:scale-110"
           >
             <Link href="/invoices/new">
               <Plus className="h-6 w-6" />
@@ -637,9 +636,9 @@ export default function InvoicesClient({
             {canCreateInvoices && (isLoadingUsage || canCreateInvoice) && (
               <Button 
                 asChild 
-                className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all"
+                className="gradient-primary hover:opacity-90 text-white border-0 shadow-lg transition-all"
               >
-                <Link href="/invoices/new">
+                <Link href="/invoices/new" className="flex items-center whitespace-nowrap">
                   <Plus className="mr-2 h-4 w-4" />
                   <span className="hidden sm:inline">Нова фактура</span>
                   <span className="sm:hidden">Нова</span>
@@ -692,7 +691,7 @@ export default function InvoicesClient({
                   const statusConfig = getStatusConfig(invoice.status);
                   const StatusIcon = statusConfig.icon;
                   return (
-                    <div key={invoice.id} className="rounded-xl border bg-card p-4 shadow-sm">
+                    <div key={invoice.id} className="rounded-xl border bg-card p-4 shadow-xs">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-3">
                           <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
@@ -745,7 +744,7 @@ export default function InvoicesClient({
                           <Button
                             size="sm"
                             onClick={() => openStatusModal(invoice, "ISSUED")}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                            className="gradient-primary hover:opacity-90 text-white border-0"
                           >
                             <FileCheck className="mr-2 h-4 w-4" />
                             Издай
@@ -766,284 +765,258 @@ export default function InvoicesClient({
                   );
                 })}
               </div>
-              <div className="hidden md:block overflow-x-auto max-h-[600px] overflow-y-auto">
-                <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border/50">
-                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Фактура
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Клиент
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">
-                      Дата
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Сума
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Статус
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      <span className="hidden md:inline">Действия</span>
-                      <MoreHorizontal className="h-4 w-4 inline md:hidden" />
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  <AnimatePresence>
-                    {paginatedInvoices.map((invoice, index) => {
-                      const statusConfig = getStatusConfig(invoice.status);
-                      const StatusIcon = statusConfig.icon;
-                      
-                      return (
-                        <motion.tr 
-                          key={invoice.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          transition={{ duration: 0.2, delay: index * 0.03 }}
-                          className="hover:bg-muted/50 transition-colors group"
-                        >
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-                                (invoice.status === 'ISSUED' || invoice.status === 'PAID')
-                                  ? 'bg-emerald-500/10'
-                                  : invoice.status === 'DRAFT'
-                                  ? 'bg-amber-500/10'
-                                  : 'bg-red-500/10'
-                              }`}>
-                                <StatusIcon className={`h-5 w-5 ${
-                                  (invoice.status === 'ISSUED' || invoice.status === 'PAID')
-                                    ? 'text-emerald-600'
-                                    : invoice.status === 'DRAFT'
-                                    ? 'text-amber-600'
-                                    : 'text-red-600'
-                                }`} />
-                              </div>
-                              <div>
-                                <p className="font-semibold text-sm">{invoice.invoiceNumber}</p>
-                                <p className="text-xs text-muted-foreground md:hidden">
-                                  {format(new Date(invoice.issueDate), "d MMM yyyy", { locale: bg })}
+              <div className="hidden md:block">
+                <Table variant="secondary" className="rounded-2xl border border-border/50 bg-transparent">
+                  <Table.ScrollContainer className="max-h-[600px]">
+                    <Table.Content aria-label="Списък с фактури" className="min-w-[980px]">
+                      <Table.Header className="bg-muted/35">
+                        <Table.Column isRowHeader className="px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                          Фактура
+                        </Table.Column>
+                        <Table.Column className="px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                          Клиент
+                        </Table.Column>
+                        <Table.Column className="px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                          Дата
+                        </Table.Column>
+                        <Table.Column className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                          Сума
+                        </Table.Column>
+                        <Table.Column className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                          Статус
+                        </Table.Column>
+                        <Table.Column className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                          Действия
+                        </Table.Column>
+                      </Table.Header>
+                      <Table.Body items={paginatedInvoices}>
+                        {(invoice) => {
+                          const statusConfig = getStatusConfig(invoice.status);
+                          const StatusIcon = statusConfig.icon;
+
+                          return (
+                            <Table.Row key={invoice.id} id={invoice.id} className="group">
+                              <Table.Cell className="px-6 py-4">
+                                <div className="flex items-center gap-3">
+                                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                                    (invoice.status === "ISSUED" || invoice.status === "PAID")
+                                      ? "bg-emerald-500/10"
+                                      : invoice.status === "DRAFT"
+                                        ? "bg-amber-500/10"
+                                        : "bg-red-500/10"
+                                  }`}>
+                                    <StatusIcon className={`h-5 w-5 ${
+                                      (invoice.status === "ISSUED" || invoice.status === "PAID")
+                                        ? "text-emerald-600"
+                                        : invoice.status === "DRAFT"
+                                          ? "text-amber-600"
+                                          : "text-red-600"
+                                    }`} />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="truncate text-sm font-semibold">{invoice.invoiceNumber}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      № фактура
+                                    </p>
+                                  </div>
+                                </div>
+                              </Table.Cell>
+                              <Table.Cell className="px-6 py-4">
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-medium">{invoice.client.name}</p>
+                                </div>
+                              </Table.Cell>
+                              <Table.Cell className="px-6 py-4">
+                                <p className="text-sm text-muted-foreground">
+                                  {format(new Date(invoice.issueDate), "d MMMM yyyy", { locale: bg })}
                                 </p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <p className="text-sm font-medium">{invoice.client.name}</p>
-                          </td>
-                          <td className="px-6 py-4 hidden md:table-cell">
-                            <p className="text-sm text-muted-foreground">
-                              {format(new Date(invoice.issueDate), "d MMMM yyyy", { locale: bg })}
-                            </p>
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <p className="text-sm font-bold">
-                              {formatPrice(Number(invoice.total))} €
-                            </p>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex justify-center">
-                              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${statusConfig.className}`}>
-                                <StatusIcon className="h-3 w-3" />
-                                {statusConfig.label}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center justify-center">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger 
-                                  className="h-8 w-8 p-0 hover:bg-muted rounded-md flex items-center justify-center"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                  }}
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  {invoice.userId === currentUserId && invoice.status === "DRAFT" && (
-                                    <DropdownMenuItem asChild>
-                                      <Link href={`/invoices/${invoice.id}/edit`} onClick={(e) => e.stopPropagation()}>
-                                        <Edit className="mr-2 h-4 w-4" />
-                                        Редактиране
-                                      </Link>
-                                    </DropdownMenuItem>
-                                  )}
-                                  {invoice.status === "DRAFT" && (
-                                    <>
+                              </Table.Cell>
+                              <Table.Cell className="px-6 py-4 text-right">
+                                <p className="text-sm font-bold">
+                                  {formatPrice(Number(invoice.total))} €
+                                </p>
+                              </Table.Cell>
+                              <Table.Cell className="px-6 py-4">
+                                <div className="flex justify-center">
+                                  <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${statusConfig.className}`}>
+                                    <StatusIcon className="h-3 w-3" />
+                                    {statusConfig.label}
+                                  </span>
+                                </div>
+                              </Table.Cell>
+                              <Table.Cell className="px-6 py-4">
+                                <div className="flex items-center justify-center">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger
+                                      className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                      }}
+                                    >
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      {invoice.userId === currentUserId && invoice.status === "DRAFT" && (
+                                        <DropdownMenuItem asChild>
+                                          <Link href={`/invoices/${invoice.id}/edit`} onClick={(e) => e.stopPropagation()}>
+                                            <Edit className="mr-2 h-4 w-4" />
+                                            Редактиране
+                                          </Link>
+                                        </DropdownMenuItem>
+                                      )}
+                                      {invoice.status === "DRAFT" && (
+                                        <>
+                                          <DropdownMenuItem
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              openStatusModal(invoice, "ISSUED");
+                                            }}
+                                            className="text-emerald-600 focus:text-emerald-600"
+                                          >
+                                            <FileCheck className="mr-2 h-4 w-4" />
+                                            Издай фактура
+                                          </DropdownMenuItem>
+                                          {invoice.userId === currentUserId && (
+                                            <DropdownMenuItem
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                openVoidModal(invoice);
+                                              }}
+                                              className="text-purple-600 focus:bg-purple-50 focus:text-purple-600"
+                                            >
+                                              <Ban className="mr-2 h-4 w-4" />
+                                              Анулирай
+                                            </DropdownMenuItem>
+                                          )}
+                                        </>
+                                      )}
+                                      {(invoice.status === "ISSUED" || invoice.status === "PAID") && invoice.userId === currentUserId && (
+                                        <DropdownMenuItem
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            openCancelModal(invoice);
+                                          }}
+                                          className="text-red-600 focus:text-red-600"
+                                        >
+                                          <XCircle className="mr-2 h-4 w-4" />
+                                          Отмени фактура
+                                        </DropdownMenuItem>
+                                      )}
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem asChild>
+                                        <Link href={`/invoices/${invoice.id}`} onClick={(e) => e.stopPropagation()}>
+                                          <Eye className="mr-2 h-4 w-4" />
+                                          Преглед
+                                        </Link>
+                                      </DropdownMenuItem>
                                       <DropdownMenuItem
-                                        onClick={(e) => {
+                                        onClick={async (e) => {
                                           e.stopPropagation();
-                                          openStatusModal(invoice, "ISSUED");
+                                          try {
+                                            const response = await fetch(`/api/invoices/${invoice.id}/duplicate`, { method: "POST" });
+                                            if (!response.ok) {
+                                              const error = await response.json();
+                                              throw new Error(error.error || "Грешка при дублиране");
+                                            }
+                                            const data = await response.json();
+                                            toast.success("Фактурата е дублирана", {
+                                              description: `Нова чернова ${data.invoiceNumber} е създадена`,
+                                            });
+                                            router.push(`/invoices/${data.id}`);
+                                          } catch (error: any) {
+                                            toast.error(error.message || "Грешка при дублиране на фактурата");
+                                          }
                                         }}
-                                        className="text-emerald-600 focus:text-emerald-600"
                                       >
-                                        <FileCheck className="mr-2 h-4 w-4" />
-                                        Издай фактура
+                                        <Copy className="mr-2 h-4 w-4" />
+                                        Дублирай
                                       </DropdownMenuItem>
                                       {invoice.userId === currentUserId && (
                                         <DropdownMenuItem
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            openVoidModal(invoice);
+                                            openDeleteModal(invoice);
                                           }}
-                                          className="text-purple-600 focus:text-purple-600 focus:bg-purple-50"
+                                          className="text-red-600 focus:text-red-600"
                                         >
-                                          <Ban className="mr-2 h-4 w-4" />
-                                          Анулирай
+                                          <Trash2 className="mr-2 h-4 w-4" />
+                                          Изтрий фактура
                                         </DropdownMenuItem>
                                       )}
-                                    </>
-                                  )}
-                                  {(invoice.status === "ISSUED" || invoice.status === "PAID") && invoice.userId === currentUserId && (
-                                    <DropdownMenuItem
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        openCancelModal(invoice);
-                                      }}
-                                      className="text-red-600 focus:text-red-600"
-                                    >
-                                      <XCircle className="mr-2 h-4 w-4" />
-                                      Отмени фактура
-                                    </DropdownMenuItem>
-                                  )}
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem asChild>
-                                    <Link href={`/invoices/${invoice.id}`} onClick={(e) => e.stopPropagation()}>
-                                      <Eye className="mr-2 h-4 w-4" />
-                                      Преглед
-                                    </Link>
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={async (e) => {
-                                      e.stopPropagation();
-                                      try {
-                                        const response = await fetch(`/api/invoices/${invoice.id}/duplicate`, { method: "POST" });
-                                        if (!response.ok) {
-                                          const error = await response.json();
-                                          throw new Error(error.error || "Грешка при дублиране");
-                                        }
-                                        const data = await response.json();
-                                        toast.success("Фактурата е дублирана", {
-                                          description: `Нова чернова ${data.invoiceNumber} е създадена`,
-                                        });
-                                        router.push(`/invoices/${data.id}`);
-                                      } catch (error: any) {
-                                        toast.error(error.message || "Грешка при дублиране на фактурата");
-                                      }
-                                    }}
-                                  >
-                                    <Copy className="mr-2 h-4 w-4" />
-                                    Дублирай
-                                  </DropdownMenuItem>
-                                  {/* Delete option for all invoice states */}
-                                  {invoice.userId === currentUserId && (
-                                    <DropdownMenuItem
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        openDeleteModal(invoice);
-                                      }}
-                                      className="text-red-600 focus:text-red-600"
-                                    >
-                                      <Trash2 className="mr-2 h-4 w-4" />
-                                      Изтрий фактура
-                                    </DropdownMenuItem>
-                                  )}
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    onClick={async (e) => {
-                                      e.stopPropagation();
-                                      try {
-                                        // Fetch PDF and open in new tab for printing
-                                        const response = await fetch(`/api/invoices/export-pdf?invoiceId=${invoice.id}`);
-                                        
-                                        if (!response.ok) {
-                                          throw new Error('Грешка при генерирането на PDF');
-                                        }
-                                        
-                                        const blob = await response.blob();
-                                        const url = URL.createObjectURL(blob);
-                                        
-                                        // Create a link element and click it to open PDF in new tab
-                                        const link = document.createElement('a');
-                                        link.href = url;
-                                        link.target = '_blank';
-                                        link.style.display = 'none';
-                                        document.body.appendChild(link);
-                                        link.click();
-                                        document.body.removeChild(link);
-                                        
-                                        // Show toast message
-                                        toast.info("PDF файлът беше отворен. Моля, използвайте бутона за принтиране в браузъра.");
-                                        
-                                        // Clean up URL after a delay
-                                        setTimeout(() => {
-                                          URL.revokeObjectURL(url);
-                                        }, 1000);
-                                      } catch (error) {
-                                        console.error("Error printing invoice:", error);
-                                        toast.error("Грешка при принтирането на фактурата");
-                                      }
-                                    }}
-                                  >
-                                    <Printer className="mr-2 h-4 w-4" />
-                                    Принтирай
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={async (e) => {
-                                      e.stopPropagation();
-                                      try {
-                                        const { exportInvoiceAsPdf } = await import("@/lib/invoice-export");
-                                        await exportInvoiceAsPdf(invoice.id);
-                                      } catch (error) {
-                                        console.error("Error exporting PDF:", error);
-                                        toast.error("Грешка при експортиране на PDF");
-                                      }
-                                    }}
-                                  >
-                                    <Download className="mr-2 h-4 w-4" />
-                                    Изтегли PDF
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </td>
-                        </motion.tr>
-                      );
-                    })}
-                  </AnimatePresence>
-                </tbody>
-                </table>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onClick={async (e) => {
+                                          e.stopPropagation();
+                                          try {
+                                            const response = await fetch(`/api/invoices/export-pdf?invoiceId=${invoice.id}`);
+
+                                            if (!response.ok) {
+                                              throw new Error("Грешка при генерирането на PDF");
+                                            }
+
+                                            const blob = await response.blob();
+                                            const url = URL.createObjectURL(blob);
+                                            const link = document.createElement("a");
+                                            link.href = url;
+                                            link.target = "_blank";
+                                            link.style.display = "none";
+                                            document.body.appendChild(link);
+                                            link.click();
+                                            document.body.removeChild(link);
+
+                                            toast.info("PDF файлът беше отворен. Моля, използвайте бутона за принтиране в браузъра.");
+
+                                            setTimeout(() => {
+                                              URL.revokeObjectURL(url);
+                                            }, 1000);
+                                          } catch (error) {
+                                            console.error("Error printing invoice:", error);
+                                            toast.error("Грешка при принтирането на фактурата");
+                                          }
+                                        }}
+                                      >
+                                        <Printer className="mr-2 h-4 w-4" />
+                                        Принтирай
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={async (e) => {
+                                          e.stopPropagation();
+                                          try {
+                                            const { exportInvoiceAsPdf } = await import("@/lib/invoice-export");
+                                            await exportInvoiceAsPdf(invoice.id);
+                                          } catch (error) {
+                                            console.error("Error exporting PDF:", error);
+                                            toast.error("Грешка при експортиране на PDF");
+                                          }
+                                        }}
+                                      >
+                                        <Download className="mr-2 h-4 w-4" />
+                                        Изтегли PDF
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              </Table.Cell>
+                            </Table.Row>
+                          );
+                        }}
+                      </Table.Body>
+                    </Table.Content>
+                  </Table.ScrollContainer>
+                </Table>
               </div>
               {filteredInvoices.length > ITEMS_PER_PAGE && (
-                <div className="flex items-center justify-between px-6 py-4 border-t">
-                  <p className="text-sm text-muted-foreground">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t">
+                  <p className="text-sm text-muted-foreground order-2 sm:order-1">
                     Показване {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filteredInvoices.length)} от {filteredInvoices.length}
                   </p>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <span className="text-sm font-medium px-2">
-                      {currentPage} / {Math.ceil(filteredInvoices.length / ITEMS_PER_PAGE)}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredInvoices.length / ITEMS_PER_PAGE), p + 1))}
-                      disabled={currentPage >= Math.ceil(filteredInvoices.length / ITEMS_PER_PAGE)}
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={Math.ceil(filteredInvoices.length / ITEMS_PER_PAGE)}
+                    onPageChange={setCurrentPage}
+                    size="sm"
+                    className="order-1 sm:order-2"
+                  />
                 </div>
               )}
             </>

@@ -372,7 +372,7 @@ function PaymentStatusBadge({ status }: { status: string }) {
     'VOID': 'Анулирано'
   };
 
-  let variant: 'default' | 'destructive' | 'outline' | 'secondary' | null = null;
+  let variant: 'default' | 'destructive' | 'outline-solid' | 'secondary' | null = null;
   
   switch (status) {
     case 'PAID':
@@ -385,17 +385,17 @@ function PaymentStatusBadge({ status }: { status: string }) {
       variant = 'secondary';
       break;
     case 'REFUNDED':
-      variant = 'outline';
+      variant = 'outline-solid';
       break;
     case 'VOID':
-      variant = 'outline';
+      variant = 'outline-solid';
       break;
     default:
-      variant = 'outline';
+      variant = 'outline-solid';
   }
   
   return (
-    <Badge variant={variant}>
+    <Badge variant={variant ?? undefined}>
       {statusTranslations[status] || status.charAt(0) + status.slice(1).toLowerCase()}
     </Badge>
   );
@@ -413,7 +413,7 @@ function SubscriptionStatusBadge({ status }: { status: string }) {
     'PAUSED': 'Паузиран'
   };
 
-  let variant: 'default' | 'destructive' | 'outline' | 'secondary' | null = null;
+  let variant: 'default' | 'destructive' | 'outline-solid' | 'secondary' | null = null;
   
   switch (status) {
     case 'ACTIVE':
@@ -423,7 +423,7 @@ function SubscriptionStatusBadge({ status }: { status: string }) {
       variant = 'destructive';
       break;
     case 'PAST_DUE':
-      variant = 'outline';
+      variant = 'outline-solid';
       break;
     case 'UNPAID':
       variant = 'destructive';
@@ -433,17 +433,17 @@ function SubscriptionStatusBadge({ status }: { status: string }) {
       break;
     case 'INCOMPLETE':
     case 'INCOMPLETE_EXPIRED':
-      variant = 'outline';
+      variant = 'outline-solid';
       break;
     case 'PAUSED':
       variant = 'secondary';
       break;
     default:
-      variant = 'outline';
+      variant = 'outline-solid';
   }
   
   return (
-    <Badge variant={variant} className="ml-2">
+    <Badge variant={variant ?? undefined} className="ml-2">
       {statusTranslations[status] || status.charAt(0) + status.slice(1).toLowerCase()}
     </Badge>
   );

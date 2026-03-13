@@ -6,8 +6,6 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner-toaster";
 import { CookieConsent } from "@/components/gdpr/CookieConsent";
 import { APP_NAME, APP_DESCRIPTION, SEO_KEYWORDS } from "@/config/constants";
-import { Theme } from "@radix-ui/themes";
-import "@radix-ui/themes/styles.css";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -113,8 +111,8 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <link rel="manifest" href="/site.webmanifest" />
-        <meta name="theme-color" content="#00b8d9" />
-        <meta name="msapplication-TileColor" content="#00b8d9" />
+        <meta name="theme-color" content="#0d9488" />
+        <meta name="msapplication-TileColor" content="#0d9488" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -157,15 +155,13 @@ export default function RootLayout({
           defaultTheme="system"
           enableSystem
         >
-          <Theme appearance="inherit" accentColor="cyan" grayColor="slate" radius="full" scaling="90%">
-            <AuthProvider>
-              <div className="min-h-screen flex flex-col">
-                <div className="flex-1">{children}</div>
-                <Toaster />
-                <CookieConsent />
-              </div>
-            </AuthProvider>
-          </Theme>
+          <AuthProvider>
+            <div className="min-h-screen flex flex-col bg-background text-foreground">
+              <div className="flex-1">{children}</div>
+              <Toaster />
+              <CookieConsent />
+            </div>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

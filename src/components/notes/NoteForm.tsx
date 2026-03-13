@@ -446,7 +446,7 @@ function NoteFormContent(config: NoteFormConfig) {
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Изберете компания" />
                     </SelectTrigger>
-                    <SelectContent className="z-[100] max-h-[300px]">
+                    <SelectContent className="z-100 max-h-[300px]">
                       {(companies || []).map((company) => (
                         <SelectItem key={company?.id} value={company?.id}>
                           {company?.name || ""}
@@ -467,7 +467,7 @@ function NoteFormContent(config: NoteFormConfig) {
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Изберете клиент" />
                     </SelectTrigger>
-                    <SelectContent className="z-[100] max-h-[300px]">
+                    <SelectContent className="z-100 max-h-[300px]">
                       {(clients || []).map((client) => (
                         <SelectItem key={client?.id} value={client?.id}>
                           {client?.name || ""}
@@ -543,7 +543,7 @@ function NoteFormContent(config: NoteFormConfig) {
                     <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="z-[100]">
+                    <SelectContent className="z-100">
                       <SelectItem value="EUR">EUR (€)</SelectItem>
                       <SelectItem value="BGN">BGN (лв)</SelectItem>
                       <SelectItem value="USD">USD ($)</SelectItem>
@@ -675,7 +675,7 @@ function NoteFormContent(config: NoteFormConfig) {
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Изберете продукт..." />
                           </SelectTrigger>
-                          <SelectContent className="z-[100] max-h-[300px]">
+                          <SelectContent className="z-100 max-h-[300px]">
                             {(products || []).map((product) => (
                               <SelectItem key={product?.id} value={product?.id || ""}>
                                 {product?.name || ""} -{" "}

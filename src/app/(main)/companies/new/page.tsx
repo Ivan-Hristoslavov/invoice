@@ -6,16 +6,19 @@ import Link from "next/link";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { 
-  ArrowLeft, 
-  ArrowRight, 
-  Check, 
-  Building2, 
-  MapPin, 
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Building2,
+  MapPin,
   Receipt,
   CreditCard,
   Mail,
-  Phone
+  Phone,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -84,7 +87,10 @@ function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { t
 // Company schema with validation (Bulgarian: name, address, city, Bulstat/EIK, MOL required)
 const companySchema = z.object({
   name: z.string().min(1, "Името на компанията е задължително"),
-  email: z.string().email("Моля, въведете валиден имейл").optional().or(z.literal("")),
+  email: z.preprocess(
+    (v) => (v === "" ? undefined : v),
+    z.string().email("Моля, въведете валиден имейл").optional()
+  ),
   phone: z.string().optional().or(z.literal("")),
   address: z.string().min(1, "Адресът е задължителен"),
   city: z.string().min(1, "Градът е задължителен"),
@@ -124,6 +130,7 @@ export default function NewCompanyPage() {
 
   const form = useForm<CompanyFormValues>({
     resolver: zodResolver(companySchema),
+    mode: "onChange",
     defaultValues: {
       name: "",
       email: "",
@@ -295,19 +302,74 @@ export default function NewCompanyPage() {
                       <FormField
                         control={form.control}
                         name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="flex items-center gap-2">
-                              <Mail className="h-4 w-4" />
-                              Имейл
-                            </FormLabel>
-                            <FormControl>
-                              <Input type="email" placeholder="contact@example.com" className="h-12" {...field} />
-                            </FormControl>
-                            <FormDescription>Имейл за контакт за фактури</FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
+                        render={({ field, fieldState }) => {
+                          const { invalid, isDirty } = fieldState;
+                          const isEmpty = !field.value || field.value.trim() === "";
+                          const isValidState = isDirty && !invalid && !isEmpty;
+                          const isInvalidState = isDirty && invalid;
+                          return (
+                            <FormItem>
+                              <FormLabel className="flex items-center gap-2">
+                                <Mail className="h-4 w-4" />
+                                Имейл
+                              </FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <Input
+                                    type="email"
+                                    placeholder="contact@example.com"
+                                    className={[
+                                      "h-12 pr-10 transition-all duration-200",
+                                      isValidState && "border-emerald-500 focus-visible:ring-emerald-500/20",
+                                      isInvalidState && "border-destructive focus-visible:ring-destructive/20",
+                                    ].filter(Boolean).join(" ")}
+                                    {...field}
+                                  />
+                                  <div className="absolute right-3 top-1/2 -translate-y-1/2 transition-all duration-300">
+                                    {isValidState && (
+                                      <CheckCircle2 className="h-5 w-5 text-emerald-500 animate-in fade-in zoom-in-50 duration-200" />
+                                    )}
+                                    {isInvalidState && (
+                                      <XCircle className="h-5 w-5 text-destructive animate-in fade-in zoom-in-50 duration-200" />
+                                    )}
+                                    {!isDirty && (
+                                      <Mail className="h-4 w-4 text-muted-foreground/40" />
+                                    )}
+                                  </div>
+                                </div>
+                              </FormControl>
+                              <div
+                                className="overflow-hidden transition-all duration-300"
+                                style={{
+                                  maxHeight: isInvalidState ? "3rem" : "0",
+                                  opacity: isInvalidState ? 1 : 0,
+                                }}
+                              >
+                                <div className="flex items-center gap-1.5 pt-1 text-sm text-destructive">
+                                  <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                                  <FormMessage />
+                                </div>
+                              </div>
+                              <div
+                                className="overflow-hidden transition-all duration-300"
+                                style={{
+                                  maxHeight: isValidState ? "2rem" : "0",
+                                  opacity: isValidState ? 1 : 0,
+                                }}
+                              >
+                                <p className="flex items-center gap-1.5 pt-1 text-xs text-emerald-600 dark:text-emerald-400">
+                                  <CheckCircle2 className="h-3 w-3" />
+                                  Имейлът изглежда правилен
+                                </p>
+                              </div>
+                              {!isDirty && (
+                                <p className="text-xs text-muted-foreground">
+                                  Имейл за контакт за фактури
+                                </p>
+                              )}
+                            </FormItem>
+                          );
+                        }}
                       />
 
                       <FormField
@@ -394,7 +456,13 @@ export default function NewCompanyPage() {
                           <FormItem>
                             <FormLabel>Пощенски код</FormLabel>
                             <FormControl>
-                              <Input placeholder="1000" className="h-12" {...field} />
+                              <Input
+                                placeholder="1000"
+                                inputMode="numeric"
+                                className="h-12"
+                                {...field}
+                                onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ""))}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -778,7 +846,7 @@ export default function NewCompanyPage() {
                   <Button
                     type="submit"
                     disabled={isLoading || !confirmed}
-                    className="gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 disabled:opacity-50"
+                    className="gap-2 gradient-primary hover:opacity-90 disabled:opacity-50 border-0"
                   >
                     {isLoading ? (
                       <>

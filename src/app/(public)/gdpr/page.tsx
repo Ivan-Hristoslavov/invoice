@@ -16,10 +16,10 @@ export default function GDPRPage() {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-16 max-w-4xl">
         <Button variant="ghost" size="sm" asChild className="mb-6">
-          <Link href="/">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Назад към началната страница
-          </Link>
+            <Link href="/" className="flex items-center whitespace-nowrap">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Назад към началната страница
+            </Link>
         </Button>
 
         <Card className="border-0 shadow-lg">

@@ -114,7 +114,7 @@ export default function InvoiceImportClient({ clients, companies, products }: In
       }
     } catch (error) {
       console.error('Import error:', error);
-      toast.error(error.message || 'Failed to process the CSV file');
+      toast.error((error as Error).message || 'Failed to process the CSV file');
     } finally {
       setIsProcessing(false);
       setIsUploading(false);

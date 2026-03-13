@@ -1,29 +1,58 @@
 "use client";
 
 import * as React from "react";
-import * as TooltipPrimitive from "@radix-ui/react-tooltip";
+import { Tooltip as HeroUITooltip } from "@heroui/react";
 import { cn } from "@/lib/utils";
 
-const TooltipProvider = TooltipPrimitive.Provider;
+const TooltipProvider = ({ children }: { children?: React.ReactNode }) => (
+  <>{children}</>
+);
 
-const Tooltip = TooltipPrimitive.Root;
+// Map shadcn `delayDuration` → HeroUI `delay`
+const Tooltip = React.forwardRef<
+  object,
+  React.ComponentProps<typeof HeroUITooltip> & { delayDuration?: number }
+>(({ delayDuration, delay, ...props }, _ref) => (
+  <HeroUITooltip delay={delayDuration ?? delay} {...props} />
+));
+Tooltip.displayName = "Tooltip";
 
-const TooltipTrigger = TooltipPrimitive.Trigger;
+const TooltipTrigger = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<typeof HeroUITooltip.Trigger> & { asChild?: boolean }
+>(({ asChild, className, children, ...props }, ref) => {
+  if (asChild) {
+    return <>{children}</>;
+  }
+  return (
+    <HeroUITooltip.Trigger
+      ref={ref}
+      className={cn("cursor-default", className)}
+      {...props}
+    >
+      {children}
+    </HeroUITooltip.Trigger>
+  );
+});
+TooltipTrigger.displayName = "TooltipTrigger";
 
+// Accept `side` for shadcn compat but ignore it (HeroUI uses `placement` on root Tooltip)
 const TooltipContent = React.forwardRef<
-  React.ElementRef<typeof TooltipPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
->(({ className, sideOffset = 4, ...props }, ref) => (
-  <TooltipPrimitive.Content
+  HTMLDivElement,
+  React.ComponentProps<typeof HeroUITooltip.Content> & {
+    side?: "top" | "right" | "bottom" | "left";
+    sideOffset?: number;
+  }
+>(({ className, side: _side, sideOffset: _sideOffset, ...props }, ref) => (
+  <HeroUITooltip.Content
     ref={ref}
-    sideOffset={sideOffset}
     className={cn(
-      "z-50 overflow-hidden rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+      "z-50 overflow-hidden rounded-lg bg-foreground px-3 py-1.5 text-xs text-background shadow-md",
       className
     )}
     {...props}
   />
 ));
-TooltipContent.displayName = TooltipPrimitive.Content.displayName;
+TooltipContent.displayName = "TooltipContent";
 
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider };

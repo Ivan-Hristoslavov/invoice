@@ -21,7 +21,6 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Button as RadixButton } from "@radix-ui/themes";
 import { APP_NAME } from "@/config/constants";
 import { createAdminClient } from "@/lib/supabase/server";
 import { format, formatDistanceToNow } from "date-fns";
@@ -291,19 +290,19 @@ export default async function DashboardPage() {
             Добре дошли, {session.user.name || 'потребител'}!
           </p>
         </div>
-        <RadixButton 
+        <Button 
           asChild 
           size="2" 
           variant="solid" 
           color="green"
           className="shadow-lg hover:shadow-xl transition-shadow btn-responsive"
         >
-          <Link href="/invoices/new">
+          <Link href="/invoices/new" className="flex items-center whitespace-nowrap">
             <Plus className="mr-1.5 h-4 w-4" />
             <span className="hidden sm:inline">Нова фактура</span>
             <span className="sm:hidden">Нова</span>
           </Link>
-        </RadixButton>
+        </Button>
       </div>
 
       {/* Stats Grid */}
@@ -356,7 +355,7 @@ export default async function DashboardPage() {
                   Създайте първата си фактура, за да започнете да управлявате финансите си
                 </p>
                 <Button size="sm" asChild className="shadow-md">
-                  <Link href="/invoices/new">
+                  <Link href="/invoices/new" className="flex items-center whitespace-nowrap">
                     <Plus className="mr-2 h-4 w-4" />
                     Нова фактура
                   </Link>
@@ -431,7 +430,7 @@ export default async function DashboardPage() {
               className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/50 transition-all duration-200 group"
             >
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-sm">
+                <div className="h-10 w-10 rounded-lg bg-linear-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-xs">
                   <MinusCircle className="h-5 w-5 text-white" />
                 </div>
                 <div>
@@ -446,7 +445,7 @@ export default async function DashboardPage() {
               className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/50 transition-all duration-200 group"
             >
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-sm">
+                <div className="h-10 w-10 rounded-lg bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-xs">
                   <PlusCircle className="h-5 w-5 text-white" />
                 </div>
                 <div>

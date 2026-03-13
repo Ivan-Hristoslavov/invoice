@@ -1,29 +1,43 @@
 "use client";
 
 import * as React from "react";
-import { RadioGroup as RadixRadioGroup, RadioCards } from "@radix-ui/themes";
+import { RadioGroup as HeroUIRadioGroup, Radio } from "@heroui/react";
+import { cn } from "@/lib/utils";
 
+// Wrapper maintaining shadcn/Radix API: value + onValueChange
 const RadioGroup = React.forwardRef<
-  React.ElementRef<typeof RadixRadioGroup.Root>,
-  React.ComponentPropsWithoutRef<typeof RadixRadioGroup.Root>
->(({ className, ...props }, ref) => (
-  <RadixRadioGroup.Root
+  HTMLDivElement,
+  Omit<React.ComponentProps<typeof HeroUIRadioGroup>, "onChange"> & {
+    value?: string;
+    onValueChange?: (value: string) => void;
+  }
+>(({ value, onValueChange, className, children, ...props }, ref) => (
+  <HeroUIRadioGroup
     ref={ref}
-    className={className}
+    value={value}
+    onChange={onValueChange}
+    className={cn("flex flex-col gap-2", className)}
     {...props}
-  />
+  >
+    {children}
+  </HeroUIRadioGroup>
 ));
 RadioGroup.displayName = "RadioGroup";
 
+// RadioGroupItem: renders a Radio with visible indicator
 const RadioGroupItem = React.forwardRef<
-  React.ElementRef<typeof RadixRadioGroup.Item>,
-  React.ComponentPropsWithoutRef<typeof RadixRadioGroup.Item>
->(({ className, ...props }, ref) => (
-  <RadixRadioGroup.Item
+  HTMLLabelElement,
+  Omit<React.ComponentProps<typeof Radio>, "isDisabled"> & { value: string; id?: string; disabled?: boolean }
+>(({ className, value, children, disabled, id: _id, ...props }, ref) => (
+  <Radio
     ref={ref}
-    className={className}
+    value={value}
+    isDisabled={disabled}
+    className={cn("flex items-center gap-2 cursor-pointer", className)}
     {...props}
-  />
+  >
+    {children}
+  </Radio>
 ));
 RadioGroupItem.displayName = "RadioGroupItem";
 

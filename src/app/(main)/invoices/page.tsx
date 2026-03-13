@@ -3,6 +3,8 @@ import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { checkPermission } from "@/lib/permissions";
 import InvoicesClient from "./InvoicesClient";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 interface Invoice {
   id: string;

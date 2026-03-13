@@ -1,19 +1,31 @@
 "use client";
 
 import * as React from "react";
-import { Progress as RadixProgress } from "@radix-ui/themes";
+import { cn } from "@/lib/utils";
 
-const Progress = React.forwardRef<
-  React.ElementRef<typeof RadixProgress>,
-  React.ComponentPropsWithoutRef<typeof RadixProgress>
->(({ className, ...props }, ref) => (
-  <RadixProgress
-    ref={ref}
-    className={className}
-    {...props}
-  />
-));
+export interface ProgressProps extends React.HTMLAttributes<HTMLDivElement> {
+  value?: number;
+  max?: number;
+}
 
+const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
+  ({ className, value = 0, max = 100, ...props }, ref) => (
+    <div
+      ref={ref}
+      role="progressbar"
+      aria-valuemin={0}
+      aria-valuemax={max}
+      aria-valuenow={value}
+      className={cn("relative h-2 w-full overflow-hidden rounded-full bg-muted", className)}
+      {...props}
+    >
+      <div
+        className="h-full bg-primary transition-all duration-300 ease-in-out"
+        style={{ width: `${Math.min(100, Math.max(0, (Number(value) / Number(max)) * 100))}%` }}
+      />
+    </div>
+  )
+);
 Progress.displayName = "Progress";
 
 export { Progress };

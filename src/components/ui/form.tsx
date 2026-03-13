@@ -1,8 +1,6 @@
 "use client"
 
 import * as React from "react"
-import * as LabelPrimitive from "@radix-ui/react-label"
-import { Slot } from "@radix-ui/react-slot"
 import {
   Controller,
   FormProvider,
@@ -14,6 +12,20 @@ import {
 
 import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
+
+const Slot = React.forwardRef<unknown, React.ComponentPropsWithoutRef<"div"> & { asChild?: boolean }>(
+  (props, ref) => {
+    const { asChild = true, children, ...rest } = props
+    const child = React.Children.only(children) as React.ReactElement | undefined
+    if (child) {
+      // React 19: ref is a regular prop, access via child.props.ref
+      const childRef = (child.props as { ref?: React.Ref<unknown> }).ref
+      return React.cloneElement(child, { ...rest, ref: ref ?? childRef } as Record<string, unknown>)
+    }
+    return <div ref={ref as React.Ref<HTMLDivElement>} {...rest}>{children}</div>
+  }
+)
+Slot.displayName = "Slot"
 
 const Form = FormProvider
 
@@ -87,8 +99,8 @@ const FormItem = React.forwardRef<
 FormItem.displayName = "FormItem"
 
 const FormLabel = React.forwardRef<
-  React.ElementRef<typeof LabelPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
+  HTMLLabelElement,
+  React.ComponentPropsWithoutRef<typeof Label>
 >(({ className, ...props }, ref) => {
   const { error, formItemId } = useFormField()
 
@@ -159,9 +171,7 @@ const FormMessage = React.forwardRef<
       id={formMessageId}
       role="alert"
       className={cn(
-        "text-sm font-medium mt-1.5 rounded-md px-3 py-2 border-2 shadow-md min-w-0",
-        "bg-red-100 border-red-300 text-red-800",
-        "dark:bg-white/90 dark:backdrop-blur-xl dark:border-red-500 dark:text-red-700 dark:shadow-lg",
+        "text-xs font-medium mt-1.5 text-destructive",
         className
       )}
       {...props}

@@ -24,7 +24,6 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { cn } from "@/lib/utils";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 
@@ -284,9 +283,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="overflow-hidden p-0 max-w-lg">
-        <VisuallyHidden>
+        <span className="sr-only">
           <DialogTitle>Команден панел</DialogTitle>
-        </VisuallyHidden>
+        </span>
         <div className="flex items-center border-b px-3" onKeyDown={handleKeyDown}>
           <Search className="h-4 w-4 shrink-0 opacity-50 mr-2" />
           <input
@@ -294,7 +293,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Търси команди..."
-            className="flex h-12 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-12 w-full rounded-md bg-transparent py-3 text-sm outline-hidden placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
           />
           <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
             ESC

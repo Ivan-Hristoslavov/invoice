@@ -167,19 +167,82 @@ export const handlers = [
   }),
   
   // Client mocks
+  http.get('/api/clients', ({ request }) => {
+    const url = new URL(request.url);
+    const query = url.searchParams.get('query') || '';
+    const page = parseInt(url.searchParams.get('page') || '0');
+    const pageSize = parseInt(url.searchParams.get('pageSize') || '12');
+
+    const allClients = [
+      { id: '1', name: 'Тестов Клиент ООД', email: 'client@example.com', city: 'София' },
+      { id: '2', name: 'Втори Клиент', email: 'second@example.com', city: 'Пловдив' },
+    ];
+
+    const filtered = query
+      ? allClients.filter((c) => c.name.toLowerCase().includes(query.toLowerCase()))
+      : allClients;
+
+    if (page > 0) {
+      const start = (page - 1) * pageSize;
+      return HttpResponse.json({
+        data: filtered.slice(start, start + pageSize),
+        meta: { page, pageSize, totalItems: filtered.length, totalPages: Math.ceil(filtered.length / pageSize) },
+      });
+    }
+
+    return HttpResponse.json(filtered);
+  }),
+
   http.post('/api/clients', async ({ request }) => {
-    const body = await request.json();
-    
-    const client = {
-      id: '1',
-      ...body,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    
-    return HttpResponse.json(
-      formatApiResponse(client),
-      { status: 201 }
-    );
+    const body = await request.json() as Record<string, unknown>;
+    const client = { id: '1', ...body, createdAt: new Date(), updatedAt: new Date() };
+    return HttpResponse.json(formatApiResponse(client), { status: 201 });
+  }),
+
+  // Product mocks
+  http.get('/api/products', ({ request }) => {
+    const url = new URL(request.url);
+    const query = url.searchParams.get('query') || '';
+    const page = parseInt(url.searchParams.get('page') || '0');
+    const pageSize = parseInt(url.searchParams.get('pageSize') || '12');
+
+    const allProducts = [
+      { id: '1', name: 'Услуга 1', description: 'Описание', price: 100, unit: 'piece', taxRate: 20 },
+      { id: '2', name: 'Продукт 2', description: null, price: 50, unit: 'hour', taxRate: 0 },
+    ];
+
+    const filtered = query
+      ? allProducts.filter((p) => p.name.toLowerCase().includes(query.toLowerCase()))
+      : allProducts;
+
+    if (page > 0) {
+      const start = (page - 1) * pageSize;
+      return HttpResponse.json({
+        data: filtered.slice(start, start + pageSize),
+        meta: { page, pageSize, totalItems: filtered.length, totalPages: Math.ceil(filtered.length / pageSize) },
+      });
+    }
+
+    return HttpResponse.json(filtered);
+  }),
+
+  // Company mocks
+  http.get('/api/companies', ({ request }) => {
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get('page') || '0');
+    const pageSize = parseInt(url.searchParams.get('pageSize') || '12');
+
+    const allCompanies = [
+      { id: '1', name: 'Моята Компания ООД', email: 'office@company.bg', bulstatNumber: '123456789', vatRegistered: true },
+    ];
+
+    if (page > 0) {
+      return HttpResponse.json({
+        data: allCompanies,
+        meta: { page, pageSize, totalItems: allCompanies.length, totalPages: 1 },
+      });
+    }
+
+    return HttpResponse.json(allCompanies);
   }),
 ]; 

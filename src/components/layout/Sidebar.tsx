@@ -139,7 +139,7 @@ export function Sidebar() {
         <Button 
           variant="ghost" 
           size="icon" 
-          className="fixed top-3 left-4 z-[60] h-10 w-10 bg-background/95 backdrop-blur-md border border-border shadow-lg hover:bg-muted"
+          className="fixed top-3 left-4 z-60 h-10 w-10 bg-background/95 backdrop-blur-md border border-border shadow-lg hover:bg-muted"
           onClick={() => setIsOpen(!isOpen)}
           aria-label={isOpen ? "Затвори менюто" : "Отвори менюто"}
         >
@@ -154,7 +154,7 @@ export function Sidebar() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+            className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 lg:hidden"
             onClick={() => setIsOpen(false)}
           />
         )}
@@ -163,7 +163,7 @@ export function Sidebar() {
       {/* Sidebar - Fixed and always visible on desktop (lg+), collapsible on mobile only */}
       <motion.aside 
         className={cn(
-          "fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] w-72 flex flex-col glass-card !rounded-none !border-l-0 !border-t-0 !border-b-0 border-r border-border shrink-0",
+          "fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] w-72 flex flex-col glass-card rounded-none! border-l-0! border-t-0! border-b-0! border-r border-border shrink-0",
           "lg:translate-x-0",
           isMobile && !isOpen && "-translate-x-full"
         )}
@@ -193,7 +193,7 @@ export function Sidebar() {
                 <div className={cn(
                   "h-9 w-9 rounded-lg flex items-center justify-center transition-all",
                   active 
-                    ? `bg-gradient-to-br ${item.gradient} shadow-lg`
+                    ? `bg-linear-to-br ${item.gradient} shadow-lg`
                     : "bg-muted group-hover:bg-muted"
                 )}>
                   <item.icon className={cn(

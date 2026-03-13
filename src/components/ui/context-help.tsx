@@ -104,7 +104,7 @@ export function ContextHelp({
                     <div key={i} className="flex items-center justify-between p-3">
                       <span className="text-sm">{link.title}</span>
                       <Button variant="ghost" size="sm" asChild>
-                        <Link href={link.href} className="flex items-center" onClick={() => setIsOpen(false)}>
+                        <Link href={link.href} className="flex items-center whitespace-nowrap" onClick={() => setIsOpen(false)}>
                           Преглед
                           <ExternalLinkIcon className="ml-1 h-3 w-3" />
                         </Link>
@@ -139,25 +139,25 @@ export function HelpSection({
       
       <div className="grid grid-cols-2 gap-3">
         <Button variant="outline" asChild className="justify-start">
-          <Link href="/docs/guides">
+          <Link href="/docs/guides" className="flex items-center whitespace-nowrap">
             <HelpCircleIcon className="mr-2 h-4 w-4" />
             Ръководства
           </Link>
         </Button>
         <Button variant="outline" asChild className="justify-start">
-          <Link href="/docs/faq">
+          <Link href="/docs/faq" className="flex items-center whitespace-nowrap">
             <HelpCircleIcon className="mr-2 h-4 w-4" />
             Често задавани въпроси
           </Link>
         </Button>
         <Button variant="outline" asChild className="justify-start">
-          <Link href="/docs/video-tutorials">
+          <Link href="/docs/video-tutorials" className="flex items-center whitespace-nowrap">
             <HelpCircleIcon className="mr-2 h-4 w-4" />
             Видео уроци
           </Link>
         </Button>
         <Button variant="outline" asChild className="justify-start">
-          <Link href="/support">
+          <Link href="/support" className="flex items-center whitespace-nowrap">
             <HelpCircleIcon className="mr-2 h-4 w-4" />
             Свържете се с нас
           </Link>

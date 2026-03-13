@@ -1,121 +1,172 @@
 "use client";
 
 import * as React from "react";
-import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
+import { AlertDialog as HeroUIAlertDialog } from "@heroui/react";
 import { Button } from "@/components/ui/button";
-import { Box, Heading, Text } from "@radix-ui/themes";
+import { cn } from "@/lib/utils";
 
-const AlertDialog = AlertDialogPrimitive.Root;
+// ---------- Root ----------
+interface AlertDialogProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  defaultOpen?: boolean;
+  children?: React.ReactNode;
+}
 
-const AlertDialogTrigger = AlertDialogPrimitive.Trigger;
+const AlertDialog = ({
+  open,
+  onOpenChange,
+  defaultOpen,
+  children,
+}: AlertDialogProps) => (
+  <HeroUIAlertDialog
+    isOpen={open}
+    defaultOpen={defaultOpen}
+    onOpenChange={onOpenChange}
+  >
+    {children}
+  </HeroUIAlertDialog>
+);
+AlertDialog.displayName = "AlertDialog";
 
-const AlertDialogPortal = AlertDialogPrimitive.Portal;
+// ---------- Trigger ----------
+const AlertDialogTrigger = ({
+  asChild: _asChild,
+  children,
+  ...props
+}: {
+  asChild?: boolean;
+  children?: React.ReactNode;
+  [key: string]: unknown;
+}) => (
+  <HeroUIAlertDialog.Trigger {...(props as any)}>
+    {children}
+  </HeroUIAlertDialog.Trigger>
+);
+AlertDialogTrigger.displayName = "AlertDialogTrigger";
 
-const AlertDialogOverlay = React.forwardRef<
-  React.ElementRef<typeof AlertDialogPrimitive.Overlay>,
-  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Overlay>
->(({ className, ...props }, ref) => (
-  <AlertDialogPrimitive.Overlay
-    className={className}
-    {...props}
-    ref={ref}
-  />
-));
-AlertDialogOverlay.displayName = AlertDialogPrimitive.Overlay.displayName;
+// ---------- Portal (no-op for compat) ----------
+const AlertDialogPortal = ({ children }: { children?: React.ReactNode }) => (
+  <>{children}</>
+);
 
+// ---------- Overlay (no-op – handled by Backdrop) ----------
+const AlertDialogOverlay = () => null;
+
+// ---------- Content ----------
 const AlertDialogContent = React.forwardRef<
-  React.ElementRef<typeof AlertDialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content>
->(({ className, ...props }, ref) => (
-  <AlertDialogPortal>
-    <AlertDialogOverlay className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-    <AlertDialogPrimitive.Content
-      ref={ref}
-      className={`fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background/90 backdrop-blur-md dark:bg-background dark:backdrop-blur-none p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg ${className || ""}`}
-      {...props}
-    />
-  </AlertDialogPortal>
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, children, ...props }, ref) => (
+  <HeroUIAlertDialog.Backdrop>
+    <HeroUIAlertDialog.Container>
+      <HeroUIAlertDialog.Dialog>
+        <div
+          ref={ref}
+          className={cn(
+            "glass-card w-[92vw] max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl p-0",
+            className
+          )}
+          {...props}
+        >
+          {children}
+        </div>
+      </HeroUIAlertDialog.Dialog>
+    </HeroUIAlertDialog.Container>
+  </HeroUIAlertDialog.Backdrop>
 ));
-AlertDialogContent.displayName = AlertDialogPrimitive.Content.displayName;
+AlertDialogContent.displayName = "AlertDialogContent";
 
+// ---------- Header ----------
 const AlertDialogHeader = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
-  <Box
-    className={`flex flex-col space-y-2 text-center sm:text-left ${className || ""}`}
-    {...props}
+  <HeroUIAlertDialog.Header
+    className={cn("flex flex-col space-y-2 p-6 pb-0", className)}
+    {...(props as any)}
   />
 );
 AlertDialogHeader.displayName = "AlertDialogHeader";
 
+// ---------- Footer ----------
 const AlertDialogFooter = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
-  <Box
-    className={`flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 ${className || ""}`}
-    {...props}
+  <HeroUIAlertDialog.Footer
+    className={cn(
+      "flex flex-col-reverse sm:flex-row sm:justify-end gap-2 p-6 pt-4",
+      className
+    )}
+    {...(props as any)}
   />
 );
 AlertDialogFooter.displayName = "AlertDialogFooter";
 
+// ---------- Title ----------
 const AlertDialogTitle = React.forwardRef<
-  React.ElementRef<typeof AlertDialogPrimitive.Title>,
-  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Title>
+  HTMLHeadingElement,
+  React.HTMLAttributes<HTMLHeadingElement>
 >(({ className, ...props }, ref) => (
-  <AlertDialogPrimitive.Title
-    ref={ref}
-    asChild
-    {...props}
-  >
-    <Heading size="5" className={className} />
-  </AlertDialogPrimitive.Title>
+  <HeroUIAlertDialog.Heading
+    ref={ref as any}
+    className={cn("text-lg font-semibold leading-none tracking-tight", className)}
+    {...(props as any)}
+  />
 ));
-AlertDialogTitle.displayName = AlertDialogPrimitive.Title.displayName;
+AlertDialogTitle.displayName = "AlertDialogTitle";
 
+// ---------- Description ----------
 const AlertDialogDescription = React.forwardRef<
-  React.ElementRef<typeof AlertDialogPrimitive.Description>,
-  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Description>
->(({ className, ...props }, ref) => (
-  <AlertDialogPrimitive.Description
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, children, ...props }, ref) => (
+  <div
     ref={ref}
-    asChild
+    className={cn("px-6 py-4 text-sm text-muted-foreground", className)}
     {...props}
   >
-    <Text size="2" color="gray" className={className} />
-  </AlertDialogPrimitive.Description>
+    {children}
+  </div>
 ));
-AlertDialogDescription.displayName =
-  AlertDialogPrimitive.Description.displayName;
+AlertDialogDescription.displayName = "AlertDialogDescription";
 
+// ---------- Action (closes dialog after click) ----------
 const AlertDialogAction = React.forwardRef<
-  React.ElementRef<typeof AlertDialogPrimitive.Action>,
-  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Action>
->(({ className, children, ...props }, ref) => (
-  <AlertDialogPrimitive.Action
-    ref={ref}
-    asChild
-    {...props}
-  >
-    <Button className={className}>{children}</Button>
-  </AlertDialogPrimitive.Action>
+  HTMLButtonElement,
+  React.ComponentPropsWithoutRef<typeof Button>
+>(({ className, children, onClick, ...props }, ref) => (
+  <HeroUIAlertDialog.CloseTrigger>
+    <Button
+      ref={ref}
+      className={className}
+      onClick={onClick}
+      {...props}
+    >
+      {children}
+    </Button>
+  </HeroUIAlertDialog.CloseTrigger>
 ));
-AlertDialogAction.displayName = AlertDialogPrimitive.Action.displayName;
+AlertDialogAction.displayName = "AlertDialogAction";
 
+// ---------- Cancel ----------
 const AlertDialogCancel = React.forwardRef<
-  React.ElementRef<typeof AlertDialogPrimitive.Cancel>,
-  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Cancel>
+  HTMLButtonElement,
+  React.ComponentPropsWithoutRef<typeof Button>
 >(({ className, children, ...props }, ref) => (
-  <AlertDialogPrimitive.Cancel
-    ref={ref}
-    asChild
-    {...props}
-  >
-    <Button variant="outline" className={`mt-2 sm:mt-0 ${className || ""}`}>{children}</Button>
-  </AlertDialogPrimitive.Cancel>
+  <HeroUIAlertDialog.CloseTrigger>
+    <Button
+      ref={ref}
+      variant="outline"
+      className={cn("mt-2 sm:mt-0", className)}
+      {...props}
+    >
+      {children}
+    </Button>
+  </HeroUIAlertDialog.CloseTrigger>
 ));
-AlertDialogCancel.displayName = AlertDialogPrimitive.Cancel.displayName;
+AlertDialogCancel.displayName = "AlertDialogCancel";
 
 export {
   AlertDialog,

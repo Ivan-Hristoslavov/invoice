@@ -87,7 +87,7 @@ export default function FeaturesPage() {
         {/* Header */}
         <div className="mb-12">
           <Button variant="ghost" size="sm" asChild className="mb-6">
-            <Link href="/">
+            <Link href="/" className="flex items-center whitespace-nowrap">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Назад към началната страница
             </Link>
@@ -106,7 +106,7 @@ export default function FeaturesPage() {
             <Card key={feature.title} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300">
               <CardHeader>
                 <div className="flex items-center gap-4 mb-4">
-                  <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${feature.icon === FileText ? 'from-blue-500 to-cyan-500' : feature.icon === Zap ? 'from-amber-500 to-orange-500' : feature.icon === Shield ? 'from-emerald-500 to-teal-500' : feature.icon === BarChart3 ? 'from-slate-500 to-slate-600' : feature.icon === Users ? 'from-slate-500 to-slate-600' : 'from-slate-500 to-slate-600'} flex items-center justify-center`}>
+                  <div className={`h-12 w-12 rounded-xl bg-linear-to-br ${feature.icon === FileText ? 'from-blue-500 to-cyan-500' : feature.icon === Zap ? 'from-amber-500 to-orange-500' : feature.icon === Shield ? 'from-emerald-500 to-teal-500' : feature.icon === BarChart3 ? 'from-slate-500 to-slate-600' : feature.icon === Users ? 'from-slate-500 to-slate-600' : 'from-slate-500 to-slate-600'} flex items-center justify-center`}>
                     <feature.icon className="h-6 w-6 text-white" />
                   </div>
                   <CardTitle className="text-2xl">{feature.title}</CardTitle>
@@ -137,12 +137,12 @@ export default function FeaturesPage() {
           </p>
           <div className="flex gap-4 justify-center">
             <Button size="lg" asChild>
-              <Link href="/signup">
+              <Link href="/signup" className="flex items-center whitespace-nowrap">
                 Започнете безплатно
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link href="/#pricing">
+              <Link href="/#pricing" className="flex items-center whitespace-nowrap">
                 Вижте цените
               </Link>
             </Button>

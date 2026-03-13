@@ -36,8 +36,9 @@ interface Invoice {
 }
 
 // Generate dynamic metadata
-export async function generateMetadata(props: { params: { id: string } }): Promise<Metadata> {
-  const client = await getClient(props.params.id);
+export async function generateMetadata(props: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await props.params;
+  const client = await getClient(id);
   
   if (!client) {
     return {
@@ -74,8 +75,8 @@ async function getClient(id: string) {
   return client;
 }
 
-export default async function ClientDetailPage(props: { params: { id: string } }) {
-  const { params } = props;
+export default async function ClientDetailPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   
   if (!session) {
@@ -124,7 +125,7 @@ export default async function ClientDetailPage(props: { params: { id: string } }
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" asChild>
-            <Link href="/clients">
+            <Link href="/clients" className="flex items-center whitespace-nowrap">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Назад към клиентите
             </Link>
@@ -132,14 +133,14 @@ export default async function ClientDetailPage(props: { params: { id: string } }
           <h1 className="text-3xl font-bold">{client.name}</h1>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`/clients/${client.id}/edit`}>
+          <Button variant="outline" size="sm" asChild className="h-9 px-3.5 whitespace-nowrap">
+            <Link href={`/clients/${client.id}/edit`} className="flex items-center whitespace-nowrap">
               <Edit className="mr-2 h-4 w-4" />
               Редактиране
             </Link>
           </Button>
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`/invoices/new?client=${client.id}`}>
+          <Button variant="outline" size="sm" asChild className="h-9 px-3.5 whitespace-nowrap">
+            <Link href={`/invoices/new?client=${client.id}`} className="flex items-center whitespace-nowrap">
               <FileText className="mr-2 h-4 w-4" />
               Нова фактура
             </Link>
@@ -233,7 +234,7 @@ export default async function ClientDetailPage(props: { params: { id: string } }
                 <div className="py-6 text-center">
                   <p className="text-muted-foreground">Все още няма фактури</p>
                   <Button size="sm" asChild className="mt-4">
-                    <Link href={`/invoices/new?client=${client.id}`}>
+                    <Link href={`/invoices/new?client=${client.id}`} className="flex items-center whitespace-nowrap">
                       <FileText className="mr-2 h-4 w-4" />
                       Създаване на фактура
                     </Link>
@@ -274,7 +275,7 @@ export default async function ClientDetailPage(props: { params: { id: string } }
               {invoiceList.length > 0 && (
                 <div className="flex justify-end mt-4">
                   <Button size="sm" variant="outline" asChild>
-                    <Link href={`/invoices?client=${client.id}`}>Преглед на всички</Link>
+                    <Link href={`/invoices?client=${client.id}`} className="flex items-center whitespace-nowrap">Преглед на всички</Link>
                   </Button>
                 </div>
               )}
@@ -316,14 +317,14 @@ export default async function ClientDetailPage(props: { params: { id: string } }
               <CardTitle>Действия</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button className="w-full" asChild>
-                <Link href={`/invoices/new?client=${client.id}`}>
+              <Button className="w-full h-11 px-4 text-sm whitespace-nowrap" asChild>
+                <Link href={`/invoices/new?client=${client.id}`} className="flex items-center whitespace-nowrap">
                   <FileText className="mr-2 h-4 w-4" />
                   Нова фактура
                 </Link>
               </Button>
-              <Button variant="outline" className="w-full" asChild>
-                <Link href={`/clients/${client.id}/edit`}>
+              <Button variant="outline" className="w-full h-11 px-4 text-sm whitespace-nowrap" asChild>
+                <Link href={`/clients/${client.id}/edit`} className="flex items-center whitespace-nowrap">
                   <Edit className="mr-2 h-4 w-4" />
                   Редактиране
                 </Link>

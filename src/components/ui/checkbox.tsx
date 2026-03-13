@@ -1,16 +1,21 @@
 "use client";
 
 import * as React from "react";
-import { Checkbox as RadixCheckbox } from "@radix-ui/themes";
+import { Checkbox as HeroUICheckbox } from "@heroui/react";
 
 const Checkbox = React.forwardRef<
-  React.ElementRef<typeof RadixCheckbox>,
-  React.ComponentPropsWithoutRef<typeof RadixCheckbox>
->(({ className, ...props }, ref) => (
-  <RadixCheckbox
+  HTMLLabelElement,
+  Omit<React.ComponentProps<typeof HeroUICheckbox>, "children" | "isSelected" | "onSelectionChange"> & {
+    checked?: boolean;
+    onCheckedChange?: (checked: boolean) => void;
+  }
+>(({ className, checked, onCheckedChange, ...props }, ref) => (
+  <HeroUICheckbox
     ref={ref}
     className={className}
-    {...props}
+    isSelected={checked}
+    onSelectionChange={(isSelected: boolean) => { onCheckedChange?.(isSelected); }}
+    {...(props as any)}
   />
 ));
 Checkbox.displayName = "Checkbox";

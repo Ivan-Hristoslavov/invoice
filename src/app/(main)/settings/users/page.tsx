@@ -34,7 +34,7 @@ export default async function UsersPage() {
           Нямате права да управлявате потребители. Моля, свържете се с администратора.
         </p>
         <Button asChild>
-          <Link href="/dashboard">Към таблото</Link>
+          <Link href="/dashboard" className="flex items-center whitespace-nowrap">Към таблото</Link>
         </Button>
       </div>
     );
@@ -56,7 +56,7 @@ export default async function UsersPage() {
           Трябва да създадете компания, преди да можете да управлявате потребители.
         </p>
         <Button asChild>
-          <Link href="/settings/company">Създай компания</Link>
+          <Link href="/settings/company" className="flex items-center whitespace-nowrap">Създай компания</Link>
         </Button>
       </div>
     );

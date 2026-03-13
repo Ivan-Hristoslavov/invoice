@@ -36,7 +36,7 @@ export default function SignInForm() {
               <input
                 type="text"
                 id="text"
-                className="w-full rounded-lg bg-gray-800 text-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                className="w-full rounded-lg bg-gray-800 text-white px-4 py-2 focus:outline-hidden focus:ring-2 focus:ring-gray-600"
               />
             </div>
           </div>
@@ -49,7 +49,7 @@ export default function SignInForm() {
               <input
                 type="text"
                 id="text"
-                className="w-full rounded-lg bg-gray-800 text-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                className="w-full rounded-lg bg-gray-800 text-white px-4 py-2 focus:outline-hidden focus:ring-2 focus:ring-gray-600"
               />
             </div>
           </div>
@@ -62,7 +62,7 @@ export default function SignInForm() {
             <input
               type="email"
               id="email"
-              className="w-full rounded-lg bg-gray-800 text-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-600"
+              className="w-full rounded-lg bg-gray-800 text-white px-4 py-2 focus:outline-hidden focus:ring-2 focus:ring-gray-600"
             />
           </div>
         </div>
@@ -75,13 +75,13 @@ export default function SignInForm() {
             <input
               type="password"
               id="password"
-              className="w-full rounded-lg bg-gray-800 text-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-600"
+              className="w-full rounded-lg bg-gray-800 text-white px-4 py-2 focus:outline-hidden focus:ring-2 focus:ring-gray-600"
             />
           </div>
         </div>
         <button
           type="submit"
-          className="hover:duration-1000 w-full bg-blue-600 text-white py-2 rounded-md transition duration-300 ease-in-out hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+          className="hover:duration-1000 w-full bg-blue-600 text-white py-2 rounded-md transition duration-300 ease-in-out hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
         >
           Sign in
         </button>
@@ -89,7 +89,7 @@ export default function SignInForm() {
           <div className="w-1/2 h-fit">
             <button
               type="button"
-              className="flex flex-row justify-center items-center hover:duration-1000 w-full bg-white text-black py-1 rounded-md transition duration-300 ease-in-out hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+              className="flex flex-row justify-center items-center hover:duration-1000 w-full bg-white text-black py-1 rounded-md transition duration-300 ease-in-out hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
             >
               <Image src={google} alt="test" width={30} height={30} />
             </button>
@@ -97,7 +97,7 @@ export default function SignInForm() {
           <div className="w-1/2 h-fit">
             <button
               type="button"
-              className="flex flex-row justify-center items-center hover:duration-1000 w-full bg-white text-black py-1 rounded-md transition duration-300 ease-in-out hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+              className="flex flex-row justify-center items-center hover:duration-1000 w-full bg-white text-black py-1 rounded-md transition duration-300 ease-in-out hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
             >
               <Image src={google} alt="test" width={30} height={30} />
             </button>

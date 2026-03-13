@@ -135,8 +135,8 @@ export default async function CreditNotesPage() {
             Преглед на издадени кредитни известия за отменени фактури
           </p>
         </div>
-        <Button asChild>
-          <Link href="/credit-notes/new">
+        <Button asChild className="whitespace-nowrap">
+          <Link href="/credit-notes/new" className="flex items-center">
             <Plus className="mr-2 h-4 w-4" />
             Ново кредитно известие
           </Link>
@@ -186,7 +186,7 @@ export default async function CreditNotesPage() {
                 Кредитните известия се използват за възстановяване на пари при връщане на продукт
               </p>
               <Button asChild>
-                <Link href="/credit-notes/new">
+                <Link href="/credit-notes/new" className="flex items-center">
                   <Plus className="mr-2 h-4 w-4" />
                   Създай кредитно известие
                 </Link>

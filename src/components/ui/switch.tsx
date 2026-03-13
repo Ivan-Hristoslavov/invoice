@@ -1,16 +1,21 @@
 "use client";
 
 import * as React from "react";
-import { Switch as RadixSwitch } from "@radix-ui/themes";
+import { Switch as HeroUISwitch } from "@heroui/react";
 
 const Switch = React.forwardRef<
-  React.ElementRef<typeof RadixSwitch>,
-  React.ComponentPropsWithoutRef<typeof RadixSwitch>
->(({ className, ...props }, ref) => (
-  <RadixSwitch
+  HTMLLabelElement,
+  Omit<React.ComponentProps<typeof HeroUISwitch>, "children" | "isSelected" | "onSelectionChange"> & {
+    checked?: boolean;
+    onCheckedChange?: (checked: boolean) => void;
+  }
+>(({ className, checked, onCheckedChange, ...props }, ref) => (
+  <HeroUISwitch
     ref={ref}
     className={className}
-    {...props}
+    isSelected={checked}
+    onSelectionChange={(isSelected: boolean) => { onCheckedChange?.(isSelected); }}
+    {...(props as any)}
   />
 ));
 Switch.displayName = "Switch";

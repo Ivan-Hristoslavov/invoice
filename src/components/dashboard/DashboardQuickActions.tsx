@@ -71,7 +71,7 @@ export function DashboardQuickActions() {
         {actions.map(({ href, icon: Icon, title, desc, gradient }) => (
           <Link key={href} href={href} className={linkClass}>
             <div
-              className={`h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center mr-2.5 sm:mr-3 shadow-sm`}
+              className={`h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-linear-to-br ${gradient} flex items-center justify-center mr-2.5 sm:mr-3 shadow-xs`}
             >
               <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
             </div>

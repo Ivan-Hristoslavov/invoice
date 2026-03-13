@@ -29,7 +29,10 @@ import {
 const companyInfoSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(2, "Името на компанията е задължително"),
-  email: z.string().email("Моля, въведете валиден имейл адрес").optional().or(z.literal("")),
+  email: z.preprocess(
+    (v) => (v === "" ? undefined : v),
+    z.string().email("Моля, въведете валиден имейл адрес").optional()
+  ),
   phone: z.string().optional().or(z.literal("")),
   address: z.string().min(1, "Адресът е задължителен"),
   city: z.string().min(1, "Градът е задължителен"),
@@ -238,7 +241,12 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
               <FormItem>
                 <FormLabel>Пощенски код</FormLabel>
                 <FormControl>
-                  <Input placeholder="1000" {...field} />
+                  <Input
+                    placeholder="1000"
+                    inputMode="numeric"
+                    {...field}
+                    onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ""))}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -436,7 +444,7 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
         </div>
         
         <div className="flex justify-end mt-8">
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" className="gradient-primary hover:opacity-90 border-0" disabled={isLoading}>
             {isLoading ? "Запазване..." : isNewCompany ? "Създаване на компания" : "Запазване на промените"}
           </Button>
         </div>
@@ -554,7 +562,7 @@ function BankInfoForm({ defaultValues, isNewCompany = false }: BankInfoFormProps
         </div>
         
         <div className="flex justify-end">
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" className="gradient-primary hover:opacity-90 border-0" disabled={isLoading}>
             {isLoading ? "Запазване..." : "Запазване на банковата информация"}
           </Button>
         </div>

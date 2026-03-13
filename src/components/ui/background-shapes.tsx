@@ -14,7 +14,7 @@ export function BackgroundShapes({ variant = "default", className = "" }: Backgr
   return (
     <div className={`fixed inset-0 -z-10 overflow-hidden pointer-events-none ${className}`}>
       {/* Base gradient - more transparent for light mode */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-50/80 via-white/60 to-slate-100/80 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" />
+      <div className="absolute inset-0 bg-linear-to-br from-slate-50/80 via-white/60 to-slate-100/80 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" />
       
       {/* Large vibrant gradient orbs - more visible in light mode */}
       {/* Purple/Violet - top right */}
@@ -183,7 +183,7 @@ export function BackgroundShapes({ variant = "default", className = "" }: Backgr
 
           {/* Floating elongated shape - blurred */}
           <motion.div
-            className="absolute top-[70%] right-[40%] w-32 h-12 bg-gradient-to-r from-amber-500/8 via-orange-500/10 to-amber-500/8 rounded-full blur-xl"
+            className="absolute top-[70%] right-[40%] w-32 h-12 bg-linear-to-r from-amber-500/8 via-orange-500/10 to-amber-500/8 rounded-full blur-xl"
             animate={{
               rotate: [0, 15, -15, 0],
               scale: [1, 1.2, 1],
@@ -249,8 +249,8 @@ export function BackgroundShapes({ variant = "default", className = "" }: Backgr
 export function BackgroundGradient({ className = "" }: { className?: string }) {
   return (
     <div className={`fixed inset-0 -z-10 overflow-hidden pointer-events-none ${className}`}>
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" />
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#00000002_1px,transparent_1px),linear-gradient(to_bottom,#00000002_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#ffffff01_1px,transparent_1px),linear-gradient(to_bottom,#ffffff01_1px,transparent_1px)] bg-[size:64px_64px]" />
+      <div className="absolute inset-0 bg-linear-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#00000002_1px,transparent_1px),linear-gradient(to_bottom,#00000002_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#ffffff01_1px,transparent_1px),linear-gradient(to_bottom,#ffffff01_1px,transparent_1px)] bg-size-[64px_64px]" />
       <div 
         className="absolute -top-[40%] -right-[20%] w-[70vw] h-[70vw] max-w-[1000px] max-h-[1000px] rounded-full opacity-60"
         style={{

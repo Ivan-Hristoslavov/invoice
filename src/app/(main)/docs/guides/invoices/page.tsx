@@ -12,7 +12,7 @@ export default function InvoiceGuidePage() {
       <div className="max-w-4xl mx-auto">
         <div className="mb-6 flex items-center">
           <Button variant="ghost" size="sm" asChild className="mr-2">
-            <Link href="/docs/guides">
+            <Link href="/docs/guides" className="flex items-center whitespace-nowrap">
               <ArrowLeftIcon className="mr-2 h-4 w-4" />
               Всички ръководства
             </Link>

@@ -47,22 +47,52 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const searchParams = request.nextUrl.searchParams;
+    const query = searchParams.get("query") || "";
+    const page = parseInt(searchParams.get("page") || "0");
+    const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get("pageSize") || "12")));
+
     const supabase = createAdminClient();
-    
-    const { data: companies, error } = await supabase
+
+    let companyQuery = supabase
       .from("Company")
-      .select("*")
-      .eq("userId", session.user.id)
-      .order("name", { ascending: true });
-    
+      .select("*", { count: "exact" })
+      .eq("userId", session.user.id);
+
+    if (query) {
+      companyQuery = companyQuery.or(
+        `name.ilike.%${query}%,email.ilike.%${query}%,bulstatNumber.ilike.%${query}%`
+      );
+    }
+
+    companyQuery = companyQuery.order("name", { ascending: true });
+
+    if (page > 0) {
+      const skip = (page - 1) * pageSize;
+      companyQuery = companyQuery.range(skip, skip + pageSize - 1);
+    }
+
+    const { data: companies, count, error } = await companyQuery;
+
     if (error) {
       throw error;
     }
 
-    return NextResponse.json(companies);
+    if (page > 0) {
+      return NextResponse.json({
+        data: companies || [],
+        meta: {
+          page,
+          pageSize,
+          totalItems: count || 0,
+          totalPages: Math.ceil((count || 0) / pageSize),
+        },
+      });
+    }
+
+    return NextResponse.json(companies || []);
   } catch (error) {
     console.error("Грешка при извличане на компании:", error);
-    // Return empty array instead of error to allow graceful degradation
     return NextResponse.json([]);
   }
 }
