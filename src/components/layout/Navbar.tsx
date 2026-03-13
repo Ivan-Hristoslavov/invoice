@@ -54,18 +54,24 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full glass-card rounded-none! border-t-0! border-x-0! border-b border-border" role="banner">
-      <div className="flex items-center h-16">
+      <div className="flex items-center h-14 sm:h-16">
         {/* Logo - Left side - Fixed width matching sidebar, starts from edge */}
-        <Link href="/dashboard" aria-label="Начална страница" className="flex items-center justify-center gap-3 w-72 h-full shrink-0 border-r border-border/50">
-          <div className="h-10 w-10 rounded-xl gradient-primary flex items-center justify-center shadow-lg">
-            <FileText className="h-5 w-5 text-white" />
+        <Link
+          href="/dashboard"
+          aria-label="Начална страница"
+          className="flex h-full w-auto min-w-0 shrink-0 items-center justify-center gap-2 border-r border-border/50 px-3 sm:w-72 sm:gap-3 sm:px-0"
+        >
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary shadow-lg sm:h-10 sm:w-10 sm:rounded-xl">
+            <FileText className="h-4 w-4 text-white sm:h-5 sm:w-5" />
           </div>
-          <span className="text-xl font-bold tracking-tight">{APP_NAME}</span>
+          <span className="max-w-26 truncate text-sm font-bold tracking-tight sm:max-w-none sm:text-xl">
+            {APP_NAME}
+          </span>
         </Link>
         {/* Spacer */}
         <div className="flex-1" />
         {/* Right Section - Actions */}
-        <div className="flex items-center gap-2 px-4 md:px-6">
+        <div className="flex items-center gap-1.5 px-2 sm:gap-2 sm:px-4 md:px-6">
           {/* Command Palette Button */}
           <Button 
             variant="outline" 
@@ -85,12 +91,12 @@ export function Navbar() {
             <Button 
               asChild 
               size="icon" 
-              className="hidden sm:flex h-10 w-10 gradient-primary hover:opacity-90 text-white border-0 shadow-md"
+              className="h-8 w-8 gradient-primary text-white border-0 shadow-md hover:opacity-90 sm:h-10 sm:w-10"
               title="Нова фактура"
               aria-label="Нова фактура"
             >
               <Link href="/invoices/new">
-                <Plus className="h-5 w-5" aria-hidden="true" />
+                <Plus className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
               </Link>
             </Button>
           )}
@@ -101,9 +107,9 @@ export function Navbar() {
               <Button
                 variant="ghost"
                 aria-label="Потребителско меню"
-                className="h-10 pl-2 pr-3 gap-2 rounded-md flex items-center"
+                className="flex h-9 items-center gap-2 rounded-md pl-1.5 pr-2 sm:h-10 sm:pl-2 sm:pr-3"
               >
-                <div className="h-8 w-8 rounded-full gradient-primary flex items-center justify-center text-white text-sm font-semibold">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full gradient-primary text-xs font-semibold text-white sm:h-8 sm:w-8 sm:text-sm">
                   {session?.user?.name?.charAt(0).toUpperCase() || 'U'}
                 </div>
                 <div className="hidden sm:block text-left">
@@ -111,7 +117,7 @@ export function Navbar() {
                     {session?.user?.name?.split(' ')[0] || 'Потребител'}
                   </p>
                 </div>
-                <ChevronDown className="h-4 w-4 text-muted-foreground hidden sm:block" />
+                <ChevronDown className="hidden h-4 w-4 text-muted-foreground sm:block" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">

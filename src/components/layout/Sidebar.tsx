@@ -139,7 +139,7 @@ export function Sidebar() {
         <Button 
           variant="ghost" 
           size="icon" 
-          className="fixed top-3 left-4 z-60 h-10 w-10 bg-background/95 backdrop-blur-md border border-border shadow-lg hover:bg-muted"
+          className="fixed top-2.5 left-3 z-60 h-9 w-9 bg-background/95 border border-border shadow-lg backdrop-blur-md hover:bg-muted sm:top-3 sm:left-4 sm:h-10 sm:w-10"
           onClick={() => setIsOpen(!isOpen)}
           aria-label={isOpen ? "Затвори менюто" : "Отвори менюто"}
         >
@@ -163,7 +163,7 @@ export function Sidebar() {
       {/* Sidebar - Fixed and always visible on desktop (lg+), collapsible on mobile only */}
       <motion.aside 
         className={cn(
-          "fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] w-72 flex flex-col glass-card rounded-none! border-l-0! border-t-0! border-b-0! border-r border-border shrink-0",
+          "fixed left-0 top-14 z-40 flex h-[calc(100vh-3.5rem)] w-68 shrink-0 flex-col glass-card rounded-none! border-l-0! border-t-0! border-b-0! border-r border-border sm:top-16 sm:h-[calc(100vh-4rem)] sm:w-72",
           "lg:translate-x-0",
           isMobile && !isOpen && "-translate-x-full"
         )}
@@ -172,8 +172,8 @@ export function Sidebar() {
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
         {/* Main Navigation */}
-        <nav className="flex-1 px-4 pt-2 pb-4 space-y-1 overflow-y-auto" role="navigation" aria-label="Основна навигация">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-2">
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 pt-2 pb-4 sm:px-4" role="navigation" aria-label="Основна навигация">
+          <p className="mb-2 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground sm:px-3 sm:text-xs">
             Меню
           </p>
           {mainNavItems.map((item) => {
@@ -184,20 +184,20 @@ export function Sidebar() {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
+                  "flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm font-medium transition-all duration-200 sm:gap-3 sm:px-3 sm:py-2.5",
                   active 
                     ? "bg-primary/10 text-primary" 
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 )}
               >
                 <div className={cn(
-                  "h-9 w-9 rounded-lg flex items-center justify-center transition-all",
+                  "flex h-8 w-8 items-center justify-center rounded-lg transition-all sm:h-9 sm:w-9",
                   active 
                     ? `bg-linear-to-br ${item.gradient} shadow-lg`
                     : "bg-muted group-hover:bg-muted"
                 )}>
                   <item.icon className={cn(
-                    "h-5 w-5",
+                    "h-4.5 w-4.5 sm:h-5 sm:w-5",
                     active ? "text-white" : "text-muted-foreground"
                   )} aria-hidden="true" />
                 </div>
@@ -211,8 +211,8 @@ export function Sidebar() {
         </nav>
 
         {/* Bottom Navigation */}
-        <div className="p-4 border-t space-y-1">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
+        <div className="space-y-1 border-t p-3 sm:p-4">
+          <p className="mb-3 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground sm:px-3 sm:text-xs">
             Настройки
           </p>
           {bottomNavItems.map((item) => {
@@ -223,7 +223,7 @@ export function Sidebar() {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200",
+                  "flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm font-medium transition-all duration-200 sm:gap-3 sm:px-3",
                   active 
                     ? "bg-primary/10 text-primary" 
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -237,13 +237,13 @@ export function Sidebar() {
         </div>
 
         {/* User Section */}
-        <div className="p-4 border-t">
-          <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-muted/50">
-            <div className="h-10 w-10 rounded-full bg-emerald-600 flex items-center justify-center text-white font-semibold text-sm">
+        <div className="border-t p-3 sm:p-4">
+          <div className="flex items-center gap-2.5 rounded-xl bg-muted/50 px-2.5 py-2 sm:gap-3 sm:px-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-xs font-semibold text-white sm:h-10 sm:w-10 sm:text-sm">
               {session?.user?.name?.charAt(0).toUpperCase() || 'U'}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">
+              <p className="truncate text-sm font-medium">
                 {session?.user?.name || 'Потребител'}
               </p>
               <p className="text-xs text-muted-foreground truncate">

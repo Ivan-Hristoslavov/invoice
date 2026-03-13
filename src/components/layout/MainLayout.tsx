@@ -46,10 +46,10 @@ export function MainLayout({ children }: MainLayoutProps) {
           {/* Navbar at top - full width */}
           <Navbar />
           {/* Content area with sidebar */}
-          <div className="flex h-[calc(100vh-4rem)]">
+          <div className="flex h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)]">
             <Sidebar />
-            <main className="flex-1 lg:ml-72 p-4 sm:p-6 lg:p-8 animate-in fade-in duration-150 overflow-y-auto overflow-x-hidden">
-              <div id="main-content" className="max-w-7xl mx-auto w-full pb-6 sm:pb-8">
+            <main className="flex-1 animate-in overflow-x-hidden overflow-y-auto p-3 pt-4 fade-in duration-150 sm:p-6 lg:ml-72 lg:p-8">
+              <div id="main-content" className="mx-auto w-full max-w-7xl pb-5 sm:pb-8">
                 {children}
               </div>
             </main>
