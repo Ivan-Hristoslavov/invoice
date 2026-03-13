@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -11,12 +11,40 @@ import { EyeIcon, EyeOffIcon, LockIcon, MailIcon, Loader2, ArrowRight } from "lu
 
 export function SignInForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  const authError = searchParams.get("error");
+  const oauthErrorMessage = useMemo(() => {
+    if (!authError) return "";
+
+    const errorMessages: Record<string, string> = {
+      AccessDenied: "Достъпът беше отказан. Проверете Google акаунта и опитайте отново.",
+      Configuration: "Google входът не е конфигуриран правилно. Проверете Vercel env настройките.",
+      OAuthSignin: "Неуспешно стартиране на Google вход. Опитайте отново след малко.",
+      OAuthCallback: "Google входът не можа да приключи успешно. Проверете callback URL и Google настройките.",
+      OAuthCreateAccount: "Неуспешно създаване на акаунт чрез Google.",
+      Callback: "Възникна проблем при входа. Опитайте отново.",
+      Default: "Възникна грешка при вход чрез Google.",
+    };
+
+    return errorMessages[authError] || errorMessages.Default;
+  }, [authError]);
+
+  useEffect(() => {
+    if (oauthErrorMessage) {
+      setError(oauthErrorMessage);
+      setIsGoogleLoading(false);
+      return;
+    }
+
+    setError("");
+  }, [oauthErrorMessage]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
