@@ -9,8 +9,7 @@
   },
   "build": {
     "env": {
-      "NEXT_PUBLIC_APP_URL": "https://${VERCEL_URL}",
-      "NODE_ENV": "production"
+      "NEXT_PUBLIC_APP_URL": "https://${VERCEL_URL}"
     }
   },
   "headers": [
