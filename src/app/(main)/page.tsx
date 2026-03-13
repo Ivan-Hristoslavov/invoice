@@ -81,12 +81,30 @@ export default function HomePage() {
   const [isYearly, setIsYearly] = useState(false);
   const [featurePage, setFeaturePage] = useState(1);
   const [testimonialPage, setTestimonialPage] = useState(1);
+  const [shouldReduceEffects, setShouldReduceEffects] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
       router.replace("/dashboard");
     }
   }, [isAuthenticated, router]);
+
+  useEffect(() => {
+    const updateEffects = () => {
+      const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const userAgent = window.navigator.userAgent.toLowerCase();
+      const isSafari =
+        /safari/.test(userAgent) &&
+        !/chrome|android|crios|fxios|edgios/.test(userAgent);
+      const isSmallScreen = window.innerWidth < 768;
+
+      setShouldReduceEffects(mediaQuery.matches || isSafari || isSmallScreen);
+    };
+
+    updateEffects();
+    window.addEventListener("resize", updateEffects);
+    return () => window.removeEventListener("resize", updateEffects);
+  }, []);
 
   if (isAuthenticated) {
     return null;
@@ -359,25 +377,27 @@ export default function HomePage() {
       />
 
       <div className="min-h-screen overflow-x-hidden flex flex-col">
-        <BackgroundShapes variant="vibrant" />
+        <BackgroundShapes variant={shouldReduceEffects ? "subtle" : "vibrant"} />
 
         {/* ── Header ── */}
         <header className="sticky top-0 z-50 w-full glass-card rounded-none! border-t-0! border-l-0! border-r-0!">
-          <div className="container mx-auto flex items-center justify-between h-16 px-4 md:px-6">
+          <div className="container mx-auto flex h-14 items-center justify-between px-3 sm:h-16 sm:px-4 md:px-6">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center gap-2"
             >
-              <div className="h-8 w-8 rounded-lg gradient-primary flex items-center justify-center">
-                <FileText className="h-4 w-4 text-white" />
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg gradient-primary sm:h-8 sm:w-8">
+                <FileText className="h-3.5 w-3.5 text-white sm:h-4 sm:w-4" />
               </div>
-              <span className="font-bold text-xl tracking-tight">{APP_NAME}</span>
+              <span className="max-w-28 truncate text-base font-bold tracking-tight sm:max-w-none sm:text-xl">
+                {APP_NAME}
+              </span>
             </motion.div>
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-3"
+              className="flex items-center gap-1.5 sm:gap-3"
             >
               <ThemeToggle />
               <Button variant="ghost" size="sm" asChild className="hidden sm:flex">
@@ -386,11 +406,12 @@ export default function HomePage() {
               <Button
                 size="sm"
                 asChild
-                className="gradient-primary hover:opacity-90 text-white border-0"
+                className="h-9 px-3 text-xs gradient-primary hover:opacity-90 text-white border-0 sm:h-10 sm:px-4 sm:text-sm"
               >
                 <Link href="/signup" className="flex items-center whitespace-nowrap">
-                  Започнете безплатно
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  <span className="sm:hidden">Старт</span>
+                  <span className="hidden sm:inline">Започнете безплатно</span>
+                  <ArrowRight className="ml-1.5 h-3.5 w-3.5 sm:ml-2 sm:h-4 sm:w-4" />
                 </Link>
               </Button>
             </motion.div>
@@ -398,7 +419,7 @@ export default function HomePage() {
         </header>
 
         {/* ── Hero ── */}
-        <section className="relative px-4 pb-20 pt-14 sm:pt-16">
+        <section className="relative px-4 pb-12 pt-9 sm:pb-20 sm:pt-16">
           <div className="container mx-auto max-w-6xl">
             <motion.div
               initial="initial"
@@ -406,8 +427,8 @@ export default function HomePage() {
               variants={staggerContainer}
               className="flex flex-col items-center text-center"
             >
-              <motion.div variants={fadeInUp} className="mb-6">
-                <Chip variant="flat" color="primary" className="px-3 py-1 text-xs sm:text-sm">
+              <motion.div variants={fadeInUp} className="mb-3 sm:mb-6">
+                <Chip variant="flat" color="primary" className="px-2 py-0.5 text-[10px] sm:px-3 sm:py-1 sm:text-sm">
                   <Sparkles className="h-3.5 w-3.5 inline-block mr-1.5" />
                   Ново: Автоматично генериране на НАП номера
                 </Chip>
@@ -415,7 +436,7 @@ export default function HomePage() {
 
               <motion.h1
                 variants={fadeInUp}
-                className="mb-5 text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl"
+                className="mb-3 text-[1.7rem] font-bold tracking-tight sm:mb-5 sm:text-4xl md:text-5xl lg:text-6xl"
               >
                 Фактурирайте{" "}
                 <span className="gradient-primary-text">професионално</span>
@@ -425,7 +446,7 @@ export default function HomePage() {
 
               <motion.p
                 variants={fadeInUp}
-                className="mb-8 max-w-3xl text-base text-muted-foreground sm:text-lg"
+                className="mb-5 max-w-3xl px-2 text-[13px] leading-5 text-muted-foreground sm:mb-8 sm:px-0 sm:text-lg sm:leading-7"
               >
                 Софтуер за издаване на фактури, създаден за български бизнеси.
                 Създавайте професионални фактури, изпращайте ги по имейл и следете статуса им.
@@ -433,25 +454,25 @@ export default function HomePage() {
 
               <motion.div
                 variants={fadeInUp}
-                className="mb-12 flex flex-col gap-3 sm:flex-row"
+                className="mb-7 flex w-full flex-col items-center gap-2.5 sm:mb-12 sm:flex-row sm:justify-center sm:gap-3"
               >
                 <Button
-                  size="default"
+                  size="sm"
                   asChild
-                  className="h-11 px-6 gradient-primary text-white border-0 shadow-lg hover:opacity-90"
+                  className="h-8 w-full px-3 text-xs gradient-primary text-white border-0 shadow-md hover:opacity-90 sm:h-10 sm:w-auto sm:px-5 sm:text-sm sm:shadow-lg"
                 >
-                  <Link href="/signup" className="flex items-center whitespace-nowrap">
+                  <Link href="/signup" className="flex items-center justify-center whitespace-nowrap">
                     Започнете безплатно
-                    <ChevronRight className="ml-2 h-5 w-5" />
+                    <ChevronRight className="ml-1.5 h-3.5 w-3.5 sm:ml-2 sm:h-4 sm:w-4" />
                   </Link>
                 </Button>
                 <Button
-                  size="default"
+                  size="sm"
                   variant="outline"
                   asChild
-                  className="h-11 px-6 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  className="h-8 w-full px-3 text-xs border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 sm:h-10 sm:w-auto sm:px-5 sm:text-sm"
                 >
-                  <Link href="/signin" className="flex items-center whitespace-nowrap">
+                  <Link href="/signin" className="flex items-center justify-center whitespace-nowrap">
                     Вече имам акаунт
                   </Link>
                 </Button>
@@ -459,7 +480,7 @@ export default function HomePage() {
 
               <motion.div
                 variants={fadeInUp}
-                className="grid grid-cols-3 gap-4 md:gap-8"
+                className="grid w-full grid-cols-3 gap-1.5 sm:gap-4 md:gap-8"
               >
                 {[
                   { value: "1000+", label: "Активни потребители" },
@@ -467,10 +488,10 @@ export default function HomePage() {
                   { value: "99.9%", label: "Uptime" },
                 ].map((stat) => (
                   <div key={stat.label} className="text-center">
-                    <div className="text-xl font-bold gradient-primary-text sm:text-2xl md:text-3xl">
+                    <div className="text-base font-bold gradient-primary-text sm:text-2xl md:text-3xl">
                       {stat.value}
                     </div>
-                    <div className="mt-1 text-[11px] text-muted-foreground sm:text-sm">
+                    <div className="mt-1 text-[9px] leading-4 text-muted-foreground sm:text-sm">
                       {stat.label}
                     </div>
                   </div>
@@ -483,7 +504,7 @@ export default function HomePage() {
               animate="animate"
               className="absolute top-32 left-10 hidden lg:block"
             >
-              <div className="p-3 rounded-2xl bg-card shadow-xl border">
+              <div className="rounded-2xl border bg-card p-3 shadow-lg">
                 <FileText className="h-6 w-6 text-primary" />
               </div>
             </motion.div>
@@ -493,21 +514,21 @@ export default function HomePage() {
               style={{ animationDelay: "2s" }}
               className="absolute top-48 right-16 hidden lg:block"
             >
-              <div className="p-3 rounded-2xl bg-card shadow-xl border">
+              <div className="rounded-2xl border bg-card p-3 shadow-lg">
                 <BarChart3 className="h-6 w-6 text-emerald-500" />
               </div>
             </motion.div>
           </div>
         </section>
 
-        <section className="px-4 py-10 sm:py-12">
+        <section className="px-4 py-7 sm:py-12">
           <div className="container mx-auto max-w-6xl">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {quickHighlights.map((item) => (
-                <HCard key={item.title} className="border border-border/50 bg-card shadow-sm">
-                  <HCardContent className="p-5">
-                    <p className="mb-2 text-base font-semibold">{item.title}</p>
-                    <p className="text-sm leading-6 text-muted-foreground">{item.description}</p>
+                <HCard key={item.title} className="border border-border/50 bg-card shadow-xs sm:shadow-sm">
+                  <HCardContent className="p-3.5 sm:p-5">
+                    <p className="mb-1.5 text-[13px] font-semibold sm:mb-2 sm:text-base">{item.title}</p>
+                    <p className="text-[11px] leading-5 text-muted-foreground sm:text-sm sm:leading-6">{item.description}</p>
                   </HCardContent>
                 </HCard>
               ))}
@@ -516,7 +537,7 @@ export default function HomePage() {
         </section>
 
         {/* ── Who Is It For ── */}
-        <section className="px-4 py-12 sm:py-14">
+        <section className="px-4 py-7 sm:py-14">
           <div className="container mx-auto max-w-6xl">
             <motion.div
               initial={{ opacity: 0, y: 40 }}
@@ -524,24 +545,24 @@ export default function HomePage() {
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-                <HCard className="border-2 border-amber-400/40 bg-card shadow-xl">
-                  <HCardContent className="p-6 md:p-8">
-                  <div className="flex flex-col md:flex-row gap-8 items-start">
-                    <div className="flex-shrink-0">
-                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/25">
-                        <FileText className="h-8 w-8 text-white" />
+                <HCard className="border border-amber-400/30 bg-card shadow-md sm:border-2 sm:shadow-xl">
+                  <HCardContent className="p-3.5 sm:p-6 md:p-8">
+                  <div className="flex flex-col items-start gap-4 sm:gap-8 md:flex-row">
+                    <div className="shrink-0">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-amber-500/95 to-orange-500/95 shadow-sm sm:h-16 sm:w-16 sm:rounded-2xl sm:shadow-lg sm:shadow-amber-500/25">
+                        <FileText className="h-6 w-6 text-white sm:h-8 sm:w-8" />
                       </div>
                     </div>
                     <div className="flex-1">
-                      <h2 className="mb-3 text-2xl font-bold md:text-3xl">
+                      <h2 className="mb-2 text-lg font-bold sm:mb-3 sm:text-2xl md:text-3xl">
                         За кого е {APP_NAME}?
                       </h2>
-                      <p className="mb-5 text-base text-muted-foreground md:text-lg">
+                      <p className="mb-4 text-[13px] leading-5 text-muted-foreground sm:mb-5 sm:text-base md:text-lg">
                         {APP_NAME} е система за{" "}
                         <strong>издаване на фактури</strong>, а не за обработка
                         на плащания. Приложението е идеално за:
                       </p>
-                      <div className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <div className="mb-4 grid grid-cols-1 gap-2.5 sm:mb-5 sm:gap-3 md:grid-cols-2">
                         {[
                           "Фрийлансъри и самонаети лица",
                           "Малки и средни предприятия",
@@ -550,16 +571,16 @@ export default function HomePage() {
                           "Занаятчии и услуги",
                           "Търговци и дистрибутори",
                         ].map((item) => (
-                          <div key={item} className="flex items-center gap-3">
-                            <div className="h-6 w-6 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                              <Check className="h-4 w-4 text-emerald-600" />
+                          <div key={item} className="flex items-center gap-2.5">
+                            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 sm:h-6 sm:w-6">
+                              <Check className="h-3.5 w-3.5 text-emerald-600 sm:h-4 sm:w-4" />
                             </div>
-                            <span className="text-sm md:text-base">{item}</span>
+                            <span className="text-[13px] leading-5 md:text-base">{item}</span>
                           </div>
                         ))}
                       </div>
-                      <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-                        <p className="text-sm text-amber-800 dark:text-amber-200">
+                      <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20 sm:p-4">
+                        <p className="text-[13px] leading-5 text-amber-800 dark:text-amber-200 sm:text-sm">
                           <strong>Важно:</strong> {APP_NAME}{" "}
                           <strong>не обработва плащания</strong> и не е
                           платежна система. Ние ви помагаме да създавате
@@ -575,40 +596,40 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="px-4 py-12 sm:py-14">
+        <section className="px-4 py-7 sm:py-14">
           <div className="container mx-auto max-w-6xl">
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="text-center mb-10"
+              className="mb-7 text-center sm:mb-10"
             >
               <Chip variant="flat" color="warning" className="mb-4">
                 Как работи
               </Chip>
-              <h2 className="mb-4 text-3xl font-bold sm:text-4xl">
+              <h2 className="mb-2.5 text-xl font-bold sm:mb-4 sm:text-4xl">
                 Подреден процес без излишна сложност
               </h2>
-              <p className="mx-auto max-w-2xl text-base text-muted-foreground sm:text-lg">
+              <p className="mx-auto max-w-2xl text-[13px] leading-5 text-muted-foreground sm:text-lg sm:leading-7">
                 Влизате, настройвате основните данни и започвате да издавате документи още в първия ден.
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               {workflowSteps.map((step, index) => (
-                <HCard key={step.title} className="border border-border/50 bg-card shadow-sm">
-                  <HCardContent className="p-5">
-                    <div className="mb-4 flex items-center justify-between">
-                      <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${step.color} shadow-sm`}>
-                        <step.icon className="h-5 w-5 text-white" />
+                <HCard key={step.title} className="border border-border/50 bg-card shadow-xs sm:shadow-sm">
+                  <HCardContent className="p-3.5 sm:p-5">
+                    <div className="mb-3 flex items-center justify-between sm:mb-4">
+                      <div className={`flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br ${step.color} shadow-xs sm:h-10 sm:w-10 sm:shadow-sm`}>
+                        <step.icon className="h-4.5 w-4.5 text-white sm:h-5 sm:w-5" />
                       </div>
                       <Chip variant="flat" color="secondary" size="sm">
                         Стъпка {index + 1}
                       </Chip>
                     </div>
-                    <h3 className="mb-2 text-lg font-semibold">{step.title}</h3>
-                    <p className="text-sm leading-6 text-muted-foreground">{step.description}</p>
+                    <h3 className="mb-1.5 text-[15px] font-semibold sm:text-lg">{step.title}</h3>
+                    <p className="text-[13px] leading-5 text-muted-foreground sm:text-sm sm:leading-6">{step.description}</p>
                   </HCardContent>
                 </HCard>
               ))}
@@ -617,28 +638,28 @@ export default function HomePage() {
         </section>
 
         {/* ── Features ── */}
-        <section className="py-12 px-4 sm:py-14">
+        <section className="px-4 py-7 sm:py-14">
           <div className="container mx-auto max-w-6xl">
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="mb-10 text-center"
+              className="mb-7 text-center sm:mb-10"
             >
               <Chip variant="flat" color="primary" className="mb-4">
                 Функции
               </Chip>
-              <h2 className="mt-3 mb-4 text-3xl font-bold sm:text-4xl">
+              <h2 className="mt-3 mb-2.5 text-xl font-bold sm:mb-4 sm:text-4xl">
                 Всичко необходимо за вашия бизнес
               </h2>
-              <p className="mx-auto max-w-2xl text-base text-muted-foreground sm:text-lg">
+              <p className="mx-auto max-w-2xl text-[13px] leading-5 text-muted-foreground sm:text-lg sm:leading-7">
                 Пълен набор от инструменти за професионално фактуриране и
                 управление на финансите
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               {paginatedFeatures.map((feature, index) => (
                 <motion.div
                   key={feature.title}
@@ -649,18 +670,18 @@ export default function HomePage() {
                 >
                   <HCard
                     isHoverable
-                    className="group h-full border border-border/50 bg-card shadow-sm transition-shadow duration-300 hover:shadow-lg"
+                    className="group h-full border border-border/50 bg-card shadow-xs transition-shadow duration-300 hover:shadow-md sm:shadow-sm sm:hover:shadow-lg"
                   >
-                    <HCardContent className="p-5">
+                    <HCardContent className="p-3.5 sm:p-5">
                       <div
-                        className={`mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${feature.color} shadow-sm transition-transform duration-300 group-hover:scale-105`}
+                        className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br ${feature.color} shadow-xs transition-transform duration-300 group-hover:scale-105 sm:mb-4 sm:h-10 sm:w-10 sm:shadow-sm`}
                       >
-                        <feature.icon className="h-5 w-5 text-white" />
+                        <feature.icon className="h-4.5 w-4.5 text-white sm:h-5 sm:w-5" />
                       </div>
-                      <h3 className="mb-2 text-lg font-semibold">
+                      <h3 className="mb-1.5 text-[15px] font-semibold sm:text-lg">
                         {feature.title}
                       </h3>
-                      <p className="text-sm leading-6 text-muted-foreground">
+                      <p className="text-[13px] leading-5 text-muted-foreground sm:text-sm sm:leading-6">
                         {feature.description}
                       </p>
                     </HCardContent>
@@ -680,30 +701,30 @@ export default function HomePage() {
         </section>
 
         {/* ── Pricing ── */}
-        <section id="pricing" className="px-4 py-12 sm:py-14">
+        <section id="pricing" className="px-4 py-7 sm:py-14">
           <div className="container mx-auto max-w-7xl">
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="mb-10 text-center"
+              className="mb-7 text-center sm:mb-10"
             >
               <Chip variant="flat" color="success" className="mb-4">
                 Ценообразуване
               </Chip>
-              <h2 className="mt-3 mb-4 text-3xl font-bold sm:text-4xl">
+              <h2 className="mt-3 mb-2.5 text-xl font-bold sm:mb-4 sm:text-4xl">
                 Прозрачни цени без изненади
               </h2>
-              <p className="mx-auto mb-8 max-w-2xl text-base text-muted-foreground sm:text-lg">
+              <p className="mx-auto mb-5 max-w-2xl text-[13px] leading-5 text-muted-foreground sm:mb-8 sm:text-lg sm:leading-7">
                 Изберете плана, който отговаря на нуждите на вашия бизнес
               </p>
 
               {/* Monthly / Yearly toggle */}
-              <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-muted/60 border border-border/50">
+              <div className="inline-flex items-center gap-2 rounded-full border border-border/50 bg-muted/60 px-3 py-2 sm:gap-3 sm:px-5 sm:py-3">
                 <span
                   className={cn(
-                    "text-sm font-medium transition-colors",
+                    "text-xs font-medium transition-colors sm:text-sm",
                     !isYearly ? "text-foreground" : "text-muted-foreground"
                   )}
                 >
@@ -713,20 +734,20 @@ export default function HomePage() {
                   type="button"
                   onClick={() => setIsYearly(!isYearly)}
                   className={cn(
-                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none",
+                    "relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none sm:h-6 sm:w-11",
                     isYearly ? "bg-emerald-500" : "bg-muted-foreground/30"
                   )}
                 >
                   <span
                     className={cn(
-                      "inline-block h-4 w-4 rounded-full bg-white transition-transform shadow",
-                      isYearly ? "translate-x-6" : "translate-x-1"
+                      "inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform shadow sm:h-4 sm:w-4",
+                      isYearly ? "translate-x-5 sm:translate-x-6" : "translate-x-1"
                     )}
                   />
                 </button>
                 <span
                   className={cn(
-                    "text-sm font-medium flex items-center gap-2 transition-colors",
+                    "flex items-center gap-1.5 text-xs font-medium transition-colors sm:gap-2 sm:text-sm",
                     isYearly ? "text-foreground" : "text-muted-foreground"
                   )}
                 >
@@ -735,7 +756,7 @@ export default function HomePage() {
                     size="sm"
                     color="success"
                     variant="flat"
-                    className="text-[10px] h-5"
+                    className="h-5 text-[10px]"
                   >
                     -17%
                   </Chip>
@@ -743,7 +764,7 @@ export default function HomePage() {
               </div>
             </motion.div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
               {pricingPlans.map((plan, index) => {
                 const PlanIcon = plan.icon;
                 const monthlyPrice =
@@ -767,33 +788,31 @@ export default function HomePage() {
                         className={cn(
                           "relative flex h-full flex-col overflow-hidden border bg-card",
                         plan.popular
-                          ? "border-emerald-500/60 shadow-2xl"
-                            : "border-border/50 shadow-md"
+                          ? "border-emerald-500/50 shadow-lg sm:shadow-2xl"
+                            : "border-border/50 shadow-sm"
                       )}
                       style={
                         plan.popular
                           ? {
-                              boxShadow: `0 20px 60px ${plan.glowColor}, 0 8px 24px rgba(0,0,0,0.12)`,
+                              boxShadow: `0 12px 32px ${plan.glowColor}, 0 4px 12px rgba(0,0,0,0.08)`,
                             }
                           : undefined
                       }
                     >
                       {/* Gradient top bar */}
-                      <div
-                        className={`h-1.5 w-full bg-gradient-to-r ${plan.gradient} flex-shrink-0`}
-                      />
+                      <div className={`h-1 w-full shrink-0 bg-linear-to-r ${plan.gradient}`} />
 
-                      <HCardContent className="flex flex-1 flex-col p-5">
+                      <HCardContent className="flex flex-1 flex-col p-3.5 sm:p-5">
                         {/* Header */}
                         <div className="mb-4 flex items-start justify-between gap-2">
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2.5 sm:gap-3">
                             <div
-                              className={`h-9 w-9 rounded-xl bg-gradient-to-br ${plan.gradient} flex items-center justify-center shadow-md flex-shrink-0`}
+                              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-linear-to-br ${plan.gradient} shadow-xs sm:h-9 sm:w-9 sm:shadow-md`}
                             >
-                              <PlanIcon className="h-4.5 w-4.5 text-white" />
+                              <PlanIcon className="h-4 w-4 text-white sm:h-4.5 sm:w-4.5" />
                             </div>
                             <div>
-                              <p className="text-base font-bold leading-tight">
+                              <p className="text-[13px] font-bold leading-tight sm:text-base">
                                 {plan.name}
                               </p>
                               <p className="text-xs text-muted-foreground">
@@ -802,7 +821,7 @@ export default function HomePage() {
                             </div>
                           </div>
                           {plan.popular && (
-                            <Chip size="sm" color="success" variant="flat" className="text-[10px] flex-shrink-0">
+                            <Chip size="sm" color="success" variant="flat" className="text-[10px] shrink-0">
                               Популярен
                             </Chip>
                           )}
@@ -812,18 +831,18 @@ export default function HomePage() {
                         <div className="mb-5">
                           {plan.key === "FREE" ? (
                             <div className="flex items-baseline gap-1">
-                              <span className="text-2xl font-bold">0 €</span>
-                              <span className="text-muted-foreground text-sm">
+                              <span className="text-lg font-bold sm:text-2xl">0 €</span>
+                              <span className="text-xs text-muted-foreground sm:text-sm">
                                 /завинаги
                               </span>
                             </div>
                           ) : (
                             <div>
                               <div className="flex items-baseline gap-1">
-                                <span className="text-2xl font-bold">
+                                <span className="text-lg font-bold sm:text-2xl">
                                   {monthlyPrice.toFixed(2)} €
                                 </span>
-                                <span className="text-muted-foreground text-sm">
+                                <span className="text-xs text-muted-foreground sm:text-sm">
                                   /месец
                                 </span>
                               </div>
@@ -848,18 +867,18 @@ export default function HomePage() {
                             >
                               {feat.included ? (
                                 <div
-                                  className={`h-4 w-4 rounded-full bg-gradient-to-br ${plan.gradient} flex items-center justify-center flex-shrink-0`}
+                                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-linear-to-br ${plan.gradient}`}
                                 >
                                   <Check className="h-2.5 w-2.5 text-white" />
                                 </div>
                               ) : (
-                                <div className="h-4 w-4 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                                <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-muted">
                                   <X className="h-2.5 w-2.5 text-muted-foreground" />
                                 </div>
                               )}
                               <span
                                 className={cn(
-                                  "text-sm leading-6",
+                                  "text-[13px] leading-5 sm:text-sm sm:leading-6",
                                   !feat.included && "text-muted-foreground"
                                 )}
                               >
@@ -870,11 +889,11 @@ export default function HomePage() {
                         </ul>
                       </HCardContent>
 
-                      <HCardFooter className="px-5 pb-5 pt-0">
+                      <HCardFooter className="px-3.5 pb-3.5 pt-0 sm:px-5 sm:pb-5">
                         <Button
                           asChild
                           className={cn(
-                            "w-full h-10",
+                            "h-9 w-full text-[13px] sm:h-10 sm:text-sm",
                             plan.popular &&
                               "gradient-primary hover:opacity-90 text-white border-0"
                           )}
@@ -896,9 +915,9 @@ export default function HomePage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.4 }}
-              className="mt-10 text-center"
+              className="mt-8 text-center sm:mt-10"
             >
-              <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
+              <p className="mx-auto max-w-2xl text-[13px] leading-5 text-muted-foreground sm:text-sm">
                 Всички планове включват софтуер за издаване на фактури. Не
                 предлагаме обработка на плащания — вашите клиенти плащат
                 директно на вас.
@@ -908,27 +927,27 @@ export default function HomePage() {
         </section>
 
         {/* ── Testimonials ── */}
-        <section className="px-4 py-12 sm:py-14">
+        <section className="px-4 py-7 sm:py-14">
           <div className="container mx-auto max-w-6xl">
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="mb-10 text-center"
+              className="mb-7 text-center sm:mb-10"
             >
               <Chip variant="flat" color="warning" className="mb-4">
                 Отзиви
               </Chip>
-              <h2 className="mt-3 mb-4 text-3xl font-bold sm:text-4xl">
+              <h2 className="mt-3 mb-2.5 text-xl font-bold sm:mb-4 sm:text-4xl">
                 Доволни клиенти
               </h2>
-              <p className="mx-auto max-w-2xl text-base text-muted-foreground sm:text-lg">
+              <p className="mx-auto max-w-2xl text-[13px] leading-5 text-muted-foreground sm:text-lg sm:leading-7">
                 Вижте какво казват нашите потребители за {APP_NAME}
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               {paginatedTestimonials.map((testimonial, index) => (
                 <motion.div
                   key={testimonial.name}
@@ -939,46 +958,46 @@ export default function HomePage() {
                 >
                   <HCard
                     isHoverable
-                    className="relative h-full overflow-hidden border border-border/50 bg-card shadow-md transition-shadow duration-500 hover:shadow-xl"
+                    className="relative h-full overflow-hidden border border-border/50 bg-card shadow-xs transition-shadow duration-300 hover:shadow-md sm:shadow-sm sm:hover:shadow-lg"
                   >
                     <div
-                      className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${testimonial.gradient}`}
+                      className={`absolute top-0 left-0 right-0 h-[3px] bg-linear-to-r ${testimonial.gradient}`}
                     />
-                    <HCardContent className="p-5">
-                      <div className="mb-4">
+                    <HCardContent className="p-3.5 sm:p-5">
+                      <div className="mb-3 sm:mb-4">
                         <svg
-                          className="w-10 h-10 text-emerald-500/20"
+                          className="h-8 w-8 text-emerald-500/20 sm:h-10 sm:w-10"
                           fill="currentColor"
                           viewBox="0 0 24 24"
                         >
                           <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
                         </svg>
                       </div>
-                      <div className="mb-4 flex gap-1">
+                      <div className="mb-3 flex gap-1 sm:mb-4">
                         {[...Array(testimonial.rating)].map((_, i) => (
                           <Star
                             key={i}
-                            className="h-5 w-5 fill-amber-400 text-amber-400"
+                            className="h-4 w-4 fill-amber-400 text-amber-400 sm:h-5 sm:w-5"
                           />
                         ))}
                       </div>
-                      <p className="mb-6 text-sm leading-7 text-foreground/90">
+                      <p className="mb-4 text-[13px] leading-5 text-foreground/90 sm:mb-6 sm:text-sm sm:leading-7">
                         &ldquo;{testimonial.content}&rdquo;
                       </p>
                       <div className="flex items-center gap-3 border-t border-border/50 pt-4">
                         <div
                           className={cn(
-                            "h-10 w-10 rounded-full flex-shrink-0 items-center justify-center bg-gradient-to-br text-sm font-bold text-white",
+                            "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-linear-to-br text-xs font-bold text-white sm:h-10 sm:w-10 sm:text-sm",
                             testimonial.gradient
                           )}
                         >
                           {testimonial.initials}
                         </div>
                         <div>
-                          <div className="font-semibold text-foreground">
+                          <div className="text-[13px] font-semibold text-foreground sm:text-base">
                             {testimonial.name}
                           </div>
-                          <div className="text-sm text-muted-foreground">
+                          <div className="text-xs text-muted-foreground sm:text-sm">
                             {testimonial.role}
                           </div>
                         </div>
@@ -1000,19 +1019,19 @@ export default function HomePage() {
         </section>
 
         {/* ── FAQ ── */}
-        <section className="px-4 py-12 sm:py-14">
+        <section className="px-4 py-7 sm:py-14">
           <div className="container mx-auto max-w-4xl">
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="mb-10 text-center"
+              className="mb-7 text-center sm:mb-10"
             >
               <Chip variant="flat" color="secondary" className="mb-4">
                 Въпроси
               </Chip>
-              <h2 className="mt-3 mb-4 text-3xl font-bold sm:text-4xl">
+              <h2 className="mt-3 mb-2.5 text-xl font-bold sm:mb-4 sm:text-4xl">
                 Често задавани въпроси
               </h2>
             </motion.div>
@@ -1022,7 +1041,7 @@ export default function HomePage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="space-y-4"
+              className="space-y-2.5 sm:space-y-4"
             >
               {[
                 {
@@ -1053,15 +1072,15 @@ export default function HomePage() {
                   viewport={{ once: true }}
                   transition={{ duration: 0.4, delay: index * 0.07 }}
                 >
-                  <HCard className="border border-border/50 bg-card shadow-sm transition-shadow hover:shadow-md">
-                    <HCardContent className="p-5">
-                      <h3 className="font-semibold text-base mb-2 flex items-center gap-2">
-                        <span className="h-5 w-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-bold flex-shrink-0">
+                  <HCard className="border border-border/50 bg-card shadow-xs transition-shadow hover:shadow-sm sm:shadow-sm sm:hover:shadow-md">
+                    <HCardContent className="p-3.5 sm:p-5">
+                      <h3 className="mb-1.5 flex items-center gap-2 text-[13px] font-semibold sm:text-base">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
                           {index + 1}
                         </span>
                         {faq.q}
                       </h3>
-                      <p className="text-muted-foreground text-sm leading-relaxed pl-7">
+                      <p className="pl-7 text-[13px] leading-5 text-muted-foreground sm:text-sm sm:leading-6">
                         {faq.a}
                       </p>
                     </HCardContent>
@@ -1073,7 +1092,7 @@ export default function HomePage() {
         </section>
 
         {/* ── CTA ── */}
-        <section className="px-4 py-12 sm:py-14">
+        <section className="px-4 py-8 sm:py-14">
           <div className="container mx-auto max-w-4xl">
             <motion.div
               initial={{ opacity: 0, y: 40 }}
@@ -1081,37 +1100,37 @@ export default function HomePage() {
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              <HCard className="relative overflow-hidden border-2 border-emerald-500/20 bg-card shadow-2xl">
+              <HCard className="relative overflow-hidden border border-emerald-500/20 bg-card shadow-lg sm:border-2 sm:shadow-2xl">
                 {/* Decorative gradient background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-teal-500/5 to-cyan-500/5 pointer-events-none" />
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500" />
-                <HCardContent className="relative z-10 p-8 text-center md:p-10">
-                  <h2 className="mb-4 text-3xl font-bold sm:text-4xl">
+                <div className="pointer-events-none absolute inset-0 bg-linear-to-br from-emerald-500/4 via-teal-500/4 to-cyan-500/4 sm:from-emerald-500/5 sm:via-teal-500/5 sm:to-cyan-500/5" />
+                <div className="absolute top-0 left-0 right-0 h-[3px] bg-linear-to-r from-emerald-500 via-teal-500 to-cyan-500 sm:h-1" />
+                <HCardContent className="relative z-10 p-5 text-center sm:p-8 md:p-10">
+                  <h2 className="mb-3 text-2xl font-bold sm:mb-4 sm:text-4xl">
                     Готови ли сте да започнете?
                   </h2>
-                  <p className="mx-auto mb-8 max-w-xl text-base text-muted-foreground sm:text-lg">
+                  <p className="mx-auto mb-6 max-w-xl text-sm leading-6 text-muted-foreground sm:mb-8 sm:text-lg">
                     Присъединете се към хилядите бизнеси, които вече използват{" "}
                     {APP_NAME} за професионално фактуриране.
                   </p>
-                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <div className="flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
                     <Button
                       size="default"
                       asChild
-                      className="h-11 px-6 gradient-primary hover:opacity-90 text-white border-0 shadow-lg"
+                      className="h-10 px-4 text-sm gradient-primary hover:opacity-90 text-white border-0 shadow-md sm:h-11 sm:px-6 sm:shadow-lg"
                     >
                       <Link
                         href="/signup"
                         className="flex items-center whitespace-nowrap"
                       >
                         Започнете безплатно
-                        <ArrowRight className="ml-2 h-5 w-5" />
+                        <ArrowRight className="ml-1.5 h-4 w-4 sm:ml-2 sm:h-5 sm:w-5" />
                       </Link>
                     </Button>
                     <Button
                       size="default"
                       variant="outline"
                       asChild
-                      className="h-11 px-6"
+                      className="h-10 px-4 text-sm sm:h-11 sm:px-6"
                     >
                       <Link
                         href="/signin"
@@ -1128,15 +1147,15 @@ export default function HomePage() {
         </section>
 
         {/* ── Footer ── */}
-        <footer className="mt-auto border-t px-4 py-12 glass-card rounded-none! border-l-0! border-r-0! border-b-0!">
+        <footer className="mt-auto border-t px-4 py-8 glass-card rounded-none! border-l-0! border-r-0! border-b-0! sm:py-12">
           <div className="container mx-auto max-w-6xl">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+            <div className="mb-8 grid grid-cols-1 gap-8 md:mb-12 md:grid-cols-4 md:gap-12">
               <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-8 w-8 rounded-lg gradient-primary flex items-center justify-center">
-                    <FileText className="h-4 w-4 text-white" />
+                <div className="mb-3 flex items-center gap-2 sm:mb-4">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg gradient-primary sm:h-8 sm:w-8">
+                    <FileText className="h-3.5 w-3.5 text-white sm:h-4 sm:w-4" />
                   </div>
-                  <span className="font-bold text-xl">{APP_NAME}</span>
+                  <span className="text-lg font-bold sm:text-xl">{APP_NAME}</span>
                 </div>
                 <p className="text-muted-foreground text-sm">
                   Софтуер за издаване на фактури за български бизнеси. Не
@@ -1144,8 +1163,8 @@ export default function HomePage() {
                 </p>
               </div>
               <div>
-                <h4 className="font-semibold mb-4">Продукт</h4>
-                <ul className="space-y-3 text-sm">
+                <h4 className="mb-3 text-sm font-semibold sm:mb-4 sm:text-base">Продукт</h4>
+                <ul className="space-y-2.5 text-sm sm:space-y-3">
                   <li>
                     <Link
                       href="/features"
@@ -1181,8 +1200,8 @@ export default function HomePage() {
                 </ul>
               </div>
               <div>
-                <h4 className="font-semibold mb-4">Компания</h4>
-                <ul className="space-y-3 text-sm">
+                <h4 className="mb-3 text-sm font-semibold sm:mb-4 sm:text-base">Компания</h4>
+                <ul className="space-y-2.5 text-sm sm:space-y-3">
                   <li>
                     <Link
                       href="/about"
@@ -1210,8 +1229,8 @@ export default function HomePage() {
                 </ul>
               </div>
               <div>
-                <h4 className="font-semibold mb-4">Правна информация</h4>
-                <ul className="space-y-3 text-sm">
+                <h4 className="mb-3 text-sm font-semibold sm:mb-4 sm:text-base">Правна информация</h4>
+                <ul className="space-y-2.5 text-sm sm:space-y-3">
                   <li>
                     <Link
                       href="/terms"
@@ -1247,11 +1266,11 @@ export default function HomePage() {
                 </ul>
               </div>
             </div>
-            <div className="pt-8 border-t flex flex-col sm:flex-row justify-between items-center gap-4">
-              <p className="text-sm text-muted-foreground">
+            <div className="flex flex-col items-center justify-between gap-3 border-t pt-6 sm:flex-row sm:gap-4 sm:pt-8">
+              <p className="text-center text-xs text-muted-foreground sm:text-left sm:text-sm">
                 © {new Date().getFullYear()} {APP_NAME}. Всички права запазени.
               </p>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
                 <Link
                   href="https://www.facebook.com/invoicy.bg"
                   target="_blank"

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
 interface BackgroundShapesProps {
@@ -8,8 +9,29 @@ interface BackgroundShapesProps {
 }
 
 export function BackgroundShapes({ variant = "default", className = "" }: BackgroundShapesProps) {
+  const [shouldReduceEffects, setShouldReduceEffects] = useState(false);
+
+  useEffect(() => {
+    const updateEffects = () => {
+      const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const userAgent = window.navigator.userAgent.toLowerCase();
+      const isSafari =
+        /safari/.test(userAgent) &&
+        !/chrome|android|crios|fxios|edgios/.test(userAgent);
+      const isSmallScreen = window.innerWidth < 768;
+
+      setShouldReduceEffects(mediaQuery.matches || isSafari || isSmallScreen);
+    };
+
+    updateEffects();
+    window.addEventListener("resize", updateEffects);
+    return () => window.removeEventListener("resize", updateEffects);
+  }, []);
+
   const intensity = variant === "subtle" ? 1.2 : variant === "vibrant" ? 1.8 : 1.5;
-  const showShapes = variant === "vibrant";
+  const showShapes = variant === "vibrant" && !shouldReduceEffects;
+  const orbBlurClass = shouldReduceEffects ? "blur-2xl" : "blur-3xl";
+  const orbOpacityClass = shouldReduceEffects ? "opacity-55 dark:opacity-65" : "opacity-90 dark:opacity-100";
 
   return (
     <div className={`fixed inset-0 -z-10 overflow-hidden pointer-events-none ${className}`}>
@@ -19,7 +41,7 @@ export function BackgroundShapes({ variant = "default", className = "" }: Backgr
       {/* Large vibrant gradient orbs - more visible in light mode */}
       {/* Purple/Violet - top right */}
       <div
-        className="absolute top-[-20%] right-[-10%] w-[70vw] h-[70vw] max-w-[1000px] max-h-[1000px] rounded-full blur-3xl opacity-90 dark:opacity-100"
+        className={`absolute top-[-20%] right-[-10%] h-[70vw] w-[70vw] max-h-[1000px] max-w-[1000px] rounded-full ${orbBlurClass} ${orbOpacityClass}`}
         style={{
           background: `radial-gradient(circle, rgba(168, 85, 247, ${0.55 * intensity}) 0%, rgba(139, 92, 246, ${0.45 * intensity}) 40%, transparent 70%)`,
         }}
@@ -27,7 +49,7 @@ export function BackgroundShapes({ variant = "default", className = "" }: Backgr
       
       {/* Cyan/Teal - bottom left */}
       <div
-        className="absolute bottom-[-10%] left-[-10%] w-[60vw] h-[60vw] max-w-[800px] max-h-[800px] rounded-full blur-3xl opacity-90 dark:opacity-100"
+        className={`absolute bottom-[-10%] left-[-10%] h-[60vw] w-[60vw] max-h-[800px] max-w-[800px] rounded-full ${orbBlurClass} ${orbOpacityClass}`}
         style={{
           background: `radial-gradient(circle, rgba(6, 182, 212, ${0.55 * intensity}) 0%, rgba(34, 211, 238, ${0.4 * intensity}) 40%, transparent 70%)`,
         }}
@@ -35,7 +57,7 @@ export function BackgroundShapes({ variant = "default", className = "" }: Backgr
       
       {/* Pink/Rose - center */}
       <div
-        className="absolute top-[40%] left-[30%] w-[50vw] h-[50vw] max-w-[700px] max-h-[700px] rounded-full blur-3xl opacity-80 dark:opacity-100"
+        className={`absolute top-[40%] left-[30%] h-[50vw] w-[50vw] max-h-[700px] max-w-[700px] rounded-full ${shouldReduceEffects ? "blur-2xl opacity-45 dark:opacity-55" : "blur-3xl opacity-80 dark:opacity-100"}`}
         style={{
           background: `radial-gradient(circle, rgba(236, 72, 153, ${0.45 * intensity}) 0%, rgba(244, 114, 182, ${0.35 * intensity}) 40%, transparent 70%)`,
         }}
@@ -43,7 +65,7 @@ export function BackgroundShapes({ variant = "default", className = "" }: Backgr
 
       {/* Blue/Indigo - top center */}
       <div
-        className="absolute top-[10%] left-[50%] w-[40vw] h-[40vw] max-w-[600px] max-h-[600px] rounded-full blur-3xl opacity-80 dark:opacity-100"
+        className={`absolute top-[10%] left-[50%] h-[40vw] w-[40vw] max-h-[600px] max-w-[600px] rounded-full ${shouldReduceEffects ? "blur-2xl opacity-45 dark:opacity-55" : "blur-3xl opacity-80 dark:opacity-100"}`}
         style={{
           background: `radial-gradient(circle, rgba(59, 130, 246, ${0.45 * intensity}) 0%, rgba(99, 102, 241, ${0.3 * intensity}) 40%, transparent 70%)`,
         }}
@@ -51,7 +73,7 @@ export function BackgroundShapes({ variant = "default", className = "" }: Backgr
 
       {/* Green/Emerald - bottom right accent */}
       <div
-        className="absolute bottom-[20%] right-[30%] w-[30vw] h-[30vw] max-w-[400px] max-h-[400px] rounded-full blur-3xl opacity-70 dark:opacity-80"
+        className={`absolute bottom-[20%] right-[30%] h-[30vw] w-[30vw] max-h-[400px] max-w-[400px] rounded-full ${shouldReduceEffects ? "blur-2xl opacity-40 dark:opacity-50" : "blur-3xl opacity-70 dark:opacity-80"}`}
         style={{
           background: `radial-gradient(circle, rgba(16, 185, 129, ${0.4 * intensity}) 0%, transparent 60%)`,
         }}
@@ -59,7 +81,7 @@ export function BackgroundShapes({ variant = "default", className = "" }: Backgr
 
       {/* Orange/Amber - extra accent */}
       <div
-        className="absolute top-[60%] right-[5%] w-[25vw] h-[25vw] max-w-[350px] max-h-[350px] rounded-full blur-3xl opacity-70 dark:opacity-70"
+        className={`absolute top-[60%] right-[5%] h-[25vw] w-[25vw] max-h-[350px] max-w-[350px] rounded-full ${shouldReduceEffects ? "hidden" : "blur-3xl opacity-70 dark:opacity-70"}`}
         style={{
           background: `radial-gradient(circle, rgba(251, 146, 60, ${0.35 * intensity}) 0%, transparent 60%)`,
         }}
