@@ -2,12 +2,34 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
+import cuid from "cuid";
 import { createAdminClient } from "@/lib/supabase/server";
+
+const oneDayInSeconds = 60 * 60 * 24;
+const isProduction = process.env.NODE_ENV === "production";
 
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   session: {
     strategy: "jwt",
+    maxAge: oneDayInSeconds,
+    updateAge: 60 * 60,
+  },
+  jwt: {
+    maxAge: oneDayInSeconds,
+  },
+  cookies: {
+    sessionToken: {
+      name: isProduction
+        ? "__Secure-next-auth.session-token"
+        : "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: isProduction,
+      },
+    },
   },
   pages: {
     signIn: "/signin",
@@ -63,37 +85,50 @@ export const authOptions: NextAuthOptions = {
       // For OAuth providers (like Google), create or link user
       if (account?.provider === "google") {
         const supabase = createAdminClient();
+        const email = user.email?.trim().toLowerCase();
+
+        if (!email) {
+          return false;
+        }
         
         // Check if user already exists
         const { data: existingUser } = await supabase
           .from("User")
           .select("id, email, name, image")
-          .eq("email", user.email!)
+          .eq("email", email)
           .single();
         
         if (existingUser) {
-          // Update existing user's image if they don't have one
-          if (!existingUser.image && user.image) {
+          const nextProfile = {
+            name: existingUser.name || user.name || email.split("@")[0],
+            image: existingUser.image || user.image || null,
+            updatedAt: new Date().toISOString(),
+          };
+
+          if (
+            nextProfile.name !== existingUser.name ||
+            nextProfile.image !== existingUser.image
+          ) {
             await supabase
               .from("User")
-              .update({ image: user.image })
+              .update(nextProfile)
               .eq("id", existingUser.id);
           }
+
           // User exists, allow sign in
           return true;
         }
         
         // Create new user
-        const { data: newUser, error } = await supabase
+        const { error } = await supabase
           .from("User")
           .insert({
-            email: user.email!,
-            name: user.name || user.email!.split("@")[0],
-            image: user.image,
-            // No password for OAuth users
+            id: cuid(),
+            email,
+            name: user.name || email.split("@")[0],
+            image: user.image || null,
+            updatedAt: new Date().toISOString(),
           })
-          .select("id")
-          .single();
         
         if (error) {
           console.error("Error creating user:", error);
@@ -116,14 +151,15 @@ export const authOptions: NextAuthOptions = {
     },
     async jwt({ token, user, account }) {
       // On initial sign in, get user ID from database
-      if (account && user) {
+      if (account && user?.email) {
         const supabase = createAdminClient();
+        const email = user.email.trim().toLowerCase();
         
         // Fetch user from database to get the actual ID
         const { data: dbUser } = await supabase
           .from("User")
           .select("id")
-          .eq("email", user.email!)
+          .eq("email", email)
           .single();
         
         if (dbUser) {
