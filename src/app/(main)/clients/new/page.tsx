@@ -87,10 +87,7 @@ function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { t
 // Define validation schema for client (Bulgarian invoice: recipient name + address required)
 const clientSchema = z.object({
   name: z.string().min(1, "Името на клиента е задължително"),
-  email: z.preprocess(
-    (v) => (v === "" ? undefined : v),
-    z.string().email("Моля, въведете валиден имейл").optional()
-  ),
+  email: z.string().email("Моля, въведете валиден имейл").optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   address: z.string().min(1, "Адресът е задължителен за издаване на фактури"),
   city: z.string().min(1, "Градът е задължителен"),
@@ -107,7 +104,8 @@ const clientSchema = z.object({
   locale: z.string().default("bg"),
 });
 
-type ClientFormValues = z.infer<typeof clientSchema>;
+type ClientFormInputValues = z.input<typeof clientSchema>;
+type ClientFormValues = z.output<typeof clientSchema>;
 
 function getDigitsOnly(value: string) {
   return value.replace(/\D/g, "");
@@ -126,7 +124,7 @@ export default function NewClientPage() {
     { title: "Преглед", icon: <Check className="h-4 w-4" /> },
   ];
 
-  const form = useForm<ClientFormValues>({
+  const form = useForm<ClientFormInputValues, unknown, ClientFormValues>({
     resolver: zodResolver(clientSchema),
     mode: "onChange",
     defaultValues: {
@@ -330,7 +328,7 @@ export default function NewClientPage() {
                                 }}
                               >
                                 <div className="flex items-center gap-1.5 pt-1 text-sm text-destructive">
-                                  <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                                      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                                   <FormMessage />
                                 </div>
                               </div>
