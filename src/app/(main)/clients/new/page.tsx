@@ -210,24 +210,6 @@ export default function NewClientPage() {
     }
   };
 
-  // Get validation errors for current step
-  const getStepErrors = () => {
-    const errors: string[] = [];
-    switch (currentStep) {
-      case 0:
-        if (!formValues.name.trim()) errors.push("Името на клиента е задължително");
-        if (formValues.email && !isValidEmail(formValues.email)) errors.push("Моля, въведете валиден имейл адрес");
-        break;
-      case 1:
-        if (!(formValues.address ?? "").trim()) errors.push("Адресът е задължителен за издаване на фактури");
-        if (!(formValues.city ?? "").trim()) errors.push("Градът е задължителен");
-        break;
-    }
-    return errors;
-  };
-
-  const stepErrors = getStepErrors();
-
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -682,15 +664,16 @@ export default function NewClientPage() {
                 </Card>
 
                 {/* Confirmation checkbox — below preview card */}
-                <div className={`flex items-center gap-3 rounded-lg border p-4 transition-colors ${confirmed ? "border-primary bg-primary/5" : "border-border bg-card"}`}>
-                  <Checkbox
+                <div className={`flex items-start gap-3 rounded-lg border p-4 transition-colors ${confirmed ? "border-primary bg-primary/5" : "border-border bg-card"}`}>
+                  <input
                     id="confirm-client"
+                    type="checkbox"
                     checked={confirmed}
-                    onCheckedChange={(checked) => setConfirmed(checked === true)}
-                    className="h-5 w-5"
+                    onChange={(event) => setConfirmed(event.target.checked)}
+                    className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer rounded border-2 border-primary/40 bg-background accent-primary"
                     aria-label="Потвърждавам данните за клиента"
                   />
-                  <div className="space-y-1 flex-1">
+                  <div className="flex-1 space-y-1">
                     <label
                       htmlFor="confirm-client"
                       className="cursor-pointer select-none text-sm font-medium leading-normal block"

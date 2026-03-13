@@ -1,7 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { Button as HeroUIButton, Spinner } from "@heroui/react";
+import { Slot } from "@radix-ui/react-slot";
+import { Button as HeroUIButton, Spinner, buttonVariants } from "@heroui/react";
+import { cn } from "@/lib/utils";
 
 export interface ButtonProps {
   variant?:
@@ -81,6 +83,38 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const heroVariant = variantMap[variant as string] ?? "primary";
     const heroSize = sizeMap[size as string] ?? "md";
     const isIconOnly = size === "icon";
+    const isAsChild = _asChild && React.isValidElement(children);
+    const sharedClassName = cn(
+      buttonVariants({
+        isIconOnly,
+        size: heroSize,
+        variant: heroVariant,
+      }),
+      "inline-flex flex-row items-center justify-center gap-1.5 whitespace-nowrap",
+      (disabled || loading) && "pointer-events-none opacity-60",
+      className
+    );
+
+    if (isAsChild) {
+      return (
+        <Slot
+          ref={ref as never}
+          className={sharedClassName}
+          aria-disabled={disabled || loading ? true : undefined}
+          onClick={disabled || loading ? (e) => e.preventDefault() : (onClick as never)}
+          {...props}
+        >
+          {loading ? (
+            <span className="inline-flex items-center justify-center gap-1.5">
+              <Spinner size="sm" className="mr-1" />
+              {children}
+            </span>
+          ) : (
+            children
+          )}
+        </Slot>
+      );
+    }
 
     return (
       <HeroUIButton
@@ -91,12 +125,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         isDisabled={disabled || loading}
         type={type}
         form={form}
-        className={[
-          className,
-          "inline-flex flex-row items-center justify-center gap-1.5 whitespace-nowrap",
-        ]
-          .filter(Boolean)
-          .join(" ")}
+        className={sharedClassName}
         onPress={
           onClick
             ? (e) => onClick(e as unknown as React.MouseEvent<HTMLButtonElement>)
