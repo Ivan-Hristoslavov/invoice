@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { motion } from "framer-motion";
 import { SignInForm } from "./SignInForm";
 import { APP_NAME } from "@/config/constants";
@@ -67,7 +68,9 @@ export function SignInFormWrapper() {
         </svg>
 
       <div className="relative z-10">
-        <SignInForm />
+        <Suspense fallback={null}>
+          <SignInForm />
+        </Suspense>
       </div>
     </div>
   );
