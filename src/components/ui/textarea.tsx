@@ -7,8 +7,17 @@ export interface TextareaProps
   extends React.ComponentProps<typeof HeroUITextArea> {}
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, ...props }, ref) => (
-    <HeroUITextArea ref={ref} className={className} {...props} />
+  ({ className, classNames, ...props }, ref) => (
+    <HeroUITextArea
+      ref={ref}
+      fullWidth
+      className={className}
+      classNames={{
+        ...classNames,
+        input: `text-base md:text-sm ${classNames?.input ?? ""}`.trim(),
+      }}
+      {...props}
+    />
   )
 );
 Textarea.displayName = "Textarea";

@@ -32,7 +32,7 @@ import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
 import DocumentsTab from "@/components/invoice/DocumentsTab";
 import { getDocuments } from "@/lib/services/document-service";
-import { exportInvoiceAsPdf } from "@/lib/invoice-export";
+import { exportInvoiceAsPdf, printInvoicePdf } from "@/lib/invoice-export";
 import { StatusChangeModal } from "@/components/invoice/StatusChangeModal";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { Lock, Crown } from "lucide-react";
@@ -195,39 +195,8 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
 
   const handlePrintInvoice = async () => {
     try {
-      // Fetch PDF and open in new window for printing
-      const response = await fetch(`/api/invoices/export-pdf?invoiceId=${invoice.id}`);
-      
-      if (!response.ok) {
-        throw new Error('Грешка при генерирането на PDF');
-      }
-      
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      
-      // Open PDF in new window
-      const printWindow = window.open(url, '_blank');
-      
-      if (printWindow) {
-        printWindow.onload = () => {
-          // Wait a bit for PDF to load, then trigger print
-          setTimeout(() => {
-            printWindow.print();
-          }, 500);
-        };
-      } else {
-        // Fallback: download if popup blocked
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `Faktura-${invoice.invoiceNumber}.pdf`;
-        link.click();
-        toast.info("Поп-ъп прозорецът беше блокиран. PDF файлът беше изтеглен.");
-      }
-      
-      // Clean up URL after a delay
-      setTimeout(() => {
-        URL.revokeObjectURL(url);
-      }, 1000);
+      printInvoicePdf(invoice.id);
+      toast.info("PDF файлът беше отворен в нов раздел. Използвайте Print от PDF прегледа.");
     } catch (error) {
       console.error("Error printing invoice:", error);
       toast.error("Грешка при принтирането на фактурата");
@@ -400,7 +369,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
                 disabled={isSendingEmail}
               >
                 <div className="flex items-center gap-4">
-                  <Send className="w-5 h-5 text-gray-600 flex-shrink-0" />
+                  <Send className="w-5 h-5 shrink-0 text-gray-600" />
                   <span className="font-medium">
                     {isSendingEmail ? "Изпращане..." : "Изпрати фактура"}
                   </span>
@@ -417,7 +386,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
                         disabled
                       >
                         <div className="flex items-center gap-4 w-full">
-                          <Lock className="w-5 h-5 text-amber-500 flex-shrink-0" />
+                          <Lock className="w-5 h-5 shrink-0 text-amber-500" />
                           <span className="font-medium flex-1">Изпрати фактура</span>
                           <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">
                             PRO
@@ -442,7 +411,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
                 disabled={isSendingEmail}
               >
                 <div className="flex items-center gap-4">
-                  <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                  <AlertTriangle className="w-5 h-5 shrink-0" />
                   <span className="font-medium">
                     {isSendingEmail ? "Отмяна..." : "Отмени фактура"}
                   </span>
@@ -469,7 +438,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
   };
 
   return (
-    <div className="max-w-[1400px] mx-auto px-4">
+    <div className="mx-auto max-w-[1400px] px-0 sm:px-4">
       {/* Header */}
       <div className="flex flex-col gap-4 mb-6">
         {/* Top row: Back button */}
@@ -483,7 +452,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
         </div>
         
         {/* Main row: Title, Status, Actions */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="page-title">
               Фактура #{invoice.invoiceNumber}
@@ -501,11 +470,11 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
           </div>
           
           {/* Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             {/* Draft actions */}
             {invoice.status === "DRAFT" && (
               <>
-                <Button variant="outline" size="sm" asChild>
+                <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-none">
                   <Link href={`/invoices/${invoice.id}/edit`} className="flex items-center whitespace-nowrap">
                     <Edit className="w-4 h-4 mr-1.5" />
                     Редактирай
@@ -513,7 +482,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
                 </Button>
                 <Button 
                   size="sm"
-                  className="gradient-primary hover:opacity-90 text-white border-0"
+                  className="gradient-primary hover:opacity-90 text-white border-0 flex-1 sm:flex-none"
                   onClick={() => setShowIssueModal(true)}
                   disabled={isChangingStatus}
                 >
@@ -528,6 +497,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
             <Button 
               variant="destructive" 
               size="sm"
+              className="flex-1 sm:flex-none"
               onClick={handleCancelInvoice}
               disabled={isSendingEmail}
             >
@@ -540,17 +510,18 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
           <Button
             variant="outline"
             size="sm"
+            className="flex-1 sm:flex-none"
             onClick={handleDuplicateInvoice}
             disabled={isDuplicating}
           >
             <Copy className="w-4 h-4 mr-1.5" />
             {isDuplicating ? "..." : "Дублирай"}
           </Button>
-          <Button variant="outline" size="sm" onClick={handlePrintInvoice}>
+          <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={handlePrintInvoice}>
             <Printer className="w-4 h-4 mr-1.5" />
             Принт
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExportPdf} title="Изтегли оригинал">
+          <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={handleExportPdf} title="Изтегли оригинал">
             <Download className="w-4 h-4" />
           </Button>
           <Button 
@@ -558,7 +529,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
             size="sm" 
             onClick={() => exportInvoiceAsPdf(invoice.id, true)}
             title="Изтегли копие"
-            className="text-muted-foreground"
+            className="text-muted-foreground flex-1 sm:flex-none"
           >
             <Copy className="w-4 h-4" />
           </Button>
@@ -577,17 +548,17 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
               onValueChange={setActiveTab}
               className="w-full"
             >
-              <div className="px-6 pt-4">
-                <TabsList className="grid w-full grid-cols-4 mb-2 bg-muted/40 border border-border/40 rounded-xl p-1 h-auto gap-1">
-                  <TabsTrigger value="details" className="text-sm font-medium rounded-lg data-[selected]:bg-background data-[selected]:shadow-sm data-[selected]:text-foreground text-muted-foreground py-2">Детайли</TabsTrigger>
-                  <TabsTrigger value="items" className="text-sm font-medium rounded-lg data-[selected]:bg-background data-[selected]:shadow-sm data-[selected]:text-foreground text-muted-foreground py-2">Артикули</TabsTrigger>
-                  <TabsTrigger value="documents" className="text-sm font-medium rounded-lg data-[selected]:bg-background data-[selected]:shadow-sm data-[selected]:text-foreground text-muted-foreground py-2">
+              <div className="overflow-x-auto px-4 pt-4 pb-1 sm:px-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <TabsList className="mb-2 flex min-w-max gap-1 rounded-xl border border-border/40 bg-muted/40 p-1 h-auto">
+                  <TabsTrigger value="details" className="min-h-10 whitespace-nowrap rounded-lg px-3 text-sm font-medium text-muted-foreground data-selected:bg-background data-selected:text-foreground data-selected:shadow-sm">Детайли</TabsTrigger>
+                  <TabsTrigger value="items" className="min-h-10 whitespace-nowrap rounded-lg px-3 text-sm font-medium text-muted-foreground data-selected:bg-background data-selected:text-foreground data-selected:shadow-sm">Артикули</TabsTrigger>
+                  <TabsTrigger value="documents" className="min-h-10 whitespace-nowrap rounded-lg px-3 text-sm font-medium text-muted-foreground data-selected:bg-background data-selected:text-foreground data-selected:shadow-sm">
                     <span className="flex items-center gap-1.5">
                       <Paperclip className="h-3.5 w-3.5" />
                       Документи
                     </span>
                   </TabsTrigger>
-                  <TabsTrigger value="history" className="text-sm font-medium rounded-lg data-[selected]:bg-background data-[selected]:shadow-sm data-[selected]:text-foreground text-muted-foreground py-2">
+                  <TabsTrigger value="history" className="min-h-10 whitespace-nowrap rounded-lg px-3 text-sm font-medium text-muted-foreground data-selected:bg-background data-selected:text-foreground data-selected:shadow-sm">
                     <span className="flex items-center gap-1.5">
                       <History className="h-3.5 w-3.5" />
                       История

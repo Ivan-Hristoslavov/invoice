@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { z } from "zod";
@@ -19,8 +19,11 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
+  Search,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useCompanyBookLookup } from "@/hooks/useCompanyBookLookup";
 import { Button } from "@/components/ui/button";
 import { Input, NumericInput } from "@/components/ui/input";
 import {
@@ -49,12 +52,13 @@ import { Separator } from "@/components/ui/separator";
 // Step indicator component
 function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { title: string; icon: React.ReactNode }[] }) {
   return (
-    <div className="flex items-center justify-center mb-8 gap-2">
+    <div className="mb-6 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="mx-auto flex min-w-max items-center justify-center gap-2 px-1">
       {steps.map((step, index) => (
-        <div key={index} className="flex items-center gap-2">
+        <div key={index} className="flex items-center gap-1.5 sm:gap-2">
           <div className="flex flex-col items-center gap-2">
             <div className={`
-              flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300 relative
+              relative flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all duration-300 sm:h-10 sm:w-10
               ${index < currentStep 
                 ? 'bg-emerald-500 border-emerald-500 text-white' 
                 : index === currentStep 
@@ -71,15 +75,16 @@ function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { t
                 )}
               </div>
             </div>
-            <p className={`text-xs font-medium whitespace-nowrap text-center ${index === currentStep ? 'text-foreground' : 'text-muted-foreground'}`}>
+            <p className={`hidden text-xs font-medium whitespace-nowrap text-center sm:block ${index === currentStep ? 'text-foreground' : 'text-muted-foreground'}`}>
               {step.title}
             </p>
           </div>
           {index < steps.length - 1 && (
-            <div className={`w-8 sm:w-12 md:w-16 h-0.5 transition-all duration-300 ${index < currentStep ? 'bg-emerald-500' : 'bg-muted-foreground/20'}`} />
+            <div className={`h-0.5 w-6 transition-all duration-300 sm:w-12 md:w-16 ${index < currentStep ? 'bg-emerald-500' : 'bg-muted-foreground/20'}`} />
           )}
         </div>
       ))}
+      </div>
     </div>
   );
 }
@@ -149,6 +154,52 @@ export default function NewClientPage() {
 
   const formValues = form.watch();
 
+  const handleCompanyBookSuccess = useCallback((fields: Record<string, unknown>) => {
+    const fieldMap: Record<string, keyof ClientFormInputValues> = {
+      name: "name",
+      address: "address",
+      city: "city",
+      state: "state",
+      zipCode: "zipCode",
+      country: "country",
+      bulstatNumber: "bulstatNumber",
+      vatRegistered: "vatRegistered",
+      vatRegistrationNumber: "vatRegistrationNumber",
+      vatNumber: "vatNumber",
+      mol: "mol",
+      email: "email",
+      phone: "phone",
+      uicType: "uicType",
+    };
+
+    let filledCount = 0;
+    for (const [key, formKey] of Object.entries(fieldMap)) {
+      const val = fields[key];
+      if (val !== undefined && val !== "") {
+        form.setValue(formKey, val as never, { shouldValidate: true, shouldDirty: true });
+        filledCount++;
+      }
+    }
+
+    toast.success("Данните са заредени", {
+      description: `${filledCount} полета бяха автоматично попълнени от Търговския регистър.`,
+    });
+  }, [form]);
+
+  const { lookup: lookupCompany, isLoading: isLookupLoading } = useCompanyBookLookup({
+    onSuccess: handleCompanyBookSuccess,
+    onError: (msg) => toast.error("Грешка при търсене", { description: msg }),
+  });
+
+  const handleEikLookup = useCallback(async () => {
+    const eik = form.getValues("bulstatNumber")?.replace(/\D/g, "");
+    if (!eik || eik.length < 9) {
+      toast.error("Въведете ЕИК", { description: "Въведете поне 9 цифри в полето БУЛСТАТ/ЕИК преди търсене." });
+      return;
+    }
+    await lookupCompany(eik);
+  }, [form, lookupCompany]);
+
   async function onSubmit(data: ClientFormValues) {
     setIsLoading(true);
 
@@ -162,7 +213,8 @@ export default function NewClientPage() {
       });
 
       if (!response.ok) {
-        throw new Error("Неуспешно създаване на клиент");
+        const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(errorPayload?.error || "Неуспешно създаване на клиент");
       }
 
       toast.success("Клиентът е създаден", {
@@ -175,9 +227,11 @@ export default function NewClientPage() {
 
       router.push("/clients");
     } catch (error) {
-      console.error("Грешка при създаване на клиент:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Възникна грешка при създаване на клиента. Моля, опитайте отново.";
+      console.warn("Грешка при създаване на клиент:", errorMessage);
       toast.error("Грешка", {
-        description: "Възникна грешка при създаване на клиента. Моля, опитайте отново.",
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
@@ -225,6 +279,46 @@ export default function NewClientPage() {
             <p className="card-description hidden sm:block">Добавете нов клиент към вашата база</p>
           </div>
         </div>
+      </div>
+
+      {/* Quick EIK Lookup - always visible */}
+      <div className="max-w-2xl mx-auto mb-6">
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="pt-5 pb-5">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                <Search className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-sm">Бързо попълване по ЕИК</h3>
+                <p className="text-xs text-muted-foreground">Въведете ЕИК/БУЛСТАТ и данните ще се попълнят автоматично от Търговския регистър</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Въведете ЕИК (напр. 204676177)"
+                inputMode="numeric"
+                className="h-11 flex-1"
+                value={formValues.bulstatNumber || ""}
+                onChange={(e) => form.setValue("bulstatNumber", e.target.value.replace(/\D/g, ""), { shouldValidate: true })}
+              />
+              <Button
+                type="button"
+                variant="default"
+                className="h-11 px-4 shrink-0 gap-2"
+                disabled={isLookupLoading || !(formValues.bulstatNumber || "").match(/^\d{9,13}$/)}
+                onClick={handleEikLookup}
+              >
+                {isLookupLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="h-4 w-4" />
+                )}
+                Зареди данни
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Step indicator */}
@@ -483,14 +577,31 @@ export default function NewClientPage() {
                               </span>
                             </FormLabel>
                             <FormControl>
-                              <NumericInput
-                                allowDecimal={false}
-                                inputMode="numeric"
-                                placeholder="123456789"
-                                className="h-12"
-                                value={field.value || ""}
-                                onChange={(e) => field.onChange(getDigitsOnly(e.target.value))}
-                              />
+                              <div className="flex gap-2">
+                                <NumericInput
+                                  allowDecimal={false}
+                                  inputMode="numeric"
+                                  placeholder="123456789"
+                                  className="h-12 flex-1"
+                                  value={field.value || ""}
+                                  onChange={(e) => field.onChange(getDigitsOnly(e.target.value))}
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className="h-12 px-3 shrink-0"
+                                  disabled={isLookupLoading || !field.value || field.value.length < 9}
+                                  onClick={handleEikLookup}
+                                  title="Зареди данни от Търговски регистър"
+                                >
+                                  {isLookupLoading ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Search className="h-4 w-4" />
+                                  )}
+                                  <span className="hidden sm:inline ml-1.5">Зареди</span>
+                                </Button>
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -611,14 +722,14 @@ export default function NewClientPage() {
                     {/* Contact Info */}
                     <div>
                       <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Контакти</h4>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                           <p className="text-sm text-muted-foreground">Имейл</p>
-                          <p className="font-medium">{formValues.email || "—"}</p>
+                          <p className="font-medium wrap-anywhere">{formValues.email || "—"}</p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Телефон</p>
-                          <p className="font-medium">{formValues.phone || "—"}</p>
+                          <p className="font-medium wrap-anywhere">{formValues.phone || "—"}</p>
                         </div>
                       </div>
                     </div>
@@ -628,7 +739,7 @@ export default function NewClientPage() {
                     {/* Address */}
                     <div>
                       <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Адрес</h4>
-                      <p className="font-medium">
+                      <p className="font-medium wrap-anywhere">
                         {[formValues.address, formValues.city, formValues.zipCode, formValues.country]
                           .filter(Boolean)
                           .join(", ") || "—"}
@@ -640,14 +751,14 @@ export default function NewClientPage() {
                     {/* Tax Info */}
                     <div>
                       <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Данъчна информация</h4>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                           <p className="text-sm text-muted-foreground">БУЛСТАТ/ЕИК</p>
-                          <p className="font-medium">{formValues.bulstatNumber || "—"}</p>
+                          <p className="font-medium wrap-anywhere">{formValues.bulstatNumber || "—"}</p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">ДДС номер</p>
-                          <p className="font-medium">{formValues.vatRegistrationNumber || "—"}</p>
+                          <p className="font-medium wrap-anywhere">{formValues.vatRegistrationNumber || "—"}</p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Регистрация по ЗДДС</p>
@@ -655,7 +766,7 @@ export default function NewClientPage() {
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">МОЛ</p>
-                          <p className="font-medium">{formValues.mol || "—"}</p>
+                          <p className="font-medium wrap-anywhere">{formValues.mol || "—"}</p>
                         </div>
                       </div>
                     </div>
@@ -691,7 +802,7 @@ export default function NewClientPage() {
 
           {/* Navigation */}
           <div className="pt-6 border-t">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="grid grid-cols-2 items-center gap-3">
               <div className="flex justify-start">
                 <Button
                   type="button"
@@ -705,7 +816,7 @@ export default function NewClientPage() {
                 </Button>
               </div>
 
-              <div className="flex justify-end gap-3 w-full sm:w-auto">
+              <div className="flex justify-end gap-3">
                 {currentStep < 3 ? (
                   <Button
                     type="button"

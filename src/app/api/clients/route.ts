@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
+import { resolveSessionUser } from "@/lib/session-user";
 import { z } from "zod";
 import cuid from "cuid";
 
@@ -39,6 +40,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json(
+        { error: "Сесията ви е невалидна. Моля, влезте отново." },
+        { status: 401 }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get("query") || "";
     const page = parseInt(searchParams.get("page") || "0");
@@ -49,7 +58,7 @@ export async function GET(request: NextRequest) {
     let clientQuery = supabase
       .from("Client")
       .select("*", { count: "exact" })
-      .eq("userId", session.user.id);
+      .eq("userId", sessionUser.id);
 
     // Server-side search via ilike (faster than JS filtering)
     if (query) {
@@ -103,10 +112,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json(
+        { error: "Сесията ви е невалидна. Моля, влезте отново." },
+        { status: 401 }
+      );
+    }
+
     // Check subscription limits - брой клиенти
     const { checkSubscriptionLimits } = await import("@/middleware/subscription");
     const clientLimitCheck = await checkSubscriptionLimits(
-      session.user.id as string,
+      sessionUser.id,
       'clients'
     );
     
@@ -130,7 +147,7 @@ export async function POST(request: NextRequest) {
       .insert({
         id: clientId,
         ...validatedData,
-        userId: session.user.id,
+        userId: sessionUser.id,
         updatedAt: new Date().toISOString(),
       })
       .select()

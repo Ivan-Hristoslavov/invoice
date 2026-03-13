@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { logAction } from "@/lib/audit-log";
 import cuid from "cuid";
+import { resolveSessionUser } from "@/lib/session-user";
 
 // Helper function removed - no longer needed with Supabase
 
@@ -46,6 +47,10 @@ export async function GET(
     if (!session?.user) {
       return Response.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return Response.json({ error: "Потребителят не е намерен" }, { status: 404 });
+    }
 
     const supabase = createAdminClient();
     
@@ -62,8 +67,8 @@ export async function GET(
     }
 
     // Check if user has access (owner or admin)
-    if (invoiceCheck.userId !== session.user.id) {
-      console.error("Отказан достъп: потребител", session.user.id, "опита да достъпи фактура на", invoiceCheck.userId);
+    if (invoiceCheck.userId !== sessionUser.id) {
+      console.error("Отказан достъп: потребител", sessionUser.id, "опита да достъпи фактура на", invoiceCheck.userId);
       return Response.json({ error: "Достъпът е отказан" }, { status: 403 });
     }
 
@@ -116,6 +121,10 @@ export async function PUT(
     if (!session?.user) {
       return Response.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return Response.json({ error: "Потребителят не е намерен" }, { status: 404 });
+    }
 
     const supabase = createAdminClient();
     
@@ -123,7 +132,7 @@ export async function PUT(
       .from("Invoice")
       .select("*")
       .eq("id", id)
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .single();
 
     if (invoiceError || !invoice) {
@@ -211,7 +220,7 @@ export async function PUT(
     // Log audit action
     const headers = request.headers;
     await logAction({
-      userId: session.user.id as string,
+      userId: sessionUser.id,
       action: 'UPDATE',
       entityType: 'INVOICE',
       entityId: id,
@@ -246,6 +255,13 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
         { status: 401 }
       );
     }
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json(
+        { error: "Потребителят не е намерен" },
+        { status: 404 }
+      );
+    }
     const supabase = createAdminClient();
     
     // Check if invoice exists and belongs to user
@@ -253,7 +269,7 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
       .from("Invoice")
       .select("*")
       .eq("id", invoiceId)
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .single();
 
     if (invoiceError || !existingInvoice) {
@@ -284,7 +300,7 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     // Log audit action
     const headers = request.headers;
     await logAction({
-      userId: session.user.id as string,
+      userId: sessionUser.id,
       action: 'DELETE',
       entityType: 'INVOICE',
       entityId: invoiceId,

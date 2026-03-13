@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { resolveSessionUser } from "@/lib/session-user";
 
 // Valid status transitions
 // Note: Database enum values might be: DRAFT, UNPAID, PAID, OVERDUE, CANCELLED, VOIDED
@@ -36,6 +37,10 @@ export async function PATCH(
 
     if (!session?.user) {
       return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
+    }
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Потребителят не е намерен" }, { status: 404 });
     }
 
     let body;
@@ -82,7 +87,7 @@ export async function PATCH(
     }
 
     // Check ownership
-    if (invoice.userId !== session.user.id) {
+    if (invoice.userId !== sessionUser.id) {
       return NextResponse.json(
         { error: "Достъпът е отказан" },
         { status: 403 }
@@ -135,7 +140,7 @@ export async function PATCH(
                          status === "ISSUED" || status === "PAID" ? "ISSUE" : "UPDATE";
       
       await logAction({
-        userId: session.user.id as string,
+        userId: sessionUser.id,
         action: actionType,
         entityType: "INVOICE",
         entityId: id,

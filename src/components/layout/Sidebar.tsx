@@ -139,7 +139,7 @@ export function Sidebar() {
         <Button 
           variant="ghost" 
           size="icon" 
-          className="fixed top-2.5 left-3 z-60 h-9 w-9 bg-background/95 border border-border shadow-lg backdrop-blur-md hover:bg-muted sm:top-3 sm:left-4 sm:h-10 sm:w-10"
+          className="fixed left-3 top-[calc(env(safe-area-inset-top)+0.625rem)] z-60 h-9 w-9 border border-border bg-background/95 shadow-lg backdrop-blur-md hover:bg-muted sm:left-4 sm:top-3 sm:h-10 sm:w-10"
           onClick={() => setIsOpen(!isOpen)}
           aria-label={isOpen ? "Затвори менюто" : "Отвори менюто"}
         >
@@ -163,7 +163,7 @@ export function Sidebar() {
       {/* Sidebar - Fixed and always visible on desktop (lg+), collapsible on mobile only */}
       <motion.aside 
         className={cn(
-          "fixed left-0 top-14 z-40 flex h-[calc(100vh-3.5rem)] w-68 shrink-0 flex-col glass-card rounded-none! border-l-0! border-t-0! border-b-0! border-r border-border sm:top-16 sm:h-[calc(100vh-4rem)] sm:w-72",
+          "fixed left-0 top-14 z-40 flex h-[calc(100dvh-3.5rem)] w-68 shrink-0 flex-col glass-card rounded-none! border-l-0! border-t-0! border-b-0! border-r border-border sm:top-16 sm:h-[calc(100dvh-4rem)] sm:w-72",
           "lg:translate-x-0",
           isMobile && !isOpen && "-translate-x-full"
         )}
@@ -172,8 +172,8 @@ export function Sidebar() {
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
         {/* Main Navigation */}
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 pt-2 pb-4 sm:px-4" role="navigation" aria-label="Основна навигация">
-          <p className="mb-2 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground sm:px-3 sm:text-xs">
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 pt-2 pb-3 lg:overflow-visible lg:pb-2" role="navigation" aria-label="Основна навигация">
+          <p className="mb-1.5 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground sm:px-3 sm:text-xs">
             Меню
           </p>
           {mainNavItems.map((item) => {
@@ -184,14 +184,14 @@ export function Sidebar() {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm font-medium transition-all duration-200 sm:gap-3 sm:px-3 sm:py-2.5",
+                  "flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm font-medium transition-all duration-200 sm:gap-3 sm:px-3 sm:py-2",
                   active 
                     ? "bg-primary/10 text-primary" 
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 )}
               >
                 <div className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded-lg transition-all sm:h-9 sm:w-9",
+                  "flex h-8 w-8 items-center justify-center rounded-lg transition-all sm:h-8 sm:w-8",
                   active 
                     ? `bg-linear-to-br ${item.gradient} shadow-lg`
                     : "bg-muted group-hover:bg-muted"
@@ -211,8 +211,8 @@ export function Sidebar() {
         </nav>
 
         {/* Bottom Navigation */}
-        <div className="space-y-1 border-t p-3 sm:p-4">
-          <p className="mb-3 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground sm:px-3 sm:text-xs">
+        <div className="space-y-1 border-t p-3 sm:p-3.5">
+          <p className="mb-2 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground sm:px-3 sm:text-xs">
             Настройки
           </p>
           {bottomNavItems.map((item) => {
@@ -237,7 +237,7 @@ export function Sidebar() {
         </div>
 
         {/* User Section */}
-        <div className="border-t p-3 sm:p-4">
+        <div className="border-t p-3 sm:p-3.5">
           <div className="flex items-center gap-2.5 rounded-xl bg-muted/50 px-2.5 py-2 sm:gap-3 sm:px-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-xs font-semibold text-white sm:h-10 sm:w-10 sm:text-sm">
               {session?.user?.name?.charAt(0).toUpperCase() || 'U'}

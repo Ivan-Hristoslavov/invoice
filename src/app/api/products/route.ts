@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/server";
 import { authOptions } from "@/lib/auth";
+import { resolveSessionUser } from "@/lib/session-user";
 import cuid from "cuid";
 
 const productSchema = z.object({
@@ -24,10 +25,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json(
+        { error: "Сесията ви е невалидна. Моля, влезте отново." },
+        { status: 401 }
+      );
+    }
+
     // Check subscription limits - брой продукти
     const { checkSubscriptionLimits } = await import("@/middleware/subscription");
     const productLimitCheck = await checkSubscriptionLimits(
-      session.user.id as string,
+      sessionUser.id,
       'products'
     );
     
@@ -53,7 +62,7 @@ export async function POST(request: NextRequest) {
         price: validated.price,
         unit: validated.unit,
         taxRate: validated.taxRate,
-        userId: session.user.id,
+        userId: sessionUser.id,
         updatedAt: new Date().toISOString(),
       })
       .select()
@@ -91,6 +100,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json(
+        { error: "Сесията ви е невалидна. Моля, влезте отново." },
+        { status: 401 }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get("query") || "";
     const page = parseInt(searchParams.get("page") || "0");
@@ -101,7 +118,7 @@ export async function GET(request: NextRequest) {
     let productQuery = supabase
       .from("Product")
       .select("*", { count: "exact" })
-      .eq("userId", session.user.id);
+      .eq("userId", sessionUser.id);
 
     if (query) {
       productQuery = productQuery.or(

@@ -80,17 +80,28 @@ export async function exportInvoicesToJson(filters?: {
 // Експорт на единична фактура като PDF (server-generated)
 // isCopy = false -> ОРИГИНАЛ watermark (default)
 // isCopy = true -> КОПИЕ watermark
+function getInvoicePdfUrl(invoiceId: string, options?: { isCopy?: boolean; disposition?: "attachment" | "inline" }) {
+  const params = new URLSearchParams({ invoiceId });
+  if (options?.isCopy) params.set("copy", "true");
+  if (options?.disposition === "inline") params.set("disposition", "inline");
+  return `/api/invoices/export-pdf?${params.toString()}`;
+}
+
+async function getInvoicePdfResponse(invoiceId: string, options?: { isCopy?: boolean; disposition?: "attachment" | "inline" }) {
+  const response = await fetch(getInvoicePdfUrl(invoiceId, options));
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("PDF export error:", errorText);
+    throw new Error("Грешка при експортирането на фактурата като PDF");
+  }
+
+  return response;
+}
+
 export async function exportInvoiceAsPdf(invoiceId: string, isCopy: boolean = false): Promise<void> {
   try {
-    // Извикване на API за получаване на PDF
-    const copyParam = isCopy ? '&copy=true' : '';
-  const response = await fetch(`/api/invoices/export-pdf?invoiceId=${invoiceId}${copyParam}`);
-  
-  if (!response.ok) {
-      const errorText = await response.text();
-      console.error('PDF export error:', errorText);
-    throw new Error('Грешка при експортирането на фактурата като PDF');
-  }
+    const response = await getInvoicePdfResponse(invoiceId, { isCopy, disposition: "attachment" });
   
     // Получаване на PDF като blob
     const blob = await response.blob();
@@ -124,6 +135,19 @@ export async function exportInvoiceAsPdf(invoiceId: string, isCopy: boolean = fa
     console.error('Error in exportInvoiceAsPdf:', error);
     throw error;
   }
+}
+
+export function openInvoicePdf(invoiceId: string, isCopy: boolean = false): void {
+  const url = getInvoicePdfUrl(invoiceId, { isCopy, disposition: "inline" });
+  const openedWindow = window.open(url, "_blank", "noopener,noreferrer");
+
+  if (!openedWindow) {
+    throw new Error("Браузърът блокира отварянето на PDF файла");
+  }
+}
+
+export function printInvoicePdf(invoiceId: string, isCopy: boolean = false): void {
+  openInvoicePdf(invoiceId, isCopy);
 }
 
 // Експорт на единично кредитно известие като PDF

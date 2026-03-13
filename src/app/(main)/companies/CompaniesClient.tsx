@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Building, Plus, Search, Mail, Phone, MapPin, FileText, CheckCircle2, Crown, XCircle, LayoutGrid, List } from "lucide-react";
+import { Building, Plus, Search, FileText, CheckCircle2, Crown, XCircle, LayoutGrid, List, Pencil } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
 import { Button } from "@/components/ui/button";
@@ -81,12 +81,12 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
   const totalInvoices = Object.values(invoiceCounts).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Subscription Warning Banner */}
       {!canCreateCompany && (
         <Alert className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
           <XCircle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="flex items-center justify-between">
+          <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-red-800 dark:text-red-200">
               {isFree && (
                 <>Достигнахте лимита от <strong>1 компания</strong> за FREE плана. Надградете до PRO за до 3 компании.</>
@@ -96,7 +96,7 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
               )}
             </span>
             <Link href="/settings/subscription" className="flex items-center whitespace-nowrap">
-              <Button size="sm" className="ml-4 bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
+              <Button size="sm" className="bg-linear-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 sm:ml-4">
                 <Crown className="h-4 w-4 mr-2" />
                 Надградете
               </Button>
@@ -106,10 +106,10 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold tracking-tight">Компании</h1>
+          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Компании</h1>
             {!isLoadingUsage && companyUsage.limit !== Infinity && (
               <UsageCounter 
                 used={companyUsage.used} 
@@ -128,7 +128,7 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
             size="3" 
             variant="solid" 
             color="green"
-            className="shadow-lg"
+            className="w-full shadow-lg sm:w-auto"
           >
             <Link href="/companies/new" className="flex items-center whitespace-nowrap">
               <Plus className="mr-2 h-5 w-5" />
@@ -144,7 +144,7 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <CardStatsMetric
           title="Общо компании"
           value={totalCompanies}
@@ -170,7 +170,7 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
       {/* Search & View Toggle */}
       <Card className="border-0 shadow-lg">
         <CardContent className="p-3 sm:p-4">
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input 
@@ -180,7 +180,7 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50">
+            <div className="hidden items-center gap-1 rounded-lg bg-muted/50 p-1 sm:flex">
               <Button
                 variant={viewMode === "cards" ? "default" : "ghost"}
                 size="sm"
@@ -239,9 +239,28 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
         /* Cards View */
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {paginatedCompanies.map((company) => (
-            <Link key={company.id} href={`/settings/company`}>
-              <Card className="h-full min-h-[140px] border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group cursor-pointer">
-                <CardContent className="p-5 h-full flex flex-col items-center text-center">
+            <div key={company.id} className="group relative">
+              <Card
+                className="h-full min-h-[150px] border-0 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer"
+                onClick={() => window.location.href = "/settings/company"}
+              >
+                <div
+                  className="absolute right-3 top-3 z-10 opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <Button
+                    asChild
+                    size="sm"
+                    variant="outline"
+                    className="h-8 rounded-full border-border/60 bg-background/95 px-3 shadow-sm backdrop-blur"
+                  >
+                    <Link href="/settings/company" className="flex items-center gap-1.5 whitespace-nowrap">
+                      <Pencil className="h-3.5 w-3.5" />
+                      Редакция
+                    </Link>
+                  </Button>
+                </div>
+                <CardContent className="flex h-full flex-col items-center p-4 text-center sm:p-5">
                   {/* Name */}
                   <h3 className="font-semibold text-lg group-hover:text-primary transition-colors truncate w-full">
                     {company.name}
@@ -278,7 +297,7 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
                   </div>
                 </CardContent>
               </Card>
-            </Link>
+            </div>
           ))}
         </div>
       ) : (
@@ -293,13 +312,14 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
                 <TableHead className="font-medium text-muted-foreground">Телефон</TableHead>
                 <TableHead className="font-medium text-muted-foreground text-center">ДДС</TableHead>
                 <TableHead className="font-medium text-muted-foreground text-center">Фактури</TableHead>
+                <TableHead className="w-[120px] text-right font-medium text-muted-foreground">Действия</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedCompanies.map((company) => (
                 <TableRow 
                   key={company.id} 
-                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  className="group cursor-pointer hover:bg-muted/50 transition-colors"
                   onClick={() => window.location.href = `/settings/company`}
                 >
                   <TableCell>
@@ -334,6 +354,19 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
                     <span className="inline-flex items-center justify-center min-w-8 px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
                       {invoiceCounts[company.id] || 0}
                     </span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div
+                      className="flex justify-end opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <Button asChild size="sm" variant="ghost" className="h-8 rounded-full px-3">
+                        <Link href="/settings/company" className="flex items-center gap-1.5 whitespace-nowrap">
+                          <Pencil className="h-3.5 w-3.5" />
+                          Редакция
+                        </Link>
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

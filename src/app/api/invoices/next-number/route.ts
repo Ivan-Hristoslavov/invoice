@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { generateNextInvoiceNumber } from "@/lib/invoice-number";
+import { resolveSessionUser } from "@/lib/session-user";
 
 export async function GET(request: Request) {
   try {
@@ -10,10 +11,14 @@ export async function GET(request: Request) {
     if (!session?.user?.id) {
       return new NextResponse("Неоторизиран достъп", { status: 401 });
     }
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return new NextResponse("Потребителят не е намерен", { status: 404 });
+    }
 
     // Invoice numbers are now per-user, 10-digit format (0000000001, 0000000002, etc.)
     // generateNextInvoiceNumber already handles errors internally and returns a default number
-    const nextNumber = await generateNextInvoiceNumber(session.user.id as string);
+    const nextNumber = await generateNextInvoiceNumber(sessionUser.id);
 
     return NextResponse.json({ invoiceNumber: nextNumber });
   } catch (error) {

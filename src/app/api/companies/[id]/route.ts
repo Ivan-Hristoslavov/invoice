@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
+import { resolveSessionUser } from "@/lib/session-user";
 import { z } from "zod";
 
 const companySchema = z.object({
@@ -38,13 +39,17 @@ export async function GET(
     if (!session?.user) {
       return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Сесията ви е невалидна. Моля, влезте отново." }, { status: 401 });
+    }
     const { id } = await context.params;
     const supabase = createAdminClient();
     const { data: company, error } = await supabase
       .from("Company")
       .select("*")
       .eq("id", id)
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .single();
     if (error || !company) {
       return NextResponse.json({ error: "Компанията не е намерена" }, { status: 404 });
@@ -65,6 +70,10 @@ export async function PUT(
     if (!session?.user) {
       return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Сесията ви е невалидна. Моля, влезте отново." }, { status: 401 });
+    }
 
     const { id: companyId } = await context.params;
     const json = await request.json();
@@ -76,7 +85,7 @@ export async function PUT(
       .from("Company")
       .select("id, bulstatNumber")
       .eq("id", companyId)
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .single();
 
     if (fetchError || !existing) {
@@ -129,7 +138,7 @@ export async function PUT(
       .from("Company")
       .update(updatePayload)
       .eq("id", companyId)
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .select()
       .single();
 

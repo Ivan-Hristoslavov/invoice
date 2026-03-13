@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
 import { logAction } from "@/lib/audit-log";
 import cuid from "cuid";
+import { resolveSessionUser } from "@/lib/session-user";
 
 /**
  * POST /api/invoices/[id]/cancel
@@ -21,6 +22,10 @@ export async function POST(
     if (!session?.user) {
       return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Потребителят не е намерен" }, { status: 404 });
+    }
 
     // Get the invoice
     const { data: invoice, error: invoiceError } = await supabaseAdmin
@@ -32,7 +37,7 @@ export async function POST(
         company:Company(id, name, bulstatNumber)
       `)
       .eq("id", id)
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .single();
 
     if (invoiceError || !invoice) {
@@ -75,7 +80,7 @@ export async function POST(
     const { count: creditNoteCount } = await supabaseAdmin
       .from("CreditNote")
       .select("*", { count: "exact", head: true })
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .gte("createdAt", startOfYear);
     
     const sequence = (creditNoteCount || 0) + 1;
@@ -98,7 +103,7 @@ export async function POST(
         invoiceId: invoice.id,
         clientId: invoice.clientId,
         companyId: invoice.companyId,
-        userId: session.user.id,
+        userId: sessionUser.id,
         issueDate: new Date().toISOString(),
         reason,
         subtotal: invoice.subtotal,
@@ -145,7 +150,7 @@ export async function POST(
       .update({
         status: "CANCELLED",
         cancelledAt: new Date().toISOString(),
-        cancelledBy: session.user.id,
+        cancelledBy: sessionUser.id,
         creditNoteId,
         updatedAt: new Date().toISOString(),
       })
@@ -165,7 +170,7 @@ export async function POST(
     // Log audit action
     const headers = request.headers;
     await logAction({
-      userId: session.user.id as string,
+      userId: sessionUser.id,
       action: "CANCEL",
       entityType: "INVOICE",
       entityId: id,

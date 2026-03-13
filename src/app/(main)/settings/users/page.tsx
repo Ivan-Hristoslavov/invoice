@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { checkPermission } from "@/lib/permissions";
+import { resolveSessionUser } from "@/lib/session-user";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,12 @@ type Role = "ADMIN" | "OWNER" | "MANAGER" | "ACCOUNTANT" | "VIEWER";
 export default async function UsersPage() {
   const session = await getServerSession(authOptions);
   
-  if (!session?.user?.id) {
+  if (!session?.user) {
+    redirect("/signin");
+  }
+
+  const sessionUser = await resolveSessionUser(session.user);
+  if (!sessionUser) {
     redirect("/signin");
   }
   
@@ -46,7 +52,7 @@ export default async function UsersPage() {
   const { data: companies } = await supabase
     .from("Company")
     .select("id, name")
-    .eq("userId", session.user.id);
+    .eq("userId", sessionUser.id);
   
   if (!companies || companies.length === 0) {
     return (
@@ -90,7 +96,7 @@ export default async function UsersPage() {
     <UsersClient 
       company={company}
       usersWithRoles={usersWithRoles}
-      currentUserId={session.user.id}
+      currentUserId={sessionUser.id}
     />
   );
 }

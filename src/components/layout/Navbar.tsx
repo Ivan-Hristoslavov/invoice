@@ -53,15 +53,15 @@ export function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full glass-card rounded-none! border-t-0! border-x-0! border-b border-border" role="banner">
+    <header className="fixed inset-x-0 top-0 z-50 w-full glass-card rounded-none! border-t-0! border-x-0! border-b border-border" role="banner">
       <div className="flex items-center h-14 sm:h-16">
         {/* Logo - Left side - Fixed width matching sidebar, starts from edge */}
         <Link
           href="/dashboard"
           aria-label="Начална страница"
-          className="flex h-full w-auto min-w-0 shrink-0 items-center justify-center gap-2 border-r border-border/50 px-3 sm:w-72 sm:gap-3 sm:px-0"
+          className="flex h-full w-auto min-w-0 shrink-0 items-center justify-start gap-2 border-r border-border/50 pl-18 pr-3 sm:w-72 sm:justify-center sm:gap-3 sm:px-0"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary shadow-lg sm:h-10 sm:w-10 sm:rounded-xl">
+          <div className="hidden h-8 w-8 items-center justify-center rounded-lg gradient-primary shadow-lg sm:flex sm:h-10 sm:w-10 sm:rounded-xl">
             <FileText className="h-4 w-4 text-white sm:h-5 sm:w-5" />
           </div>
           <span className="max-w-26 truncate text-sm font-bold tracking-tight sm:max-w-none sm:text-xl">

@@ -16,15 +16,13 @@ export default async function SettingsLayout({ children }: SettingsLayoutProps) 
   }
   
   return (
-    <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-10rem)] overflow-hidden">
-      {/* Fixed width sidebar navigation - non-scrolling */}
-      <aside className="w-full lg:w-72 flex-shrink-0 lg:overflow-y-auto">
+    <div className="flex min-h-full flex-col gap-4 lg:grid lg:grid-cols-[18rem_minmax(0,1fr)] lg:gap-6">
+      <aside className="w-full shrink-0 lg:sticky lg:top-0 lg:self-start">
         <SettingsNav />
       </aside>
       
-      {/* Main content area - scrollable */}
-      <main className="flex-1 min-w-0 overflow-y-auto pr-2">
-        <div className="pb-6">
+      <main className="min-w-0">
+        <div className="pb-2 sm:pb-4 lg:pb-6">
           {children}
         </div>
       </main>

@@ -11,6 +11,7 @@ import { invoiceSchema, invoiceItemSchema } from "@/lib/validations/forms";
 import { ApiStatusCode } from "@/types/api";
 import { checkSubscriptionLimits } from "@/middleware/subscription";
 import cuid from "cuid";
+import { resolveSessionUser } from "@/lib/session-user";
 
 // Schema для валидация на заявката
 const InvoiceQuerySchema = z.object({
@@ -69,6 +70,10 @@ export async function GET(request: NextRequest) {
         if (!session?.user) {
           throw new Error("Неоторизиран достъп");
         }
+        const sessionUser = await resolveSessionUser(session.user);
+        if (!sessionUser) {
+          throw new Error("Потребителят не е намерен");
+        }
 
         // Извличане на параметрите от заявката
         const searchParams = Object.fromEntries(request.nextUrl.searchParams.entries());
@@ -116,7 +121,7 @@ export async function GET(request: NextRequest) {
             company:Company(id, name),
             items:InvoiceItem(*)
           `, { count: 'exact' })
-          .eq("userId", session.user.id);
+          .eq("userId", sessionUser.id);
         
         // Apply filters
         if (params.status) {
@@ -189,6 +194,10 @@ export async function POST(request: NextRequest) {
         if (!session?.user) {
           throw new Error("Неоторизиран достъп");
         }
+        const sessionUser = await resolveSessionUser(session.user);
+        if (!sessionUser) {
+          throw new Error("Потребителят не е намерен");
+        }
 
         // Парсване на тялото на заявката
         const body = await request.json();
@@ -198,7 +207,7 @@ export async function POST(request: NextRequest) {
         
         // Проверка за subscription limits - брой фактури
         const invoiceLimitCheck = await checkSubscriptionLimits(
-          session.user.id as string,
+          sessionUser.id,
           'invoices'
         );
         
@@ -216,7 +225,7 @@ export async function POST(request: NextRequest) {
           .from("Company")
           .select("bulstatNumber")
           .eq("id", validatedData.companyId)
-          .eq("userId", session.user.id)
+          .eq("userId", sessionUser.id)
           .single();
         
         if (!company) {
@@ -267,7 +276,7 @@ export async function POST(request: NextRequest) {
             // Get next invoice number using InvoiceSequence (per-user numbering, 10-digit format)
             const { getNextInvoiceSequence } = await import("@/lib/invoice-sequence");
             const { invoiceNumber, sequence } = await getNextInvoiceSequence(
-              session.user.id as string
+              sessionUser.id
             );
             
             // Check if invoice number already exists for this user (race condition check)
@@ -275,7 +284,7 @@ export async function POST(request: NextRequest) {
               .from("Invoice")
               .select("id")
               .eq("invoiceNumber", invoiceNumber)
-              .eq("userId", session.user.id)
+              .eq("userId", sessionUser.id)
               .single();
             
             if (existingInvoice) {
@@ -293,7 +302,7 @@ export async function POST(request: NextRequest) {
               invoiceNumber,
               clientId: validatedData.clientId,
               companyId: validatedData.companyId,
-              userId: session.user.id,
+              userId: sessionUser.id,
               issueDate: new Date(validatedData.issueDate).toISOString(),
               dueDate: new Date(validatedData.dueDate).toISOString(),
               supplyDate: validatedData.supplyDate ? new Date(validatedData.supplyDate).toISOString() : new Date(validatedData.issueDate).toISOString(),
@@ -385,7 +394,7 @@ export async function POST(request: NextRequest) {
         const { logAction } = await import("@/lib/audit-log");
         const headers = request.headers;
         await logAction({
-          userId: session.user.id as string,
+          userId: sessionUser.id,
           action: 'CREATE',
           entityType: 'INVOICE',
           entityId: invoiceId,

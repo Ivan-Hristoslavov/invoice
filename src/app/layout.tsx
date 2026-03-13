@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner-toaster";
 import { CookieConsent } from "@/components/gdpr/CookieConsent";
 import { APP_NAME, APP_DESCRIPTION, SEO_KEYWORDS } from "@/config/constants";
+import { SubscriptionUsageProvider } from "@/hooks/subscription-usage-context";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -156,11 +157,13 @@ export default function RootLayout({
           enableSystem
         >
           <AuthProvider>
-            <div className="min-h-screen flex flex-col bg-background text-foreground">
-              <div className="flex-1">{children}</div>
-              <Toaster />
-              <CookieConsent />
-            </div>
+            <SubscriptionUsageProvider>
+              <div className="min-h-screen flex flex-col bg-background text-foreground">
+                <div className="flex-1">{children}</div>
+                <Toaster />
+                <CookieConsent />
+              </div>
+            </SubscriptionUsageProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

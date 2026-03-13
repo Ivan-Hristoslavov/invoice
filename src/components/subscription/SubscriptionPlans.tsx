@@ -227,11 +227,11 @@ export function SubscriptionPlans() {
         </div>
         
         {/* Billing Toggle - Improved Design */}
-        <div className="flex items-center gap-1 p-1 rounded-full bg-muted/50 border">
+        <div className="grid w-full max-w-md grid-cols-2 gap-1 rounded-full border bg-muted/50 p-1 sm:w-auto">
           <button
             onClick={() => setIsYearly(false)}
             className={cn(
-              "px-4 py-1.5 rounded-full text-sm font-medium transition-all",
+              "flex min-w-0 items-center justify-center rounded-full px-3 py-2 text-sm font-medium transition-all",
               !isYearly 
                 ? "bg-background shadow-xs text-foreground" 
                 : "text-muted-foreground hover:text-foreground"
@@ -242,7 +242,7 @@ export function SubscriptionPlans() {
           <button
             onClick={() => setIsYearly(true)}
             className={cn(
-              "px-4 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-2",
+              "flex min-w-0 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-all",
               isYearly 
                 ? "bg-emerald-500 text-white shadow-xs" 
                 : "text-muted-foreground hover:text-foreground"
@@ -250,7 +250,7 @@ export function SubscriptionPlans() {
           >
             Годишно
             <span className={cn(
-              "text-[10px] px-1.5 py-0.5 rounded-full font-bold",
+              "rounded-full px-1.5 py-0.5 text-[9px] font-bold sm:text-[10px]",
               isYearly ? "bg-white/20" : "bg-emerald-500/20 text-emerald-600"
             )}>
               -17%

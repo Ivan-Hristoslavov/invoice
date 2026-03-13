@@ -102,7 +102,7 @@ export function SignInForm() {
               placeholder="ime@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="pl-10 h-10 text-sm"
+              className="h-11 pl-10 text-base md:text-sm"
               required
               autoComplete="email"
             />
@@ -128,7 +128,7 @@ export function SignInForm() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="pl-10 pr-10 h-10 text-sm"
+              className="h-11 pl-10 pr-10 text-base md:text-sm"
               required
               autoComplete="current-password"
             />

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getInvoiceWithDetails } from "@/lib/services/invoice-service";
+import { resolveSessionUser } from "@/lib/session-user";
 import InvoiceDetailClient from "./InvoiceDetailClient";
 import { Decimal } from "@prisma/client/runtime/library";
 
@@ -64,8 +65,13 @@ export default async function InvoicePage({ params }: PageProps) {
     return notFound();
   }
 
+  const sessionUser = await resolveSessionUser(session.user);
+  if (!sessionUser) {
+    return notFound();
+  }
+
   try {
-    const invoice = await getInvoiceWithDetails(id, session.user.id);
+    const invoice = await getInvoiceWithDetails(id, sessionUser.id);
 
     if (!invoice) {
       return notFound();

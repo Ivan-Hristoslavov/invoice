@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { APP_NAME } from "@/config/constants";
 import { createAdminClient } from "@/lib/supabase/server";
+import { resolveSessionUser } from "@/lib/session-user";
 import { format } from "date-fns";
 import { bg } from "date-fns/locale";
 
@@ -47,7 +48,12 @@ export default async function DebitNoteDetailPage({
   const { id } = await params;
   const session = await getServerSession(authOptions);
   
-  if (!session) {
+  if (!session?.user) {
+    redirect("/signin");
+  }
+
+  const sessionUser = await resolveSessionUser(session.user);
+  if (!sessionUser) {
     redirect("/signin");
   }
 
@@ -61,7 +67,7 @@ export default async function DebitNoteDetailPage({
       items:DebitNoteItem(*)
     `)
     .eq("id", id)
-    .eq("userId", session.user.id)
+    .eq("userId", sessionUser.id)
     .single();
 
   if (error || !debitNote) {
@@ -71,14 +77,14 @@ export default async function DebitNoteDetailPage({
   // Fetch related data with all fields
   const [invoiceResult, clientResult, companyResult] = await Promise.all([
     debitNote.invoiceId
-      ? supabase.from("Invoice").select("id, invoiceNumber, issueDate").eq("id", debitNote.invoiceId).eq("userId", session.user.id).maybeSingle()
+      ? supabase.from("Invoice").select("id, invoiceNumber, issueDate").eq("id", debitNote.invoiceId).eq("userId", sessionUser.id).maybeSingle()
       : Promise.resolve({ data: null, error: null }),
     debitNote.clientId
       ? supabase
           .from("Client")
           .select("id, name, email, phone, address, city, country, bulstatNumber, vatNumber, vatRegistrationNumber, mol")
           .eq("id", debitNote.clientId)
-          .eq("userId", session.user.id)
+          .eq("userId", sessionUser.id)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
     debitNote.companyId
@@ -86,7 +92,7 @@ export default async function DebitNoteDetailPage({
           .from("Company")
           .select("id, name, email, phone, address, city, country, bulstatNumber, vatRegistrationNumber, mol")
           .eq("id", debitNote.companyId)
-          .eq("userId", session.user.id)
+          .eq("userId", sessionUser.id)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
   ]);

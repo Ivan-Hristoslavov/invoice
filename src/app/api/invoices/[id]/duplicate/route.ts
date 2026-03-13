@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { generateNextInvoiceNumber } from "@/lib/invoice-number";
 import { logAction } from "@/lib/audit-log";
+import { resolveSessionUser } from "@/lib/session-user";
 
 export async function POST(
   request: NextRequest,
@@ -14,8 +15,12 @@ export async function POST(
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Потребителят не е намерен" }, { status: 404 });
+    }
 
-    const userId = session.user.id;
+    const userId = sessionUser.id;
     const { id } = await params;
     const supabase = createAdminClient();
 

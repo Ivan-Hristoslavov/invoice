@@ -116,31 +116,38 @@ export default function NewProductPage() {
         }),
       });
 
-      if (!response.ok) throw new Error("Неуспешно създаване на продукт");
+      if (!response.ok) {
+        const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(errorPayload?.error || "Неуспешно създаване на продукт");
+      }
 
       toast.success("Продуктът е създаден", {
         description: data.name,
         action: { label: "Виж продукти", onClick: () => router.push("/products") },
       });
       router.push("/products");
-    } catch {
-      toast.error("Грешка", { description: "Моля, опитайте отново." });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Моля, опитайте отново.";
+      console.warn("Грешка при създаване на продукт:", errorMessage);
+      toast.error("Грешка", { description: errorMessage });
     } finally {
       setIsLoading(false);
     }
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="mx-auto max-w-2xl">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <Button variant="ghost" size="icon" asChild className="h-8 w-8 rounded-full shrink-0">
-          <Link href="/products">
-            <ArrowLeft className="h-4 w-4" />
+      <div className="mb-5 flex items-center gap-3 sm:mb-6">
+        <Button variant="ghost" size="sm" asChild className="h-9 rounded-full px-3 shrink-0">
+          <Link href="/products" className="inline-flex items-center whitespace-nowrap">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Назад
           </Link>
         </Button>
         <div>
-          <h1 className="page-title">Нов продукт</h1>
+          <h1 className="page-title text-2xl sm:text-3xl">Нов продукт</h1>
           <p className="card-description">Добавете нов продукт или услуга към каталога</p>
         </div>
       </div>
@@ -211,7 +218,7 @@ export default function NewProductPage() {
                     <FormControl>
                       <Textarea
                         placeholder="Опишете вашия продукт или услуга"
-                        className="resize-none min-h-[100px]"
+                        className="min-h-[100px] w-full resize-none"
                         {...field}
                       />
                     </FormControl>
@@ -356,9 +363,9 @@ export default function NewProductPage() {
           </Card>
 
           {/* Submit */}
-          <div className="flex items-center justify-between pt-2">
-            <Button type="button" variant="outline" asChild>
-              <Link href="/products">
+          <div className="flex items-center justify-between gap-3 pt-2">
+            <Button type="button" variant="outline" asChild className="whitespace-nowrap">
+              <Link href="/products" className="inline-flex items-center whitespace-nowrap">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Назад
               </Link>

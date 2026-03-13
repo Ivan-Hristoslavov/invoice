@@ -47,22 +47,24 @@ export function CompanySettingsTabs({ company }: CompanySettingsTabsProps) {
 
   return (
     <Tabs defaultValue="info" className="w-full">
-      <TabsList className="mb-6">
-        <TabsTrigger value="info">
+      <div className="mb-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <TabsList className="flex min-w-max gap-2 rounded-2xl border border-border/60 bg-card/70 p-1">
+        <TabsTrigger value="info" className="min-h-10 whitespace-nowrap rounded-xl px-3">
           <Building2 className="h-4 w-4 mr-2" />
           Основни
         </TabsTrigger>
-        <TabsTrigger value="bank">
+        <TabsTrigger value="bank" className="min-h-10 whitespace-nowrap rounded-xl px-3">
           <CreditCard className="h-4 w-4 mr-2" />
           Банка
         </TabsTrigger>
         {!isNew && (
-          <TabsTrigger value="logo">
+          <TabsTrigger value="logo" className="min-h-10 whitespace-nowrap rounded-xl px-3">
             <Image className="h-4 w-4 mr-2" />
             Лого
           </TabsTrigger>
         )}
       </TabsList>
+      </div>
 
       <TabsContent value="info">
         <Card>

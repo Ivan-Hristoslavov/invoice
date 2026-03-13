@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
+import { resolveSessionUser } from "@/lib/session-user";
 import { z } from "zod";
 import Stripe from 'stripe';
 import { getStripeInstance } from '@/lib/stripe';
@@ -47,6 +48,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json(
+        { error: "Сесията ви е невалидна. Моля, влезте отново." },
+        { status: 401 }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get("query") || "";
     const page = parseInt(searchParams.get("page") || "0");
@@ -57,7 +66,7 @@ export async function GET(request: NextRequest) {
     let companyQuery = supabase
       .from("Company")
       .select("*", { count: "exact" })
-      .eq("userId", session.user.id);
+      .eq("userId", sessionUser.id);
 
     if (query) {
       companyQuery = companyQuery.or(
@@ -108,6 +117,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json(
+        { error: "Сесията ви е невалидна. Моля, влезте отново." },
+        { status: 401 }
+      );
+    }
+
     const json = await request.json();
     
     // Validate incoming data
@@ -116,7 +133,7 @@ export async function POST(request: NextRequest) {
     // Check subscription limits - брой фирми
     const { checkSubscriptionLimits } = await import("@/middleware/subscription");
     const companyLimitCheck = await checkSubscriptionLimits(
-      session.user.id as string,
+      sessionUser.id,
       'companies'
     );
     
@@ -154,7 +171,7 @@ export async function POST(request: NextRequest) {
       .insert({
         id: companyId,
         ...payload,
-        userId: session.user.id,
+        userId: sessionUser.id,
         updatedAt: new Date().toISOString(),
       })
       .select()
@@ -197,12 +214,17 @@ export async function POST_STRIPE_CONNECT_ONBOARDING(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+    }
+
     // Find the user's company (assume one company per user for now)
     const supabase = createAdminClient();
     const { data: companies, error: findError } = await supabase
       .from("Company")
       .select("*")
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .limit(1);
     
     const company = companies?.[0];

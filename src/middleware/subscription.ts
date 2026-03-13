@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { createAdminClient } from '@/lib/supabase/server';
+import { authOptions } from '@/lib/auth';
+import { resolveSessionUser } from '@/lib/session-user';
 
 // Plan feature limits
 export const PLAN_LIMITS = {
@@ -61,10 +63,15 @@ export const PLAN_LIMITS = {
 // Middleware to check subscription status
 export async function checkSubscription(req: NextRequest) {
   // Get the session
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
 
   // If no session, just let the request proceed (Next.js auth will handle redirects)
   if (!session?.user) {
+    return NextResponse.next();
+  }
+
+  const sessionUser = await resolveSessionUser(session.user);
+  if (!sessionUser) {
     return NextResponse.next();
   }
 
@@ -73,7 +80,7 @@ export async function checkSubscription(req: NextRequest) {
   const { data: subscriptions } = await supabase
     .from('Subscription')
     .select('*')
-    .eq('userId', session.user.id as string)
+    .eq('userId', sessionUser.id)
     .in('status', ['ACTIVE', 'TRIALING', 'PAST_DUE'])
     .limit(1);
   

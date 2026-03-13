@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
+import { resolveSessionUser } from "@/lib/session-user";
 import { z } from "zod";
 
 const clientSchema = z.object({
@@ -34,6 +35,11 @@ export async function GET(
       return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
 
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Сесията ви е невалидна. Моля, влезте отново." }, { status: 401 });
+    }
+
     const { id } = await context.params;
     const supabase = createAdminClient();
 
@@ -41,7 +47,7 @@ export async function GET(
       .from("Client")
       .select("*")
       .eq("id", id)
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .single();
 
     if (error || !client) {
@@ -69,6 +75,11 @@ export async function PUT(
       return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
 
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Сесията ви е невалидна. Моля, влезте отново." }, { status: 401 });
+    }
+
     const { id } = await context.params;
     const json = await request.json();
     const validated = clientSchema.parse(json);
@@ -79,7 +90,7 @@ export async function PUT(
       .from("Client")
       .select("id")
       .eq("id", id)
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .single();
 
     if (existingClientError || !existingClient) {
@@ -108,7 +119,7 @@ export async function PUT(
         updatedAt: new Date().toISOString(),
       })
       .eq("id", id)
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .select()
       .single();
 

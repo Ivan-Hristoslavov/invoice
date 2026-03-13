@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { PLAN_LIMITS } from "@/middleware/subscription";
+import { resolveSessionUser } from "@/lib/session-user";
 
 export interface UsageData {
   plan: string;
@@ -48,7 +49,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const userId = session.user.id as string;
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json(
+        { error: "Потребителят не е намерен" },
+        { status: 404 }
+      );
+    }
+
+    const userId = sessionUser.id;
     const supabase = createAdminClient();
 
     // Get user's subscription

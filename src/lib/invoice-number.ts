@@ -12,9 +12,9 @@ export async function generateNextInvoiceNumber(userId: string): Promise<string>
       .from('User')
       .select('startingInvoiceNumber')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
-    if (userError) {
+    if (userError && userError.code !== "PGRST116") {
       console.error("Error fetching user:", userError);
     }
 

@@ -1,46 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useSubscriptionUsage, type UsageData } from '@/hooks/subscription-usage-context';
 
 interface SubscriptionLimitResult {
   allowed: boolean;
   message?: string;
   plan?: string;
-}
-
-export interface UsageData {
-  plan: string;
-  invoices: {
-    used: number;
-    limit: number;
-    periodStart: string;
-    periodEnd: string;
-  };
-  companies: {
-    used: number;
-    limit: number;
-  };
-  clients: {
-    used: number;
-    limit: number;
-  };
-  products: {
-    used: number;
-    limit: number;
-  };
-  users: {
-    used: number;
-    limit: number;
-  };
-  features: {
-    customBranding: boolean;
-    export: boolean | string;
-    creditNotes: boolean;
-    emailSending: boolean;
-    apiAccess: boolean;
-  };
 }
 
 interface UseSubscriptionLimitResult {
@@ -71,44 +39,15 @@ interface UseSubscriptionLimitResult {
 
 export function useSubscriptionLimit(): UseSubscriptionLimitResult {
   const [isChecking, setIsChecking] = useState(false);
-  const [isLoadingUsage, setIsLoadingUsage] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [plan, setPlan] = useState<string | null>(null);
-  const [usage, setUsage] = useState<UsageData | null>(null);
   const { data: session } = useSession();
   const router = useRouter();
-
-  // Fetch usage data
-  const fetchUsage = useCallback(async () => {
-    if (!session?.user) return;
-    
-    try {
-      setIsLoadingUsage(true);
-      const response = await fetch('/api/subscription/usage');
-      
-      if (response.ok) {
-        const data: UsageData = await response.json();
-        setUsage(data);
-        setPlan(data.plan);
-      } else {
-        // Default to FREE plan if error
-        setPlan('FREE');
-      }
-    } catch {
-      setPlan('FREE');
-    } finally {
-      setIsLoadingUsage(false);
-    }
-  }, [session]);
-
-  // Fetch usage on mount and when session changes
-  useEffect(() => {
-    fetchUsage();
-  }, [fetchUsage]);
-
-  const refreshUsage = useCallback(async () => {
-    await fetchUsage();
-  }, [fetchUsage]);
+  const {
+    usage,
+    plan,
+    isLoadingUsage,
+    refreshUsage,
+  } = useSubscriptionUsage();
 
   const checkLimit = useCallback(async (feature: 'clients' | 'invoices' | 'products' | 'customBranding' | 'export' | 'emailSending' | 'creditNotes' | 'users' | 'companies'): Promise<SubscriptionLimitResult> => {
     try {
@@ -128,9 +67,6 @@ export function useSubscriptionLimit(): UseSubscriptionLimitResult {
       }
 
       const result = await response.json();
-      if (result.plan) {
-        setPlan(result.plan);
-      }
       return result;
     } catch (err: any) {
       setError(err.message);
