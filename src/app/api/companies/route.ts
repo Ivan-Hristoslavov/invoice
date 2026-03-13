@@ -9,7 +9,7 @@ import cuid from "cuid";
 
 // Define validation schema for company data
 const companySchema = z.object({
-  name: z.string().min(1, "Името на компанията е задължително"),
+  name: z.string().min(1, "Името на компанията е задължително1"),
   email: z.string().email("Моля, въведете валиден имейл").optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   address: z.string().optional().or(z.literal("")),

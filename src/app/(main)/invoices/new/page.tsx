@@ -1164,24 +1164,19 @@ function NewInvoiceContent() {
         <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-950/50">
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
-                <Building2 className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+              <div className="h-10 w-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center flex-shrink-0">
+                <Building2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               </div>
-              <div>
-                <CardTitle>Нужна е поне една компания</CardTitle>
-                <CardDescription className="mt-1">
+              <div className="flex-1">
+                <CardTitle className="text-lg">Нужна е поне една компания</CardTitle>
+                <CardDescription className="mt-1.5">
                   За да създавате фактури, първо трябва да добавите вашата фирма (компания). След това ще можете да продължите.
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardFooter>
-            <Button asChild className="bg-primary hover:bg-primary/90">
-              <Link href="/companies/new">
-                <Building2 className="mr-2 h-4 w-4" />
-                Създай компания
-              </Link>
-            </Button>
+            <Button asChild className="bg-primary hover:bg-primary/90 flex items-center"><Link href="/companies/new" className="flex items-center"><Building2 className="mr-2 h-4 w-4" />Създай компания</Link></Button>
           </CardFooter>
         </Card>
       </div>

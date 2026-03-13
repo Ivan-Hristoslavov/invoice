@@ -224,28 +224,6 @@ export default function NewCompanyPage() {
     }
   };
 
-  // Get validation errors for current step
-  const getStepErrors = () => {
-    const errors: string[] = [];
-    switch (currentStep) {
-      case 0:
-        if (!formValues.name.trim()) errors.push("Името на компанията е задължително");
-        if (formValues.email && !isValidEmail(formValues.email)) errors.push("Моля, въведете валиден имейл адрес");
-        break;
-      case 1:
-        if (!(formValues.address ?? "").trim()) errors.push("Адресът е задължителен");
-        if (!(formValues.city ?? "").trim()) errors.push("Градът е задължителен");
-        break;
-      case 2:
-        if (!(formValues.bulstatNumber ?? "").trim()) errors.push("Булстат/ЕИК е задължителен");
-        if (!(formValues.mol ?? "").trim()) errors.push("МОЛ (материално отговорно лице) е задължително");
-        break;
-    }
-    return errors;
-  };
-
-  const stepErrors = getStepErrors();
-
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -783,16 +761,18 @@ export default function NewCompanyPage() {
                     <Separator />
 
                     {/* Confirmation checkbox */}
-                    <div className="flex items-start space-x-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
-                      <Checkbox
+                    <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
+                      <input
                         id="confirm-company"
+                        type="checkbox"
                         checked={confirmed}
-                        onCheckedChange={(checked) => setConfirmed(checked === true)}
-                        className="mt-0.5"
+                        onChange={(event) => setConfirmed(event.target.checked)}
+                        className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer rounded border-2 border-primary/40 bg-background accent-primary"
+                        aria-label="Потвърждавам данните за компанията"
                       />
                       <label
                         htmlFor="confirm-company"
-                        className="text-sm leading-relaxed cursor-pointer"
+                        className="cursor-pointer text-sm leading-relaxed"
                       >
                         <span className="font-medium">Потвърждавам,</span> че информацията за компанията е коректна и искам да я създам.
                       </label>
@@ -805,20 +785,6 @@ export default function NewCompanyPage() {
 
           {/* Navigation */}
           <div className="flex flex-col gap-4 pt-6 border-t">
-            {/* Validation errors */}
-            {stepErrors.length > 0 && (
-              <div className="rounded-lg border-2 border-red-300 bg-red-100 p-3 shadow-md dark:border-red-500 dark:bg-white/90 dark:backdrop-blur-xl dark:shadow-lg">
-                <ul className="text-sm font-medium text-red-800 space-y-1 dark:text-red-700">
-                  {stepErrors.map((error, index) => (
-                    <li key={index} className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 shrink-0 rounded-full bg-red-500 dark:bg-red-600" />
-                      {error}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
             <div className="flex items-center justify-between">
               <Button
                 type="button"

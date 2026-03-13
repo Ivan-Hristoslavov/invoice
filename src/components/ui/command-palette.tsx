@@ -293,7 +293,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Търси команди..."
-            className="flex h-12 w-full rounded-md bg-transparent py-3 text-sm outline-hidden placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-12 w-full rounded-md bg-transparent py-3 text-sm outline-hidden placeholder:text-muted-foreground/45 disabled:cursor-not-allowed disabled:opacity-50"
           />
           <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
             ESC
