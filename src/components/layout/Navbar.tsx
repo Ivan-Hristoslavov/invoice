@@ -13,9 +13,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "next-themes";
-import { Switch } from "@/components/ui/switch";
 import { useState, useEffect, useMemo } from "react";
 import { useCommandPalette } from "@/components/ui/command-palette";
+import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { APP_NAME } from "@/config/constants";
 
 export function Navbar() {
@@ -25,6 +25,7 @@ export function Navbar() {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const { setOpen: setCommandPaletteOpen } = useCommandPalette();
+  const { isLoadingUsage, canCreateInvoice } = useSubscriptionLimit();
 
   useEffect(() => {
     setMounted(true);
@@ -38,10 +39,6 @@ export function Navbar() {
     return theme === "dark";
   }, [theme, resolvedTheme, mounted]);
 
-  const handleThemeToggle = (checked: boolean) => {
-    setTheme(checked ? "dark" : "light");
-  };
-  
   // Skip rendering navbar on auth pages or home page when not authenticated
   if (pathname.includes("/signin") || pathname.includes("/signup")) {
     return null;
@@ -56,11 +53,11 @@ export function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full glass-card !rounded-none !border-t-0 !border-l-0 !border-r-0">
+    <header className="sticky top-0 z-50 w-full glass-card rounded-none! border-t-0! border-x-0! border-b border-border" role="banner">
       <div className="flex items-center h-16">
         {/* Logo - Left side - Fixed width matching sidebar, starts from edge */}
-        <Link href="/dashboard" className="flex items-center justify-center gap-3 w-72 h-full shrink-0 border-r border-border/50">
-          <div className="h-10 w-10 rounded-xl bg-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-600/25">
+        <Link href="/dashboard" aria-label="Начална страница" className="flex items-center justify-center gap-3 w-72 h-full shrink-0 border-r border-border/50">
+          <div className="h-10 w-10 rounded-xl gradient-primary flex items-center justify-center shadow-lg">
             <FileText className="h-5 w-5 text-white" />
           </div>
           <span className="text-xl font-bold tracking-tight">{APP_NAME}</span>
@@ -74,6 +71,7 @@ export function Navbar() {
             variant="outline" 
             className="hidden md:flex h-10 px-3 gap-2 text-muted-foreground hover:text-foreground"
             onClick={() => setCommandPaletteOpen(true)}
+            aria-label="Отвори командна палитра (⌘K)"
           >
             <Command className="h-4 w-4" />
             <span className="text-sm">Търси...</span>
@@ -82,23 +80,30 @@ export function Navbar() {
             </kbd>
           </Button>
           
-          {/* Quick Add Invoice Icon - Hidden on small mobile */}
-          <Button 
-            asChild 
-            size="icon" 
-            className="hidden sm:flex h-10 w-10 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20"
-            title="Нова фактура"
-          >
-            <Link href="/invoices/new">
-              <Plus className="h-5 w-5" />
-            </Link>
-          </Button>
+          {/* Quick Add Invoice Icon - only when usage loaded and allowed */}
+          {!isLoadingUsage && canCreateInvoice && (
+            <Button 
+              asChild 
+              size="icon" 
+              className="hidden sm:flex h-10 w-10 gradient-primary hover:opacity-90 text-white border-0 shadow-md"
+              title="Нова фактура"
+              aria-label="Нова фактура"
+            >
+              <Link href="/invoices/new">
+                <Plus className="h-5 w-5" aria-hidden="true" />
+              </Link>
+            </Button>
+          )}
 
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger>
-              <div className="h-10 pl-2 pr-3 gap-2 hover:bg-muted rounded-md flex items-center cursor-pointer">
-                <div className="h-8 w-8 rounded-full bg-emerald-600 flex items-center justify-center text-white text-sm font-semibold">
+              <Button
+                variant="ghost"
+                aria-label="Потребителско меню"
+                className="h-10 pl-2 pr-3 gap-2 rounded-md flex items-center"
+              >
+                <div className="h-8 w-8 rounded-full gradient-primary flex items-center justify-center text-white text-sm font-semibold">
                   {session?.user?.name?.charAt(0).toUpperCase() || 'U'}
                 </div>
                 <div className="hidden sm:block text-left">
@@ -107,7 +112,7 @@ export function Navbar() {
                   </p>
                 </div>
                 <ChevronDown className="h-4 w-4 text-muted-foreground hidden sm:block" />
-              </div>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <div className="px-3 py-2">
@@ -119,21 +124,28 @@ export function Navbar() {
                 </p>
               </div>
               <DropdownMenuSeparator />
-              {/* Theme Toggle */}
-              <div className="px-3 py-2 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Sun className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">Тема</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {mounted && (
-                    <Switch 
-                      checked={isDark}
-                      onCheckedChange={handleThemeToggle}
-                    />
-                  )}
-                  <Moon className="h-4 w-4 text-muted-foreground" />
-                </div>
+              {/* Theme Toggle – single button: icon = current mode, click = switch */}
+              <div
+                className="px-3 py-2 flex items-center justify-between"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span className="text-sm">Тема</span>
+                {mounted && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 min-w-8"
+                    onClick={() => setTheme(isDark ? "light" : "dark")}
+                    aria-label={isDark ? "Светла тема" : "Тъмна тема"}
+                  >
+                    {isDark ? (
+                      <Sun className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Moon className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+                )}
               </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem>

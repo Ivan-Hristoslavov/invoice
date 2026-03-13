@@ -56,7 +56,7 @@ export default function IntegrationsPage() {
         {/* Header */}
         <div className="mb-12">
           <Button variant="ghost" size="sm" asChild className="mb-6">
-            <Link href="/">
+            <Link href="/" className="flex items-center whitespace-nowrap">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Назад към началната страница
             </Link>
@@ -75,7 +75,7 @@ export default function IntegrationsPage() {
             <Card key={integration.title} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300">
               <CardHeader>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                  <div className="h-12 w-12 rounded-xl bg-linear-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
                     <integration.icon className="h-6 w-6 text-white" />
                   </div>
                   {integration.comingSoon ? (
@@ -122,7 +122,7 @@ export default function IntegrationsPage() {
             Свържете се с нас и ще обсъдим как можем да помогнем
           </p>
           <Button size="lg" asChild>
-            <Link href="/contact">
+            <Link href="/contact" className="flex items-center whitespace-nowrap">
               Свържете се с нас
             </Link>
           </Button>

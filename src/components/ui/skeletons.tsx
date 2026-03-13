@@ -1,11 +1,14 @@
 "use client";
 
+import { Skeleton as HeroUISkeleton } from "@heroui/react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
-// Base skeleton element
+// Base skeleton element - uses HeroUI shimmer
 function SkeletonPulse({ className = "" }: { className?: string }) {
   return (
-    <div className={`animate-pulse bg-muted rounded ${className}`} />
+    <HeroUISkeleton
+      className={`rounded ${className}`}
+    />
   );
 }
 

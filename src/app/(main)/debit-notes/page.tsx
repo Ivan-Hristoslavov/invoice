@@ -131,7 +131,7 @@ export default async function DebitNotesPage() {
           </p>
         </div>
         <Button asChild>
-          <Link href="/debit-notes/new">
+          <Link href="/debit-notes/new" className="flex items-center whitespace-nowrap">
             <Plus className="mr-2 h-4 w-4" />
             Ново дебитно известие
           </Link>
@@ -181,7 +181,7 @@ export default async function DebitNotesPage() {
                 Дебитните известия се използват когато заменяте продукт, но клиентът трябва да доплати
               </p>
               <Button asChild>
-                <Link href="/debit-notes/new">
+                <Link href="/debit-notes/new" className="flex items-center whitespace-nowrap">
                   <Plus className="mr-2 h-4 w-4" />
                   Създай дебитно известие
                 </Link>

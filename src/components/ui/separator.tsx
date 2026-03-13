@@ -1,17 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { Separator as RadixSeparator } from "@radix-ui/themes";
+import { Separator as HeroUISeparator } from "@heroui/react";
 
 const Separator = React.forwardRef<
-  React.ElementRef<typeof RadixSeparator>,
-  React.ComponentPropsWithoutRef<typeof RadixSeparator>
+  HTMLDivElement,
+  React.ComponentProps<typeof HeroUISeparator>
 >(({ className, ...props }, ref) => (
-  <RadixSeparator
-    ref={ref}
-    className={className}
-    {...props}
-  />
+  <HeroUISeparator ref={ref} className={className} {...props} />
 ));
 Separator.displayName = "Separator";
 

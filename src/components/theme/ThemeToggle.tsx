@@ -3,53 +3,42 @@
 import * as React from "react";
 import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 
 export function ThemeToggle() {
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
 
-  // Avoid hydration mismatch
   React.useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Determine if switch should be checked (dark mode)
-  // If theme is "system", check based on resolvedTheme
   const isDark = React.useMemo(() => {
     if (!mounted) return false;
-    if (theme === "system") {
-      return resolvedTheme === "dark";
-    }
-    return theme === "dark";
-  }, [theme, resolvedTheme, mounted]);
-
-  const handleToggle = (checked: boolean) => {
-    if (checked) {
-      setTheme("dark");
-    } else {
-      setTheme("light");
-    }
-  };
+    return resolvedTheme === "dark";
+  }, [resolvedTheme, mounted]);
 
   if (!mounted) {
     return (
-      <div className="flex items-center gap-2 h-10">
+      <Button variant="ghost" size="icon" className="h-9 w-9" disabled aria-label="Тема">
         <Sun className="h-4 w-4 text-muted-foreground" />
-        <Switch disabled />
-        <Moon className="h-4 w-4 text-muted-foreground" />
-      </div>
+      </Button>
     );
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <Sun className="h-4 w-4 text-muted-foreground" />
-      <Switch 
-        checked={isDark}
-        onCheckedChange={handleToggle}
-      />
-      <Moon className="h-4 w-4 text-muted-foreground" />
-    </div>
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-9 w-9"
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      aria-label={isDark ? "Светла тема" : "Тъмна тема"}
+    >
+      {isDark ? (
+        <Sun className="h-4 w-4 text-muted-foreground" />
+      ) : (
+        <Moon className="h-4 w-4 text-muted-foreground" />
+      )}
+    </Button>
   );
 } 

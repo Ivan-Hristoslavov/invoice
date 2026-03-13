@@ -91,27 +91,9 @@ export default async function DebitNoteDetailPage({
       : Promise.resolve({ data: null, error: null }),
   ]);
 
-  // Handle errors and extract data
-  if (clientResult.error) {
-    console.error("Error fetching client:", clientResult.error);
-    console.error("Client ID:", debitNote.clientId);
-  }
-  if (companyResult.error) {
-    console.error("Error fetching company:", companyResult.error);
-    console.error("Company ID:", debitNote.companyId);
-  }
-
   const invoice = invoiceResult.data;
   const client = clientResult.data;
   const company = companyResult.data;
-
-  // Debug logging (remove in production if needed)
-  if (!client && debitNote.clientId) {
-    console.warn("Client not found for ID:", debitNote.clientId);
-  }
-  if (!company && debitNote.companyId) {
-    console.warn("Company not found for ID:", debitNote.companyId);
-  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('bg-BG', {
@@ -126,7 +108,7 @@ export default async function DebitNoteDetailPage({
       <div className="flex flex-col gap-4 mb-6">
         <div className="flex items-center justify-between">
           <Button variant="ghost" size="sm" asChild>
-            <Link href="/debit-notes">
+            <Link href="/debit-notes" className="flex items-center whitespace-nowrap">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Назад
             </Link>
@@ -146,13 +128,13 @@ export default async function DebitNoteDetailPage({
           
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" asChild>
-              <Link href={`/api/debit-notes/${id}/export-pdf`} target="_blank">
+              <Link href={`/api/debit-notes/${id}/export-pdf`} target="_blank" className="flex items-center whitespace-nowrap">
                 <Printer className="w-4 h-4 mr-1.5" />
                 Принт
               </Link>
             </Button>
             <Button variant="outline" size="sm" asChild>
-              <Link href={`/api/debit-notes/${id}/export-pdf`} target="_blank">
+              <Link href={`/api/debit-notes/${id}/export-pdf`} target="_blank" className="flex items-center whitespace-nowrap">
                 <Download className="w-4 h-4 mr-1.5" />
                 PDF
               </Link>

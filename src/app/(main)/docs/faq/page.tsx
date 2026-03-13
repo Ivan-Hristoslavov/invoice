@@ -130,7 +130,7 @@ export default function FAQPage() {
             <input
               type="text"
               placeholder="Търсене във FAQ..."
-              className="w-full px-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-4 py-2 border border-input rounded-md focus:outline-hidden focus:ring-2 focus:ring-primary"
             />
             <button className="absolute right-2 top-1/2 transform -translate-y-1/2 px-3 py-1 bg-primary text-white rounded">
               Търси

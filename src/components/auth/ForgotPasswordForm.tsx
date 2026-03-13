@@ -121,7 +121,7 @@ export function ForgotPasswordForm() {
             variant="outline"
             className="w-full max-w-sm h-12"
           >
-            <Link href="/signin">
+            <Link href="/signin" className="flex items-center whitespace-nowrap">
               <ArrowLeft className="mr-2 h-5 w-5" />
               Назад към входа
             </Link>
@@ -217,7 +217,7 @@ export function ForgotPasswordForm() {
           >
             <Button 
               type="submit" 
-              className="w-full max-w-sm h-12 text-base font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/40 transition-all duration-300"
+              className="w-full max-w-sm h-12 text-base font-semibold gradient-primary hover:opacity-90 text-white border-0 shadow-lg transition-all duration-300"
               disabled={isLoading}
             >
               {isLoading ? (

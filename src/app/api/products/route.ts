@@ -91,22 +91,52 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const searchParams = request.nextUrl.searchParams;
+    const query = searchParams.get("query") || "";
+    const page = parseInt(searchParams.get("page") || "0");
+    const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get("pageSize") || "12")));
+
     const supabase = createAdminClient();
-    
-    const { data: products, error } = await supabase
+
+    let productQuery = supabase
       .from("Product")
-      .select("*")
-      .eq("userId", session.user.id)
-      .order("name", { ascending: true });
-    
+      .select("*", { count: "exact" })
+      .eq("userId", session.user.id);
+
+    if (query) {
+      productQuery = productQuery.or(
+        `name.ilike.%${query}%,description.ilike.%${query}%`
+      );
+    }
+
+    productQuery = productQuery.order("name", { ascending: true });
+
+    if (page > 0) {
+      const skip = (page - 1) * pageSize;
+      productQuery = productQuery.range(skip, skip + pageSize - 1);
+    }
+
+    const { data: products, count, error } = await productQuery;
+
     if (error) {
       throw error;
     }
 
-    return NextResponse.json(products);
+    if (page > 0) {
+      return NextResponse.json({
+        data: products || [],
+        meta: {
+          page,
+          pageSize,
+          totalItems: count || 0,
+          totalPages: Math.ceil((count || 0) / pageSize),
+        },
+      });
+    }
+
+    return NextResponse.json(products || []);
   } catch (error) {
     console.error("Грешка при извличане на продукти:", error);
-    // Return empty array instead of error to allow graceful degradation
     return NextResponse.json([]);
   }
 } 

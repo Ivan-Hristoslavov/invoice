@@ -15,7 +15,7 @@ const productSchema = z.object({
 // GET - Взима един продукт по ID
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -28,7 +28,7 @@ export async function GET(
     }
 
     // Получаване на ID параметър по правилния асинхронен начин
-    const productId = context.params.id;
+    const productId = (await context.params).id;
 
     const supabase = createAdminClient();
     const { data: product, error } = await supabase
@@ -65,7 +65,7 @@ export async function GET(
 // PUT - Обновява съществуващ продукт
 export async function PUT(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -78,7 +78,7 @@ export async function PUT(
     }
 
     // Получаване на ID параметър по правилния асинхронен начин
-    const productId = context.params.id;
+    const productId = (await context.params).id;
     const json = await request.json();
 
     // Валидиране на данните
@@ -140,7 +140,7 @@ export async function PUT(
 // DELETE - Изтрива продукт
 export async function DELETE(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -153,7 +153,7 @@ export async function DELETE(
     }
 
     // Получаване на ID параметър по правилния асинхронен начин
-    const productId = context.params.id;
+    const productId = (await context.params).id;
 
     const supabase = createAdminClient();
     

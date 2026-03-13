@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -9,18 +8,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { Chip, Table } from "@heroui/react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { UserCog, UserPlus, ShieldAlert, Lock, Crown } from "lucide-react";
+import { UserPlus, Lock, Crown } from "lucide-react";
 import UserRoleActions from "./user-role-actions";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { UsageCounter, LockedButton } from "@/components/ui/pro-feature-lock";
@@ -45,20 +36,20 @@ interface UsersClientProps {
   currentUserId: string;
 }
 
-function getRoleBadgeColor(role: Role) {
+function getRoleChipColor(role: Role): "danger" | "secondary" | "primary" | "success" {
   switch (role) {
     case "ADMIN":
-      return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
+      return "danger";
     case "OWNER":
-      return "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800";
+      return "secondary";
     case "MANAGER":
-      return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800";
+      return "primary";
     case "ACCOUNTANT":
-      return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800";
+      return "success";
     case "VIEWER":
-      return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/30 dark:text-gray-400 dark:border-gray-700";
+      return "secondary";
     default:
-      return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/30 dark:text-gray-400 dark:border-gray-700";
+      return "secondary";
   }
 }
 
@@ -126,7 +117,7 @@ export default function UsersClient({ company, usersWithRoles, currentUserId }: 
               {" "}Надградете до BUSINESS за до 5 потребители.
             </span>
             <Link href="/settings/subscription">
-              <Button size="sm" className="ml-4 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white">
+              <Button size="sm" className="ml-4 bg-linear-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white">
                 <Crown className="h-4 w-4 mr-2" />
                 Надградете до BUSINESS
               </Button>
@@ -173,49 +164,64 @@ export default function UsersClient({ company, usersWithRoles, currentUserId }: 
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Потребител</TableHead>
-                <TableHead>Имейл</TableHead>
-                <TableHead>Роля</TableHead>
-                <TableHead>Права</TableHead>
-                <TableHead className="text-right">Действия</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {usersWithRoles.map((userRole) => (
-                <TableRow key={userRole.id}>
-                  <TableCell>
-                    <div className="font-medium">
-                      {userRole.user.name || "Потребител без име"}
-                    </div>
-                  </TableCell>
-                  <TableCell>{userRole.user.email}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={getRoleBadgeColor(userRole.role)}
-                    >
-                      {getRoleLabel(userRole.role)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm text-muted-foreground">
-                      {getRoleDescription(userRole.role)}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <UserRoleActions
-                      userId={userRole.user.id}
-                      currentRole={userRole.role}
-                      companyId={company.id}
-                      isCurrentUser={userRole.user.id === currentUserId}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
+          <Table variant="secondary" className="rounded-2xl border border-border/50 bg-transparent">
+            <Table.ScrollContainer>
+              <Table.Content aria-label="Потребители на компанията">
+                <Table.Header className="bg-muted/35">
+                  <Table.Column isRowHeader className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Потребител
+                  </Table.Column>
+                  <Table.Column className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Имейл
+                  </Table.Column>
+                  <Table.Column className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Роля
+                  </Table.Column>
+                  <Table.Column className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Права
+                  </Table.Column>
+                  <Table.Column className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Действия
+                  </Table.Column>
+                </Table.Header>
+                <Table.Body items={usersWithRoles}>
+                  {(userRole) => (
+                    <Table.Row key={userRole.id} id={userRole.id}>
+                      <Table.Cell className="px-4 py-3">
+                        <div className="font-medium">
+                          {userRole.user.name || "Потребител без име"}
+                        </div>
+                      </Table.Cell>
+                      <Table.Cell className="px-4 py-3">
+                        {userRole.user.email}
+                      </Table.Cell>
+                      <Table.Cell className="px-4 py-3">
+                        <Chip
+                          color={getRoleChipColor(userRole.role)}
+                          variant="soft"
+                          size="sm"
+                        >
+                          {getRoleLabel(userRole.role)}
+                        </Chip>
+                      </Table.Cell>
+                      <Table.Cell className="px-4 py-3">
+                        <span className="text-sm text-muted-foreground">
+                          {getRoleDescription(userRole.role)}
+                        </span>
+                      </Table.Cell>
+                      <Table.Cell className="px-4 py-3 text-right">
+                        <UserRoleActions
+                          userId={userRole.user.id}
+                          currentRole={userRole.role}
+                          companyId={company.id}
+                          isCurrentUser={userRole.user.id === currentUserId}
+                        />
+                      </Table.Cell>
+                    </Table.Row>
+                  )}
+                </Table.Body>
+              </Table.Content>
+            </Table.ScrollContainer>
           </Table>
         </CardContent>
       </Card>

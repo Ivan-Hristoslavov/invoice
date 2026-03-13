@@ -134,7 +134,7 @@ export function CancellationSurvey({
               <Button
                 onClick={handleSubmitSurvey}
                 disabled={isLoading || !reason}
-                className="w-full sm:w-auto rounded-full bg-gradient-to-r from-rose-500 to-red-600 text-white hover:from-rose-600 hover:to-red-700 shadow-lg shadow-red-600/20"
+                className="w-full sm:w-auto rounded-full bg-linear-to-r from-rose-500 to-red-600 text-white hover:from-rose-600 hover:to-red-700 shadow-lg shadow-red-600/20"
               >
                 {isLoading ? 'Обработка...' : 'Потвърди отказване'}
               </Button>

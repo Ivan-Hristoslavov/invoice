@@ -178,7 +178,7 @@ export default function VideoTutorialsPage() {
           <input
             type="text"
             placeholder="Търсене на видео урок..."
-            className="w-full sm:w-1/2 px-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full sm:w-1/2 px-4 py-2 border border-input rounded-md focus:outline-hidden focus:ring-2 focus:ring-primary"
           />
           <div className="flex gap-2">
             <Button variant="outline" size="sm">

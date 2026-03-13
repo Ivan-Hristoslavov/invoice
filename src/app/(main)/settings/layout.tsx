@@ -18,7 +18,7 @@ export default async function SettingsLayout({ children }: SettingsLayoutProps) 
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-10rem)] overflow-hidden">
       {/* Fixed width sidebar navigation - non-scrolling */}
-      <aside className="w-full lg:w-64 flex-shrink-0 lg:overflow-y-auto">
+      <aside className="w-full lg:w-72 flex-shrink-0 lg:overflow-y-auto">
         <SettingsNav />
       </aside>
       

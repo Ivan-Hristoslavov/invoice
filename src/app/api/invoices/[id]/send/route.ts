@@ -20,7 +20,6 @@ export async function POST(
       );
     }
     
-    // Check subscription limits - изпращане по имейл
     const emailLimitCheck = await checkSubscriptionLimits(
       session.user.id as string,
       'emailSending'
@@ -38,7 +37,6 @@ export async function POST(
 
     const supabase = createAdminClient();
     
-    // Get invoice with client details
     const { data: invoice, error: invoiceError } = await supabase
       .from("Invoice")
       .select(`
@@ -56,20 +54,6 @@ export async function POST(
       );
     }
 
-    if (!invoice) {
-      return NextResponse.json(
-        { error: "Фактурата не е намерена" },
-        { status: 404 }
-      );
-    }
-
-    if (!invoice.client.email) {
-      return NextResponse.json(
-        { error: "Липсва имейл на клиента" },
-        { status: 400 }
-      );
-    }
-
     if (!invoice.client?.email) {
       return NextResponse.json(
         { error: "Липсва имейл на клиента" },
@@ -77,7 +61,6 @@ export async function POST(
       );
     }
     
-    // Update invoice status to ISSUED when sent
     await supabase
       .from("Invoice")
       .update({ 
@@ -86,15 +69,13 @@ export async function POST(
       })
       .eq("id", id);
     
-    // Send email (без payment link - не приемаме плащания)
     await sendInvoiceEmail({
       to: invoice.client.email,
       invoiceNumber: invoice.invoiceNumber,
-      type: 'invoice_only', // Винаги само фактура, без payment link
+      type: 'invoice_only',
       userId: session.user.id,
     });
     
-    // Log audit action
     const headers = request.headers;
     await logAction({
       userId: session.user.id as string,
@@ -108,37 +89,10 @@ export async function POST(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Грешка при изпращане на фактура:', error);
+    console.error('Error sending invoice:', error);
     return NextResponse.json(
       { error: "Неуспешно изпращане на фактура" },
       { status: 500 }
     );
   }
 }
-
-export async function POST_TEST(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const { type, paymentLink } = await request.json();
-    
-    // За тестови цели използваме хардкоднати данни
-    const testData = {
-      to: 'hristoslavov.ivanov@gmail.com',
-      invoiceNumber: '2024-001',
-      type: type as 'invoice_only' | 'invoice_with_payment',
-      paymentLink: paymentLink,
-    };
-
-    const result = await sendInvoiceEmail(testData);
-
-    return NextResponse.json({ success: true, data: result });
-  } catch (error) {
-    console.error('Грешка при тестово изпращане на фактура:', error);
-    return NextResponse.json(
-      { error: 'Неуспешно изпращане на имейл за фактура' },
-      { status: 500 }
-    );
-  }
-} 

@@ -49,6 +49,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { FormDatePicker } from "@/components/ui/date-picker";
 import { toast } from "sonner";
 
 interface EditInvoiceFormProps {
@@ -66,8 +67,13 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
     invoiceNumber: "",
     issueDate: "",
     dueDate: "",
+    supplyDate: "",
     companyId: "",
     currency: "EUR",
+    placeOfIssue: "София",
+    paymentMethod: "BANK_TRANSFER",
+    isEInvoice: false,
+    isOriginal: true,
     notes: "",
     termsAndConditions: "",
     status: ""
@@ -106,11 +112,11 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
     const itemTotalWithTax = itemTotal + itemTax;
     
     return (
-      <div className="group relative bg-gradient-to-br from-card to-card/80 rounded-xl border border-border/60 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-200">
+      <div className="group relative bg-linear-to-br from-card to-card/80 rounded-xl border border-border/60 shadow-xs hover:shadow-md hover:border-primary/40 transition-all duration-200">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-2 border-b border-border/40 bg-muted/30 rounded-t-xl">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-xs font-bold text-primary-foreground shadow-sm">
+            <div className="w-7 h-7 rounded-lg bg-linear-to-br from-primary to-primary/80 flex items-center justify-center text-xs font-bold text-primary-foreground shadow-xs">
               {index + 1}
             </div>
             <span className="text-xs font-medium text-muted-foreground truncate max-w-[120px]">
@@ -130,46 +136,51 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
           )}
         </div>
         
-        {/* Content */}
-        <div className="p-4 space-y-3">
-          <Input
-            value={item.description}
-            onChange={(e) => onDescriptionChange(e.target.value)}
-            placeholder="Описание..."
-            className="h-9 text-sm font-medium border-border/60"
-          />
-          
-          <div className="grid grid-cols-3 gap-2">
-            <div className="space-y-1">
-              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">К-во</label>
+        {/* Content: description first, then quantity/price/vat */}
+        <div className="p-4 space-y-4">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-muted-foreground">Описание</label>
+            <Input
+              value={item.description}
+              onChange={(e) => onDescriptionChange(e.target.value)}
+              placeholder="Описание на артикула..."
+              className="h-10 text-sm font-medium border-border/60 w-full"
+            />
+          </div>
+          <div className="border-t border-border/50 pt-4">
+            <p className="text-xs font-medium text-muted-foreground mb-3">Количество и цена</p>
+            <div className="grid grid-cols-1 min-[375px]:grid-cols-3 gap-3">
+            <div className="space-y-1.5">
+              <label className="block text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">К-во</label>
               <NumericInput
                 value={item.quantity}
                 onChange={(e) => onQuantityChange(e.target.value)}
-                className="h-8 text-sm text-center font-medium"
+                className="h-9 sm:h-8 text-sm text-center font-medium w-full"
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Цена</label>
+            <div className="space-y-1.5">
+              <label className="block text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">Цена</label>
               <NumericInput
                 value={item.unitPrice}
                 onChange={(e) => onPriceChange(e.target.value)}
-                className="h-8 text-sm font-medium"
+                className="h-9 sm:h-8 text-sm font-medium w-full"
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">ДДС %</label>
+            <div className="space-y-1.5">
+              <label className="block text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">ДДС %</label>
               <NumericInput
                 value={item.taxRate}
                 onChange={(e) => onTaxChange(e.target.value)}
-                className="h-8 text-sm text-center font-medium"
+                className="h-9 sm:h-8 text-sm text-center font-medium w-full"
               />
             </div>
+          </div>
           </div>
         </div>
         
         {/* Footer */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-t border-border/40 bg-gradient-to-r from-primary/5 to-primary/10 rounded-b-xl">
-          <span className="text-xs text-muted-foreground">Общо</span>
+        <div className="flex items-center justify-between px-4 py-2.5 border-t border-border/40 bg-linear-to-r from-primary/5 to-primary/10 rounded-b-xl">
+          <span className="text-xs text-muted-foreground">Общо с ДДС</span>
           <span className="text-base font-bold text-primary">
             {formatPrice(itemTotalWithTax)} {invoiceData.currency}
           </span>
@@ -202,8 +213,13 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
           invoiceNumber: data.invoiceNumber,
           issueDate: new Date(data.issueDate).toISOString().substr(0, 10),
           dueDate: new Date(data.dueDate).toISOString().substr(0, 10),
+          supplyDate: data.supplyDate ? new Date(data.supplyDate).toISOString().substr(0, 10) : new Date(data.issueDate).toISOString().substr(0, 10),
           companyId: data.companyId,
-          currency: data.currency,
+          currency: data.currency || "EUR",
+          placeOfIssue: data.placeOfIssue || "София",
+          paymentMethod: data.paymentMethod || "BANK_TRANSFER",
+          isEInvoice: data.isEInvoice || false,
+          isOriginal: data.isOriginal !== false,
           notes: data.notes || "",
           termsAndConditions: data.termsAndConditions || "",
           status: data.status
@@ -419,7 +435,12 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
         companyId: invoiceData.companyId,
         issueDate: invoiceData.issueDate,
         dueDate: invoiceData.dueDate,
+        supplyDate: invoiceData.supplyDate,
         currency: invoiceData.currency,
+        placeOfIssue: invoiceData.placeOfIssue,
+        paymentMethod: invoiceData.paymentMethod,
+        isEInvoice: invoiceData.isEInvoice,
+        isOriginal: invoiceData.isOriginal,
         notes: invoiceData.notes,
         termsAndConditions: invoiceData.termsAndConditions,
         items: items.map(item => ({
@@ -499,7 +520,7 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="ghost" size="sm" asChild className="back-btn rounded-full px-3">
             <Link href={`/invoices/${invoiceId}`}>
               <ArrowLeft className="w-4 h-4 mr-1.5" />
               Назад
@@ -614,35 +635,30 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <div className="space-y-2">
-                    <Label htmlFor="invoiceNumber">Номер на фактура</Label>
+                    <Label htmlFor="invoiceNumber" className="text-sm font-medium">Номер на фактура</Label>
                     <Input 
                       id="invoiceNumber" 
                       value={invoiceData.invoiceNumber}
                       readOnly
-                      className="bg-muted"
+                      className="bg-muted h-10 sm:h-11 w-full"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="issueDate">Дата на издаване</Label>
-                    <Input 
-                      id="issueDate" 
-                      type="date" 
-                      value={invoiceData.issueDate}
-                      onChange={(e) => handleInputChange('issueDate', e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="dueDate">Краен срок</Label>
-                    <Input 
-                      id="dueDate" 
-                      type="date" 
-                      value={invoiceData.dueDate}
-                      onChange={(e) => handleInputChange('dueDate', e.target.value)}
-                    />
-                  </div>
+                  <FormDatePicker
+                    id="issueDate"
+                    label="Дата на издаване"
+                    value={invoiceData.issueDate}
+                    onChange={(val) => handleInputChange('issueDate', val)}
+                  />
+                  <FormDatePicker
+                    id="dueDate"
+                    label="Краен срок"
+                    value={invoiceData.dueDate}
+                    onChange={(val) => handleInputChange('dueDate', val)}
+                  />
                 </div>
                 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {/* Company and Client fields with proper label alignment */}
                   <div className="space-y-2">
                     <Label htmlFor="client">Клиент</Label>
                     <Input 
@@ -677,7 +693,7 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                 
                 <div className="space-y-2">
                   <Label htmlFor="currency">Валута</Label>
-                  <Select 
+                  <Select
                     value={invoiceData.currency}
                     onValueChange={(value) => handleInputChange('currency', value)}
                   >
@@ -685,7 +701,46 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                       <SelectValue placeholder="Изберете валута" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="BGN">BGN - Лев</SelectItem>
                       <SelectItem value="EUR">EUR - Евро</SelectItem>
+                      <SelectItem value="USD">USD - Долар</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <FormDatePicker
+                    id="supplyDate"
+                    label="Дата на данъчното събитие"
+                    value={invoiceData.supplyDate}
+                    onChange={(val) => handleInputChange('supplyDate', val)}
+                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="placeOfIssue" className="text-sm font-medium">Място на издаване</Label>
+                    <Input
+                      id="placeOfIssue"
+                      value={invoiceData.placeOfIssue}
+                      onChange={(e) => handleInputChange('placeOfIssue', e.target.value)}
+                      placeholder="напр. София"
+                      className="h-10 sm:h-11 w-full"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="paymentMethod">Начин на плащане</Label>
+                  <Select
+                    value={invoiceData.paymentMethod}
+                    onValueChange={(value) => handleInputChange('paymentMethod', value)}
+                  >
+                    <SelectTrigger id="paymentMethod">
+                      <SelectValue placeholder="Начин на плащане" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="BANK_TRANSFER">Банков превод</SelectItem>
+                      <SelectItem value="CASH">В брой</SelectItem>
+                      <SelectItem value="CREDIT_CARD">Кредитна/дебитна карта</SelectItem>
+                      <SelectItem value="OTHER">Друго</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -746,7 +801,7 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                     
                     {/* Totals */}
                     <div className="flex justify-end pt-4 mt-4 border-t">
-                      <div className="bg-gradient-to-br from-muted/50 to-muted/30 rounded-xl p-4 space-y-2 min-w-[200px]">
+                      <div className="bg-linear-to-br from-muted/50 to-muted/30 rounded-xl p-4 space-y-2 min-w-[200px]">
                         <div className="flex justify-between gap-6 text-sm">
                           <span className="text-muted-foreground">Междинна сума:</span>
                           <span className="font-medium">{totals.subtotal} {invoiceData.currency}</span>

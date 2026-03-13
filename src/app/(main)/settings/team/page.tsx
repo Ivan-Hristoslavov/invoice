@@ -68,7 +68,7 @@ export default async function TeamSettingsPage() {
           <div className="mt-6">
             <h3 className="text-sm font-medium mb-4">Invite a Team Member</h3>
             <div className="flex items-center gap-2">
-              <div className="flex-grow">
+              <div className="grow">
                 <Input placeholder="Email address" type="email" />
               </div>
               <Button>

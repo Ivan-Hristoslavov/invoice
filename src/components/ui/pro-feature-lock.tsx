@@ -39,7 +39,7 @@ interface ProFeatureLockProps {
 /**
  * Checks if a plan has access to features of required plan
  */
-function hasAccess(currentPlan: string | null, requiredPlan: PlanType): boolean {
+function hasAccess(currentPlan: string | null | undefined, requiredPlan: PlanType): boolean {
   const planHierarchy: Record<string, number> = {
     FREE: 0,
     PRO: 1,
@@ -55,7 +55,7 @@ function hasAccess(currentPlan: string | null, requiredPlan: PlanType): boolean 
 /**
  * Returns the plan badge color
  */
-function getPlanBadgeVariant(plan: PlanType): "default" | "secondary" | "outline" {
+function getPlanBadgeVariant(plan: PlanType): "default" | "secondary" | "outline-solid" {
   switch (plan) {
     case "BUSINESS":
       return "default";
@@ -99,7 +99,7 @@ export function ProFeatureLock({
     return (
       <div
         className={cn(
-          "rounded-lg border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 dark:border-amber-800 p-4",
+          "rounded-lg border border-amber-200 bg-linear-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 dark:border-amber-800 p-4",
           className
         )}
       >
@@ -123,7 +123,7 @@ export function ProFeatureLock({
               <Link href="/settings/subscription">
                 <Button
                   size="sm"
-                  className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+                  className="bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
                   onClick={onUpgradeClick}
                 >
                   <Sparkles className="h-4 w-4 mr-2" />
@@ -146,7 +146,7 @@ export function ProFeatureLock({
     return (
       <div className={cn("relative", className)}>
         <div className="opacity-50 pointer-events-none blur-[1px]">{children}</div>
-        <div className="absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-sm rounded-lg">
+        <div className="absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-xs rounded-lg">
           <div className="text-center p-4">
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted mb-3">
               <Lock className="h-6 w-6 text-muted-foreground" />
@@ -181,7 +181,7 @@ export function ProFeatureLock({
               )}
             >
               <Lock className="h-3.5 w-3.5" />
-              <Badge variant="outline" className="text-xs px-1.5 py-0">
+              <Badge variant="outline-solid" className="text-xs px-1.5 py-0">
                 {requiredPlan}
               </Badge>
             </span>
@@ -289,7 +289,7 @@ export function UsageCounter({
         </Badge>
       )}
       {!isAtLimit && isWarning && (
-        <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
+        <Badge variant="outline-solid" className="text-xs text-amber-600 border-amber-300">
           Почти
         </Badge>
       )}

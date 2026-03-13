@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -96,8 +96,9 @@ interface Product {
   taxRate: number;
 }
 
-export default function ProductPage({ params }: { params: { id: string } }) {
+export default function ProductPage() {
   const router = useRouter();
+  const params = useParams<{ id: string }>();
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [product, setProduct] = useState<Product | null>(null);

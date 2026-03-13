@@ -19,7 +19,7 @@ export function CardStatsMetric({
   valueSuffix,
 }: CardStatsMetricProps) {
   return (
-    <Card className="border border-border/50 shadow-sm bg-gradient-to-br from-card/60 to-card/30">
+    <Card className="border border-border/50 shadow-xs bg-linear-to-br from-card/60 to-card/30">
       <CardContent className="p-3 sm:p-4">
         <div className="flex items-center justify-between">
           <div>
@@ -35,7 +35,7 @@ export function CardStatsMetric({
               )}
             </div>
           </div>
-          <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center", `bg-gradient-to-br ${gradient}`)}>
+          <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center", `bg-linear-to-br ${gradient}`)}>
             <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
           </div>
         </div>

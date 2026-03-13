@@ -5,13 +5,13 @@ import { Building, Plus, Search, Mail, Phone, MapPin, FileText, CheckCircle2, Cr
 import { Card, CardContent } from "@/components/ui/card";
 import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
 import { Button } from "@/components/ui/button";
-import { Button as RadixButton } from "@radix-ui/themes";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { UsageCounter, LockedButton } from "@/components/ui/pro-feature-lock";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { Pagination } from "@/components/ui/pagination";
 import {
   Table,
   TableBody,
@@ -40,6 +40,10 @@ interface CompaniesClientProps {
 export default function CompaniesClient({ companies, invoiceCounts }: CompaniesClientProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 12;
+
+  useEffect(() => { setCurrentPage(1); }, [searchQuery]);
   
   // Subscription limit hook
   const { 
@@ -65,6 +69,12 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
     );
   }, [companies, searchQuery]);
 
+  const totalPages = Math.ceil(filteredCompanies.length / ITEMS_PER_PAGE);
+  const paginatedCompanies = filteredCompanies.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   // Stats
   const totalCompanies = companies.length;
   const vatRegistered = companies.filter(c => c.vatRegistered).length;
@@ -85,8 +95,8 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
                 <>Достигнахте лимита от <strong>3 компании</strong> за PRO плана. Надградете до BUSINESS за до 10 компании.</>
               )}
             </span>
-            <Link href="/settings/subscription">
-              <Button size="sm" className="ml-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
+            <Link href="/settings/subscription" className="flex items-center whitespace-nowrap">
+              <Button size="sm" className="ml-4 bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
                 <Crown className="h-4 w-4 mr-2" />
                 Надградете
               </Button>
@@ -112,20 +122,21 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
             Управлявайте вашите фирми и компании
           </p>
         </div>
-        {canCreateCompany ? (
-          <RadixButton 
+        {!isLoadingUsage && canCreateCompany && (
+          <Button 
             asChild 
             size="3" 
             variant="solid" 
             color="green"
             className="shadow-lg"
           >
-            <Link href="/companies/new">
+            <Link href="/companies/new" className="flex items-center whitespace-nowrap">
               <Plus className="mr-2 h-5 w-5" />
               Нова компания
             </Link>
-          </RadixButton>
-        ) : (
+          </Button>
+        )}
+        {!isLoadingUsage && !canCreateCompany && (
           <LockedButton requiredPlan={isFree ? "PRO" : "BUSINESS"}>
             Нова компания
           </LockedButton>
@@ -210,7 +221,7 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
               </p>
               {!searchQuery && canCreateCompany && (
                 <Button asChild>
-                  <Link href="/companies/new">
+                  <Link href="/companies/new" className="flex items-center whitespace-nowrap">
                     <Plus className="mr-2 h-4 w-4" />
                     Добави първата компания
                   </Link>
@@ -227,7 +238,7 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
       ) : viewMode === "cards" ? (
         /* Cards View */
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredCompanies.map((company) => (
+          {paginatedCompanies.map((company) => (
             <Link key={company.id} href={`/settings/company`}>
               <Card className="h-full min-h-[140px] border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group cursor-pointer">
                 <CardContent className="p-5 h-full flex flex-col items-center text-center">
@@ -285,7 +296,7 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredCompanies.map((company) => (
+              {paginatedCompanies.map((company) => (
                 <TableRow 
                   key={company.id} 
                   className="cursor-pointer hover:bg-muted/50 transition-colors"
@@ -320,7 +331,7 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
                     )}
                   </TableCell>
                   <TableCell className="text-center">
-                    <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                    <span className="inline-flex items-center justify-center min-w-8 px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
                       {invoiceCounts[company.id] || 0}
                     </span>
                   </TableCell>
@@ -329,6 +340,21 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
             </TableBody>
           </Table>
         </Card>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-sm text-muted-foreground">
+            {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredCompanies.length)} от {filteredCompanies.length} компании
+          </p>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            size="sm"
+          />
+        </div>
       )}
     </div>
   );

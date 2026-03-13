@@ -1,20 +1,18 @@
 "use client";
 
 import * as React from "react";
+import { Skeleton as HeroUISkeleton } from "@heroui/react";
 import { cn } from "@/lib/utils";
 
-interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
+interface SkeletonProps extends React.ComponentProps<typeof HeroUISkeleton> {
   shimmer?: boolean;
 }
 
 export function Skeleton({ className, shimmer = true, ...props }: SkeletonProps) {
   return (
-    <div
-      className={cn(
-        "rounded-md bg-muted",
-        shimmer && "relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent dark:before:via-white/10",
-        className
-      )}
+    <HeroUISkeleton
+      animationType={shimmer ? "shimmer" : "pulse"}
+      className={cn("rounded-md", className)}
       {...props}
     />
   );
@@ -65,13 +63,11 @@ export function SkeletonTableRow({ columns = 5 }: { columns?: number }) {
 export function SkeletonTable({ rows = 5, columns = 5 }: { rows?: number; columns?: number }) {
   return (
     <div className="rounded-lg border overflow-hidden">
-      {/* Header */}
       <div className="bg-muted/50 border-b px-4 py-3 flex gap-4">
         {Array.from({ length: columns }).map((_, i) => (
           <Skeleton key={i} className="h-4 w-20" />
         ))}
       </div>
-      {/* Rows */}
       <table className="w-full">
         <tbody>
           {Array.from({ length: rows }).map((_, i) => (
@@ -89,7 +85,6 @@ export function SkeletonAvatar({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
     md: "h-10 w-10",
     lg: "h-12 w-12",
   };
-  
   return <Skeleton className={cn("rounded-full", sizeClasses[size])} />;
 }
 
@@ -97,12 +92,9 @@ export function SkeletonText({ lines = 3, className }: { lines?: number; classNa
   return (
     <div className={cn("space-y-2", className)}>
       {Array.from({ length: lines }).map((_, i) => (
-        <Skeleton 
-          key={i} 
-          className={cn(
-            "h-4",
-            i === lines - 1 ? "w-4/5" : "w-full"
-          )} 
+        <Skeleton
+          key={i}
+          className={cn("h-4", i === lines - 1 ? "w-4/5" : "w-full")}
         />
       ))}
     </div>
@@ -115,7 +107,6 @@ export function SkeletonButton({ size = "default" }: { size?: "sm" | "default" |
     default: "h-10 w-24",
     lg: "h-12 w-32",
   };
-  
   return <Skeleton className={cn("rounded-md", sizeClasses[size])} />;
 }
 
@@ -147,7 +138,6 @@ export function SkeletonInvoiceItem() {
 export function SkeletonDashboard() {
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-2">
           <Skeleton className="h-8 w-32" />
@@ -155,15 +145,11 @@ export function SkeletonDashboard() {
         </div>
         <Skeleton className="h-10 w-32 rounded-md" />
       </div>
-      
-      {/* Stats Grid */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <SkeletonStatsCard key={i} />
         ))}
       </div>
-      
-      {/* Content Grid */}
       <div className="grid gap-6 lg:grid-cols-3">
         <SkeletonCard className="lg:col-span-1" />
         <div className="lg:col-span-2 space-y-3">

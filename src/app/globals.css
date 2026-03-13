@@ -1,6 +1,380 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "@heroui/styles";
+
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --drop-shadow-glow:
+    0 0px 20px rgba(255, 255, 255, 0.35), 0 0px 65px rgba(255, 255, 255, 0.2);
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+
+  --color-gray-100: #f7fafc;
+  --color-gray-200: #edf2f7;
+  --color-gray-300: #e2e8f0;
+  --color-gray-400: #cbd5e0;
+  --color-gray-500: #a0aec0;
+  --color-gray-600: #718096;
+  --color-gray-700: #4a5568;
+  --color-gray-800: #2d3748;
+  --color-gray-900: #1a202c;
+
+  --color-blue-100: #ebf8ff;
+  --color-blue-200: #bee3f8;
+  --color-blue-300: #90cdf4;
+  --color-blue-400: #63b3ed;
+  --color-blue-500: #4299e1;
+  --color-blue-600: #3182ce;
+  --color-blue-700: #2b6cb0;
+  --color-blue-800: #2c5289;
+  --color-blue-900: #2a4365;
+
+  --color-green-100: #f0fff4;
+  --color-green-200: #c6f6d5;
+  --color-green-300: #9ae6b4;
+  --color-green-400: #68d391;
+  --color-green-500: #48bb78;
+  --color-green-600: #38a169;
+  --color-green-700: #2f855a;
+  --color-green-800: #276749;
+  --color-green-900: #22543d;
+
+  --color-red-100: #fff5f5;
+  --color-red-200: #fed7d7;
+  --color-red-300: #feb2b2;
+  --color-red-400: #fc8181;
+  --color-red-500: #f56565;
+  --color-red-600: #e53e3e;
+  --color-red-700: #c53030;
+  --color-red-800: #9b2c2c;
+  --color-red-900: #742a2a;
+
+  --color-yellow-100: #fffff0;
+  --color-yellow-200: #fefcbf;
+  --color-yellow-300: #faf089;
+  --color-yellow-400: #f6e05e;
+  --color-yellow-500: #ecc94b;
+  --color-yellow-600: #d69e2e;
+  --color-yellow-700: #b7791f;
+  --color-yellow-800: #975a16;
+  --color-yellow-900: #7d4511;
+
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  --text-5xl: 3rem;
+  --text-6xl: 4rem;
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --animate-fade-in: fade-in 0.3s ease-in-out;
+  --animate-fade-out: fade-out 0.3s ease-in-out;
+  --animate-slide-up: slide-up 0.3s ease-in-out;
+  --animate-slide-down: slide-down 0.3s ease-in-out;
+  --animate-scale-in: scale-in 0.2s ease-in-out;
+  --animate-pulse-once: pulse 1.5s ease-in-out 1;
+  --animate-shimmer: shimmer 2s infinite;
+
+  @keyframes fade-in {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+  @keyframes fade-out {
+    0% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+  @keyframes slide-up {
+    0% {
+      transform: translateY(10px);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  @keyframes slide-down {
+    0% {
+      transform: translateY(-10px);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  @keyframes scale-in {
+    0% {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@utility glass-card {
+  /* ============================================
+     Cards & surfaces - solid backgrounds, clear borders
+     ============================================ */
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+
+  .dark & {
+    background: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+@utility dark {
+  & .glass-card {
+    background: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+@utility solid-card {
+  /* Legacy alias - same as glass-card (solid) for gradient backgrounds */
+  background: inherit !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+@utility page-title {
+  /* ============================================
+     TYPOGRAPHY SYSTEM - Responsive text sizes
+     ============================================ */
+
+  /* Page titles - largest headers */
+  @apply text-xl sm:text-2xl md:text-3xl font-bold tracking-tight;
+}
+
+@utility section-title {
+  /* Section titles - card headers, section headers */
+  @apply text-lg sm:text-xl font-semibold tracking-tight;
+}
+
+@utility subsection-title {
+  /* Subsection titles */
+  @apply text-base sm:text-lg font-medium;
+}
+
+@utility card-title {
+  /* Card titles */
+  @apply text-base sm:text-lg font-semibold;
+}
+
+@utility card-description {
+  /* Card descriptions */
+  @apply text-xs sm:text-sm text-muted-foreground;
+}
+
+@utility body-text {
+  /* Body text */
+  @apply text-sm sm:text-base;
+}
+
+@utility small-text {
+  /* Small text - labels, hints */
+  @apply text-xs sm:text-sm;
+}
+
+@utility tiny-text {
+  /* Tiny text - badges, tags */
+  @apply text-[10px] sm:text-xs;
+}
+
+/* Green–blue gradient design system – primary CTAs and highlights */
+@utility gradient-primary {
+  background: linear-gradient(135deg, hsl(160 84% 39%) 0%, hsl(174 72% 48%) 50%, hsl(187 85% 53%) 100%);
+  color: white;
+}
+@utility gradient-primary-text {
+  background: linear-gradient(135deg, hsl(160 84% 39%) 0%, hsl(174 72% 48%) 50%, hsl(187 85% 53%) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.dark .gradient-primary-text {
+  background: linear-gradient(135deg, hsl(160 84% 45%) 0%, hsl(174 72% 55%) 50%, hsl(187 85% 60%) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility btn-text {
+  /* Button text sizes */
+  @apply text-xs sm:text-sm font-medium whitespace-nowrap;
+}
+
+/* Keep all button content (text + icon) on one line */
+[data-slot="button"] {
+  white-space: nowrap;
+  display: inline-flex !important;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+
+@utility btn-text-lg {
+  @apply text-sm sm:text-base font-medium;
+}
+
+@utility form-label {
+  /* Form labels */
+  @apply text-xs sm:text-sm font-medium;
+}
+
+@utility page-header {
+  /* Page header container - responsive layout */
+  @apply flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6;
+}
+
+@utility page-header-left {
+  /* Page header left side with back button and title */
+  @apply flex items-center gap-2 flex-1 min-w-0;
+}
+
+@utility page-header-actions {
+  /* Page header actions (buttons) */
+  @apply flex flex-col sm:flex-row gap-2 w-full sm:w-auto;
+}
+
+@utility btn-responsive {
+  /* Responsive button - full width on mobile */
+  @apply w-full sm:w-auto;
+}
+
+@utility back-btn {
+  /* Back button styling – single line */
+  @apply shrink-0 h-8 sm:h-9 whitespace-nowrap;
+}
+
+@utility form-container {
+  @apply space-y-6;
+}
+
+@utility form-section {
+  @apply space-y-4;
+}
+
+@utility form-group {
+  @apply space-y-2;
+}
+
+@utility loading-overlay {
+  @apply fixed inset-0 bg-background/80 backdrop-blur-xs flex items-center justify-center z-50;
+}
+
+@utility loading-spinner {
+  @apply animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full;
+}
+
+@utility empty-state {
+  @apply flex flex-col items-center justify-center p-8 text-center bg-muted rounded-xl border-2 border-dashed border-border;
+}
+
+@utility empty-state-icon {
+  @apply text-muted-foreground mb-3 w-12 h-12;
+}
+
+@utility empty-state-text {
+  @apply text-muted-foreground mb-4;
+}
+
+@utility success-animation {
+  @apply transition-all duration-300 ease-in-out;
+}
+
+@utility mobile-container {
+  @apply px-4 sm:px-6 md:px-8;
+}
 
 @layer base {
   :root {
@@ -13,7 +387,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 221 83% 53%;
+    /* Green–blue gradient design system (emerald → teal → cyan) */
+    --primary: 166 76% 42%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -22,13 +397,13 @@
     --muted: 210 40% 96.1%;
     --muted-foreground: 215 16% 47%;
     
-    /* Transparency for theme components */
-    --card-opacity: 0.85;
-    --popover-opacity: 0.9;
-    --muted-opacity: 0.7;
+    /* Opaque surfaces for clear component boundaries */
+    --card-opacity: 1;
+    --popover-opacity: 1;
+    --muted-opacity: 1;
 
-    --accent: 221 70% 91%;
-    --accent-foreground: 221 83% 53%;
+    --accent: 174 72% 48%;
+    --accent-foreground: 210 40% 98%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
@@ -39,9 +414,9 @@
     --warning: 38 92% 50%;
     --warning-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
+    --border: 214.3 31.8% 85%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 221 83% 53%;
+    --ring: 166 76% 42%;
 
     --chart-1: 221 83% 53%;
     --chart-2: 262 83% 58%;
@@ -52,31 +427,32 @@
     --radius: 0.5rem;
   }
 
+  /* Softer dark theme – green–blue gradient system */
   .dark {
-    --background: 222 47% 8%;
-    --foreground: 210 40% 98%;
+    --background: 222 28% 12%;
+    --foreground: 210 40% 96%;
 
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
+    --card: 222 26% 15%;
+    --card-foreground: 210 40% 96%;
 
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 222 26% 15%;
+    --popover-foreground: 210 40% 96%;
 
-    --primary: 217 91% 60%;
+    --primary: 166 76% 45%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 217 19% 20%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 217 18% 22%;
+    --secondary-foreground: 210 40% 96%;
 
-    --muted: 217 19% 18%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 217 18% 20%;
+    --muted-foreground: 215 18% 62%;
     
-    /* Transparency for theme components */
-    --card-opacity: 0.8;
-    --popover-opacity: 0.85;
-    --muted-opacity: 0.6;
+    /* Opaque surfaces for clear component boundaries */
+    --card-opacity: 1;
+    --popover-opacity: 1;
+    --muted-opacity: 1;
 
-    --accent: 217 91% 60%;
+    --accent: 174 72% 52%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
@@ -88,9 +464,9 @@
     --warning: 38 92% 50%;
     --warning-foreground: 210 40% 98%;
 
-    --border: 217 19% 22%;
-    --input: 217 19% 15%;
-    --ring: 224.3 76.3% 48%;
+    --border: 217 18% 24%;
+    --input: 217 18% 18%;
+    --ring: 166 76% 45%;
 
     --chart-1: 217 91% 60%;
     --chart-2: 262 83% 65%;
@@ -134,6 +510,18 @@
     @apply text-muted-foreground/70;
   }
   
+  /* HeroUI-style invalid input (used when FormControl passes aria-invalid) */
+  [data-slot="input"][data-invalid="true"],
+  input[aria-invalid="true"],
+  textarea[aria-invalid="true"] {
+    border-color: hsl(var(--destructive)) !important;
+  }
+  [data-slot="input"][data-invalid="true"]:focus-visible,
+  input[aria-invalid="true"]:focus-visible,
+  textarea[aria-invalid="true"]:focus-visible {
+    --tw-ring-color: hsl(var(--destructive));
+  }
+
   /* Prevent flash of unstyled content */
   .no-fouc {
     visibility: hidden;
@@ -144,179 +532,69 @@
   }
 }
 
-@layer components {
-  /* ============================================
-     GLASSMORPHISM - Glass effect for components
-     ============================================ */
-  
-  .glass-card {
-    background: rgba(255, 255, 255, 0.45) !important;
-    backdrop-filter: blur(20px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  }
-  
-  .dark .glass-card {
-    background: rgba(15, 23, 42, 0.6) !important;
-    backdrop-filter: blur(20px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  }
-  
-  /* Solid card - no glass effect, for gradient backgrounds */
-  .solid-card {
-    background: inherit !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
 
-  /* ============================================
-     TYPOGRAPHY SYSTEM - Responsive text sizes
-     ============================================ */
-  
-  /* Page titles - largest headers */
-  .page-title {
-    @apply text-xl sm:text-2xl md:text-3xl font-bold tracking-tight;
-  }
-  
-  /* Section titles - card headers, section headers */
-  .section-title {
-    @apply text-lg sm:text-xl font-semibold tracking-tight;
-  }
-  
-  /* Subsection titles */
-  .subsection-title {
-    @apply text-base sm:text-lg font-medium;
-  }
-  
-  /* Card titles */
-  .card-title {
-    @apply text-base sm:text-lg font-semibold;
-  }
-  
-  /* Card descriptions */
-  .card-description {
-    @apply text-xs sm:text-sm text-muted-foreground;
-  }
-  
-  /* Body text */
-  .body-text {
-    @apply text-sm sm:text-base;
-  }
-  
-  /* Small text - labels, hints */
-  .small-text {
-    @apply text-xs sm:text-sm;
-  }
-  
-  /* Tiny text - badges, tags */
-  .tiny-text {
-    @apply text-[10px] sm:text-xs;
-  }
-  
-  /* Button text sizes */
-  .btn-text {
-    @apply text-xs sm:text-sm font-medium;
-  }
-  
-  .btn-text-lg {
-    @apply text-sm sm:text-base font-medium;
-  }
-  
-  /* Form labels */
-  .form-label {
-    @apply text-xs sm:text-sm font-medium;
-  }
-  
-  /* Page header container - responsive layout */
-  .page-header {
-    @apply flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6;
-  }
-  
-  /* Page header left side with back button and title */
-  .page-header-left {
-    @apply flex items-center gap-2 flex-1 min-w-0;
-  }
-  
-  /* Page header actions (buttons) */
-  .page-header-actions {
-    @apply flex flex-col sm:flex-row gap-2 w-full sm:w-auto;
-  }
-  
-  /* Responsive button - full width on mobile */
-  .btn-responsive {
-    @apply w-full sm:w-auto;
-  }
-  
-  /* Back button styling */
-  .back-btn {
-    @apply flex-shrink-0 h-8 sm:h-9;
-  }
-  
-  /* Make Radix Themes components slightly transparent - light theme only */
-  :root:not(.dark) [class*="rt-Card"]:not([class*="bg-gradient"]):not([class*="bg-"]),
-  :root:not(.dark) [class*="rt-Popover"],
-  :root:not(.dark) [class*="rt-DropdownMenu"],
-  :root:not(.dark) [class*="rt-Select"] {
-    background-color: hsl(var(--card) / 0.75) !important;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-  }
-  
-  /* Make muted backgrounds more transparent - light theme only */
-  :root:not(.dark) [class*="rt-Surface"][class*="surface"],
-  :root:not(.dark) [class*="rt-Box"][class*="bg-muted"] {
-    background-color: hsl(var(--muted) / 0.6) !important;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-  }
-  
-  /* Make buttons slightly transparent (except solid variants) - light theme only */
-  :root:not(.dark) [class*="rt-Button"][class*="soft"],
-  :root:not(.dark) [class*="rt-Button"][class*="surface"],
-  :root:not(.dark) [class*="rt-Button"][class*="outline"] {
-    background-color: hsl(var(--secondary) / 0.75) !important;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-  }
-  
-  .form-container {
-    @apply space-y-6;
-  }
-  
-  .form-section {
-    @apply space-y-4;
-  }
-  
-  .form-group {
-    @apply space-y-2;
-  }
-  
-  .loading-overlay {
-    @apply fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50;
-  }
-  
-  .loading-spinner {
-    @apply animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full;
-  }
-  
-  .empty-state {
-    @apply flex flex-col items-center justify-center p-8 text-center bg-muted/50 rounded-lg border border-dashed border-muted;
-  }
-  
-  .empty-state-icon {
-    @apply text-muted-foreground mb-3 w-12 h-12;
-  }
-  
-  .empty-state-text {
-    @apply text-muted-foreground mb-4;
-  }
-  
-  .success-animation {
-    @apply transition-all duration-300 ease-in-out;
-  }
-  
-  .mobile-container {
-    @apply px-4 sm:px-6 md:px-8;
-  }
+/* Skip-to-content link for keyboard navigation */
+.skip-to-content {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  z-index: 9999;
+}
+.skip-to-content:focus {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  width: auto;
+  height: auto;
+  padding: 0.75rem 1.5rem;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-radius: var(--radius);
+  font-weight: 600;
+  z-index: 9999;
+  outline: none;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+/* Toast (Sonner) - force opaque backgrounds */
+[data-sonner-toast] {
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) !important;
+  opacity: 1 !important;
+}
+[data-sonner-toast][data-type="error"] {
+  background: rgb(254 226 226) !important;
+  border-color: rgb(252 165 165) !important;
+}
+.dark [data-sonner-toast][data-type="error"] {
+  background: rgb(69 10 10) !important;
+  border-color: rgb(127 29 29) !important;
+}
+[data-sonner-toast][data-type="success"] {
+  background: linear-gradient(135deg, hsl(160 84% 96%) 0%, hsl(174 72% 95%) 100%) !important;
+  border-color: hsl(166 76% 42%) !important;
+}
+.dark [data-sonner-toast][data-type="success"] {
+  background: linear-gradient(135deg, hsl(160 84% 25%) 0%, hsl(174 72% 28%) 100%) !important;
+  border-color: hsl(166 76% 45%) !important;
+}
+[data-sonner-toast][data-type="warning"] {
+  background: rgb(255 251 235) !important;
+  border-color: rgb(253 230 138) !important;
+}
+.dark [data-sonner-toast][data-type="warning"] {
+  background: rgb(69 49 7) !important;
+  border-color: rgb(161 98 7) !important;
+}
+[data-sonner-toast][data-type="info"] {
+  background: rgb(239 246 255) !important;
+  border-color: rgb(191 219 254) !important;
+}
+.dark [data-sonner-toast][data-type="info"] {
+  background: rgb(23 37 84) !important;
+  border-color: rgb(30 64 175) !important;
 }

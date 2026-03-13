@@ -40,7 +40,7 @@ export function InvoiceForm({ defaultValues, isEditing = false }: InvoiceFormPro
         throw new Error(response.error?.message || 'Грешка при създаване на фактура');
       }
       
-      router.push(`/invoices/${response.data.id}`);
+      router.push(`/invoices/${(response.data as { id: string }).id}`);
       router.refresh();
     }
   });
@@ -56,7 +56,7 @@ export function InvoiceForm({ defaultValues, isEditing = false }: InvoiceFormPro
         <div className="grid grid-cols-2 gap-4">
           <FormField
             label="Клиент"
-            error={errors.clientId?.message}
+            error={errors.clientId?.message as string | undefined}
             required
           >
             <select {...form.register("clientId")}>
@@ -64,10 +64,10 @@ export function InvoiceForm({ defaultValues, isEditing = false }: InvoiceFormPro
               <option value="1">Тестов Клиент</option>
             </select>
           </FormField>
-          
+
           <FormField
             label="Компания"
-            error={errors.companyId?.message}
+            error={errors.companyId?.message as string | undefined}
             required
           >
             <select {...form.register("companyId")}>
@@ -76,11 +76,11 @@ export function InvoiceForm({ defaultValues, isEditing = false }: InvoiceFormPro
             </select>
           </FormField>
         </div>
-        
+
         <div className="grid grid-cols-2 gap-4">
           <FormField
             label="Дата на издаване"
-            error={errors.issueDate?.message}
+            error={errors.issueDate?.message as string | undefined}
             required
           >
             <Input
@@ -88,10 +88,10 @@ export function InvoiceForm({ defaultValues, isEditing = false }: InvoiceFormPro
               type="date"
             />
           </FormField>
-          
+
           <FormField
             label="Падеж"
-            error={errors.dueDate?.message}
+            error={errors.dueDate?.message as string | undefined}
             required
           >
             <Input

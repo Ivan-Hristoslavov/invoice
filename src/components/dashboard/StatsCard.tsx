@@ -58,7 +58,7 @@ export function StatsCard({
   return (
     <Card className="relative overflow-hidden border border-border/50 shadow-md hover:shadow-lg transition-all duration-300 group">
       {/* Animated background gradient */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${bgGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+      <div className={`absolute inset-0 bg-linear-to-br ${bgGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
       
       <CardContent className="relative p-3 sm:p-4">
         <div className="flex items-start justify-between mb-2 sm:mb-3">
@@ -77,7 +77,7 @@ export function StatsCard({
             </div>
           </div>
           <div className={`p-1.5 sm:p-2 rounded-lg ${iconBg} flex-shrink-0`}>
-            <div className={`p-1.5 sm:p-2 rounded-md bg-gradient-to-br ${gradient} shadow-sm`}>
+            <div className={`p-1.5 sm:p-2 rounded-md bg-linear-to-br ${gradient} shadow-xs`}>
               <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
             </div>
           </div>

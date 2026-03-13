@@ -41,7 +41,7 @@ export default function AboutPage() {
         {/* Header */}
         <div className="mb-12">
           <Button variant="ghost" size="sm" asChild className="mb-6">
-            <Link href="/">
+            <Link href="/" className="flex items-center whitespace-nowrap">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Назад към началната страница
             </Link>

@@ -7,7 +7,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { QuestionMarkCircledIcon } from '@radix-ui/react-icons'
+import { HelpCircle } from "lucide-react"
 import { cn } from '@/lib/utils'
 
 interface HelpTooltipProps {
@@ -50,7 +50,7 @@ export function HelpTooltip({
       <Tooltip delayDuration={300}>
         <TooltipTrigger className={cn('inline-flex items-center', className)}>
           {children || (showIcon && (
-            <QuestionMarkCircledIcon 
+            <HelpCircle 
               className={cn(
                 iconSizeClasses[iconSize],
                 'text-muted-foreground hover:text-foreground transition-colors',
@@ -62,7 +62,7 @@ export function HelpTooltip({
         <TooltipContent 
           side={side} 
           className={cn(
-            'bg-popover text-popover-foreground px-3 py-2 text-sm max-w-xs break-words',
+            'bg-popover text-popover-foreground px-3 py-2 text-sm max-w-xs wrap-break-word',
             tooltipClassName
           )}
         >

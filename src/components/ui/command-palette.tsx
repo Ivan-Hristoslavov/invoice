@@ -24,8 +24,8 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { cn } from "@/lib/utils";
+import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 
 interface CommandItem {
   id: string;
@@ -48,8 +48,64 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const [search, setSearch] = React.useState("");
   const [selectedIndex, setSelectedIndex] = React.useState(0);
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const {
+    isLoadingUsage,
+    canCreateInvoice,
+    canCreateCompany,
+    canCreateClient,
+    canCreateProduct,
+  } = useSubscriptionLimit();
 
-  const commands: CommandItem[] = React.useMemo(() => [
+  const commands: CommandItem[] = React.useMemo(() => {
+    const createCommands: CommandItem[] = [];
+    if (!isLoadingUsage) {
+      if (canCreateInvoice) {
+        createCommands.push({
+          id: "new-invoice",
+          title: "Нова фактура",
+          description: "Създай нова фактура",
+          icon: Plus,
+          action: () => router.push("/invoices/new"),
+          keywords: ["new", "create", "invoice", "нова", "създай", "фактура"],
+          category: "create",
+        });
+      }
+      if (canCreateClient) {
+        createCommands.push({
+          id: "new-client",
+          title: "Нов клиент",
+          description: "Добави нов клиент",
+          icon: Plus,
+          action: () => router.push("/clients/new"),
+          keywords: ["new", "create", "client", "нов", "добави", "клиент"],
+          category: "create",
+        });
+      }
+      if (canCreateCompany) {
+        createCommands.push({
+          id: "new-company",
+          title: "Нова компания",
+          description: "Добави нова компания",
+          icon: Plus,
+          action: () => router.push("/companies/new"),
+          keywords: ["new", "create", "company", "нова", "добави", "компания"],
+          category: "create",
+        });
+      }
+      if (canCreateProduct) {
+        createCommands.push({
+          id: "new-product",
+          title: "Нов продукт",
+          description: "Добави нов продукт",
+          icon: Plus,
+          action: () => router.push("/products/new"),
+          keywords: ["new", "create", "product", "нов", "добави", "продукт"],
+          category: "create",
+        });
+      }
+    }
+
+    return [
     // Navigation
     {
       id: "dashboard",
@@ -96,43 +152,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       keywords: ["products", "продукти", "услуги"],
       category: "navigation",
     },
-    // Create
-    {
-      id: "new-invoice",
-      title: "Нова фактура",
-      description: "Създай нова фактура",
-      icon: Plus,
-      action: () => router.push("/invoices/new"),
-      keywords: ["new", "create", "invoice", "нова", "създай", "фактура"],
-      category: "create",
-    },
-    {
-      id: "new-client",
-      title: "Нов клиент",
-      description: "Добави нов клиент",
-      icon: Plus,
-      action: () => router.push("/clients/new"),
-      keywords: ["new", "create", "client", "нов", "добави", "клиент"],
-      category: "create",
-    },
-    {
-      id: "new-company",
-      title: "Нова компания",
-      description: "Добави нова компания",
-      icon: Plus,
-      action: () => router.push("/companies/new"),
-      keywords: ["new", "create", "company", "нова", "добави", "компания"],
-      category: "create",
-    },
-    {
-      id: "new-product",
-      title: "Нов продукт",
-      description: "Добави нов продукт",
-      icon: Plus,
-      action: () => router.push("/products/new"),
-      keywords: ["new", "create", "product", "нов", "добави", "продукт"],
-      category: "create",
-    },
+    ...createCommands,
     // Settings
     {
       id: "settings",
@@ -180,7 +200,8 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       keywords: ["logout", "signout", "изход", "излез"],
       category: "actions",
     },
-  ], [router, theme, setTheme]);
+  ];
+  }, [router, theme, setTheme, isLoadingUsage, canCreateInvoice, canCreateCompany, canCreateClient, canCreateProduct]);
 
   const filteredCommands = React.useMemo(() => {
     if (!search) return commands;
@@ -262,9 +283,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="overflow-hidden p-0 max-w-lg">
-        <VisuallyHidden>
+        <span className="sr-only">
           <DialogTitle>Команден панел</DialogTitle>
-        </VisuallyHidden>
+        </span>
         <div className="flex items-center border-b px-3" onKeyDown={handleKeyDown}>
           <Search className="h-4 w-4 shrink-0 opacity-50 mr-2" />
           <input
@@ -272,7 +293,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Търси команди..."
-            className="flex h-12 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-12 w-full rounded-md bg-transparent py-3 text-sm outline-hidden placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
           />
           <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
             ESC

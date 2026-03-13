@@ -5,7 +5,7 @@ import { Button, ButtonProps } from '@/components/ui/button';
 import { useSubscription } from '@/hooks/useSubscription';
 
 interface CheckoutButtonProps extends ButtonProps {
-  plan: 'FREE' | 'PRO' | 'BUSINESS';
+  plan: 'FREE' | 'STARTER' | 'PRO' | 'BUSINESS';
   children: React.ReactNode;
 }
 

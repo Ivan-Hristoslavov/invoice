@@ -39,43 +39,55 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get query parameters
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get("query") || "";
-    
+    const page = parseInt(searchParams.get("page") || "0");
+    const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get("pageSize") || "12")));
+
     const supabase = createAdminClient();
-    
+
     let clientQuery = supabase
       .from("Client")
-      .select("*")
+      .select("*", { count: "exact" })
       .eq("userId", session.user.id);
-    
-    const { data: allClients, error } = await clientQuery;
-    
+
+    // Server-side search via ilike (faster than JS filtering)
+    if (query) {
+      clientQuery = clientQuery.or(
+        `name.ilike.%${query}%,email.ilike.%${query}%,city.ilike.%${query}%,country.ilike.%${query}%`
+      );
+    }
+
+    clientQuery = clientQuery.order("name", { ascending: true });
+
+    // Apply pagination only when page param is provided
+    if (page > 0) {
+      const skip = (page - 1) * pageSize;
+      clientQuery = clientQuery.range(skip, skip + pageSize - 1);
+    }
+
+    const { data: clients, count, error } = await clientQuery;
+
     if (error) {
       throw error;
     }
-    
-    let clients = allClients || [];
-    
-    // Filter by query if provided
-    if (query) {
-      const queryLower = query.toLowerCase();
-      clients = clients.filter((client: any) => 
-        client.name?.toLowerCase().includes(queryLower) ||
-        client.email?.toLowerCase().includes(queryLower) ||
-        client.city?.toLowerCase().includes(queryLower) ||
-        client.country?.toLowerCase().includes(queryLower)
-      );
+
+    // Return paginated response when page was requested
+    if (page > 0) {
+      return NextResponse.json({
+        data: clients || [],
+        meta: {
+          page,
+          pageSize,
+          totalItems: count || 0,
+          totalPages: Math.ceil((count || 0) / pageSize),
+        },
+      });
     }
-    
-    // Sort by name
-    clients.sort((a: any, b: any) => (a.name || '').localeCompare(b.name || ''));
-    
-    return NextResponse.json(clients);
+
+    return NextResponse.json(clients || []);
   } catch (error) {
     console.error("Грешка при извличане на клиенти:", error);
-    // Return empty array instead of error to allow graceful degradation
     return NextResponse.json([]);
   }
 }

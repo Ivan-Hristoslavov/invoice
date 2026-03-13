@@ -35,7 +35,15 @@ export async function generateNextInvoiceNumber(userId: string): Promise<string>
     } else {
       // Extract the number from the last invoice number (remove leading zeros)
       const lastNumber = parseInt(lastInvoice.invoiceNumber, 10);
-      nextNumber = lastNumber + 1;
+      const calculatedNext = lastNumber + 1;
+      
+      // If user has set a starting invoice number and the calculated next is less than it,
+      // use the starting number instead (for migration scenarios)
+      if (user?.startingInvoiceNumber && calculatedNext < user.startingInvoiceNumber) {
+        nextNumber = user.startingInvoiceNumber;
+      } else {
+        nextNumber = calculatedNext;
+      }
     }
 
     return formatInvoiceNumber(nextNumber);

@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Building, Plus, Search, Users, Lock, AlertTriangle, XCircle, Crown, LayoutGrid, List } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
 import { Button } from "@/components/ui/button";
-import { Button as RadixButton } from "@radix-ui/themes";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { UsageCounter } from "@/components/ui/pro-feature-lock";
+import { Pagination } from "@/components/ui/pagination";
 import {
   Table,
   TableBody,
@@ -40,6 +40,8 @@ interface ClientsClientProps {
   isAtLimit: boolean;
 }
 
+const ITEMS_PER_PAGE = 12;
+
 export default function ClientsClient({
   clients,
   invoiceCounts,
@@ -52,6 +54,10 @@ export default function ClientsClient({
 }: ClientsClientProps) {
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Reset to first page when search changes
+  useEffect(() => { setCurrentPage(1); }, [searchQuery]);
 
   const filteredClients = clients.filter((client) => {
     const query = searchQuery.toLowerCase();
@@ -61,6 +67,12 @@ export default function ClientsClient({
       client.phone?.includes(query)
     );
   });
+
+  const totalPages = Math.ceil(filteredClients.length / ITEMS_PER_PAGE);
+  const paginatedClients = filteredClients.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   return (
     <div className="space-y-6">
@@ -98,7 +110,7 @@ export default function ClientsClient({
               {plan === 'PRO' && ' Надградете до BUSINESS за неограничени клиенти.'}
             </span>
             <Link href="/settings/subscription">
-              <Button size="sm" className="ml-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
+              <Button size="sm" className="ml-4 bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
                 <Crown className="h-4 w-4 mr-2" />
                 Надградете
               </Button>
@@ -125,31 +137,29 @@ export default function ClientsClient({
           </p>
         </div>
         {canCreateClient ? (
-          <RadixButton 
-            asChild 
-            size="3" 
-            variant="solid" 
-            color="green"
-            className="shadow-lg"
-          >
-            <Link href="/clients/new">
-              <Plus className="mr-2 h-5 w-5" />
+          <Link href="/clients/new">
+            <Button
+              size="3"
+              variant="solid"
+              color="green"
+              className="shadow-lg gap-2 whitespace-nowrap"
+            >
+              <Plus className="h-5 w-5" />
               Нов клиент
-            </Link>
-          </RadixButton>
+            </Button>
+          </Link>
         ) : (
-          <RadixButton 
-            asChild 
-            size="3" 
-            variant="soft" 
-            color="gray"
-            className="shadow-lg"
-          >
-            <Link href="/settings/subscription">
-              <Lock className="mr-2 h-4 w-4" />
+          <Link href="/settings/subscription">
+            <Button
+              size="3"
+              variant="soft"
+              color="gray"
+              className="shadow-lg gap-2 whitespace-nowrap"
+            >
+              <Lock className="h-4 w-4" />
               Надграждане за повече клиенти
-            </Link>
-          </RadixButton>
+            </Button>
+          </Link>
         )}
       </div>
 
@@ -222,12 +232,12 @@ export default function ClientsClient({
                   : "Добавете първия си клиент, за да започнете да създавате фактури"}
               </p>
               {!searchQuery && (
-                <Button asChild>
-                  <Link href="/clients/new">
-                    <Plus className="mr-2 h-4 w-4" />
+                <Link href="/clients/new">
+                  <Button className="gap-2">
+                    <Plus className="h-4 w-4" />
                     Добави първия клиент
-                  </Link>
-                </Button>
+                  </Button>
+                </Link>
               )}
             </div>
           </CardContent>
@@ -235,7 +245,7 @@ export default function ClientsClient({
       ) : viewMode === "cards" ? (
         /* Cards View */
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredClients.map((client) => (
+          {paginatedClients.map((client) => (
             <Link key={client.id} href={`/clients/${client.id}`}>
               <Card className="h-full min-h-[140px] border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group cursor-pointer">
                 <CardContent className="p-5 h-full flex flex-col items-center text-center">
@@ -282,9 +292,9 @@ export default function ClientsClient({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredClients.map((client) => (
-                <TableRow 
-                  key={client.id} 
+              {paginatedClients.map((client) => (
+                <TableRow
+                  key={client.id}
                   className="cursor-pointer hover:bg-muted/50 transition-colors"
                   onClick={() => window.location.href = `/clients/${client.id}`}
                 >
@@ -306,7 +316,7 @@ export default function ClientsClient({
                     {[client.city, client.country].filter(Boolean).join(", ") || "-"}
                   </TableCell>
                   <TableCell className="text-center">
-                    <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                    <span className="inline-flex items-center justify-center min-w-8 px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
                       {invoiceCounts[client.id] || 0}
                     </span>
                   </TableCell>
@@ -315,6 +325,21 @@ export default function ClientsClient({
             </TableBody>
           </Table>
         </Card>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-sm text-muted-foreground">
+            {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredClients.length)} от {filteredClients.length} клиента
+          </p>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            size="sm"
+          />
+        </div>
       )}
     </div>
   );

@@ -13,7 +13,7 @@ export function DocOnboarding({
   const [isActive, setIsActive] = useState(showInitially);
   
   // Стъпки за различни функционалности
-  const onboardingStepsMap = {
+  const onboardingStepsMap: Record<string, OnboardingStep[]> = {
     invoices: [
       {
         id: 'invoice-intro',

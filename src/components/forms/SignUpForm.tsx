@@ -24,7 +24,7 @@ export default function SignUpForm() {
             <input
               type="email"
               id="email"
-              className="w-full rounded-lg bg-gray-800 text-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-600"
+              className="w-full rounded-lg bg-gray-800 text-white px-4 py-2 focus:outline-hidden focus:ring-2 focus:ring-gray-600"
             />
           </div>
         </div>
@@ -36,7 +36,7 @@ export default function SignUpForm() {
             <input
               type="password"
               id="password"
-              className="w-full rounded-lg bg-gray-800 text-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-600"
+              className="w-full rounded-lg bg-gray-800 text-white px-4 py-2 focus:outline-hidden focus:ring-2 focus:ring-gray-600"
             />
           </div>
         </div>
@@ -48,7 +48,7 @@ export default function SignUpForm() {
             <input
               type="password"
               id="password"
-              className="w-full rounded-lg bg-gray-800 text-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-600"
+              className="w-full rounded-lg bg-gray-800 text-white px-4 py-2 focus:outline-hidden focus:ring-2 focus:ring-gray-600"
             />
           </div>
         </div>

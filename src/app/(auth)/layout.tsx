@@ -30,9 +30,9 @@ export default function AuthLayout({
   return (
     <div className="flex min-h-screen">
       {/* Left side - Animated illustration */}
-      <div className="hidden lg:flex relative w-1/2 overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="hidden lg:flex relative w-1/2 overflow-hidden bg-linear-to-br from-slate-900 via-slate-800 to-slate-900">
         {/* Subtle Grid Pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:48px_48px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-size-[48px_48px]" />
         
         {/* Subtle Glow Effects */}
         <motion.div 
@@ -64,7 +64,7 @@ export default function AuthLayout({
           >
             <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity duration-300">
               <motion.div 
-                className="h-10 w-10 rounded-xl bg-emerald-500/20 backdrop-blur flex items-center justify-center"
+                className="h-10 w-10 rounded-xl bg-emerald-500/20 backdrop-blur-sm flex items-center justify-center"
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 transition={{ duration: 0.2 }}
               >
@@ -113,7 +113,7 @@ export default function AuthLayout({
                   whileHover={{ x: 5 }}
                 >
                   <motion.div 
-                    className="h-10 w-10 rounded-lg bg-slate-700/50 flex items-center justify-center flex-shrink-0"
+                    className="h-10 w-10 rounded-lg bg-slate-700/50 flex items-center justify-center shrink-0"
                     whileHover={{ scale: 1.1, rotate: 5 }}
                     transition={{ duration: 0.2 }}
                   >
@@ -164,7 +164,7 @@ export default function AuthLayout({
           }}
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
         >
-          <div className="w-14 h-14 rounded-xl bg-slate-700/30 backdrop-blur flex items-center justify-center">
+          <div className="w-14 h-14 rounded-xl bg-slate-700/30 backdrop-blur-sm flex items-center justify-center">
             <CheckCircle2 className="h-7 w-7 text-emerald-400/60" />
           </div>
         </motion.div>
@@ -178,7 +178,7 @@ export default function AuthLayout({
           }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
         >
-          <div className="w-12 h-12 rounded-lg bg-slate-700/30 backdrop-blur flex items-center justify-center">
+          <div className="w-12 h-12 rounded-lg bg-slate-700/30 backdrop-blur-sm flex items-center justify-center">
             <Zap className="h-6 w-6 text-amber-400/60" />
           </div>
         </motion.div>
@@ -189,7 +189,7 @@ export default function AuthLayout({
         {/* Animated Background - Glassmorphism style */}
         <div className="absolute inset-0">
           {/* Base gradient */}
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-100 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" />
+          <div className="absolute inset-0 bg-linear-to-br from-slate-100 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" />
           
           {/* Vibrant animated blobs */}
           <motion.div 
@@ -232,62 +232,49 @@ export default function AuthLayout({
           />
         </div>
 
-        {/* Form Container */}
-        <div className="relative z-10 flex items-center justify-center min-h-screen p-6 sm:p-8 lg:p-12">
-          <div className="w-full max-w-lg">
-            {/* Back Button - Top Left */}
+        {/* Form Container – single screen, no scroll */}
+        <div className="relative z-10 flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8 overflow-auto">
+          <div className="w-full max-w-md flex flex-col items-center justify-center py-4">
+            {/* Back + Mobile Logo row */}
             <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="mb-8"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="flex items-center justify-between w-full mb-4"
             >
               <Button
                 variant="ghost"
                 size="sm"
                 asChild
-                className="text-muted-foreground hover:text-foreground transition-all duration-300"
+                className="text-muted-foreground hover:text-foreground text-xs sm:text-sm"
               >
-                <Link href="/">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Назад към началната страница
+                <Link href="/" className="flex items-center whitespace-nowrap">
+                  <ArrowLeft className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  Назад
                 </Link>
               </Button>
+              <Link href="/" className="flex items-center gap-2 lg:hidden">
+                <div className="h-8 w-8 rounded-lg gradient-primary flex items-center justify-center">
+                  <FileText className="h-4 w-4 text-white" />
+                </div>
+                <span className="font-bold text-lg">{APP_NAME}</span>
+              </Link>
+              <div className="w-14 sm:w-20" />
             </motion.div>
 
-            {/* Mobile Logo */}
+            {/* Form Card – compact */}
             <motion.div 
-              initial={{ opacity: 0, y: -20 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="flex justify-center mb-10 lg:hidden"
-            >
-              <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity duration-300">
-                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
-                  <FileText className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-2xl font-bold">{APP_NAME}</span>
-              </Link>
-            </motion.div>
-            
-            {/* Form Card - Glassmorphism */}
-            <motion.div 
-              initial={{ opacity: 0, y: 30, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-              className="glass-card rounded-3xl p-8 sm:p-10 shadow-2xl overflow-visible"
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="glass-card rounded-2xl p-5 sm:p-6 shadow-xl w-full"
             >
               {children}
             </motion.div>
-            
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1, duration: 0.6 }}
-              className="mt-10 text-center text-sm text-muted-foreground"
-            >
+
+            <p className="mt-4 text-center text-xs text-muted-foreground">
               {APP_COPYRIGHT}
-            </motion.div>
+            </p>
           </div>
         </div>
       </div>

@@ -1,21 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { TextArea } from "@radix-ui/themes";
+import { TextArea as HeroUITextArea } from "@heroui/react";
 
 export interface TextareaProps
-  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
+  extends React.ComponentProps<typeof HeroUITextArea> {}
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, ...props }, ref) => {
-    return (
-      <TextArea
-        ref={ref}
-        className={className}
-        {...props}
-      />
-    );
-  }
+  ({ className, ...props }, ref) => (
+    <HeroUITextArea ref={ref} className={className} {...props} />
+  )
 );
 Textarea.displayName = "Textarea";
 

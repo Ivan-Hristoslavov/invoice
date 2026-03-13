@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Trash2, AlertTriangle, X } from "lucide-react";
-import { Button } from "@radix-ui/themes";
+import { Button } from "@/components/ui/button";
 
 interface DeleteInvoiceModalProps {
   isOpen: boolean;
@@ -86,7 +86,7 @@ export function DeleteInvoiceModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in-0"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs animate-in fade-in-0"
       onClick={handleOverlayClick}
     >
       <div
@@ -97,7 +97,7 @@ export function DeleteInvoiceModal({
         <button
           onClick={onClose}
           disabled={isLoading || countdown !== 0}
-          className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100 transition-opacity focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-30"
+          className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100 transition-opacity focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-30"
           aria-label="Close"
         >
           <X className="h-4 w-4" />

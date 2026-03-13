@@ -152,7 +152,7 @@ export default function VideoDetailPage() {
             <div className="flex flex-wrap justify-between items-center">
               <div className="flex space-x-2">
                 <Button 
-                  variant={feedback === 'helpful' ? 'default' : 'outline'} 
+                  variant={feedback === 'helpful' ? 'default' : 'outline-solid'} 
                   size="sm"
                   onClick={() => setFeedback('helpful')}
                 >
@@ -160,7 +160,7 @@ export default function VideoDetailPage() {
                   Полезно
                 </Button>
                 <Button 
-                  variant={feedback === 'not-helpful' ? 'default' : 'outline'} 
+                  variant={feedback === 'not-helpful' ? 'default' : 'outline-solid'} 
                   size="sm"
                   onClick={() => setFeedback('not-helpful')}
                 >

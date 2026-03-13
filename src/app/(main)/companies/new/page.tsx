@@ -6,16 +6,19 @@ import Link from "next/link";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { 
-  ArrowLeft, 
-  ArrowRight, 
-  Check, 
-  Building2, 
-  MapPin, 
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Building2,
+  MapPin,
   Receipt,
   CreditCard,
   Mail,
-  Phone
+  Phone,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -81,23 +84,26 @@ function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { t
   );
 }
 
-// Company schema with validation
+// Company schema with validation (Bulgarian: name, address, city, Bulstat/EIK, MOL required)
 const companySchema = z.object({
   name: z.string().min(1, "Името на компанията е задължително"),
-  email: z.string().email("Моля, въведете валиден имейл").optional().or(z.literal("")),
+  email: z.preprocess(
+    (v) => (v === "" ? undefined : v),
+    z.string().email("Моля, въведете валиден имейл").optional()
+  ),
   phone: z.string().optional().or(z.literal("")),
-  address: z.string().optional().or(z.literal("")),
-  city: z.string().optional().or(z.literal("")),
+  address: z.string().min(1, "Адресът е задължителен"),
+  city: z.string().min(1, "Градът е задължителен"),
   state: z.string().optional().or(z.literal("")),
   zipCode: z.string().optional().or(z.literal("")),
   country: z.string().optional().or(z.literal("")),
   vatNumber: z.string().optional().or(z.literal("")),
   taxIdNumber: z.string().optional().or(z.literal("")),
   registrationNumber: z.string().optional().or(z.literal("")),
-  bulstatNumber: z.string().optional().or(z.literal("")),
+  bulstatNumber: z.string().min(1, "Булстат/ЕИК е задължителен"),
   vatRegistered: z.boolean().optional().default(false),
   vatRegistrationNumber: z.string().optional().or(z.literal("")),
-  mol: z.string().optional().or(z.literal("")),
+  mol: z.string().min(1, "МОЛ (материално отговорно лице) е задължително"),
   accountablePerson: z.string().optional().or(z.literal("")),
   uicType: z.enum(["BULSTAT", "EGN"]).default("BULSTAT"),
   bankName: z.string().optional().or(z.literal("")),
@@ -124,6 +130,7 @@ export default function NewCompanyPage() {
 
   const form = useForm<CompanyFormValues>({
     resolver: zodResolver(companySchema),
+    mode: "onChange",
     defaultValues: {
       name: "",
       email: "",
@@ -195,19 +202,22 @@ export default function NewCompanyPage() {
 
   const canProceed = () => {
     switch (currentStep) {
-      case 0:
-        // Step 0: Name is required, email must be valid if provided
+      case 0: {
         const nameValid = formValues.name.trim().length > 0;
         const emailValid = isValidEmail(formValues.email || "");
         return nameValid && emailValid;
-      case 1:
-        // Step 1: Address fields are optional
-        return true;
-      case 2:
-        // Step 2: Tax info is optional
-        return true;
+      }
+      case 1: {
+        const addressValid = (formValues.address ?? "").trim().length > 0;
+        const cityValid = (formValues.city ?? "").trim().length > 0;
+        return addressValid && cityValid;
+      }
+      case 2: {
+        const bulstatValid = (formValues.bulstatNumber ?? "").trim().length > 0;
+        const molValid = (formValues.mol ?? "").trim().length > 0;
+        return bulstatValid && molValid;
+      }
       case 3:
-        // Step 3: Bank info is optional
         return true;
       default:
         return true;
@@ -219,12 +229,16 @@ export default function NewCompanyPage() {
     const errors: string[] = [];
     switch (currentStep) {
       case 0:
-        if (!formValues.name.trim()) {
-          errors.push("Името на компанията е задължително");
-        }
-        if (formValues.email && !isValidEmail(formValues.email)) {
-          errors.push("Моля, въведете валиден имейл адрес");
-        }
+        if (!formValues.name.trim()) errors.push("Името на компанията е задължително");
+        if (formValues.email && !isValidEmail(formValues.email)) errors.push("Моля, въведете валиден имейл адрес");
+        break;
+      case 1:
+        if (!(formValues.address ?? "").trim()) errors.push("Адресът е задължителен");
+        if (!(formValues.city ?? "").trim()) errors.push("Градът е задължителен");
+        break;
+      case 2:
+        if (!(formValues.bulstatNumber ?? "").trim()) errors.push("Булстат/ЕИК е задължителен");
+        if (!(formValues.mol ?? "").trim()) errors.push("МОЛ (материално отговорно лице) е задължително");
         break;
     }
     return errors;
@@ -288,19 +302,74 @@ export default function NewCompanyPage() {
                       <FormField
                         control={form.control}
                         name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="flex items-center gap-2">
-                              <Mail className="h-4 w-4" />
-                              Имейл
-                            </FormLabel>
-                            <FormControl>
-                              <Input type="email" placeholder="contact@example.com" className="h-12" {...field} />
-                            </FormControl>
-                            <FormDescription>Имейл за контакт за фактури</FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
+                        render={({ field, fieldState }) => {
+                          const { invalid, isDirty } = fieldState;
+                          const isEmpty = !field.value || field.value.trim() === "";
+                          const isValidState = isDirty && !invalid && !isEmpty;
+                          const isInvalidState = isDirty && invalid;
+                          return (
+                            <FormItem>
+                              <FormLabel className="flex items-center gap-2">
+                                <Mail className="h-4 w-4" />
+                                Имейл
+                              </FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <Input
+                                    type="email"
+                                    placeholder="contact@example.com"
+                                    className={[
+                                      "h-12 pr-10 transition-all duration-200",
+                                      isValidState && "border-emerald-500 focus-visible:ring-emerald-500/20",
+                                      isInvalidState && "border-destructive focus-visible:ring-destructive/20",
+                                    ].filter(Boolean).join(" ")}
+                                    {...field}
+                                  />
+                                  <div className="absolute right-3 top-1/2 -translate-y-1/2 transition-all duration-300">
+                                    {isValidState && (
+                                      <CheckCircle2 className="h-5 w-5 text-emerald-500 animate-in fade-in zoom-in-50 duration-200" />
+                                    )}
+                                    {isInvalidState && (
+                                      <XCircle className="h-5 w-5 text-destructive animate-in fade-in zoom-in-50 duration-200" />
+                                    )}
+                                    {!isDirty && (
+                                      <Mail className="h-4 w-4 text-muted-foreground/40" />
+                                    )}
+                                  </div>
+                                </div>
+                              </FormControl>
+                              <div
+                                className="overflow-hidden transition-all duration-300"
+                                style={{
+                                  maxHeight: isInvalidState ? "3rem" : "0",
+                                  opacity: isInvalidState ? 1 : 0,
+                                }}
+                              >
+                                <div className="flex items-center gap-1.5 pt-1 text-sm text-destructive">
+                                  <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                                  <FormMessage />
+                                </div>
+                              </div>
+                              <div
+                                className="overflow-hidden transition-all duration-300"
+                                style={{
+                                  maxHeight: isValidState ? "2rem" : "0",
+                                  opacity: isValidState ? 1 : 0,
+                                }}
+                              >
+                                <p className="flex items-center gap-1.5 pt-1 text-xs text-emerald-600 dark:text-emerald-400">
+                                  <CheckCircle2 className="h-3 w-3" />
+                                  Имейлът изглежда правилен
+                                </p>
+                              </div>
+                              {!isDirty && (
+                                <p className="text-xs text-muted-foreground">
+                                  Имейл за контакт за фактури
+                                </p>
+                              )}
+                            </FormItem>
+                          );
+                        }}
                       />
 
                       <FormField
@@ -340,7 +409,7 @@ export default function NewCompanyPage() {
                       name="address"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Адрес</FormLabel>
+                          <FormLabel>Адрес *</FormLabel>
                           <FormControl>
                             <Input placeholder="ул. Бизнес 123" className="h-12" {...field} />
                           </FormControl>
@@ -355,7 +424,7 @@ export default function NewCompanyPage() {
                         name="city"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Град</FormLabel>
+                            <FormLabel>Град *</FormLabel>
                             <FormControl>
                               <Input placeholder="София" className="h-12" {...field} />
                             </FormControl>
@@ -387,7 +456,13 @@ export default function NewCompanyPage() {
                           <FormItem>
                             <FormLabel>Пощенски код</FormLabel>
                             <FormControl>
-                              <Input placeholder="1000" className="h-12" {...field} />
+                              <Input
+                                placeholder="1000"
+                                inputMode="numeric"
+                                className="h-12"
+                                {...field}
+                                onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ""))}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -429,7 +504,7 @@ export default function NewCompanyPage() {
                         name="bulstatNumber"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>БУЛСТАТ/ЕИК</FormLabel>
+                            <FormLabel>БУЛСТАТ/ЕИК *</FormLabel>
                             <FormControl>
                               <Input placeholder="123456789" className="h-12" {...field} />
                             </FormControl>
@@ -506,7 +581,7 @@ export default function NewCompanyPage() {
                         name="mol"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>МОЛ (Представляващ)</FormLabel>
+                            <FormLabel>МОЛ (Представляващ) *</FormLabel>
                             <FormControl>
                               <Input placeholder="Име на представляващия" className="h-12" {...field} />
                             </FormControl>
@@ -732,11 +807,11 @@ export default function NewCompanyPage() {
           <div className="flex flex-col gap-4 pt-6 border-t">
             {/* Validation errors */}
             {stepErrors.length > 0 && (
-              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
-                <ul className="text-sm text-destructive space-y-1">
+              <div className="rounded-lg border-2 border-red-300 bg-red-100 p-3 shadow-md dark:border-red-500 dark:bg-white/90 dark:backdrop-blur-xl dark:shadow-lg">
+                <ul className="text-sm font-medium text-red-800 space-y-1 dark:text-red-700">
                   {stepErrors.map((error, index) => (
                     <li key={index} className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                      <span className="w-1.5 h-1.5 shrink-0 rounded-full bg-red-500 dark:bg-red-600" />
                       {error}
                     </li>
                   ))}
@@ -771,7 +846,7 @@ export default function NewCompanyPage() {
                   <Button
                     type="submit"
                     disabled={isLoading || !confirmed}
-                    className="gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 disabled:opacity-50"
+                    className="gap-2 gradient-primary hover:opacity-90 disabled:opacity-50 border-0"
                   >
                     {isLoading ? (
                       <>

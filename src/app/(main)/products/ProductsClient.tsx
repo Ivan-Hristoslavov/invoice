@@ -1,16 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Plus, Search, Lock, AlertTriangle, XCircle, Crown, LayoutGrid, List, Euro, Percent, Package } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
 import { Button } from "@/components/ui/button";
-import { Button as RadixButton } from "@radix-ui/themes";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { UsageCounter } from "@/components/ui/pro-feature-lock";
+import { Pagination } from "@/components/ui/pagination";
 import {
   Table,
   TableBody,
@@ -50,6 +50,9 @@ export default function ProductsClient({
 }: ProductsClientProps) {
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => { setCurrentPage(1); }, [searchQuery]);
 
   const filteredProducts = products.filter((product) => {
     const query = searchQuery.toLowerCase();
@@ -58,6 +61,13 @@ export default function ProductsClient({
       product.description?.toLowerCase().includes(query)
     );
   });
+
+  const ITEMS_PER_PAGE = 12;
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   // Calculate stats
   const totalProducts = products.length;
@@ -81,7 +91,7 @@ export default function ProductsClient({
               )}
               {' '}Надградете за повече продукти.
             </span>
-            <Link href="/settings/subscription">
+            <Link href="/settings/subscription" className="flex items-center whitespace-nowrap">
               <Button size="sm" variant="outline" className="ml-4 border-amber-300 text-amber-700 hover:bg-amber-100">
                 <Crown className="h-4 w-4 mr-2" />
                 Надградете
@@ -101,8 +111,8 @@ export default function ProductsClient({
               {plan === 'STARTER' && ' Надградете до PRO за до 200 продукта или до BUSINESS за неограничени.'}
               {plan === 'PRO' && ' Надградете до BUSINESS за неограничени продукти.'}
             </span>
-            <Link href="/settings/subscription">
-              <Button size="sm" className="ml-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
+            <Link href="/settings/subscription" className="flex items-center whitespace-nowrap">
+              <Button size="sm" className="ml-4 bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
                 <Crown className="h-4 w-4 mr-2" />
                 Надградете
               </Button>
@@ -129,31 +139,31 @@ export default function ProductsClient({
           </p>
         </div>
         {canCreateProduct ? (
-          <RadixButton 
+          <Button 
             asChild 
             size="3" 
             variant="solid" 
             color="green"
             className="shadow-lg"
           >
-            <Link href="/products/new">
+            <Link href="/products/new" className="flex items-center whitespace-nowrap">
               <Plus className="mr-2 h-5 w-5" />
               Нов продукт
             </Link>
-          </RadixButton>
+          </Button>
         ) : (
-          <RadixButton 
+          <Button 
             asChild 
             size="3" 
             variant="soft" 
             color="gray"
             className="shadow-lg"
           >
-            <Link href="/settings/subscription">
+            <Link href="/settings/subscription" className="flex items-center whitespace-nowrap">
               <Lock className="mr-2 h-4 w-4" />
               Надграждане за повече продукти
             </Link>
-          </RadixButton>
+          </Button>
         )}
       </div>
 
@@ -234,7 +244,7 @@ export default function ProductsClient({
               </p>
               {!searchQuery && (
                 <Button asChild>
-                  <Link href="/products/new">
+                  <Link href="/products/new" className="flex items-center whitespace-nowrap">
                     <Plus className="mr-2 h-4 w-4" />
                     Добави първия продукт
                   </Link>
@@ -246,7 +256,7 @@ export default function ProductsClient({
       ) : viewMode === "cards" ? (
         /* Cards View */
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredProducts.map((product) => (
+          {paginatedProducts.map((product) => (
             <Link key={product.id} href={`/products/${product.id}`}>
               <Card className="h-full min-h-[120px] border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group cursor-pointer">
                 <CardContent className="p-5 h-full flex flex-col items-center text-center">
@@ -293,7 +303,7 @@ export default function ProductsClient({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProducts.map((product) => (
+              {paginatedProducts.map((product) => (
                 <TableRow 
                   key={product.id} 
                   className="cursor-pointer hover:bg-muted/50 transition-colors"
@@ -325,6 +335,21 @@ export default function ProductsClient({
             </TableBody>
           </Table>
         </Card>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-sm text-muted-foreground">
+            {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)} от {filteredProducts.length} продукта
+          </p>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            size="sm"
+          />
+        </div>
       )}
     </div>
   );

@@ -12,7 +12,7 @@ export default function InvoiceGuidePage() {
       <div className="max-w-4xl mx-auto">
         <div className="mb-6 flex items-center">
           <Button variant="ghost" size="sm" asChild className="mr-2">
-            <Link href="/docs/guides">
+            <Link href="/docs/guides" className="flex items-center whitespace-nowrap">
               <ArrowLeftIcon className="mr-2 h-4 w-4" />
               Всички ръководства
             </Link>
@@ -148,7 +148,7 @@ export default function InvoiceGuidePage() {
                   </li>
                   <li>
                     <strong>Автоматични напомняния</strong> - Системата може да изпраща автоматични 
-                    напомняния за просрочени фактури (настройва се от Настройки > Фактуриране).
+                    напомняния за просрочени фактури (настройва се от Настройки {'>'} Фактуриране).
                   </li>
                   <li>
                     <strong>Отчети за плащания</strong> - Генерирайте отчети за платени, частично 
@@ -169,7 +169,7 @@ export default function InvoiceGuidePage() {
             
             <ol className="list-decimal pl-6 space-y-2">
               <li>
-                Отидете на "Фактури" > "Повтарящи се фактури" > "Нова повтаряща се фактура"
+                Отидете на "Фактури" {'>'} "Повтарящи се фактури" {'>'} "Нова повтаряща се фактура"
               </li>
               <li>
                 Изберете клиент и попълнете данните за фактурата както обикновено

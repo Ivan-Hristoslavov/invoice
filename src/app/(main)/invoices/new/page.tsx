@@ -53,7 +53,10 @@ import {
   AlertCircle,
   Crown,
   Lock,
-  AlertTriangle
+  AlertTriangle,
+  Banknote,
+  Coins,
+  MoreHorizontal
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -81,6 +84,7 @@ import { DEFAULT_VAT_RATE } from "@/config/constants";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { UsageCounter } from "@/components/ui/pro-feature-lock";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { FormDatePicker } from "@/components/ui/date-picker";
 
 // Step indicator component
 function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { title: string; icon: React.ReactNode }[] }) {
@@ -133,44 +137,35 @@ function ProductCard({
   return (
     <div
       onClick={onAdd}
-      className="group relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-card to-card/50 p-5 cursor-pointer transition-all duration-300 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1"
+      className="group relative overflow-hidden rounded-lg border border-border bg-card p-3 cursor-pointer transition-all duration-200 hover:border-primary/50 hover:shadow-md hover:bg-primary/[0.02]"
     >
-      {/* Gradient overlay on hover */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      
-      <div className="relative">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-base truncate group-hover:text-primary transition-colors">
-              {product.name}
-            </h4>
-            {product.description && (
-              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                {product.description}
-              </p>
-            )}
-          </div>
-          <div className="flex-shrink-0">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 group-hover:bg-primary group-hover:scale-110 flex items-center justify-center transition-all duration-300">
-              <Plus className="h-5 w-5 text-primary group-hover:text-primary-foreground transition-colors" />
-            </div>
-          </div>
+      <div className="flex items-center gap-3">
+        {/* Add button */}
+        <div className="shrink-0 w-7 h-7 rounded-lg bg-primary/10 group-hover:bg-primary flex items-center justify-center transition-all duration-200">
+          <Plus className="h-3.5 w-3.5 text-primary group-hover:text-primary-foreground transition-colors" />
         </div>
-        
-        {/* Price and tax */}
-        <div className="flex items-end justify-between mt-4 pt-3 border-t border-border/50">
-          <div>
-            <p className="text-2xl font-bold text-foreground">
-              {formatPrice(Number(product.price))}
-              <span className="text-sm font-normal text-muted-foreground ml-1">{currency}</span>
+
+        {/* Name + description */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+            {product.name}
+          </p>
+          {product.description && (
+            <p className="text-xs text-muted-foreground truncate">
+              {product.description}
             </p>
-          </div>
-          {product.taxRate && (
-            <Badge variant="secondary" className="text-xs">
-              ДДС {Number(product.taxRate)}%
-            </Badge>
           )}
+        </div>
+
+        {/* Price + VAT badge */}
+        <div className="shrink-0 text-right">
+          <p className="text-sm font-semibold tabular-nums">
+            {formatPrice(Number(product.price))}
+            <span className="text-xs font-normal text-muted-foreground ml-0.5">{currency}</span>
+          </p>
+          {product.taxRate ? (
+            <span className="text-[10px] text-muted-foreground">ДДС {Number(product.taxRate)}%</span>
+          ) : null}
         </div>
       </div>
     </div>
@@ -264,42 +259,39 @@ function InvoiceItemCard({
   const itemTotalWithTax = itemTotal + itemTax;
   
   return (
-    <div className="group relative bg-gradient-to-br from-card to-card/80 rounded-xl border border-border/60 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-200">
-      {/* Header with number and delete */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border/40 bg-muted/30 rounded-t-xl">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-xs font-bold text-primary-foreground shadow-sm">
-            {index + 1}
-          </div>
-          <span className="text-xs font-medium text-muted-foreground">Артикул</span>
-        </div>
+    <div className="group rounded-lg border border-border bg-card overflow-hidden transition-all duration-200 hover:border-primary/40 hover:shadow-sm">
+      {/* Compact header row */}
+      <div className="flex items-center gap-2 px-3 py-2 bg-muted/40 border-b border-border/40">
+        <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-primary/15 text-primary text-[10px] font-bold shrink-0">
+          {index + 1}
+        </span>
+        <span className="text-xs text-muted-foreground flex-1">Артикул</span>
         {canRemove && (
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            className="h-7 w-7 p-0 opacity-40 group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10 transition-all rounded-lg"
+            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10 transition-all rounded"
             onClick={onRemove}
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <Trash2 className="h-3 w-3" />
           </Button>
         )}
       </div>
-      
-      {/* Content */}
-      <div className="p-4 space-y-3">
+
+      <div className="p-3 space-y-3">
         {/* Description */}
         <Input
           value={item.description}
           onChange={(e) => onUpdate("description", e.target.value)}
           placeholder="Описание на артикула..."
-          className="h-9 text-sm font-medium border-border/60 focus:border-primary"
+          className="h-9 text-sm border-border/60 focus:border-primary"
         />
-        
-        {/* Grid with inputs */}
+
+        {/* Qty / Price / VAT */}
         <div className="grid grid-cols-3 gap-2">
           <div className="space-y-1">
-            <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">К-во</label>
+            <label className="block text-[10px] font-medium text-muted-foreground uppercase tracking-wider">К-во</label>
             <NumericInput
               allowDecimal={false}
               value={item.quantity}
@@ -308,15 +300,16 @@ function InvoiceItemCard({
             />
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Цена ({currency})</label>
+            <label className="block text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Цена</label>
             <NumericInput
               value={item.unitPrice}
               onChange={(e) => onUpdate("unitPrice", parseFloat(e.target.value) || 0)}
               className="h-8 text-sm font-medium"
+              placeholder={currency}
             />
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">ДДС %</label>
+            <label className="block text-[10px] font-medium text-muted-foreground uppercase tracking-wider">ДДС %</label>
             <NumericInput
               value={item.taxRate}
               onChange={(e) => onUpdate("taxRate", parseFloat(e.target.value) || 0)}
@@ -325,11 +318,11 @@ function InvoiceItemCard({
           </div>
         </div>
       </div>
-      
-      {/* Footer with total */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-t border-border/40 bg-gradient-to-r from-primary/5 to-primary/10 rounded-b-xl">
-        <span className="text-xs text-muted-foreground">Общо с ДДС</span>
-        <span className="text-base font-bold text-primary">
+
+      {/* Total footer */}
+      <div className="flex items-center justify-between px-3 py-2 bg-primary/5 border-t border-primary/10">
+        <span className="text-[11px] text-muted-foreground">Общо с ДДС</span>
+        <span className="text-sm font-bold text-primary tabular-nums">
           {formatPrice(itemTotalWithTax)} {currency}
         </span>
       </div>
@@ -582,7 +575,12 @@ function NewInvoiceContent() {
           companyId: invoiceData.companyId,
           issueDate: invoiceData.issueDate,
           dueDate: invoiceData.dueDate,
+          supplyDate: invoiceData.supplyDate,
           currency: invoiceData.currency,
+          placeOfIssue: invoiceData.placeOfIssue,
+          paymentMethod: invoiceData.paymentMethod,
+          isEInvoice: invoiceData.isEInvoice,
+          isOriginal: invoiceData.isOriginal,
           items: validItems.map(item => ({
             description: item.description,
             quantity: Number(item.quantity),
@@ -625,8 +623,8 @@ function NewInvoiceContent() {
   };
 
   const getCurrencySymbol = (currency: string) => {
-    const symbols: Record<string, string> = { EUR: '€' };
-    return symbols[currency] || '€';
+    const symbols: Record<string, string> = { BGN: 'лв', EUR: '€', USD: '$' };
+    return symbols[currency] || currency;
   };
 
   // Render step content
@@ -698,149 +696,193 @@ function NewInvoiceContent() {
       // Step 1: Invoice Details
       case 1:
         return (
-          <div className="max-w-2xl mx-auto space-y-6">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold mb-2">Детайли на фактурата</h2>
-              <p className="text-muted-foreground">Настройте основните данни за фактурата</p>
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold mb-1">Детайли на фактурата</h2>
+              <p className="text-muted-foreground text-sm">Настройте основните данни за фактурата</p>
             </div>
-            
-            {/* Selected client summary */}
-            {selectedClient && (
-              <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold flex-shrink-0">
-                      {selectedClient.name.charAt(0).toUpperCase()}
+
+            {/* Compact invoice number summary */}
+            <Card className="border-primary/15 bg-linear-to-r from-primary/8 via-card to-card shadow-sm">
+              <CardContent className="p-4 sm:p-5">
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary">
+                      <Hash className="h-5 w-5" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{selectedClient.name}</p>
-                      <p className="text-sm text-muted-foreground truncate">{selectedClient.email}</p>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={() => setCurrentStep(0)} className="flex-shrink-0">
-                      <Edit className="h-4 w-4 sm:mr-2" />
-                      <span className="hidden sm:inline">Промяна</span>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            
-            {/* Invoice number */}
-            <div className="space-y-3">
-              <Label className="flex items-center gap-2 text-sm">
-                <Hash className="h-4 w-4" />
-                Номер на фактура
-              </Label>
-              <Card className="solid-card bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-0 shadow-lg">
-                <CardContent className="p-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm opacity-90 mb-1.5">Фактура №</p>
-                      <p className="text-2xl sm:text-3xl font-bold font-mono truncate">{invoiceData.invoiceNumber || '—'}</p>
-                    </div>
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <Badge variant="secondary" className="bg-white/20 text-white border-0 text-sm sm:text-base px-3 py-1.5">
-                        {invoiceData.currency}
-                      </Badge>
-                      <Badge variant="secondary" className="bg-white/10 text-white/90 border-0 text-xs px-2 py-1">
-                        Автоматичен
-                      </Badge>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        Номер на фактура
+                      </p>
+                      <p className="truncate font-mono text-xl font-semibold tracking-tight sm:text-2xl">
+                        {invoiceData.invoiceNumber || "—"}
+                      </p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-            
-            {/* Company and Currency */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
-                  Вашата фирма
-                </Label>
-                <Select
-                  value={invoiceData.companyId}
-                  onValueChange={(value) => handleInputChange('companyId', value)}
-                >
-                  <SelectTrigger className="h-12">
-                    <SelectValue placeholder="Изберете фирма" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {companies.map(company => (
-                      <SelectItem key={company.id} value={company.id}>
-                        {company.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <div className="inline-flex items-center justify-center rounded-xl border border-border/70 bg-background px-3 py-2 text-sm font-semibold shadow-xs">
+                    {invoiceData.currency}
+                  </div>
+                  <div className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                    Автоматичен №
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Main 2-column layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+              {/* Left: Date & Payment fields (3/5 on lg) */}
+              <div className="lg:col-span-3 space-y-5">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-primary" />
+                      Дати на фактурата
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <FormDatePicker
+                        label="Дата на издаване"
+                        value={invoiceData.issueDate}
+                        onChange={(val) => handleInputChange('issueDate', val)}
+                      />
+                      <FormDatePicker
+                        label="Краен срок за плащане"
+                        value={invoiceData.dueDate}
+                        onChange={(val) => handleInputChange('dueDate', val)}
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <FormDatePicker
+                        label="Дата на данъчното събитие"
+                        value={invoiceData.supplyDate}
+                        onChange={(val) => handleInputChange('supplyDate', val)}
+                      />
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Място на издаване</Label>
+                        <Input
+                          value={invoiceData.placeOfIssue}
+                          onChange={(e) => handleInputChange('placeOfIssue', e.target.value)}
+                          placeholder="напр. София"
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <CreditCard className="h-4 w-4 text-primary" />
+                      Плащане
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Начин на плащане</Label>
+                      <Select
+                        value={invoiceData.paymentMethod}
+                        onValueChange={(value) => handleInputChange('paymentMethod', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="BANK_TRANSFER">
+                            <span className="flex items-center gap-2"><Banknote className="h-4 w-4 text-blue-500" />Банков превод</span>
+                          </SelectItem>
+                          <SelectItem value="CASH">
+                            <span className="flex items-center gap-2"><Coins className="h-4 w-4 text-emerald-500" />В брой</span>
+                          </SelectItem>
+                          <SelectItem value="CREDIT_CARD">
+                            <span className="flex items-center gap-2"><CreditCard className="h-4 w-4 text-violet-500" />Кредитна/дебитна карта</span>
+                          </SelectItem>
+                          <SelectItem value="OTHER">
+                            <span className="flex items-center gap-2"><MoreHorizontal className="h-4 w-4 text-muted-foreground" />Друго</span>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  Валута
-                </Label>
-                <Select
-                  value={invoiceData.currency}
-                  onValueChange={(value) => handleInputChange('currency', value)}
-                >
-                  <SelectTrigger className="h-12">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="EUR">🇪🇺 EUR - Евро</SelectItem>
-                  </SelectContent>
-                </Select>
+
+              {/* Right: Client, Company, Currency (2/5 on lg) */}
+              <div className="lg:col-span-2 space-y-5">
+                {/* Client summary */}
+                {selectedClient && (
+                  <Card className="bg-linear-to-br from-primary/5 to-primary/10 border-primary/20">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <User className="h-4 w-4 text-primary" />
+                        Клиент
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold flex-shrink-0 text-sm">
+                          {selectedClient.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold truncate">{selectedClient.name}</p>
+                          {selectedClient.email && (
+                            <p className="text-xs text-muted-foreground truncate">{selectedClient.email}</p>
+                          )}
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => setCurrentStep(0)} className="flex-shrink-0 h-8 px-2">
+                          <Edit className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-primary" />
+                      Фирма и валута
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Вашата фирма</Label>
+                      <Select
+                        value={invoiceData.companyId}
+                        onValueChange={(value) => handleInputChange('companyId', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Изберете фирма" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {companies.map(company => (
+                            <SelectItem key={company.id} value={company.id}>
+                              {company.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Валута</Label>
+                      <Select
+                        value={invoiceData.currency}
+                        onValueChange={(value) => handleInputChange('currency', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="BGN">🇧🇬 BGN - Лев</SelectItem>
+                          <SelectItem value="EUR">🇪🇺 EUR - Евро</SelectItem>
+                          <SelectItem value="USD">🇺🇸 USD - Долар</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
-            </div>
-            
-            {/* Dates */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Дата на издаване
-                </Label>
-                <Input
-                  type="date"
-                  value={invoiceData.issueDate}
-                  onChange={(e) => handleInputChange('issueDate', e.target.value)}
-                  className="h-12"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  Краен срок за плащане
-                </Label>
-                <Input
-                  type="date"
-                  value={invoiceData.dueDate}
-                  onChange={(e) => handleInputChange('dueDate', e.target.value)}
-                  className="h-12"
-                />
-              </div>
-            </div>
-            
-            {/* Payment method */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <CreditCard className="h-4 w-4" />
-                Начин на плащане
-              </Label>
-              <Select
-                value={invoiceData.paymentMethod}
-                onValueChange={(value) => handleInputChange('paymentMethod', value)}
-              >
-                <SelectTrigger className="h-12">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="BANK_TRANSFER">Банков превод</SelectItem>
-                  <SelectItem value="CASH">В брой</SelectItem>
-                  <SelectItem value="CREDIT_CARD">Кредитна/дебитна карта</SelectItem>
-                  <SelectItem value="OTHER">Друго</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
         );
@@ -945,10 +987,10 @@ function NewInvoiceContent() {
       // Step 3: Review
       case 3:
         return (
-          <div className="max-w-3xl mx-auto space-y-6">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold mb-2">Преглед на фактурата</h2>
-              <p className="text-muted-foreground">Проверете данните преди създаване</p>
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold mb-1">Преглед на фактурата</h2>
+              <p className="text-muted-foreground text-sm">Проверете данните преди създаване</p>
             </div>
             
             {/* Invoice preview */}
@@ -1080,7 +1122,7 @@ function NewInvoiceContent() {
                   </div>
                   
                   {/* Totals */}
-                  <div className="bg-gradient-to-br from-muted/50 to-muted/30 rounded-xl p-6 space-y-3 border">
+                  <div className="bg-linear-to-br from-muted/50 to-muted/30 rounded-xl p-6 space-y-3 border">
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-muted-foreground font-medium">Подсума</span>
                       <span className="font-semibold">{formatPrice(totals.subtotal)} {invoiceData.currency}</span>
@@ -1108,6 +1150,44 @@ function NewInvoiceContent() {
     }
   };
 
+  // Block invoice creation until at least one company exists
+  if (!isLoadingData && companies.length === 0) {
+    return (
+      <div className="min-h-screen">
+        <div className="mb-4">
+          <Button variant="ghost" size="icon" asChild className="h-8 w-8 rounded-full">
+            <Link href="/invoices">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
+        <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-950/50">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+                <Building2 className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <CardTitle>Нужна е поне една компания</CardTitle>
+                <CardDescription className="mt-1">
+                  За да създавате фактури, първо трябва да добавите вашата фирма (компания). След това ще можете да продължите.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardFooter>
+            <Button asChild className="bg-primary hover:bg-primary/90">
+              <Link href="/companies/new">
+                <Building2 className="mr-2 h-4 w-4" />
+                Създай компания
+              </Link>
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen">
       {/* Subscription limit warning */}
@@ -1120,7 +1200,7 @@ function NewInvoiceContent() {
               Надградете до PRO за неограничени фактури.
             </span>
             <Link href="/settings/subscription">
-              <Button size="sm" className="ml-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
+              <Button size="sm" className="ml-4 bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
                 <Crown className="h-4 w-4 mr-2" />
                 Надградете до PRO
               </Button>
@@ -1147,96 +1227,100 @@ function NewInvoiceContent() {
         </Alert>
       )}
 
-      {/* Header */}
-      <div className="mb-4 sm:mb-6">
-        <div className="flex items-center gap-2 sm:gap-3 mb-2">
-          <Button variant="ghost" size="icon" asChild className="back-btn h-8 w-8 rounded-full">
-            <Link href="/invoices">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3">
-              <h1 className="page-title truncate">Нова фактура</h1>
-              {isFree && !isLoadingUsage && (
-                <UsageCounter 
-                  used={invoiceUsage.used} 
-                  limit={invoiceUsage.limit === Infinity ? 0 : invoiceUsage.limit}
-                  label="този месец"
-                />
-              )}
+      <div className="max-w-5xl mx-auto">
+        {/* Header */}
+        <div className="mb-4 sm:mb-6">
+          <div className="flex items-center gap-2 sm:gap-3 mb-2">
+            <Button variant="ghost" size="icon" asChild className="back-btn h-8 w-8 rounded-full">
+              <Link href="/invoices">
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
+            </Button>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3">
+                <h1 className="page-title truncate">Нова фактура</h1>
+                {isFree && !isLoadingUsage && (
+                  <UsageCounter 
+                    used={invoiceUsage.used} 
+                    limit={invoiceUsage.limit === Infinity ? 0 : invoiceUsage.limit}
+                    label="този месец"
+                  />
+                )}
+              </div>
+              <p className="card-description hidden sm:block">Създайте нова фактура за вашите клиенти</p>
             </div>
-            <p className="card-description hidden sm:block">Създайте нова фактура за вашите клиенти</p>
           </div>
         </div>
-      </div>
 
-      {/* Step indicator */}
-      <StepIndicator currentStep={currentStep} steps={steps} />
-
-      {/* Step content */}
-      <div className="mb-8">
-        {renderStepContent()}
-      </div>
-
-      {/* Navigation */}
-      <div className="flex items-center justify-between pt-6 border-t">
-        <Button
-          variant="outline"
-          onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-          disabled={currentStep === 0}
-          className="gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Назад
-        </Button>
-        
-        <div className="flex gap-3">
-          {currentStep < 3 ? (
-            <Button
-              onClick={() => setCurrentStep(currentStep + 1)}
-              disabled={
-                (currentStep === 0 && !selectedClient) ||
-                (currentStep === 1 && !invoiceData.companyId)
-              }
-              className="gap-2"
-            >
-              Напред
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          ) : !isLoadingUsage && !canCreateInvoice && isFree ? (
-            <Link href="/settings/subscription">
+        {/* Wizard shell */}
+        <Card className="rounded-2xl border-border/60 bg-linear-to-br from-card/80 via-card to-card/90 shadow-xl shadow-primary/5">
+          <CardHeader className="pb-4 border-b border-border/40">
+            <StepIndicator currentStep={currentStep} steps={steps} />
+          </CardHeader>
+          <CardContent className="pt-6">
+            {renderStepContent()}
+          </CardContent>
+          <CardFooter className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-6 border-t border-border/40 mt-4">
+            <div className="flex justify-start">
               <Button
-                className="gap-2 border-dashed border-amber-300 dark:border-amber-700 hover:border-amber-400"
                 variant="outline"
+                onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+                disabled={currentStep === 0}
+                className="gap-2"
               >
-                <Lock className="h-4 w-4 text-amber-500" />
-                Създай фактура
-                <span className="ml-1 text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">
-                  PRO
-                </span>
+                <ArrowLeft className="h-4 w-4" />
+                Назад
               </Button>
-            </Link>
-          ) : (
-            <Button
-              onClick={handleSubmit}
-              disabled={isLoading}
-              className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-            >
-              {isLoading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Създаване...
-                </>
+            </div>
+            
+            <div className="flex justify-end gap-3 w-full sm:w-auto">
+              {currentStep < 3 ? (
+                <Button
+                  onClick={() => setCurrentStep(currentStep + 1)}
+                  disabled={
+                    (currentStep === 0 && !selectedClient) ||
+                    (currentStep === 1 && !invoiceData.companyId)
+                  }
+                  className="gap-2"
+                >
+                  Напред
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              ) : !isLoadingUsage && !canCreateInvoice && isFree ? (
+                <Link href="/settings/subscription">
+                  <Button
+                    className="gap-2 border-dashed border-amber-300 dark:border-amber-700 hover:border-amber-400"
+                    variant="outline"
+                  >
+                    <Lock className="h-4 w-4 text-amber-500" />
+                    Създай фактура
+                    <span className="ml-1 text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">
+                      PRO
+                    </span>
+                  </Button>
+                </Link>
               ) : (
-                <>
-                  <Check className="h-4 w-4" />
-                  Създай фактура
-                </>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={isLoading}
+                  className="gap-2 bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Създаване...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4" />
+                      Създай фактура
+                    </>
+                  )}
+                </Button>
               )}
-            </Button>
-          )}
-        </div>
+            </div>
+          </CardFooter>
+        </Card>
       </div>
     </div>
   );

@@ -117,6 +117,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isChangingStatus, setIsChangingStatus] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
   const [showIssueModal, setShowIssueModal] = useState(false);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [isLoadingAuditLogs, setIsLoadingAuditLogs] = useState(false);
@@ -292,6 +293,26 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
     }
   };
 
+  const handleDuplicateInvoice = async () => {
+    setIsDuplicating(true);
+    try {
+      const response = await fetch(`/api/invoices/${invoice.id}/duplicate`, { method: "POST" });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Грешка при дублиране");
+      }
+      const data = await response.json();
+      toast.success("Фактурата е дублирана успешно", {
+        description: `Нова чернова ${data.invoiceNumber} е създадена`,
+      });
+      router.push(`/invoices/${data.id}`);
+    } catch (error: any) {
+      toast.error(error.message || "Грешка при дублиране на фактурата");
+    } finally {
+      setIsDuplicating(false);
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "DRAFT":
@@ -453,8 +474,8 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
       <div className="flex flex-col gap-4 mb-6">
         {/* Top row: Back button */}
         <div className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/invoices">
+          <Button variant="ghost" size="sm" asChild className="back-btn rounded-full px-3">
+            <Link href="/invoices" className="flex items-center whitespace-nowrap">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Назад
             </Link>
@@ -464,7 +485,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
         {/* Main row: Title, Status, Actions */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-xl font-bold">
+            <h1 className="page-title">
               Фактура #{invoice.invoiceNumber}
             </h1>
             <div
@@ -485,14 +506,14 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
             {invoice.status === "DRAFT" && (
               <>
                 <Button variant="outline" size="sm" asChild>
-                  <Link href={`/invoices/${invoice.id}/edit`}>
+                  <Link href={`/invoices/${invoice.id}/edit`} className="flex items-center whitespace-nowrap">
                     <Edit className="w-4 h-4 mr-1.5" />
                     Редактирай
                   </Link>
                 </Button>
                 <Button 
                   size="sm"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="gradient-primary hover:opacity-90 text-white border-0"
                   onClick={() => setShowIssueModal(true)}
                   disabled={isChangingStatus}
                 >
@@ -516,6 +537,15 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
           )}
             
           {/* Common actions */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDuplicateInvoice}
+            disabled={isDuplicating}
+          >
+            <Copy className="w-4 h-4 mr-1.5" />
+            {isDuplicating ? "..." : "Дублирай"}
+          </Button>
           <Button variant="outline" size="sm" onClick={handlePrintInvoice}>
             <Printer className="w-4 h-4 mr-1.5" />
             Принт
@@ -548,18 +578,18 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
               className="w-full"
             >
               <div className="px-6 pt-4">
-                <TabsList className="grid w-full grid-cols-4 mb-2">
-                  <TabsTrigger value="details" className="text-base">Детайли</TabsTrigger>
-                  <TabsTrigger value="items" className="text-base">Артикули</TabsTrigger>
-                  <TabsTrigger value="documents" className="text-base">
-                    <span className="flex items-center">
-                      <Paperclip className="mr-2 h-4 w-4" />
+                <TabsList className="grid w-full grid-cols-4 mb-2 bg-muted/40 border border-border/40 rounded-xl p-1 h-auto gap-1">
+                  <TabsTrigger value="details" className="text-sm font-medium rounded-lg data-[selected]:bg-background data-[selected]:shadow-sm data-[selected]:text-foreground text-muted-foreground py-2">Детайли</TabsTrigger>
+                  <TabsTrigger value="items" className="text-sm font-medium rounded-lg data-[selected]:bg-background data-[selected]:shadow-sm data-[selected]:text-foreground text-muted-foreground py-2">Артикули</TabsTrigger>
+                  <TabsTrigger value="documents" className="text-sm font-medium rounded-lg data-[selected]:bg-background data-[selected]:shadow-sm data-[selected]:text-foreground text-muted-foreground py-2">
+                    <span className="flex items-center gap-1.5">
+                      <Paperclip className="h-3.5 w-3.5" />
                       Документи
                     </span>
                   </TabsTrigger>
-                  <TabsTrigger value="history" className="text-base">
-                    <span className="flex items-center">
-                      <History className="mr-2 h-4 w-4" />
+                  <TabsTrigger value="history" className="text-sm font-medium rounded-lg data-[selected]:bg-background data-[selected]:shadow-sm data-[selected]:text-foreground text-muted-foreground py-2">
+                    <span className="flex items-center gap-1.5">
+                      <History className="h-3.5 w-3.5" />
                       История
                     </span>
                   </TabsTrigger>

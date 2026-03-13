@@ -190,7 +190,7 @@ export function SubscriptionPlans() {
 
       {/* Current Subscription - Compact */}
       {subscription && subscription.plan !== 'FREE' && (
-        <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20">
+        <div className="flex items-center justify-between p-3 rounded-xl bg-linear-to-r from-primary/10 to-primary/5 border border-primary/20">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
               <CreditCard className="h-4 w-4 text-primary" />
@@ -200,7 +200,7 @@ export function SubscriptionPlans() {
                 <span className="font-medium text-sm">
                   {PLANS[subscription.plan as PlanKey]?.displayName || subscription.plan}
                 </span>
-                <Badge variant={subscription.cancelAtPeriodEnd ? "outline" : "secondary"} className="text-[10px] h-5">
+                <Badge variant={subscription.cancelAtPeriodEnd ? "outline-solid" : "secondary"} className="text-[10px] h-5">
                   {subscription.cancelAtPeriodEnd ? 'Изтича' : 'Активен'}
                 </Badge>
               </div>
@@ -233,7 +233,7 @@ export function SubscriptionPlans() {
             className={cn(
               "px-4 py-1.5 rounded-full text-sm font-medium transition-all",
               !isYearly 
-                ? "bg-background shadow-sm text-foreground" 
+                ? "bg-background shadow-xs text-foreground" 
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
@@ -244,7 +244,7 @@ export function SubscriptionPlans() {
             className={cn(
               "px-4 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-2",
               isYearly 
-                ? "bg-emerald-500 text-white shadow-sm" 
+                ? "bg-emerald-500 text-white shadow-xs" 
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
@@ -264,65 +264,74 @@ export function SubscriptionPlans() {
         {(Object.keys(PLANS) as PlanKey[]).map((planKey) => {
           const plan = PLANS[planKey];
           const isCurrent = isCurrentPlan(planKey);
-          const isPopular = plan.popular;
+          const isPopular = 'popular' in plan && (plan as { popular?: boolean }).popular;
           const price = isYearly ? plan.yearlyPrice / 12 : plan.monthlyPrice;
           const savings = getYearlySavings(plan);
           const Icon = plan.icon;
 
+          // Per-plan color themes
+          const planTheme = {
+            FREE:     { topBar: "bg-slate-200 dark:bg-slate-700", iconBg: "bg-slate-100 dark:bg-slate-800", iconText: "text-slate-500", btnClass: "border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300", checkBg: "bg-slate-100 dark:bg-slate-800", checkIcon: "text-slate-500" },
+            STARTER:  { topBar: "bg-gradient-to-r from-blue-400 to-blue-500", iconBg: "bg-blue-100 dark:bg-blue-900/50", iconText: "text-blue-500", btnClass: "bg-blue-500 hover:bg-blue-600 text-white shadow-md shadow-blue-500/20", checkBg: "bg-blue-500/10", checkIcon: "text-blue-500" },
+            PRO:      { topBar: "bg-gradient-to-r from-emerald-400 to-emerald-500", iconBg: "bg-emerald-100 dark:bg-emerald-900/50", iconText: "text-emerald-500", btnClass: "bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-500/20", checkBg: "bg-emerald-500/10", checkIcon: "text-emerald-500" },
+            BUSINESS: { topBar: "bg-gradient-to-r from-violet-400 to-violet-600", iconBg: "bg-violet-100 dark:bg-violet-900/50", iconText: "text-violet-500", btnClass: "bg-violet-500 hover:bg-violet-600 text-white shadow-md shadow-violet-500/20", checkBg: "bg-violet-500/10", checkIcon: "text-violet-500" },
+          }[planKey];
+
           return (
-            <div 
+            <div
               key={planKey}
               className={cn(
-                "relative flex flex-col rounded-2xl border bg-card p-5 transition-all duration-300",
-                isPopular && !isCurrent && "border-emerald-500/50 shadow-lg shadow-emerald-500/10 scale-[1.02]",
+                "flex flex-col rounded-2xl border bg-card overflow-hidden transition-all duration-300",
+                isPopular && !isCurrent && "border-emerald-500/60 shadow-xl shadow-emerald-500/15 scale-[1.02]",
                 isCurrent && "border-primary/50 bg-primary/5 shadow-lg shadow-primary/10",
                 !isPopular && !isCurrent && "hover:border-border/80 hover:shadow-md"
               )}
             >
-              {/* Badge */}
-              {(isPopular || isCurrent) && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <Badge className={cn(
-                    "px-3 py-1 text-xs font-medium border-0 shadow-md",
-                    isPopular && !isCurrent && "bg-emerald-500 text-white",
-                    isCurrent && "bg-primary text-primary-foreground"
-                  )}>
-                    {isCurrent ? (
-                      <><Check className="h-3 w-3 mr-1" /> Текущ план</>
-                    ) : (
-                      <><Star className="h-3 w-3 mr-1 fill-current" /> Най-популярен</>
-                    )}
-                  </Badge>
-                </div>
-              )}
+              {/* Colored top bar */}
+              <div className={cn("h-1.5 w-full", planTheme.topBar)} />
 
-              {/* Header */}
-              <div className={cn("pt-2", (isPopular || isCurrent) && "pt-4")}>
-                <div className="flex items-center gap-3 mb-4">
+              <div className="p-5 flex flex-col flex-1">
+                {/* Header row: icon + name + badge */}
+                <div className="flex items-start gap-3 mb-4">
                   <div className={cn(
-                    "h-10 w-10 rounded-xl flex items-center justify-center",
-                    planKey === 'FREE' && "bg-slate-100 dark:bg-slate-800 text-slate-500",
-                    planKey === 'STARTER' && "bg-blue-100 dark:bg-blue-900/50 text-blue-500",
-                    planKey === 'PRO' && "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-500",
-                    planKey === 'BUSINESS' && "bg-violet-100 dark:bg-violet-900/50 text-violet-500",
+                    "h-10 w-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5",
+                    planTheme.iconBg,
+                    planTheme.iconText
                   )}>
                     <Icon className="h-5 w-5" />
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-base">{plan.displayName}</h3>
-                    <p className="text-xs text-muted-foreground">{plan.description}</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-semibold text-base leading-tight">{plan.displayName}</h3>
+                      {isCurrent && (
+                        <Badge className="px-2 py-0 text-[10px] h-5 font-semibold border-0 bg-primary text-primary-foreground shrink-0">
+                          <Check className="h-2.5 w-2.5 mr-0.5" />Текущ
+                        </Badge>
+                      )}
+                      {isPopular && !isCurrent && (
+                        <Badge className="px-2 py-0 text-[10px] h-5 font-semibold border-0 bg-emerald-500 text-white shrink-0">
+                          <Star className="h-2.5 w-2.5 mr-0.5 fill-current" />Популярен
+                        </Badge>
+                      )}
+                      {planKey === 'BUSINESS' && !isCurrent && (
+                        <Badge className="px-2 py-0 text-[10px] h-5 font-semibold border-0 bg-violet-500 text-white shrink-0">
+                          Корпоративен
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">{plan.description}</p>
                   </div>
                 </div>
-                
+
                 {/* Price */}
                 <div className="mb-5">
                   <div className="flex items-baseline gap-1">
                     <span className="text-3xl font-bold tracking-tight">
                       {price === 0 ? '0' : price.toFixed(2)}
                     </span>
-                    <span className="text-sm text-muted-foreground">€/мес</span>
+                    <span className="text-sm text-muted-foreground font-normal">€/мес</span>
                   </div>
-                  <div className="h-5">
+                  <div className="h-5 mt-0.5">
                     {isYearly && savings > 0 ? (
                       <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
                         Спестявате {savings.toFixed(0)}€ годишно
@@ -334,66 +343,59 @@ export function SubscriptionPlans() {
                     )}
                   </div>
                 </div>
-              </div>
 
-              {/* Features */}
-              <div className="flex-1 mb-5">
-                <ul className="space-y-2.5">
-                  {plan.features.map((feature, index) => (
-                    <li 
-                      key={index} 
-                      className={cn(
-                        "flex items-center gap-2.5 text-sm",
-                        !feature.included && "text-muted-foreground/60"
-                      )}
-                    >
-                      {feature.included ? (
-                        <div className="h-5 w-5 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
-                          <Check className="h-3 w-3 text-emerald-500" />
-                        </div>
-                      ) : (
-                        <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center shrink-0">
-                          <X className="h-3 w-3 text-muted-foreground/50" />
-                        </div>
-                      )}
-                      <span>{feature.text}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+                {/* Features */}
+                <div className="flex-1 mb-5">
+                  <ul className="space-y-2.5">
+                    {plan.features.map((feature, index) => (
+                      <li
+                        key={index}
+                        className={cn(
+                          "flex items-center gap-2.5 text-sm",
+                          !feature.included && "text-muted-foreground/50"
+                        )}
+                      >
+                        {feature.included ? (
+                          <div className={cn("h-5 w-5 rounded-full flex items-center justify-center shrink-0", planTheme.checkBg)}>
+                            <Check className={cn("h-3 w-3", planTheme.checkIcon)} />
+                          </div>
+                        ) : (
+                          <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center shrink-0">
+                            <X className="h-3 w-3 text-muted-foreground/40" />
+                          </div>
+                        )}
+                        <span>{feature.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
 
-              {/* Button */}
-              <div>
+                {/* Separator */}
+                <div className="border-t border-border/50 mb-4" />
+
+                {/* Button */}
                 {isCurrent ? (
                   <Button variant="outline" className="w-full h-10" disabled>
                     <Check className="h-4 w-4 mr-2" />
                     Текущ план
                   </Button>
                 ) : planKey === 'FREE' ? (
-                  <Button variant="outline" className="w-full h-10" disabled>
+                  <Button variant="outline" className="w-full h-10 text-muted-foreground" disabled>
                     Безплатен план
                   </Button>
                 ) : subscription && subscription.plan !== 'FREE' ? (
-                  <Button 
-                    className={cn(
-                      "w-full h-10 font-medium",
-                      isPopular && "bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-500/20"
-                    )}
-                    variant={isPopular ? "default" : "outline"}
-                    onClick={() => handleEditSubscription(planKey)} 
+                  <Button
+                    className={cn("w-full h-10 font-medium border-0", planTheme.btnClass)}
+                    onClick={() => handleEditSubscription(planKey)}
                     disabled={isLoading || editingSubscription}
                   >
                     Смени плана
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 ) : (
-                  <Button 
-                    className={cn(
-                      "w-full h-10 font-medium",
-                      isPopular && "bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-500/20"
-                    )}
-                    variant={isPopular ? "default" : "outline"}
-                    onClick={() => handleSubscribe(planKey)} 
+                  <Button
+                    className={cn("w-full h-10 font-medium border-0", planTheme.btnClass)}
+                    onClick={() => handleSubscribe(planKey)}
                     disabled={isLoading}
                   >
                     Започни сега

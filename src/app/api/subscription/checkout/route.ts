@@ -1,11 +1,28 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { createCheckoutSession } from "@/services/subscription-service";
 import { getSubscriptionPlans } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabase";
+import { validateRedirectUrl } from "@/lib/redirect-url";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    // Rate limit checkout attempts per IP (prevents abuse / spam)
+    const ip = getClientIp(req.headers);
+    const { success, remaining, resetIn } = rateLimit(`checkout:${ip}`, {
+      windowMs: 60_000,
+      maxRequests: 10,
+    });
+    if (!success) {
+      return NextResponse.json(
+        {
+          error: "Твърде много опити. Моля, опитайте отново след минута.",
+        },
+        { status: 429 }
+      );
+    }
+
     // Get session
     const session = await getServerSession();
     console.log("Данни за сесията:", JSON.stringify(session));
@@ -56,7 +73,7 @@ export async function POST(req: Request) {
     }
 
     const { plan, returnUrl } = body;
-    console.log("Данни на заявката:", { plan, returnUrl });
+    // Log plan only (avoid logging full returnUrl in production)
     
     if (!plan) {
       console.log("Липсва план в заявката");
@@ -75,12 +92,10 @@ export async function POST(req: Request) {
       );
     }
 
-    console.log("Създаване на checkout сесия с:", { 
-      userId: user.id, 
-      email: session.user.email,
-      name: session.user.name,
-      plan
-    });
+    // Checkout session created for authenticated user
+
+    // Only allow redirect to our app (prevents open redirect / phishing)
+    const redirectBase = validateRedirectUrl(returnUrl);
 
     // Create checkout session using the user ID from the database
     const checkoutSession = await createCheckoutSession(
@@ -88,7 +103,7 @@ export async function POST(req: Request) {
       session.user.email,
       session.user.name || undefined,
       plan,
-      returnUrl || process.env.NEXTAUTH_URL || "http://localhost:3000"
+      redirectBase
     );
 
     // Verify we have a URL to redirect to
@@ -100,10 +115,6 @@ export async function POST(req: Request) {
       );
     }
 
-    console.log("Създадена checkout сесия:", { 
-      sessionId: checkoutSession.id, 
-      url: checkoutSession.url 
-    });
 
     // Return the URL explicitly
     return NextResponse.json({

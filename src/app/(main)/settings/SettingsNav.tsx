@@ -99,7 +99,7 @@ export function SettingsNav() {
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors",
                   isActive
-                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                    ? "bg-primary text-primary-foreground border-primary shadow-xs"
                     : "bg-card border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
                 )}
               >
@@ -112,10 +112,10 @@ export function SettingsNav() {
       </div>
 
       {/* Desktop vertical navigation - compact fixed width */}
-      <div className="hidden lg:block space-y-4">
+      <div className="hidden lg:block space-y-5">
         {navSections.map((section) => (
           <div key={section.title}>
-            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70 px-3 mb-1.5">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/60 px-3 mb-2">
               {section.title}
             </p>
             <div className="space-y-0.5">
@@ -128,9 +128,9 @@ export function SettingsNav() {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors",
+                      "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-all duration-150 relative",
                       isActive
-                        ? "bg-primary/10 text-primary font-medium"
+                        ? "bg-primary/10 text-primary font-medium pl-4 border-l-2 border-primary rounded-l-none"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                     )}
                   >

@@ -1,14 +1,15 @@
 import { Metadata } from "next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  HelpCircle, 
-  BookOpen, 
-  Video, 
-  MessageCircle, 
-  FileText, 
-  Users, 
-  Building, 
+import { HelpFaqAccordion } from "@/components/help/HelpFaqAccordion";
+import {
+  HelpCircle,
+  BookOpen,
+  Video,
+  MessageCircle,
+  FileText,
+  Users,
+  Building,
   Package,
   CreditCard,
   Settings,
@@ -149,10 +150,10 @@ export default function HelpPage() {
         </div>
 
         {/* Important Notice */}
-        <Card className="border-2 border-amber-500/30 bg-gradient-to-br from-amber-50/50 to-orange-50/30 dark:from-amber-950/20 dark:to-orange-950/10">
+        <Card className="border-2 border-amber-500/30 bg-linear-to-br from-amber-50/50 to-orange-50/30 dark:from-amber-950/20 dark:to-orange-950/10">
           <CardContent className="p-6">
             <div className="flex gap-4 items-start">
-              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center flex-shrink-0">
+              <div className="h-10 w-10 rounded-lg bg-linear-to-br from-amber-500 to-orange-500 flex items-center justify-center shrink-0">
                 <FileText className="h-5 w-5 text-white" />
               </div>
               <div>
@@ -175,7 +176,7 @@ export default function HelpPage() {
               <input
                 type="text"
                 placeholder="Търсене в документацията..."
-                className="w-full pl-10 pr-4 py-3 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full pl-10 pr-4 py-3 rounded-lg border border-input bg-background focus:outline-hidden focus:ring-2 focus:ring-ring"
               />
             </div>
           </CardContent>
@@ -189,7 +190,7 @@ export default function HelpPage() {
               <Link key={index} href={link.href}>
                 <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer h-full">
                   <CardHeader>
-                    <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${link.color} flex items-center justify-center mb-3`}>
+                    <div className={`h-12 w-12 rounded-xl bg-linear-to-br ${link.color} flex items-center justify-center mb-3`}>
                       <link.icon className="h-6 w-6 text-white" />
                     </div>
                     <CardTitle className="text-lg">{link.title}</CardTitle>
@@ -207,33 +208,17 @@ export default function HelpPage() {
           </div>
         </div>
 
-        {/* FAQ */}
+        {/* FAQ – HeroUI Accordion */}
         <div>
           <h2 className="text-2xl font-semibold mb-4">Често задавани въпроси</h2>
-          <div className="space-y-6">
-            {faqCategories.map((category, catIndex) => (
-              <Card key={catIndex} className="border-0 shadow-lg">
-                <CardHeader>
-                  <CardTitle className="text-xl">{category.title}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {category.questions.map((faq, faqIndex) => (
-                    <div key={faqIndex} className="border-b last:border-0 pb-4 last:pb-0">
-                      <h3 className="font-semibold mb-2 text-base">{faq.q}</h3>
-                      <p className="text-sm text-muted-foreground">{faq.a}</p>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <HelpFaqAccordion categories={faqCategories} />
         </div>
 
         {/* Additional Resources */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="border-0 shadow-lg">
             <CardHeader>
-              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mb-3">
+              <div className="h-10 w-10 rounded-lg bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center mb-3">
                 <BookOpen className="h-5 w-5 text-white" />
               </div>
               <CardTitle>Документация</CardTitle>
@@ -241,7 +226,7 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent>
               <Button asChild variant="outline" className="w-full">
-                <Link href="/docs">
+                <Link href="/docs" className="flex items-center whitespace-nowrap">
                   Преглед на документацията
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
@@ -251,7 +236,7 @@ export default function HelpPage() {
 
           <Card className="border-0 shadow-lg">
             <CardHeader>
-              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mb-3">
+              <div className="h-10 w-10 rounded-lg bg-linear-to-br from-purple-500 to-pink-600 flex items-center justify-center mb-3">
                 <Video className="h-5 w-5 text-white" />
               </div>
               <CardTitle>Видео уроци</CardTitle>
@@ -259,7 +244,7 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent>
               <Button asChild variant="outline" className="w-full">
-                <Link href="/docs/video-tutorials">
+                <Link href="/docs/video-tutorials" className="flex items-center whitespace-nowrap">
                   Гледайте уроците
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
@@ -269,7 +254,7 @@ export default function HelpPage() {
 
           <Card className="border-0 shadow-lg">
             <CardHeader>
-              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mb-3">
+              <div className="h-10 w-10 rounded-lg bg-linear-to-br from-emerald-500 to-teal-600 flex items-center justify-center mb-3">
                 <MessageCircle className="h-5 w-5 text-white" />
               </div>
               <CardTitle>Свържете се с нас</CardTitle>
@@ -277,7 +262,7 @@ export default function HelpPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               <Button asChild variant="outline" className="w-full">
-                <Link href="/contact">
+                <Link href="/contact" className="flex items-center whitespace-nowrap">
                   <Mail className="mr-2 h-4 w-4" />
                   Изпратете имейл
                 </Link>
@@ -290,7 +275,7 @@ export default function HelpPage() {
         </div>
 
         {/* Contact Support CTA */}
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20">
+        <Card className="border-0 shadow-lg bg-linear-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20">
           <CardContent className="p-8 text-center">
             <HelpCircle className="h-12 w-12 text-emerald-600 mx-auto mb-4" />
             <h3 className="text-2xl font-semibold mb-2">Нуждаете се от допълнителна помощ?</h3>
@@ -299,13 +284,13 @@ export default function HelpPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg">
-                <Link href="/contact">
+                <Link href="/contact" className="flex items-center whitespace-nowrap">
                   <MessageCircle className="mr-2 h-5 w-5" />
                   Свържете се с поддръжката
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline">
-                <Link href="/docs/faq">
+                <Link href="/docs/faq" className="flex items-center whitespace-nowrap">
                   <BookOpen className="mr-2 h-5 w-5" />
                   Вижте FAQ
                 </Link>

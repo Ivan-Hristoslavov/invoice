@@ -1,15 +1,9 @@
 "use client";
 
-import { Toaster as SonnerToaster } from "sonner";
+import { Toast } from "@heroui/react";
 
 export function Toaster() {
   return (
-    <SonnerToaster 
-      position="top-right" 
-      toastOptions={{
-        duration: 3000,
-        className: "border border-border",
-      }}
-    />
+    <Toast.Provider placement="top end" gap={10} maxVisibleToasts={4} width={460} />
   );
-} 
+}

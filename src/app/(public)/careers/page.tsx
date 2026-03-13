@@ -39,10 +39,10 @@ export default function CareersPage() {
         {/* Header */}
         <div className="mb-12">
           <Button variant="ghost" size="sm" asChild className="mb-6">
-            <Link href="/">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Назад към началната страница
-            </Link>
+              <Link href="/" className="flex items-center whitespace-nowrap">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Назад към началната страница
+              </Link>
           </Button>
           <h1 className="text-4xl font-bold tracking-tight mb-4">
             Кариери в {APP_NAME}
