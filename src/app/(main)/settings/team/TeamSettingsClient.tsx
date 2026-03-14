@@ -333,11 +333,24 @@ export default function TeamSettingsClient({
               </Select>
 
               {canManageInvites ? (
-                canAddUser ? (
+                isLoadingUsage ? (
+                  <Button disabled className="btn-responsive">
+                    Проверяваме плана...
+                  </Button>
+                ) : canAddUser ? (
                   <Button onClick={handleCreateInvite} disabled={isSubmitting || !email.trim()} className="btn-responsive">
                     <MailPlus className="mr-2 h-4 w-4" />
                     {isSubmitting ? "Изпращане..." : "Създай покана"}
                   </Button>
+                ) : isBusiness ? (
+                  <div className="space-y-2">
+                    <Button disabled className="btn-responsive">
+                      Достигнат е лимитът за екипа
+                    </Button>
+                    <p className="text-sm text-muted-foreground">
+                      Планът BUSINESS позволява до {userUsage.limit} потребители. Освободете място или обновете абонамента, ако лимитът е стар.
+                    </p>
+                  </div>
                 ) : (
                   <LockedButton requiredPlan="BUSINESS">Създай покана</LockedButton>
                 )

@@ -142,12 +142,20 @@ export default function UsersClient({ company, usersWithRoles, currentUserId }: 
             Управлявайте потребителите и ролите им за {company.name}
           </p>
         </div>
-        {canAddUser ? (
+        {isLoadingUsage ? (
+          <Button disabled className="w-full sm:w-auto">
+            Проверяваме плана...
+          </Button>
+        ) : canAddUser ? (
           <Button asChild className="w-full sm:w-auto">
             <Link href="/settings/users/invite">
               <UserPlus className="mr-2 h-4 w-4" />
               Покани потребител
             </Link>
+          </Button>
+        ) : isBusiness ? (
+          <Button disabled className="w-full sm:w-auto">
+            Достигнат е лимитът за екипа
           </Button>
         ) : (
           <LockedButton requiredPlan="BUSINESS">
