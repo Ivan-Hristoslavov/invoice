@@ -427,6 +427,26 @@
   @apply w-full sm:w-auto;
 }
 
+@utility app-page-shell {
+  @apply space-y-5 sm:space-y-6;
+}
+
+@utility app-page-header {
+  @apply flex flex-col gap-3 sm:gap-4;
+}
+
+@utility app-page-actions {
+  @apply flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center;
+}
+
+@utility app-surface-card {
+  @apply rounded-[28px] border border-border/60 bg-card shadow-sm;
+}
+
+@utility app-form-control {
+  @apply min-h-11 rounded-2xl px-4 text-sm sm:min-h-12;
+}
+
 @utility back-btn {
   /* Back button styling – single line */
   @apply shrink-0 h-8 sm:h-9 whitespace-nowrap;

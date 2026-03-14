@@ -1,96 +1,61 @@
-# Обновяване на абонаментния модел
+# Subscription Model Update
 
-## ✅ Завършени промени
+## Canonical pricing
 
-### 1. Schema обновления
-- ✅ Обновен `SubscriptionPlan` enum: `FREE`, `PRO`, `BUSINESS` (премахнати `BASIC`, `VIP`)
-- ✅ Обновени ограничения в `PLAN_LIMITS`
+The live pricing baseline for the Bulgaria-first launch is:
 
-### 2. Ценообразуване
-- ✅ FREE: 0 EUR (безплатно завинаги)
-- ✅ PRO: 13 EUR/месец или 130 EUR/година (20% отстъпка)
-- ✅ BUSINESS: 28 EUR/месец или 280 EUR/година (20% отстъпка)
+- `FREE`: 0 EUR
+- `STARTER`: 4.99 EUR/month or 49.99 EUR/year
+- `PRO`: 8.99 EUR/month or 89.99 EUR/year
+- `BUSINESS`: 19.99 EUR/month or 199.99 EUR/year
 
-### 3. Ограничения по планове
+## What changed
 
-#### FREE план:
-- До 3 фактури на месец
-- 1 фирма
-- Без лого (basic PDF с воден знак)
-- Без експорт
-- Без кредитни известия
-- Без изпращане по имейл
-- 1 потребител
+- Added a shared plan definition file: `src/lib/subscription-plans.ts`
+- Aligned checkout routes and Stripe webhook syncing to price IDs
+- Removed amount-threshold plan detection in Stripe logic
+- Synced billing UI and landing-page pricing to the shared plan data
+- Kept legacy status normalization for old invoices, but new writes now persist `ISSUED`
 
-#### PRO план:
-- Неограничени фактури
-- 1 фирма
-- Собствено лого
-- Професионален PDF
-- Кредитни известия
-- Експорт PDF/CSV
-- Изпращане по имейл
-- 1 потребител
+## Product rules by tier
 
-#### BUSINESS план:
-- Всичко от PRO
-- До 5 фирми
-- Потребители с роли (до 5)
-- Експорт за счетоводство
-- API достъп (read-only)
-- Приоритетна поддръжка
+### FREE
+- 3 invoices per month
+- 1 company
+- 5 clients
+- 10 products
+- No export
+- No credit/debit notes
+- No email sending
 
-### 4. Обновени файлове
-- ✅ `prisma/schema.prisma` - нови планове
-- ✅ `src/lib/stripe.ts` - нови цени и features
-- ✅ `src/middleware/subscription.ts` - нови ограничения и проверки
-- ✅ `src/services/subscription-service.ts` - обновени планове
+### STARTER
+- 15 invoices per month
+- 1 company
+- 25 clients
+- 50 products
+- CSV export
+- No credit/debit notes
+- No email sending
 
-## ⏳ Останали задачи
+### PRO
+- Unlimited invoices
+- 3 companies
+- 100 clients
+- 200 products
+- Full export
+- Credit/debit notes
+- Email sending
 
-### 1. Обновяване на UI компоненти
-- [ ] Обновяване на `SubscriptionPlans.tsx` за показване на новите планове
-- [ ] Добавяне на месечен/годишен toggle
-- [ ] Показване на 20% отстъпка за годишни планове
-- [ ] Обновяване на pricing страницата
+### BUSINESS
+- Unlimited invoices
+- 10 companies
+- Unlimited clients and products
+- 5 users
+- Full export
+- API access
 
-### 2. Добавяне на проверки в API endpoints
-- [ ] Проверка за брой фактури при създаване (`POST /api/invoices`)
-- [ ] Проверка за брой фирми при създаване (`POST /api/companies`)
-- [ ] Проверка за лого при PDF генериране
-- [ ] Проверка за експорт (`GET /api/invoices/export`)
-- [ ] Проверка за кредитни известия (`POST /api/invoices/[id]/cancel`)
-- [ ] Проверка за изпращане по имейл (`POST /api/invoices/[id]/send`)
+## Operational notes
 
-### 3. Обновяване на UI за показване на ограничения
-- [ ] Показване на лимити в dashboard
-- [ ] Показване на upgrade prompts когато се достигне лимит
-- [ ] Disable бутони за функции, които не са достъпни в FREE плана
-
-### 4. Stripe конфигурация
-- [ ] Създаване на Stripe products за новите планове
-- [ ] Създаване на Stripe prices (месечни и годишни)
-- [ ] Обновяване на environment variables
-- [ ] Тестване на checkout flow
-
-## 📊 Сравнение на плановете
-
-| Функция | FREE | PRO | BUSINESS |
-|---------|------|-----|----------|
-| Фактури | 3/мес | ∞ | ∞ |
-| Фирми | 1 | 1 | 5 |
-| Лого | ❌ | ✅ | ✅ |
-| PDF | Basic | Pro | Pro |
-| Кредитно | ❌ | ✅ | ✅ |
-| Експорт | ❌ | ✅ | ✅ |
-| Имейл | ❌ | ✅ | ✅ |
-| Потребители | 1 | 1 | 5 |
-| API | ❌ | ❌ | ✅ |
-| Поддръжка | Basic | Standard | Priority |
-
-## 🎯 Следващи стъпки
-
-1. Обновяване на UI компоненти за показване на новите планове
-2. Добавяне на проверки в API endpoints
-3. Тестване на всички ограничения
-4. Конфигуриране на Stripe products и prices
+- Generic invoice status updates no longer allow direct `ISSUED -> CANCELLED`; cancellation must go through the dedicated cancel flow.
+- Credit and debit notes can only be created from issued invoices.
+- CompanyBook lookup now degrades gracefully when the external service is unavailable.

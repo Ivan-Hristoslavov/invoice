@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
-import { hasPermission } from "@/lib/permissions";
+import { canManageCompanyTeam, getCompanyRoleForUser } from "@/lib/team";
+import { resolveSessionUser } from "@/lib/session-user";
 
 // Define Role enum since we're not using Prisma anymore
 type Role = 'ADMIN' | 'OWNER' | 'MANAGER' | 'ACCOUNTANT' | 'VIEWER';
-const validRoles: Role[] = ['ADMIN', 'OWNER', 'MANAGER', 'ACCOUNTANT', 'VIEWER'];
+const validRoles: Role[] = ['ADMIN', 'MANAGER', 'ACCOUNTANT', 'VIEWER'];
 
 export async function PUT(
   request: Request,
@@ -15,19 +16,15 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session?.user?.id) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
-    
-    // Check permission
-    const canManageUsers = await hasPermission(session.user.id, "user:manage");
-    if (!canManageUsers) {
-      return NextResponse.json(
-        { error: "Нямате права да управлявате потребители" },
-        { status: 403 }
-      );
+
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Потребителят не е намерен" }, { status: 404 });
     }
-    
+
     const userId = (await params).id;
     const { role, companyId } = await request.json();
     
@@ -39,18 +36,11 @@ export async function PUT(
       );
     }
     
-    // Check if company exists and user has access
-    const { data: company, error: companyError } = await supabaseAdmin
-      .from('Company')
-      .select('id')
-      .eq('id', companyId)
-      .eq('userId', session.user.id)
-      .single();
-    
-    if (companyError || !company) {
+    const currentUserRole = await getCompanyRoleForUser(sessionUser.id, companyId);
+    if (!canManageCompanyTeam(currentUserRole)) {
       return NextResponse.json(
-        { error: "Компанията не е намерена или достъпът е отказан" },
-        { status: 404 }
+        { error: "Нямате права да управлявате потребители за тази компания" },
+        { status: 403 }
       );
     }
     
@@ -111,34 +101,23 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session?.user?.id) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
-    
-    // Check permission
-    const canManageUsers = await hasPermission(session.user.id, "user:manage");
-    if (!canManageUsers) {
-      return NextResponse.json(
-        { error: "Нямате права да управлявате потребители" },
-        { status: 403 }
-      );
+
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Потребителят не е намерен" }, { status: 404 });
     }
-    
+
     const userId = (await params).id;
     const { companyId } = await request.json();
-    
-    // Check if company exists and user has access
-    const { data: company, error: companyError } = await supabaseAdmin
-      .from('Company')
-      .select('id')
-      .eq('id', companyId)
-      .eq('userId', session.user.id)
-      .single();
-    
-    if (companyError || !company) {
+
+    const currentUserRole = await getCompanyRoleForUser(sessionUser.id, companyId);
+    if (!canManageCompanyTeam(currentUserRole)) {
       return NextResponse.json(
-        { error: "Компанията не е намерена или достъпът е отказан" },
-        { status: 404 }
+        { error: "Нямате права да управлявате потребители за тази компания" },
+        { status: 403 }
       );
     }
     
@@ -151,7 +130,7 @@ export async function DELETE(
       .eq('role', 'OWNER')
       .single();
     
-    if (isOwner && userId === session.user.id) {
+    if (isOwner && userId === sessionUser.id) {
       return NextResponse.json(
         { error: "Не можете да премахнете себе си като собственик" },
         { status: 400 }

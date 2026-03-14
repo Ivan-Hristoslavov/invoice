@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { z } from "zod";
@@ -257,6 +257,8 @@ export default function NewCompanyPage() {
   const [confirmed, setConfirmed] = useState(false);
   const [companyCreationMode, setCompanyCreationMode] = useState<CompanyCreationMode | null>(null);
   const [lookupResult, setLookupResult] = useState<Record<string, unknown> | null>(null);
+  const [isCheckingBulstatDuplicate, setIsCheckingBulstatDuplicate] = useState(false);
+  const duplicateCheckRequestRef = useRef(0);
 
   const sections = [
     {
@@ -318,6 +320,13 @@ export default function NewCompanyPage() {
   });
 
   const formValues = form.watch();
+  const bulstatFieldError = form.formState.errors.bulstatNumber;
+
+  const clearDuplicateBulstatError = useCallback(() => {
+    if (form.getFieldState("bulstatNumber").error?.type === "duplicate") {
+      form.clearErrors("bulstatNumber");
+    }
+  }, [form]);
 
   const scrollToTop = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -386,21 +395,106 @@ export default function NewCompanyPage() {
     await lookupCompany(eik);
   }, [form, lookupCompany]);
 
+  useEffect(() => {
+    if (companyCreationMode !== "manual") {
+      duplicateCheckRequestRef.current += 1;
+      setIsCheckingBulstatDuplicate(false);
+      clearDuplicateBulstatError();
+      return;
+    }
+
+    const normalizedBulstat = (formValues.bulstatNumber || "").replace(/\D/g, "");
+    const isBulstat = formValues.uicType !== "EGN";
+    const hasNonDuplicateError =
+      Boolean(bulstatFieldError) && bulstatFieldError?.type !== "duplicate";
+
+    if (!isBulstat || normalizedBulstat.length < 9 || hasNonDuplicateError) {
+      duplicateCheckRequestRef.current += 1;
+      setIsCheckingBulstatDuplicate(false);
+      clearDuplicateBulstatError();
+      return;
+    }
+
+    clearDuplicateBulstatError();
+    const requestId = duplicateCheckRequestRef.current + 1;
+    duplicateCheckRequestRef.current = requestId;
+
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        setIsCheckingBulstatDuplicate(true);
+        const params = new URLSearchParams({
+          bulstatNumber: normalizedBulstat,
+          uicType: formValues.uicType || "BULSTAT",
+        });
+        const response = await fetch(`/api/companies?${params.toString()}`, {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as {
+          exists?: boolean;
+          message?: string;
+          bulstatNumber?: string;
+        };
+
+        if (duplicateCheckRequestRef.current !== requestId) {
+          return;
+        }
+
+        if (payload.exists) {
+          form.setError("bulstatNumber", {
+            type: "duplicate",
+            message:
+              payload.message ||
+              "Тази компания е регистрирана и не може да бъде добавена като ваша.",
+          });
+          return;
+        }
+
+        clearDuplicateBulstatError();
+      } catch {
+        // Keep duplicate preflight best-effort only; POST remains authoritative.
+      } finally {
+        if (duplicateCheckRequestRef.current === requestId) {
+          setIsCheckingBulstatDuplicate(false);
+        }
+      }
+    }, 350);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [
+    bulstatFieldError,
+    clearDuplicateBulstatError,
+    companyCreationMode,
+    form,
+    formValues.bulstatNumber,
+    formValues.uicType,
+  ]);
+
   const handleCreationModeSelect = useCallback((mode: CompanyCreationMode) => {
     setCompanyCreationMode(mode);
     setCurrentStep(0);
     setConfirmed(false);
     setLookupResult(null);
+    setIsCheckingBulstatDuplicate(false);
+    clearDuplicateBulstatError();
     scrollToTop();
-  }, [scrollToTop]);
+  }, [clearDuplicateBulstatError, scrollToTop]);
 
   const handleBackToModeSelection = useCallback(() => {
     setCompanyCreationMode(null);
     setCurrentStep(0);
     setConfirmed(false);
     setLookupResult(null);
+    setIsCheckingBulstatDuplicate(false);
+    clearDuplicateBulstatError();
     scrollToTop();
-  }, [scrollToTop]);
+  }, [clearDuplicateBulstatError, scrollToTop]);
 
   async function onSubmit(data: CompanyFormValues) {
     setIsLoading(true);
@@ -472,6 +566,8 @@ export default function NewCompanyPage() {
     const hasAnyValue = section.fields.some((field) => hasMeaningfulValue(formValues[field]));
     if (section.requiredFields.length === 0 && !hasAnyValue) return "optional";
 
+    if (section.requiredFields.length > 0) return "complete";
+
     const allFieldsFilled = section.fields.every((field) => hasMeaningfulValue(formValues[field]));
     if (!allFieldsFilled) return "partial";
 
@@ -499,7 +595,37 @@ export default function NewCompanyPage() {
     return `${filledCount} от ${section.fields.length} полета са попълнени.`;
   }, [fieldLabels, formValues, getSectionStatus, sections]);
 
-  const canSubmit = confirmed && isValidEmail(formValues.email || "") && sections.slice(0, 3).every((section) => getSectionStatus(section) === "complete");
+  const requiredSectionsReady = sections.slice(0, 3).every((section) => {
+    const missingRequired = section.requiredFields.some((field) => !hasMeaningfulValue(formValues[field]));
+    const hasErrors = section.fields.some((field) => Boolean(form.formState.errors[field]));
+    return !missingRequired && !hasErrors;
+  });
+  const invalidSections = sections
+    .slice(0, 3)
+    .filter((section) => getSectionStatus(section) === "invalid")
+    .map((section) => section.title);
+  const missingSections = sections
+    .slice(0, 3)
+    .filter((section) => getSectionStatus(section) === "missing")
+    .map((section) => section.title);
+  const submitBlockerMessage = !confirmed
+    ? "Потвърдете, че данните са коректни, за да продължите."
+    : isCheckingBulstatDuplicate
+      ? "Проверяваме дали този ЕИК/БУЛСТАТ вече се използва."
+      : bulstatFieldError?.message
+        ? bulstatFieldError.message
+        : !isValidEmail(formValues.email || "")
+          ? "Въведете валиден имейл или оставете полето празно."
+          : invalidSections.length > 0
+            ? `Има полета за корекция в: ${invalidSections.join(", ")}.`
+            : missingSections.length > 0
+              ? `Липсват задължителни данни в: ${missingSections.join(", ")}.`
+              : "Всичко задължително е попълнено. Може да създадете компанията.";
+  const canSubmit =
+    confirmed &&
+    !isCheckingBulstatDuplicate &&
+    isValidEmail(formValues.email || "") &&
+    requiredSectionsReady;
   const shouldShowEditableSections = companyCreationMode === "manual" || Boolean(lookupResult);
 
   const handleInvalidSubmit = useCallback((errors: typeof form.formState.errors) => {
@@ -895,24 +1021,32 @@ export default function NewCompanyPage() {
                                   {...field}
                                   onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ""))}
                                 />
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  className="h-12 w-full shrink-0 px-3 sm:w-auto"
-                                  disabled={isLookupLoading || !field.value || field.value.length < 9}
-                                  onClick={handleEikLookup}
-                                  title="Зареди данни от Търговски регистър"
-                                >
-                                  {isLookupLoading ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <Search className="h-4 w-4" />
-                                  )}
-                                  <span className="hidden sm:inline ml-1.5">Зареди</span>
-                                </Button>
+                                {companyCreationMode === "eik" && (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="h-12 w-full shrink-0 px-3 sm:w-auto"
+                                    disabled={isLookupLoading || !field.value || field.value.length < 9}
+                                    onClick={handleEikLookup}
+                                    title="Зареди данни от Търговски регистър"
+                                  >
+                                    {isLookupLoading ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Search className="h-4 w-4" />
+                                    )}
+                                    <span className="hidden sm:inline ml-1.5">Зареди</span>
+                                  </Button>
+                                )}
                               </div>
                             </FormControl>
-                            <FormDescription>Въведете ЕИК и натиснете „Зареди" за автоматично попълване</FormDescription>
+                            <FormDescription>
+                              {companyCreationMode === "eik"
+                                ? "Въведете ЕИК и натиснете „Зареди“ за автоматично попълване."
+                                : isCheckingBulstatDuplicate
+                                  ? "Проверяваме в системата дали този ЕИК/БУЛСТАТ вече се използва."
+                                  : "При ръчно попълване само проверяваме дали ЕИК/БУЛСТАТ вече съществува в системата."}
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -1237,10 +1371,8 @@ export default function NewCompanyPage() {
                       </label>
                     </div>
                     <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background/70 p-4 sm:flex-row sm:items-center sm:justify-between">
-                      <p className="text-sm text-muted-foreground">
-                        {canSubmit
-                          ? "Всичко задължително е попълнено. Може да създадете компанията."
-                          : "Попълнете задължителните секции и потвърдете данните, за да продължите."}
+                      <p className={cn("text-sm", canSubmit ? "text-muted-foreground" : "text-amber-600 dark:text-amber-400")}>
+                        {submitBlockerMessage}
                       </p>
                       <Button
                         type="submit"

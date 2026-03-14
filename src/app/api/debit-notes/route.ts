@@ -10,6 +10,7 @@ import {
   fetchProductsByIds,
   prepareDocumentItems,
 } from "@/lib/invoice-documents";
+import { normalizeInvoiceStatus } from "@/lib/invoice-status";
 import cuid from "cuid";
 import { z } from "zod";
 
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
         .from("Invoice")
         .select("id, status, companyId, clientId, userId")
         .eq("id", validatedData.invoiceId)
-        .eq("userId", sessionUser.id)
+        .eq("userId", company.userId)
         .maybeSingle();
 
       if (sourceInvoiceError) {
@@ -89,6 +90,13 @@ export async function POST(request: NextRequest) {
       if (sourceInvoice.companyId !== validatedData.companyId || sourceInvoice.clientId !== validatedData.clientId) {
         return NextResponse.json(
           { error: "Дебитното известие трябва да използва същата фирма и клиент като оригиналната фактура." },
+          { status: 400 }
+        );
+      }
+
+      if (normalizeInvoiceStatus(sourceInvoice.status) !== "ISSUED") {
+        return NextResponse.json(
+          { error: "Дебитно известие може да се създаде само по издадена фактура." },
           { status: 400 }
         );
       }
@@ -115,7 +123,7 @@ export async function POST(request: NextRequest) {
         supabase,
         table: "DebitNote",
         numberColumn: "debitNoteNumber",
-        userId: sessionUser.id,
+        userId: company.userId,
         companyId: validatedData.companyId,
         companyEik: company.bulstatNumber,
         type: "debit-note",
@@ -129,7 +137,7 @@ export async function POST(request: NextRequest) {
           invoiceId: validatedData.invoiceId || null,
           companyId: validatedData.companyId,
           clientId: validatedData.clientId,
-          userId: sessionUser.id,
+          userId: company.userId,
           issueDate: new Date(validatedData.issueDate).toISOString(),
           reason: validatedData.reason,
           subtotal: subtotal.toString(),

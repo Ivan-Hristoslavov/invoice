@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, NumericInput } from "@/components/ui/input";
+import { FullPageLoader, LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -144,6 +145,7 @@ function NoteFormContent(config: NoteFormConfig) {
   const [clients, setClients] = useState<any[]>([]);
   const [companies, setCompanies] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+  const [sourceInvoices, setSourceInvoices] = useState<any[]>([]);
   const [productSearchQuery, setProductSearchQuery] = useState("");
   const [showProductSearch, setShowProductSearch] = useState(false);
 
@@ -160,7 +162,6 @@ function NoteFormContent(config: NoteFormConfig) {
   const [items, setItems] = useState<
     Array<{
       id: number;
-      productId?: string;
       description: string;
       quantity: number;
       unitPrice: number;
@@ -169,7 +170,6 @@ function NoteFormContent(config: NoteFormConfig) {
   >([
     {
       id: 1,
-      productId: undefined,
       description: "",
       quantity: 1,
       unitPrice: 0,
@@ -181,23 +181,38 @@ function NoteFormContent(config: NoteFormConfig) {
     async function fetchData() {
       try {
         setIsLoadingData(true);
-        const [clientsRes, companiesRes, productsRes] = await Promise.all([
+        const [clientsRes, companiesRes, productsRes, invoicesRes] = await Promise.all([
           fetch("/api/clients").catch(() => ({ ok: false, json: async () => ({ clients: [] }) })),
           fetch("/api/companies").catch(() => ({ ok: false, json: async () => ({ companies: [] }) })),
           fetch("/api/products").catch(() => ({ ok: false, json: async () => ({ products: [] }) })),
+          fetch("/api/invoices?pageSize=100&status=ISSUED").catch(() => ({
+            ok: false,
+            json: async () => ({ data: [] }),
+          })),
         ]);
 
         const clientsData = await clientsRes.json();
         const companiesData = await companiesRes.json();
         const productsData = await productsRes.json();
+        const invoicesData = await invoicesRes.json();
 
         const clientsArray = Array.isArray(clientsData) ? clientsData : (clientsData.clients || []);
         const companiesArray = Array.isArray(companiesData) ? companiesData : (companiesData.companies || []);
         const productsArray = Array.isArray(productsData) ? productsData : (productsData.products || []);
+        const invoicesArray = Array.isArray(invoicesData)
+          ? invoicesData
+          : Array.isArray(invoicesData.data)
+            ? invoicesData.data
+            : [];
 
         setClients(clientsArray.filter((c: any) => c?.id && c?.name));
         setCompanies(companiesArray.filter((c: any) => c?.id && c?.name));
         setProducts(productsArray.filter((p: any) => p?.id && p?.name));
+        setSourceInvoices(
+          invoicesArray.filter(
+            (invoice: any) => invoice?.id && invoice?.invoiceNumber && invoice?.status === "ISSUED"
+          )
+        );
       } catch (err: any) {
         console.error("Error fetching data:", err);
         setError(err?.message || "Грешка при зареждане на данни");
@@ -205,6 +220,7 @@ function NoteFormContent(config: NoteFormConfig) {
         setClients([]);
         setCompanies([]);
         setProducts([]);
+        setSourceInvoices([]);
       } finally {
         setIsLoadingData(false);
       }
@@ -224,6 +240,14 @@ function NoteFormContent(config: NoteFormConfig) {
     );
   }, [products, productSearchQuery]);
 
+  const eligibleInvoices = useMemo(() => {
+    return sourceInvoices.filter((invoice) => {
+      const matchesCompany = !formData.companyId || invoice.companyId === formData.companyId;
+      const matchesClient = !formData.clientId || invoice.clientId === formData.clientId;
+      return matchesCompany && matchesClient;
+    });
+  }, [formData.clientId, formData.companyId, sourceInvoices]);
+
   const addItem = useCallback(() => {
     setItems((prev) => {
       const maxId = prev.length > 0 ? Math.max(...prev.map((i) => i.id)) : 0;
@@ -231,7 +255,6 @@ function NoteFormContent(config: NoteFormConfig) {
         ...prev,
         {
           id: maxId + 1,
-          productId: undefined,
           description: "",
           quantity: 1,
           unitPrice: 0,
@@ -240,37 +263,6 @@ function NoteFormContent(config: NoteFormConfig) {
       ];
     });
   }, []);
-
-  const selectProductForItem = useCallback(
-    (itemId: number, productId: string) => {
-      if (!productId) {
-        setItems((prev) =>
-          prev.map((item) => (item.id === itemId ? { ...item, productId: undefined } : item))
-        );
-        return;
-      }
-
-      if (!products || products.length === 0) return;
-
-      const product = products.find((p) => p?.id === productId);
-      if (product) {
-        setItems((prev) =>
-          prev.map((item) =>
-            item.id === itemId
-              ? {
-                  ...item,
-                  productId: productId,
-                  description: product.name || "",
-                  unitPrice: Number(product.price) || 0,
-                  taxRate: Number(product.taxRate) || DEFAULT_VAT_RATE,
-                }
-              : item
-          )
-        );
-      }
-    },
-    [products]
-  );
 
   const removeItem = useCallback(
     (id: number) => {
@@ -295,7 +287,6 @@ function NoteFormContent(config: NoteFormConfig) {
           ...prev,
           {
             id: maxId + 1,
-            productId: product.id,
             description: product.name,
             quantity: 1,
             unitPrice: Number(product.price),
@@ -326,6 +317,18 @@ function NoteFormContent(config: NoteFormConfig) {
     },
     { subtotal: 0, taxAmount: 0, total: 0 }
   );
+
+  useEffect(() => {
+    if (!formData.invoiceId) return;
+
+    const isStillEligible = eligibleInvoices.some(
+      (invoice) => invoice.id === formData.invoiceId
+    );
+
+    if (!isStillEligible) {
+      setFormData((prev) => ({ ...prev, invoiceId: "" }));
+    }
+  }, [eligibleInvoices, formData.invoiceId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -385,12 +388,10 @@ function NoteFormContent(config: NoteFormConfig) {
 
   if (isLoadingData) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Зареждане...</p>
-        </div>
-      </div>
+      <FullPageLoader
+        title={config.title}
+        subtitle="Подготвяме фирмите, клиентите и наличните документи за формата..."
+      />
     );
   }
 
@@ -407,29 +408,29 @@ function NoteFormContent(config: NoteFormConfig) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="app-page-shell mx-auto max-w-6xl">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="page-header">
+        <div className="min-w-0">
           <Button variant="ghost" size="sm" asChild>
             <Link href={config.backHref}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Назад
             </Link>
           </Button>
-          <h1 className="text-3xl font-bold mt-4">{config.title}</h1>
-          <p className="text-muted-foreground mt-1">{colors.subtitle}</p>
+          <h1 className="page-title mt-4">{config.title}</h1>
+          <p className="card-description mt-1 max-w-2xl">{colors.subtitle}</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit}>
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
           {/* Left Column */}
-          <div className="space-y-6">
+          <div className="space-y-5">
             {/* Company & Client */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2">
                   <Building2 className="h-5 w-5" />
                   Компания и клиент
                 </CardTitle>
@@ -442,6 +443,7 @@ function NoteFormContent(config: NoteFormConfig) {
                     onValueChange={(value) =>
                       setFormData((prev) => ({ ...prev, companyId: value }))
                     }
+                    aria-label="Изберете компания"
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Изберете компания" />
@@ -463,6 +465,7 @@ function NoteFormContent(config: NoteFormConfig) {
                     onValueChange={(value) =>
                       setFormData((prev) => ({ ...prev, clientId: value }))
                     }
+                    aria-label="Изберете клиент"
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Изберете клиент" />
@@ -478,15 +481,32 @@ function NoteFormContent(config: NoteFormConfig) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="invoiceId">Свързана фактура (опционално)</Label>
-                  <Input
-                    id="invoiceId"
-                    value={formData.invoiceId}
-                    onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, invoiceId: e.target.value }))
+                  <Label htmlFor="invoiceId">Свързана издадена фактура</Label>
+                  <Select
+                    value={formData.invoiceId || "none"}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        invoiceId: value === "none" ? "" : value,
+                      }))
                     }
-                    placeholder="ID на фактурата (ако е свързана)"
-                  />
+                    aria-label="Изберете свързана фактура"
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Изберете издадена фактура" />
+                    </SelectTrigger>
+                    <SelectContent className="z-100 max-h-[300px]">
+                      <SelectItem value="none">Без свързана фактура</SelectItem>
+                      {eligibleInvoices.map((invoice) => (
+                        <SelectItem key={invoice.id} value={invoice.id}>
+                          {invoice.invoiceNumber} - {invoice.client?.name || "Клиент"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Показват се само издадени фактури за избраните фирма и клиент.
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -494,7 +514,7 @@ function NoteFormContent(config: NoteFormConfig) {
             {/* Details */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2">
                   <Calendar className="h-5 w-5" />
                   Детайли
                 </CardTitle>
@@ -512,7 +532,7 @@ function NoteFormContent(config: NoteFormConfig) {
                       onChange={(e) =>
                         setFormData((prev) => ({ ...prev, issueDate: e.target.value }))
                       }
-                      className="pr-10 h-10 sm:h-11 w-full"
+                      className="w-full pr-10"
                       required
                     />
                     <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -520,7 +540,7 @@ function NoteFormContent(config: NoteFormConfig) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="reason">Причина (опционално)</Label>
+                  <Label htmlFor="reason">Причина *</Label>
                   <Textarea
                     id="reason"
                     value={formData.reason}
@@ -529,6 +549,7 @@ function NoteFormContent(config: NoteFormConfig) {
                     }
                     placeholder={colors.reasonPlaceholder}
                     rows={3}
+                    required
                   />
                 </div>
 
@@ -539,6 +560,7 @@ function NoteFormContent(config: NoteFormConfig) {
                     onValueChange={(value) =>
                       setFormData((prev) => ({ ...prev, currency: value }))
                     }
+                    aria-label="Изберете валута"
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue />
@@ -568,27 +590,28 @@ function NoteFormContent(config: NoteFormConfig) {
           </div>
 
           {/* Right Column - Items */}
-          <div className="space-y-6">
+          <div className="space-y-5">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg flex items-center gap-2">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <CardTitle className="flex items-center gap-2">
                     <FileText className="h-5 w-5" />
                     Артикули
                   </CardTitle>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row">
                     {products.length > 0 && (
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => setShowProductSearch(!showProductSearch)}
+                        className="btn-responsive"
                       >
                         <Search className="h-4 w-4 mr-1" />
                         Продукти
                       </Button>
                     )}
-                    <Button type="button" variant="outline" size="sm" onClick={addItem}>
+                    <Button type="button" variant="outline" size="sm" onClick={addItem} className="btn-responsive">
                       <Plus className="h-4 w-4 mr-1" />
                       Добави
                     </Button>
@@ -598,7 +621,7 @@ function NoteFormContent(config: NoteFormConfig) {
               <CardContent className="space-y-4">
                 {/* Product Search */}
                 {showProductSearch && products.length > 0 && (
-                  <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
+                  <div className="space-y-3 rounded-2xl border border-border/60 bg-muted/30 p-4">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -614,7 +637,7 @@ function NoteFormContent(config: NoteFormConfig) {
                           <div
                             key={product.id}
                             onClick={() => addProduct(product)}
-                            className="flex items-center justify-between p-3 rounded-lg border bg-background hover:bg-muted cursor-pointer transition-colors"
+                            className="flex flex-col gap-3 rounded-xl border bg-background p-3 transition-colors hover:bg-muted sm:flex-row sm:items-center sm:justify-between"
                           >
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-sm truncate">{product.name}</p>
@@ -624,7 +647,7 @@ function NoteFormContent(config: NoteFormConfig) {
                                 </p>
                               )}
                             </div>
-                            <div className="flex items-center gap-2 ml-2">
+                            <div className="ml-0 flex flex-wrap items-center gap-2 sm:ml-2">
                               <span className="text-sm font-semibold">
                                 {formatPrice(Number(product.price))} {formData.currency}
                               </span>
@@ -647,8 +670,8 @@ function NoteFormContent(config: NoteFormConfig) {
                 )}
 
                 {items.map((item, index) => (
-                  <div key={item.id} className="p-4 border rounded-lg space-y-3 bg-muted/30">
-                    <div className="flex items-center justify-between">
+                  <div key={item.id} className="space-y-3 rounded-2xl border border-border/60 bg-muted/30 p-4">
+                    <div className="flex items-center justify-between gap-3">
                       <span className="text-sm font-medium text-muted-foreground">
                         Артикул {index + 1}
                       </span>
@@ -658,44 +681,11 @@ function NoteFormContent(config: NoteFormConfig) {
                           variant="ghost"
                           size="sm"
                           onClick={() => removeItem(item.id)}
-                          className="h-7 w-7 p-0 text-destructive"
+                          className="h-8 w-8 p-0 text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Продукт (опционално)</Label>
-                      <div className="flex gap-2">
-                        <Select
-                          value={item.productId || undefined}
-                          onValueChange={(value) => selectProductForItem(item.id, value)}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Изберете продукт..." />
-                          </SelectTrigger>
-                          <SelectContent className="z-100 max-h-[300px]">
-                            {(products || []).map((product) => (
-                              <SelectItem key={product?.id} value={product?.id || ""}>
-                                {product?.name || ""} -{" "}
-                                {formatPrice(Number(product?.price || 0))} {formData.currency}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {item.productId && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => selectProductForItem(item.id, "")}
-                            className="flex-shrink-0"
-                          >
-                            Изчисти
-                          </Button>
-                        )}
-                      </div>
                     </div>
 
                     <div className="space-y-2">
@@ -716,7 +706,7 @@ function NoteFormContent(config: NoteFormConfig) {
                           onChange={(e) =>
                             updateItem(item.id, "quantity", parseFloat(e.target.value) || 1)
                           }
-                          className="h-9 sm:h-8 w-full"
+                          className="w-full"
                           required
                         />
                       </div>
@@ -727,7 +717,7 @@ function NoteFormContent(config: NoteFormConfig) {
                           onChange={(e) =>
                             updateItem(item.id, "unitPrice", parseFloat(e.target.value) || 0)
                           }
-                          className="h-9 sm:h-8 w-full"
+                          className="w-full"
                           required
                         />
                       </div>
@@ -738,7 +728,7 @@ function NoteFormContent(config: NoteFormConfig) {
                           onChange={(e) =>
                             updateItem(item.id, "taxRate", parseFloat(e.target.value) || 0)
                           }
-                          className="h-9 sm:h-8 w-full"
+                          className="w-full"
                           required
                         />
                       </div>
@@ -761,7 +751,7 @@ function NoteFormContent(config: NoteFormConfig) {
             {/* Totals */}
             <Card className={`${colors.bg} ${colors.border}`}>
               <CardHeader>
-                <CardTitle className="text-lg">Общо</CardTitle>
+                <CardTitle>Общо</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex justify-between">
@@ -791,18 +781,18 @@ function NoteFormContent(config: NoteFormConfig) {
         </div>
 
         {/* Submit Button */}
-        <div className="flex justify-end gap-4 pt-6">
-          <Button type="button" variant="outline" asChild>
+        <div className="flex flex-col gap-3 border-t border-border/50 pt-6 sm:flex-row sm:justify-end">
+          <Button type="button" variant="outline" asChild className="btn-responsive">
             <Link href={config.backHref}>Отказ</Link>
           </Button>
           <Button
             type="submit"
             disabled={isLoading}
-            className={`${colors.button} ${colors.buttonHover}`}
+            className={`btn-responsive ${colors.button} ${colors.buttonHover}`}
           >
             {isLoading ? (
               <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                <LoadingSpinner size="small" className="mr-2 text-white" />
                 Създаване...
               </>
             ) : (

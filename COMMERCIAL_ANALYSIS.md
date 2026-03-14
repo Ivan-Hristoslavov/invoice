@@ -1,189 +1,47 @@
-# Анализ на комерсиалния потенциал на InvoiceNinja
+# Commercial Analysis
 
-## 📊 ОБЩА ОЦЕНКА: **ВИСОК ПОТЕНЦИАЛ** ⭐⭐⭐⭐
+## Overall view
 
----
+The product has real commercial potential in Bulgaria because it is localized around Bulgarian invoicing requirements, supports multi-company workflows, and now has a more trustworthy billing and invoice lifecycle model.
 
-## ✅ СИЛНИ СТРАНИ (Competitive Advantages)
+## Recommended pricing baseline
 
-### 1. **Специализация за българския пазар**
-- ✅ Пълно съответствие с изискванията на НАП (Национална агенция за приходите)
-- ✅ Поддръжка на БУЛСТАТ/ЕИК номера
-- ✅ Специфични полета за български фактури (място на издаване, дата на данъчно събитие)
-- ✅ Поддръжка на електронни фактури (isEInvoice)
-- ✅ Български език като основен интерфейс
-- ✅ Валута EUR по подразбиране (съответствие с въвеждането на еврото от 2026)
+- `FREE`: 0 EUR
+- `STARTER`: 4.99 EUR/month or 49.99 EUR/year
+- `PRO`: 8.99 EUR/month or 89.99 EUR/year
+- `BUSINESS`: 19.99 EUR/month or 199.99 EUR/year
 
-**Потенциал:** Българският пазар е недооценен от международните решения. Локалната специализация е голямо предимство.
+This ladder fits Bulgarian freelancers, micro-SMBs, and accounting teams better than the older 10/20/30 or 13/28 EUR drafts.
 
-### 2. **Пълнофункционална система за абонаменти**
-- ✅ Интеграция със Stripe за плащания
-- ✅ 3 плана (BASIC - 10 €, PRO - 20 €, VIP - 30 €)
-- ✅ Ограничения по планове (клиенти, фактури/месец)
-- ✅ Middleware за проверка на абонаменти
-- ✅ История на плащанията и абонаменти
-- ✅ Webhook обработка за автоматизация
+## Why this can work
 
-**Потенциал:** Готова монетизационна система - може да започне да генерира приходи веднага.
+- Strong local fit: Bulgarian company data, EIK/BULSTAT handling, VAT-specific fields, and invoice lifecycle rules matter more than generic global polish.
+- Clear upgrade story: `FREE` validates the product, `STARTER` is accessible, `PRO` becomes the obvious small-business tier, and `BUSINESS` covers accounting offices and teams.
+- Lower trust risk than before: pricing now comes from a shared config, Stripe plan mapping is price-ID-based, and note creation/status flows are stricter.
 
-### 3. **Богат набор от функционалности**
-- ✅ Управление на фактури (създаване, редактиране, изтриване)
-- ✅ Управление на клиенти
-- ✅ Управление на компании (множество компании на потребител)
-- ✅ Каталог с продукти/услуги
-- ✅ Проследяване на плащания
-- ✅ Импорт/Експорт (CSV, PDF)
-- ✅ PDF генериране на фактури
-- ✅ Множество валути
-- ✅ Система за роли и разрешения (ADMIN, OWNER, MANAGER, ACCOUNTANT, VIEWER)
-- ✅ Екипна работа (team management)
-- ✅ Dashboard с аналитика
+## Revenue scenarios
 
-**Потенциал:** Конкурентен с платените решения като Invoice2go, FreshBooks.
+Illustrative monthly recurring revenue:
 
-### 4. **Модерна технологична база**
-- ✅ Next.js 15 (React 18)
-- ✅ TypeScript за типова безопасност
-- ✅ Supabase за база данни (scalable)
-- ✅ Stripe за плащания (industry standard)
-- ✅ Responsive design
-- ✅ Dark mode поддръжка
-- ✅ API-first архитектура
+- 150 `STARTER` customers: about 748.50 EUR / month
+- 100 `PRO` customers: about 899 EUR / month
+- 30 `BUSINESS` customers: about 599.70 EUR / month
+- Combined: about 2,247 EUR / month
 
-**Потенциал:** Лесно разширяване и поддръжка.
+This is achievable with a relatively small but well-targeted customer base if onboarding, support, and reliability stay strong.
 
----
+## Main risks
 
-## 💰 МОДЕЛИ НА МОНЕТИЗАЦИЯ
+- Distribution: go-to-market and partnerships will matter more than engineering after launch.
+- Trust: invoicing products lose customers quickly if billing or document history feels inconsistent.
+- Support load: Bulgarian-market products often win on responsiveness, not only feature count.
 
-### 1. **Абонаментни планове (SaaS Model)** - ОСНОВЕН
-**Текущи цени:**
-- BASIC: 10 €/месец (10 клиента, 50 фактури/месец)
-- PRO: 20 €/месец (50 клиента, неограничени фактури)
-- VIP: 30 €/месец (неограничени клиенти, приоритетна поддръжка)
+## Recommendation
 
-**Потенциални приходи:**
-- 100 клиента BASIC = 1,000 €/месец
-- 50 клиента PRO = 1,000 €/месец
-- 20 клиента VIP = 600 €/месец
-- **Общо: 2,600 €/месец (31,200 €/година)** с само 170 активни потребителя
+Launch with the current four-tier pricing, keep `STARTER` as the entry paid plan, and focus marketing on:
 
-### 2. **Допълнителни услуги (Add-ons)**
-- 📧 Email изпращане на фактури (интеграция с Resend)
-- 🔗 Payment links (вече имплементирано)
-- 📊 Разширена аналитика
-- 🔄 API достъп за интеграции
-- 🏢 White-label решения за големи компании
+- freelancers and consultants
+- service businesses with one company
+- accountants handling multiple entities
 
-### 3. **Transaction fees (за плащания)**
-- Може да добавите малка такса при обработка на плащания през системата
-- Пример: 2-3% от всяко плащане
-
----
-
-## 🎯 ЦЕЛЕВИ ПАЗАР
-
-### Първичен пазар (България):
-- 🏢 Малки и средни бизнеси (SME)
-- 👨‍💼 Фрийлансъри и консултанти
-- 🏪 Търговци и доставчици на услуги
-- 📋 Счетоводни фирми (за техните клиенти)
-
-**Размер на пазара:** ~200,000 активни бизнеса в България
-
-### Вторичен пазар:
-- 🇷🇴 Румъния (същите изисквания за фактури)
-- 🇬🇷 Гърция
-- Други източноевропейски пазари
-
----
-
-## ⚠️ ПРЕДИЗВИКАТЕЛСТВА И РИСКОВЕ
-
-### 1. **Конкуренция**
-- Invoice2go, FreshBooks, Zoho Invoice (международни)
-- Локални решения (по-малко функционални, но по-евтини)
-- **Решение:** Фокус върху българската специфика и по-добра цена
-
-### 2. **Маркетинг и разпространение**
-- Нужда от SEO оптимизация
-- Социални мрежи и контент маркетинг
-- Партньорства със счетоводни фирми
-- **Решение:** Инвестиране в дигитален маркетинг
-
-### 3. **Поддръжка и развитие**
-- Нужда от постоянни подобрения
-- Техническа поддръжка за клиенти
-- **Решение:** Автоматизирана документация и FAQ секция
-
----
-
-## 📈 ПЛАН ЗА РАЗВИТИЕ И МОНЕТИЗАЦИЯ
-
-### Фаза 1: Launch (Месец 1-3)
-- ✅ Завършване на миграцията към Supabase
-- ✅ Тестване на всички функционалности
-- ✅ SEO оптимизация
-- ✅ Създаване на landing page
-- **Цел:** 10-20 платени клиента
-
-### Фаза 2: Growth (Месец 4-12)
-- 📧 Email маркетинг кампании
-- 🤝 Партньорства със счетоводни фирми
-- 📱 Мобилно приложение (опционално)
-- 🔄 Интеграции (банки, счетоводни системи)
-- **Цел:** 100-200 платени клиента
-
-### Фаза 3: Scale (Година 2+)
-- 🌍 Разширяване в други държави
-- 🏢 Enterprise планове
-- 🤖 AI функции (автоматично категоризиране)
-- 📊 Разширена бизнес аналитика
-
----
-
-## 💡 ПРЕПОРЪКИ ЗА УСПЕХ
-
-### 1. **Фокус върху българския пазар**
-- Маркетинг на български език
-- Локални SEO стратегии
-- Партньорства с български бизнес организации
-
-### 2. **Ценообразуване**
-- Текущите цени (10-30 €) са конкурентни
-- Може да добавите годишен план с 20% отстъпка
-- Free trial период (14-30 дни)
-
-### 3. **Уникални функционалности**
-- Автоматично изпращане на фактури до НАП (ако е възможно)
-- Интеграция с български банки за автоматично проследяване на плащания
-- Шаблони за различни индустрии
-
-### 4. **Customer Success**
-- Онбординг процес
-- Видео уроци (вече имате секция за това)
-- Активна поддръжка
-
----
-
-## 🎯 ЗАКЛЮЧЕНИЕ
-
-**ДА, приложението има СИЛЕН комерсиален потенциал!**
-
-### Основни причини:
-1. ✅ **Специализация за българския пазар** - уникална позиция
-2. ✅ **Готова монетизационна система** - може да започне да генерира приходи веднага
-3. ✅ **Богат набор от функционалности** - конкурентен с платените решения
-4. ✅ **Модерна технологична база** - лесно разширяване
-
-### Реалистични цели за първата година:
-- **3-6 месеца:** 20-50 платени клиента = 500-1,500 €/месец
-- **6-12 месеца:** 100-200 платени клиента = 2,000-4,000 €/месец
-- **Година 1:** 24,000-48,000 € годишен приход
-
-### Ключови фактори за успех:
-1. **Маркетинг** - най-важното за стартиране
-2. **Customer support** - за задържане на клиенти
-3. **Постоянни подобрения** - за конкурентоспособност
-
-**Вердикт: Приложението е готово за комерсиализация и има реален шанс за успех на българския пазар!** 🚀
+The best commercial move now is not raising prices, but keeping trust high and reducing friction from signup to first issued invoice.

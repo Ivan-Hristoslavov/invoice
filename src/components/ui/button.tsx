@@ -90,7 +90,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         size: heroSize,
         variant: heroVariant,
       }),
-      "inline-flex flex-row items-center justify-center gap-1.5 text-center leading-tight whitespace-normal sm:whitespace-nowrap",
+      "inline-flex min-h-10 flex-row items-center justify-center gap-1.5 rounded-2xl text-center text-sm font-medium leading-tight whitespace-normal sm:min-h-11 sm:whitespace-nowrap",
       (disabled || loading) && "pointer-events-none opacity-60",
       className
     );

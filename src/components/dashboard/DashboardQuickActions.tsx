@@ -16,7 +16,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 const linkClass =
   "flex items-center w-full p-2.5 sm:p-3 rounded-lg sm:rounded-xl hover:bg-muted/50 transition-colors group";
 
-export function DashboardQuickActions() {
+export function DashboardQuickActions({
+  hasInvoiceWorkspaceSetup = true,
+}: {
+  hasInvoiceWorkspaceSetup?: boolean;
+}) {
   const {
     isLoadingUsage,
     canCreateInvoice,
@@ -47,7 +51,14 @@ export function DashboardQuickActions() {
   }
 
   const actions: { href: string; icon: React.ElementType; title: string; desc: string; gradient: string; show: boolean }[] = [
-    { href: "/invoices/new", icon: Plus, title: "Нова фактура", desc: "Създайте фактура", gradient: "from-blue-500 to-indigo-600", show: canCreateInvoice },
+    {
+      href: hasInvoiceWorkspaceSetup ? "/invoices/new" : "/invoices",
+      icon: Plus,
+      title: hasInvoiceWorkspaceSetup ? "Нова фактура" : "Настрой фактуриране",
+      desc: hasInvoiceWorkspaceSetup ? "Създайте фактура" : "Добавете фирма и клиент",
+      gradient: "from-blue-500 to-indigo-600",
+      show: canCreateInvoice,
+    },
     { href: "/credit-notes/new", icon: MinusCircle, title: "Ново кредитно известие", desc: "Създайте кредитно известие", gradient: "from-red-500 to-rose-600", show: canCreditNotes },
     { href: "/debit-notes/new", icon: PlusCircle, title: "Ново дебитно известие", desc: "Създайте дебитно известие", gradient: "from-cyan-500 to-blue-600", show: canCreditNotes },
     { href: "/clients/new", icon: Users, title: "Нов клиент", desc: "Добавете клиент", gradient: "from-amber-500 to-orange-600", show: canCreateClient },

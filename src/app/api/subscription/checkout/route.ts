@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { createCheckoutSession } from "@/services/subscription-service";
-import { getSubscriptionPlans } from "@/lib/stripe";
-import { supabaseAdmin } from "@/lib/supabase";
+import { authOptions } from "@/lib/auth";
+import { getStripe } from "@/lib/stripe";
 import { validateRedirectUrl } from "@/lib/redirect-url";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { resolveSessionUser } from "@/lib/session-user";
+import { ensureStripeCustomerBinding } from "@/lib/stripe-customer";
+import {
+  getCanonicalPriceId,
+  type BillingInterval,
+  type SubscriptionPlanKey,
+} from "@/lib/subscription-plans";
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,44 +29,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get session
-    const session = await getServerSession();
-    console.log("Данни за сесията:", JSON.stringify(session));
+    const session = await getServerSession(authOptions);
 
-    if (!session) {
-      console.log("Липсва сесия");
+    if (!session?.user) {
       return NextResponse.json(
         { error: "Необходима е автентикация" },
         { status: 401 }
       );
     }
 
-    if (!session.user || !session.user.email) {
-      console.log("Липсва информация за потребителя в сесията");
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser || !session.user.email) {
       return NextResponse.json(
         { error: "Липсва информация за потребителя в сесията" },
         { status: 400 }
       );
     }
 
-    // Find the user ID from the email in the session
-    const { data: user, error: userError } = await supabaseAdmin
-      .from('User')
-      .select('id')
-      .eq('email', session.user.email)
-      .single();
-
-    if (userError || !user) {
-      console.log("Потребител не е намерен с имейл:", session.user.email);
-      return NextResponse.json(
-        { error: "Потребителят не е намерен" },
-        { status: 404 }
-      );
-    }
-
-    console.log("Намерен потребител:", user.id);
-
-    // Parse request body
     let body;
     try {
       body = await req.json();
@@ -72,51 +57,75 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { plan, returnUrl } = body;
-    // Log plan only (avoid logging full returnUrl in production)
-    
-    if (!plan) {
-      console.log("Липсва план в заявката");
+    const { plan, billingInterval = "yearly", returnUrl } = body;
+    const selectedPlan = plan as SubscriptionPlanKey;
+    const interval: BillingInterval =
+      billingInterval === "monthly" ? "monthly" : "yearly";
+
+    if (!selectedPlan) {
       return NextResponse.json({ error: "Планът е задължителен" }, { status: 400 });
     }
-    
-    // Get subscription plans
-    const SUBSCRIPTION_PLANS = await getSubscriptionPlans();
-    
-    // Validate plan
-    if (!Object.keys(SUBSCRIPTION_PLANS).includes(plan)) {
-      console.log("Невалиден план:", plan);
+
+    if (!["FREE", "STARTER", "PRO", "BUSINESS"].includes(selectedPlan)) {
       return NextResponse.json(
         { error: "Невалиден абонаментен план" },
         { status: 400 }
       );
     }
 
-    // Checkout session created for authenticated user
+    if (selectedPlan === "FREE") {
+      return NextResponse.json(
+        { error: "Безплатният план не изисква checkout" },
+        { status: 400 }
+      );
+    }
 
-    // Only allow redirect to our app (prevents open redirect / phishing)
     const redirectBase = validateRedirectUrl(returnUrl);
+    const priceId = getCanonicalPriceId(selectedPlan, interval);
 
-    // Create checkout session using the user ID from the database
-    const checkoutSession = await createCheckoutSession(
-      user.id,
-      session.user.email,
-      session.user.name || undefined,
-      plan,
-      redirectBase
-    );
+    if (!priceId) {
+      return NextResponse.json(
+        { error: `Липсва Stripe цена за ${selectedPlan} (${interval})` },
+        { status: 500 }
+      );
+    }
 
-    // Verify we have a URL to redirect to
+    const stripe = await getStripe();
+    const customerId = await ensureStripeCustomerBinding({
+      userId: sessionUser.id,
+      email: session.user.email,
+      name: session.user.name,
+    });
+
+    const checkoutSession = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      payment_method_types: ["card"],
+      line_items: [{ price: priceId, quantity: 1 }],
+      customer: customerId,
+      client_reference_id: sessionUser.id,
+      success_url: `${redirectBase}/settings/subscription?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${redirectBase}/settings/subscription?canceled=true`,
+      metadata: {
+        userId: sessionUser.id,
+        plan: selectedPlan,
+        billingInterval: interval,
+      },
+      subscription_data: {
+        metadata: {
+          userId: sessionUser.id,
+          plan: selectedPlan,
+          billingInterval: interval,
+        },
+      },
+    });
+
     if (!checkoutSession?.url) {
-      console.error("Липсва URL в checkout сесията:", checkoutSession);
       return NextResponse.json(
         { error: "Неуспешно създаване на URL за checkout сесия" },
         { status: 500 }
       );
     }
 
-
-    // Return the URL explicitly
     return NextResponse.json({
       sessionId: checkoutSession.id,
       url: checkoutSession.url,

@@ -132,16 +132,16 @@ export default async function CreditNotesPage() {
   const thisMonthAmount = thisMonthCreditNotes.reduce((sum, cn) => sum + Number(cn.total), 0);
 
   return (
-    <div className="space-y-6">
+    <div className="app-page-shell">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Кредитни известия</h1>
-          <p className="text-muted-foreground mt-1">
+      <div className="page-header">
+        <div className="min-w-0">
+          <h1 className="page-title">Кредитни известия</h1>
+          <p className="card-description mt-1">
             Преглед на издадени кредитни известия за отменени фактури
           </p>
         </div>
-        <Button asChild className="whitespace-nowrap">
+        <Button asChild className="btn-responsive">
           <Link href="/credit-notes/new" className="flex items-center">
             <Plus className="mr-2 h-4 w-4" />
             Ново кредитно известие
@@ -214,14 +214,14 @@ export default async function CreditNotesPage() {
                 <Link
                   key={creditNote.id}
                   href={`/credit-notes/${creditNote.id}`}
-                  className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/50 transition-all duration-200 group"
+                  className="group flex flex-col gap-4 rounded-2xl border border-border/50 bg-muted/30 p-4 transition-all duration-200 hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <div className="flex min-w-0 flex-1 items-start gap-4">
                     <div className="h-11 w-11 rounded-lg shrink-0 flex items-center justify-center bg-red-500/10 text-red-600 border border-red-500/20">
                       <Receipt className="h-5 w-5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
+                      <div className="mb-0.5 flex flex-wrap items-center gap-2">
                         <p className="font-semibold text-sm truncate">{creditNote.creditNoteNumber}</p>
                         {creditNote.invoiceId && (
                           <Badge variant="outline" className="text-xs">
@@ -234,7 +234,7 @@ export default async function CreditNotesPage() {
                           </Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Users className="h-3 w-3" />
                           {creditNote.client?.name || 'Неизвестен клиент'}
@@ -246,8 +246,8 @@ export default async function CreditNotesPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4 shrink-0">
-                    <div className="text-right">
+                  <div className="flex shrink-0 items-center justify-between gap-4 sm:justify-end">
+                    <div className="text-left sm:text-right">
                       <p className="font-bold text-sm text-red-600">-{Number(creditNote.total).toFixed(2)} {creditNote.currency}</p>
                       <p className="text-xs text-muted-foreground">
                         {format(new Date(creditNote.issueDate), 'd MMM yyyy', { locale: bg })}

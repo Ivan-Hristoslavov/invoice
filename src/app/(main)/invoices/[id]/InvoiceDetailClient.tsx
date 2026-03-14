@@ -49,6 +49,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { normalizeInvoiceStatus } from "@/lib/invoice-status";
 // Payment link functionality removed - invoices are for issuance only
 
 type InvoiceItem = {
@@ -141,6 +142,21 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
     };
   }, []);
 
+  const fetchAuditLogs = useCallback(async () => {
+    setIsLoadingAuditLogs(true);
+    try {
+      const response = await fetch(`/api/audit-logs?invoiceId=${invoice.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setAuditLogs(data.logs || []);
+      }
+    } catch (error) {
+      console.error('Error fetching audit logs:', error);
+    } finally {
+      setIsLoadingAuditLogs(false);
+    }
+  }, [invoice.id]);
+
   // Fetch audit logs when History tab is selected
   useEffect(() => {
     if (activeTab === 'history' && auditLogs.length === 0 && !isLoadingAuditLogs) {
@@ -165,21 +181,6 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
 
     void fetchDocuments();
   }, [activeTab, documents.length, invoice.id, isLoadingDocuments]);
-
-  const fetchAuditLogs = useCallback(async () => {
-    setIsLoadingAuditLogs(true);
-    try {
-      const response = await fetch(`/api/audit-logs?invoiceId=${invoice.id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setAuditLogs(data.logs || []);
-      }
-    } catch (error) {
-      console.error('Error fetching audit logs:', error);
-    } finally {
-      setIsLoadingAuditLogs(false);
-    }
-  }, [invoice.id]);
 
   // Issue invoice (change status from DRAFT to ISSUED)
   const handleIssueInvoice = async () => {
@@ -310,11 +311,10 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
   };
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
+    switch (normalizeInvoiceStatus(status)) {
       case "DRAFT":
         return <AlertTriangle className="h-4 w-4 text-amber-500" />;
       case "ISSUED":
-      case "PAID": // PAID in DB = ISSUED in app
         return <CheckCircle className="h-4 w-4 text-emerald-500" />;
       case "VOIDED":
         return <XCircle className="h-4 w-4 text-purple-500" />;
@@ -326,11 +326,10 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (normalizeInvoiceStatus(status)) {
       case "DRAFT":
         return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800";
       case "ISSUED":
-      case "PAID": // PAID in DB = ISSUED in app
         return "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800";
       case "VOIDED":
         return "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800";
@@ -342,11 +341,10 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
   };
 
   const getStatusText = (status: string) => {
-    switch (status) {
+    switch (normalizeInvoiceStatus(status)) {
       case "DRAFT":
         return "Чернова";
       case "ISSUED":
-      case "PAID": // PAID in DB = ISSUED in app
         return "Издадена";
       case "VOIDED":
         return "Анулирана";
@@ -381,7 +379,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
     return (
       <Card className="mt-8">
         <CardHeader>
-          <CardTitle className="flex items-center gap-3 text-xl">
+          <CardTitle className="flex items-center gap-3">
             <Send className="w-6 h-6" />
             Комуникация с клиента
           </CardTitle>
@@ -406,12 +404,13 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Link href="/settings/subscription" className="w-full">
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-start text-left h-auto py-3 border-dashed border-amber-300 dark:border-amber-700"
-                        disabled
+                    <div className="w-full">
+                      <Button
+                        asChild
+                        variant="outline"
+                        className="w-full justify-start border-dashed border-amber-300 py-3 text-left dark:border-amber-700"
                       >
+                        <Link href="/settings/subscription" aria-label="Надградете до PRO за изпращане на фактури">
                         <div className="flex items-center gap-4 w-full">
                           <Lock className="w-5 h-5 shrink-0 text-amber-500" />
                           <span className="font-medium flex-1">Изпрати фактура</span>
@@ -419,8 +418,9 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
                             PRO
                           </span>
                         </div>
+                        </Link>
                       </Button>
-                    </Link>
+                    </div>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p className="text-sm mb-1">Изпращането на фактури по имейл е налично само в PRO и BUSINESS плановете.</p>
@@ -465,9 +465,9 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
   };
 
   return (
-    <div className="mx-auto max-w-[1400px] px-3 sm:px-4">
+    <div className="app-page-shell">
       {/* Header */}
-      <div className="flex flex-col gap-4 mb-6">
+      <div className="app-page-header">
         {/* Top row: Back button */}
         <div className="flex items-center justify-between">
           <Button variant="ghost" size="sm" asChild className="back-btn rounded-full px-3">
@@ -479,8 +479,8 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
         </div>
         
         {/* Main row: Title, Status, Actions */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3 flex-wrap">
+        <div className="page-header">
+          <div className="flex min-w-0 flex-wrap items-center gap-3">
             <h1 className="page-title">
               Фактура #{invoice.invoiceNumber}
             </h1>
@@ -497,7 +497,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
           </div>
           
           {/* Actions */}
-          <div className="flex w-full flex-col gap-2 sm:w-auto">
+          <div className="w-full sm:w-auto">
             <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
             {/* Draft actions */}
             {invoice.status === "DRAFT" && (

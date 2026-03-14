@@ -65,6 +65,27 @@ function createClientSupabaseMock() {
   };
 }
 
+function createClientDuplicateCheckSupabaseMock(hasDuplicate: boolean) {
+  const lookup = {
+    select: vi.fn(() => lookup),
+    eq: vi.fn(() => lookup),
+    limit: vi.fn(() => lookup),
+    maybeSingle: vi.fn(async () => ({
+      data: hasDuplicate ? { id: "client_existing" } : null,
+      error: null,
+    })),
+  };
+
+  return {
+    supabase: {
+      from: vi.fn((table: string) => {
+        if (table !== "Client") throw new Error(`Unexpected table ${table}`);
+        return lookup;
+      }),
+    },
+  };
+}
+
 describe("POST /api/clients route", () => {
   beforeEach(() => {
     mockGetServerSession.mockResolvedValue({ user: { id: "session-user" } });
@@ -145,5 +166,52 @@ describe("POST /api/clients route", () => {
         taxComplianceSystem: "bulgarian",
       })
     );
+  });
+
+  it("allows manual client creation without strict EIK format validation", async () => {
+    const { supabase, getInsertedPayload } = createClientSupabaseMock();
+    mockCreateAdminClient.mockReturnValue(supabase);
+
+    const { POST } = await import("@/app/api/clients/route");
+
+    const response = await POST(
+      createRequest({
+        name: "Ръчен клиент",
+        address: "ул. Пример 1",
+        city: "София",
+        country: "България",
+        bulstatNumber: "123456789",
+        entryMode: "manual",
+      })
+    );
+
+    const body = await response.json();
+    const insertedPayload = getInsertedPayload();
+
+    expect(response.status).toBe(201);
+    expect(body.name).toBe("Ръчен клиент");
+    expect(insertedPayload).toEqual(
+      expect.objectContaining({
+        name: "Ръчен клиент",
+        bulstatNumber: "123456789",
+      })
+    );
+  });
+
+  it("returns duplicate status for manual client identifier preflight checks", async () => {
+    const { supabase } = createClientDuplicateCheckSupabaseMock(true);
+    mockCreateAdminClient.mockReturnValue(supabase);
+
+    const { GET } = await import("@/app/api/clients/route");
+    const response = await GET(
+      new NextRequest(
+        "http://localhost/api/clients?bulstatNumber=123456789&uicType=BULSTAT"
+      )
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.exists).toBe(true);
+    expect(body.message).toMatch(/вече имате клиент/i);
   });
 });

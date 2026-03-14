@@ -65,7 +65,16 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { ProFeatureLock, UsageCounter, LockedButton } from "@/components/ui/pro-feature-lock";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Table } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { normalizeInvoiceStatus } from "@/lib/invoice-status";
+import { InvoiceWorkspaceSetup } from "@/components/invoice/InvoiceWorkspaceSetup";
 
 interface Invoice {
   id: string;
@@ -327,7 +336,9 @@ export default function InvoicesClient({
     }
 
     if (statusFilter !== "all") {
-      filtered = filtered.filter((invoice) => invoice.status === statusFilter);
+      filtered = filtered.filter(
+        (invoice) => normalizeInvoiceStatus(invoice.status) === statusFilter
+      );
     }
 
     filtered.sort((a, b) => {
@@ -362,10 +373,10 @@ export default function InvoicesClient({
 
   // Stats
   const stats = useMemo(() => {
-    const issued = invoices.filter(i => i.status === 'ISSUED' || i.status === 'PAID');
-    const draft = invoices.filter(i => i.status === 'DRAFT');
-    const voided = invoices.filter(i => i.status === 'VOIDED');
-    const cancelled = invoices.filter(i => i.status === 'CANCELLED');
+    const issued = invoices.filter((invoice) => normalizeInvoiceStatus(invoice.status) === "ISSUED");
+    const draft = invoices.filter((invoice) => normalizeInvoiceStatus(invoice.status) === "DRAFT");
+    const voided = invoices.filter((invoice) => normalizeInvoiceStatus(invoice.status) === "VOIDED");
+    const cancelled = invoices.filter((invoice) => normalizeInvoiceStatus(invoice.status) === "CANCELLED");
     const totalValue = issued.reduce((sum, i) => sum + Number(i.total), 0);
     
     return { issued: issued.length, draft: draft.length, voided: voided.length, cancelled: cancelled.length, totalValue };
@@ -410,7 +421,6 @@ export default function InvoicesClient({
           className: "bg-amber-500/10 text-amber-600 border-amber-200 dark:border-amber-800"
         };
       case "ISSUED":
-      case "PAID": // PAID in DB = ISSUED in app
         return {
           label: "Издадена",
           icon: CheckCircle,
@@ -437,8 +447,35 @@ export default function InvoicesClient({
     }
   };
 
+  const hasCompanies = companies.length > 0;
+  const hasClients = clients.length > 0;
+  const hasInvoiceWorkspaceSetup = hasCompanies && hasClients;
+  const shouldShowSetup = invoices.length === 0 && !hasInvoiceWorkspaceSetup;
+
+  if (shouldShowSetup) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight">Фактури</h1>
+            <p className="text-muted-foreground">
+              Подгответе акаунта си и след това ще получите пълен достъп до работното пространство за фактури.
+            </p>
+          </div>
+        </div>
+
+        <InvoiceWorkspaceSetup
+          hasCompanies={hasCompanies}
+          hasClients={hasClients}
+          title="Първо създайте основните записи"
+          description="Най-добрият старт е първо да добавите компания и клиент. След това разделът Фактури ще покаже пълния интерфейс за създаване, филтриране и управление на документи."
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="app-page-shell">
       {/* Subscription Warning Banner for FREE plan */}
       {!isLoadingUsage && isFree && invoiceUsage.remaining <= 1 && invoiceUsage.remaining > 0 && (
         <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
@@ -449,7 +486,7 @@ export default function InvoicesClient({
               Надградете за неограничени фактури.
             </span>
             <Link href="/settings/subscription">
-              <Button size="sm" variant="outline" className="ml-4 border-amber-300 text-amber-700 hover:bg-amber-100">
+              <Button size="sm" variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-100 sm:ml-4">
                 <Crown className="h-4 w-4 mr-2" />
                 Надградете
               </Button>
@@ -467,7 +504,7 @@ export default function InvoicesClient({
               Надградете до PRO за неограничени фактури.
             </span>
             <Link href="/settings/subscription">
-              <Button size="sm" className="ml-4 bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
+              <Button size="sm" className="bg-linear-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 sm:ml-4">
                 <Crown className="h-4 w-4 mr-2" />
                 Надградете до PRO
               </Button>
@@ -477,10 +514,10 @@ export default function InvoicesClient({
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold tracking-tight">Фактури</h1>
+      <div className="page-header">
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="page-title">Фактури</h1>
             {isFree && !isLoadingUsage && (
               <UsageCounter 
                 used={invoiceUsage.used} 
@@ -489,11 +526,11 @@ export default function InvoicesClient({
               />
             )}
           </div>
-          <p className="text-muted-foreground mt-1">
+          <p className="card-description">
             Управлявайте и проследявайте вашите фактури
           </p>
         </div>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
+        <div className="page-header-actions">
           {canCreateInvoices && (
             <Button variant="outline" asChild size="lg" className="hidden sm:inline-flex">
               <Link href="/invoices/import">
@@ -508,7 +545,7 @@ export default function InvoicesClient({
               size="3" 
               variant="solid" 
               color="green"
-              className="w-full shadow-lg sm:w-auto"
+              className="btn-responsive shadow-lg"
             >
               <Link href="/invoices/new" className="flex items-center whitespace-nowrap">
                 <Plus className="mr-2 h-5 w-5" />
@@ -584,7 +621,7 @@ export default function InvoicesClient({
             </div>
             {showMobileFilters && (
               <div className="grid gap-3">
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select value={statusFilter} onValueChange={setStatusFilter} aria-label="Филтър по статус">
                   <SelectTrigger className="h-11 w-full">
                     <Filter className="mr-2 h-4 w-4" />
                     <SelectValue placeholder="Филтър по статус" />
@@ -601,7 +638,7 @@ export default function InvoicesClient({
                   const [field, dir] = val.split("-");
                   setSortField(field as any);
                   setSortDirection(dir as any);
-                }}>
+                }} aria-label="Сортиране на фактурите">
                   <SelectTrigger className="h-11 w-full">
                     <ArrowUpDown className="mr-2 h-4 w-4" />
                     <SelectValue placeholder="Сортирай" />
@@ -629,7 +666,7 @@ export default function InvoicesClient({
                 className="pl-10 h-11 border-border"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={setStatusFilter} aria-label="Филтър по статус">
               <SelectTrigger className="h-11 w-full">
                 <Filter className="mr-2 h-4 w-4" />
                 <SelectValue placeholder="Филтър по статус" />
@@ -646,7 +683,7 @@ export default function InvoicesClient({
               const [field, dir] = val.split("-");
               setSortField(field as any);
               setSortDirection(dir as any);
-            }}>
+            }} aria-label="Сортиране на фактурите">
               <SelectTrigger className="h-11 w-full">
                 <ArrowUpDown className="mr-2 h-4 w-4" />
                 <SelectValue placeholder="Сортирай" />
@@ -737,23 +774,24 @@ export default function InvoicesClient({
             <>
               <div className="space-y-3 px-4 pb-4 md:hidden">
                 {paginatedInvoices.map((invoice) => {
-                  const statusConfig = getStatusConfig(invoice.status);
+                  const normalizedStatus = normalizeInvoiceStatus(invoice.status);
+                  const statusConfig = getStatusConfig(normalizedStatus);
                   const StatusIcon = statusConfig.icon;
                   return (
                     <div key={invoice.id} className="rounded-2xl border border-border/60 bg-card p-4 shadow-xs">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex min-w-0 items-start gap-3">
                           <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-                            (invoice.status === 'ISSUED' || invoice.status === 'PAID')
+                            normalizedStatus === "ISSUED"
                               ? 'bg-emerald-500/10'
-                              : invoice.status === 'DRAFT'
+                              : normalizedStatus === "DRAFT"
                               ? 'bg-amber-500/10'
                               : 'bg-red-500/10'
                           }`}>
                             <StatusIcon className={`h-5 w-5 ${
-                              (invoice.status === 'ISSUED' || invoice.status === 'PAID')
+                              normalizedStatus === "ISSUED"
                                 ? 'text-emerald-600'
-                                : invoice.status === 'DRAFT'
+                                : normalizedStatus === "DRAFT"
                                 ? 'text-amber-600'
                                 : 'text-red-600'
                             }`} />
@@ -781,13 +819,13 @@ export default function InvoicesClient({
                             Преглед
                           </Link>
                         </Button>
-                        {invoice.userId === currentUserId && invoice.status === "DRAFT" && (
+                        {invoice.userId === currentUserId && normalizedStatus === "DRAFT" && (
                           <Button size="sm" className="h-10 justify-center rounded-xl border-0 text-white gradient-primary hover:opacity-90" onClick={() => openStatusModal(invoice, "ISSUED")}>
                             <FileCheck className="mr-2 h-4 w-4" />
                             Издай
                           </Button>
                         )}
-                        {invoice.userId === currentUserId && invoice.status === "DRAFT" ? (
+                        {invoice.userId === currentUserId && normalizedStatus === "DRAFT" ? (
                           <Button size="sm" variant="outline" asChild className="h-10 justify-center rounded-xl">
                             <Link href={`/invoices/${invoice.id}/edit`}>
                               <Edit className="mr-2 h-4 w-4" />
@@ -828,7 +866,7 @@ export default function InvoicesClient({
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-56">
-                            {invoice.userId === currentUserId && invoice.status === "DRAFT" && (
+                            {invoice.userId === currentUserId && normalizedStatus === "DRAFT" && (
                               <DropdownMenuItem asChild>
                                 <Link href={`/invoices/${invoice.id}/edit`}>
                                   <Edit className="mr-2 h-4 w-4" />
@@ -836,7 +874,7 @@ export default function InvoicesClient({
                                 </Link>
                               </DropdownMenuItem>
                             )}
-                            {invoice.status === "DRAFT" && (
+                            {normalizedStatus === "DRAFT" && (
                               <>
                                 <DropdownMenuItem
                                   onClick={() => openStatusModal(invoice, "ISSUED")}
@@ -856,7 +894,7 @@ export default function InvoicesClient({
                                 )}
                               </>
                             )}
-                            {(invoice.status === "ISSUED" || invoice.status === "PAID") && invoice.userId === currentUserId && (
+                            {normalizedStatus === "ISSUED" && invoice.userId === currentUserId && (
                               <DropdownMenuItem
                                 onClick={() => openCancelModal(invoice)}
                                 className="text-red-600 focus:text-red-600"
@@ -903,49 +941,54 @@ export default function InvoicesClient({
                 })}
               </div>
               <div className="hidden md:block">
-                <Table variant="secondary" className="rounded-2xl border border-border/50 bg-transparent">
-                  <Table.ScrollContainer className="max-h-[600px]">
-                    <Table.Content aria-label="Списък с фактури" className="min-w-[980px]">
-                      <Table.Header className="bg-muted/35">
-                        <Table.Column isRowHeader className="px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                          Фактура
-                        </Table.Column>
-                        <Table.Column className="px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                          Клиент
-                        </Table.Column>
-                        <Table.Column className="px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                          Дата
-                        </Table.Column>
-                        <Table.Column className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                          Сума
-                        </Table.Column>
-                        <Table.Column className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                          Статус
-                        </Table.Column>
-                        <Table.Column className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                          Действия
-                        </Table.Column>
-                      </Table.Header>
-                      <Table.Body items={paginatedInvoices}>
-                        {(invoice) => {
-                          const statusConfig = getStatusConfig(invoice.status);
-                          const StatusIcon = statusConfig.icon;
+                <Table
+                  variant="secondary"
+                  stickyHeader
+                  contentAriaLabel="Списък с фактури"
+                  contentClassName="min-w-[980px]"
+                  className="rounded-2xl border border-border/50 bg-transparent"
+                >
+                  <TableHeader className="bg-muted/35">
+                    <TableHead isRowHeader className="px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Фактура
+                    </TableHead>
+                    <TableHead className="px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Клиент
+                    </TableHead>
+                    <TableHead className="px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Дата
+                    </TableHead>
+                    <TableHead className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Сума
+                    </TableHead>
+                    <TableHead className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Статус
+                    </TableHead>
+                    <TableHead className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Действия
+                    </TableHead>
+                  </TableHeader>
+                  <TableBody items={paginatedInvoices}>
+                    {(invoice) => {
+                      const normalizedStatus = normalizeInvoiceStatus(invoice.status);
+                      const statusConfig = getStatusConfig(normalizedStatus);
+                      const StatusIcon = statusConfig.icon;
 
-                          return (
-                            <Table.Row key={invoice.id} id={invoice.id} className="group">
-                              <Table.Cell className="px-6 py-4">
+                      return (
+                        <TableRow key={invoice.id} id={invoice.id} className="group">
+                              <TableCell className="px-6 py-4">
                                 <div className="flex items-center gap-3">
                                   <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-                                    (invoice.status === "ISSUED" || invoice.status === "PAID")
+                                    normalizedStatus === "ISSUED"
                                       ? "bg-emerald-500/10"
-                                      : invoice.status === "DRAFT"
+                                      : normalizedStatus === "DRAFT"
                                         ? "bg-amber-500/10"
                                         : "bg-red-500/10"
                                   }`}>
                                     <StatusIcon className={`h-5 w-5 ${
-                                      (invoice.status === "ISSUED" || invoice.status === "PAID")
+                                      normalizedStatus === "ISSUED"
                                         ? "text-emerald-600"
-                                        : invoice.status === "DRAFT"
+                                        : normalizedStatus === "DRAFT"
                                           ? "text-amber-600"
                                           : "text-red-600"
                                     }`} />
@@ -957,31 +1000,31 @@ export default function InvoicesClient({
                                     </p>
                                   </div>
                                 </div>
-                              </Table.Cell>
-                              <Table.Cell className="px-6 py-4">
+                              </TableCell>
+                              <TableCell className="px-6 py-4">
                                 <div className="min-w-0">
                                   <p className="truncate text-sm font-medium">{invoice.client.name}</p>
                                 </div>
-                              </Table.Cell>
-                              <Table.Cell className="px-6 py-4">
+                              </TableCell>
+                              <TableCell className="px-6 py-4">
                                 <p className="text-sm text-muted-foreground">
                                   {format(new Date(invoice.issueDate), "d MMMM yyyy", { locale: bg })}
                                 </p>
-                              </Table.Cell>
-                              <Table.Cell className="px-6 py-4 text-right">
+                              </TableCell>
+                              <TableCell className="px-6 py-4 text-right">
                                 <p className="text-sm font-bold">
                                   {formatPrice(Number(invoice.total))} €
                                 </p>
-                              </Table.Cell>
-                              <Table.Cell className="px-6 py-4">
+                              </TableCell>
+                              <TableCell className="px-6 py-4">
                                 <div className="flex justify-center">
                                   <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${statusConfig.className}`}>
                                     <StatusIcon className="h-3 w-3" />
                                     {statusConfig.label}
                                   </span>
                                 </div>
-                              </Table.Cell>
-                              <Table.Cell className="px-6 py-4">
+                              </TableCell>
+                              <TableCell className="px-6 py-4">
                                 <div className="flex items-center justify-center">
                                   <DropdownMenu>
                                     <DropdownMenuTrigger
@@ -993,7 +1036,7 @@ export default function InvoicesClient({
                                       <MoreHorizontal className="h-4 w-4" />
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                      {invoice.userId === currentUserId && invoice.status === "DRAFT" && (
+                                      {invoice.userId === currentUserId && normalizedStatus === "DRAFT" && (
                                         <DropdownMenuItem asChild>
                                           <Link href={`/invoices/${invoice.id}/edit`} onClick={(e) => e.stopPropagation()}>
                                             <Edit className="mr-2 h-4 w-4" />
@@ -1001,7 +1044,7 @@ export default function InvoicesClient({
                                           </Link>
                                         </DropdownMenuItem>
                                       )}
-                                      {invoice.status === "DRAFT" && (
+                                      {normalizedStatus === "DRAFT" && (
                                         <>
                                           <DropdownMenuItem
                                             onClick={(e) => {
@@ -1027,7 +1070,7 @@ export default function InvoicesClient({
                                           )}
                                         </>
                                       )}
-                                      {(invoice.status === "ISSUED" || invoice.status === "PAID") && invoice.userId === currentUserId && (
+                                      {normalizedStatus === "ISSUED" && invoice.userId === currentUserId && (
                                         <DropdownMenuItem
                                           onClick={(e) => {
                                             e.stopPropagation();
@@ -1133,13 +1176,11 @@ export default function InvoicesClient({
                                     </DropdownMenuContent>
                                   </DropdownMenu>
                                 </div>
-                              </Table.Cell>
-                            </Table.Row>
+                              </TableCell>
+                            </TableRow>
                           );
                         }}
-                      </Table.Body>
-                    </Table.Content>
-                  </Table.ScrollContainer>
+                  </TableBody>
                 </Table>
               </div>
               {filteredInvoices.length > ITEMS_PER_PAGE && (

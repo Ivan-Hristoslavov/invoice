@@ -7,6 +7,7 @@ import { SubscriptionHistory } from '@/components/subscription/SubscriptionHisto
 import { useSearchParams } from 'next/navigation';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle2, XCircle, History, ChevronRight } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 export default function SubscriptionPage() {
   const searchParams = useSearchParams();
@@ -14,7 +15,16 @@ export default function SubscriptionPage() {
   const canceled = searchParams.get('canceled');
   
   return (
-    <div className="space-y-4">
+    <div className="app-page-shell">
+      <div className="app-page-header">
+        <div>
+          <h1 className="page-title">Абонамент</h1>
+          <p className="card-description mt-1">
+            Управлявайте плана си, лимитите и историята на плащанията от едно място.
+          </p>
+        </div>
+      </div>
+
       {/* Success/Cancel Alerts - Compact */}
       {success && (
         <Alert variant="default" className="py-2 bg-green-50 dark:bg-green-950/20 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800">
@@ -37,23 +47,35 @@ export default function SubscriptionPage() {
       )}
       
       {/* Subscription Plans - Main content */}
-      <Suspense fallback={<SubscriptionSkeleton />}>
-        <SubscriptionPlans />
-      </Suspense>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle>Планове и лимити</CardTitle>
+          <CardDescription>Сравнете наличните планове и надградете, когато имате нужда.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Suspense fallback={<SubscriptionSkeleton />}>
+            <SubscriptionPlans />
+          </Suspense>
+        </CardContent>
+      </Card>
 
       {/* Payment History - Collapsible or minimal */}
-      <details className="group">
-        <summary className="flex items-center gap-2 cursor-pointer text-sm text-muted-foreground hover:text-foreground transition-colors py-2">
-          <History className="h-4 w-4" />
-          <span>История на плащанията</span>
-          <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
-        </summary>
-        <div className="pt-2">
-          <Suspense fallback={<SubscriptionSkeleton />}>
-            <SubscriptionHistory />
-          </Suspense>
-        </div>
-      </details>
+      <Card>
+        <CardContent className="pt-4 sm:pt-5 md:pt-6">
+          <details className="group">
+            <summary className="flex cursor-pointer items-center gap-2 py-1 text-sm text-muted-foreground transition-colors hover:text-foreground">
+              <History className="h-4 w-4" />
+              <span>История на плащанията</span>
+              <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
+            </summary>
+            <div className="pt-4">
+              <Suspense fallback={<SubscriptionSkeleton />}>
+                <SubscriptionHistory />
+              </Suspense>
+            </div>
+          </details>
+        </CardContent>
+      </Card>
     </div>
   );
 }

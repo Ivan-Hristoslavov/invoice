@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { FullPageLoader, LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface LoadingProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Вид на индикатора - може да бъде 'spinner', 'dots', или 'pulse' */
@@ -35,16 +36,7 @@ export function Loading({
   const renderIndicator = () => {
     switch(variant) {
       case 'spinner':
-        return (
-          <div 
-            className={cn(
-              "animate-spin rounded-full border-2 border-t-transparent", 
-              sizeClasses[size],
-              size === 'sm' ? 'border-2' : size === 'md' ? 'border-3' : 'border-4',
-              "border-primary"
-            )}
-          />
-        );
+        return <LoadingSpinner size={size === 'sm' ? 'small' : size === 'lg' ? 'large' : 'medium'} />;
       case 'dots':
         return (
           <div className="flex space-x-1">
@@ -91,6 +83,10 @@ export function Loading({
   );
   
   if (fullScreen) {
+    if (variant === 'spinner') {
+      return <FullPageLoader title={text} subtitle={showText ? undefined : "Подготвяме съдържанието за вас..."} />;
+    }
+
     return (
       <div className="loading-overlay">
         {content}

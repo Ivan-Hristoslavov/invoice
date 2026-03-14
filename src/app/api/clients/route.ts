@@ -5,8 +5,10 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { resolveSessionUser } from "@/lib/session-user";
 import {
   formatValidationIssues,
+  normalizePartyInput,
   validateBulgarianPartyInput,
 } from "@/lib/bulgarian-party";
+import { getAccessibleOwnerUserIdsForUser } from "@/lib/team";
 import { z } from "zod";
 import cuid from "cuid";
 
@@ -53,16 +55,49 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams;
+    const bulstatNumber = searchParams.get("bulstatNumber");
+    const uicType = searchParams.get("uicType");
     const query = searchParams.get("query") || "";
     const page = parseInt(searchParams.get("page") || "0");
     const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get("pageSize") || "12")));
 
     const supabase = createAdminClient();
+    const accessibleOwnerIds = await getAccessibleOwnerUserIdsForUser(sessionUser.id);
+
+    if (bulstatNumber) {
+      const normalizedBulstat =
+        normalizePartyInput({
+          name: "Client duplicate check",
+          bulstatNumber,
+          uicType: uicType === "EGN" ? "EGN" : "BULSTAT",
+        }).bulstatNumber || "";
+
+      if (!normalizedBulstat) {
+        return NextResponse.json({
+          exists: false,
+          bulstatNumber: normalizedBulstat,
+        });
+      }
+
+      const { data: client } = await supabase
+        .from("Client")
+        .select("id")
+        .in("userId", accessibleOwnerIds)
+        .eq("bulstatNumber", normalizedBulstat)
+        .limit(1)
+        .maybeSingle();
+
+      return NextResponse.json({
+        exists: Boolean(client),
+        bulstatNumber: normalizedBulstat,
+        message: client ? "Вече имате клиент с този ЕИК/БУЛСТАТ." : null,
+      });
+    }
 
     let clientQuery = supabase
       .from("Client")
       .select("*", { count: "exact" })
-      .eq("userId", sessionUser.id);
+      .in("userId", accessibleOwnerIds);
 
     // Server-side search via ilike (faster than JS filtering)
     if (query) {
@@ -140,8 +175,11 @@ export async function POST(request: NextRequest) {
 
     // Parse and validate the data
     const json = await request.json();
+    const entryMode = json?.entryMode === "manual" ? "manual" : "eik";
     const validatedData = clientSchema.parse(json);
-    const { normalized, issues } = validateBulgarianPartyInput(validatedData);
+    const { normalized, issues } = validateBulgarianPartyInput(validatedData, {
+      skipIdentifierFormatValidation: entryMode === "manual",
+    });
 
     if (issues.length > 0) {
       return NextResponse.json(

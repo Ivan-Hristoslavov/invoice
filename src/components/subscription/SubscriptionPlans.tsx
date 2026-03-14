@@ -10,14 +10,14 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CancellationSurvey } from './CancellationSurvey';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { SUBSCRIPTION_PLANS } from '@/lib/subscription-plans';
 
-// Pricing structure - 6 items per plan for equal height
 const PLANS = {
   FREE: {
-    name: 'FREE',
-    displayName: 'Безплатен',
-    monthlyPrice: 0,
-    yearlyPrice: 0,
+    name: SUBSCRIPTION_PLANS.FREE.key,
+    displayName: SUBSCRIPTION_PLANS.FREE.displayName,
+    monthlyPrice: SUBSCRIPTION_PLANS.FREE.monthlyPrice,
+    yearlyPrice: SUBSCRIPTION_PLANS.FREE.yearlyPrice,
     description: 'За стартиране',
     icon: FileText,
     color: 'slate',
@@ -31,10 +31,10 @@ const PLANS = {
     ],
   },
   STARTER: {
-    name: 'STARTER',
-    displayName: 'Стартер',
-    monthlyPrice: 4.99,
-    yearlyPrice: 49.99,
+    name: SUBSCRIPTION_PLANS.STARTER.key,
+    displayName: SUBSCRIPTION_PLANS.STARTER.displayName,
+    monthlyPrice: SUBSCRIPTION_PLANS.STARTER.monthlyPrice,
+    yearlyPrice: SUBSCRIPTION_PLANS.STARTER.yearlyPrice,
     description: 'За фрийлансъри',
     icon: Zap,
     color: 'blue',
@@ -48,10 +48,10 @@ const PLANS = {
     ],
   },
   PRO: {
-    name: 'PRO',
-    displayName: 'Про',
-    monthlyPrice: 8.99,
-    yearlyPrice: 89.99,
+    name: SUBSCRIPTION_PLANS.PRO.key,
+    displayName: SUBSCRIPTION_PLANS.PRO.displayName,
+    monthlyPrice: SUBSCRIPTION_PLANS.PRO.monthlyPrice,
+    yearlyPrice: SUBSCRIPTION_PLANS.PRO.yearlyPrice,
     description: 'За малки бизнеси',
     icon: Star,
     color: 'emerald',
@@ -66,10 +66,10 @@ const PLANS = {
     ],
   },
   BUSINESS: {
-    name: 'BUSINESS',
-    displayName: 'Бизнес',
-    monthlyPrice: 19.99,
-    yearlyPrice: 199.99,
+    name: SUBSCRIPTION_PLANS.BUSINESS.key,
+    displayName: SUBSCRIPTION_PLANS.BUSINESS.displayName,
+    monthlyPrice: SUBSCRIPTION_PLANS.BUSINESS.monthlyPrice,
+    yearlyPrice: SUBSCRIPTION_PLANS.BUSINESS.yearlyPrice,
     description: 'За предприятия',
     icon: Crown,
     color: 'violet',

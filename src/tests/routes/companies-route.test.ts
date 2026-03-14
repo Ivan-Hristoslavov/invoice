@@ -42,7 +42,7 @@ function createCompanySupabaseMock() {
 
   const duplicateLookup = {
     select: vi.fn(() => duplicateLookup),
-    ilike: vi.fn(() => duplicateLookup),
+    eq: vi.fn(() => duplicateLookup),
     limit: vi.fn(() => duplicateLookup),
     maybeSingle: vi.fn(async () => ({ data: null, error: null })),
   };
@@ -72,6 +72,48 @@ function createCompanySupabaseMock() {
   return {
     supabase,
     getInsertedPayload: () => insertedPayload,
+  };
+}
+
+function createDuplicateCompanySupabaseMock(userId: string) {
+  const duplicateLookup = {
+    select: vi.fn(() => duplicateLookup),
+    eq: vi.fn(() => duplicateLookup),
+    limit: vi.fn(() => duplicateLookup),
+    maybeSingle: vi.fn(async () => ({
+      data: { id: "company_existing", userId },
+      error: null,
+    })),
+  };
+
+  return {
+    supabase: {
+      from: vi.fn((table: string) => {
+        if (table !== "Company") throw new Error(`Unexpected table ${table}`);
+        return duplicateLookup;
+      }),
+    },
+  };
+}
+
+function createDuplicateCheckSupabaseMock(userId: string | null) {
+  const lookup = {
+    select: vi.fn(() => lookup),
+    eq: vi.fn(() => lookup),
+    limit: vi.fn(() => lookup),
+    maybeSingle: vi.fn(async () => ({
+      data: userId ? { id: "company_existing", userId } : null,
+      error: null,
+    })),
+  };
+
+  return {
+    supabase: {
+      from: vi.fn((table: string) => {
+        if (table !== "Company") throw new Error(`Unexpected table ${table}`);
+        return lookup;
+      }),
+    },
   };
 }
 
@@ -169,5 +211,56 @@ describe("POST /api/companies route", () => {
         taxComplianceSystem: "bulgarian",
       })
     );
+  });
+
+  it("returns a conflict when the EIK already belongs to another account", async () => {
+    const { supabase } = createDuplicateCompanySupabaseMock("other-user");
+    mockCreateAdminClient.mockReturnValue(supabase);
+
+    const { POST } = await import("@/app/api/companies/route");
+
+    const response = await POST(
+      createRequest({
+        name: "Тест ООД",
+        email: "office@example.com",
+        address: "бул. България 1",
+        city: "София",
+        country: "България",
+        bulstatNumber: "204676177",
+        vatRegistered: false,
+        mol: "Иван Иванов",
+        uicType: "BULSTAT",
+      })
+    );
+
+    const body = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(body.error).toMatch(/вече е регистрирана/i);
+    expect(body.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: ["bulstatNumber"],
+        }),
+      ])
+    );
+  });
+
+  it("returns duplicate status for manual EIK preflight checks", async () => {
+    const { supabase } = createDuplicateCheckSupabaseMock("other-user");
+    mockCreateAdminClient.mockReturnValue(supabase);
+
+    const { GET } = await import("@/app/api/companies/route");
+    const response = await GET(
+      new NextRequest(
+        "http://localhost/api/companies?bulstatNumber=204676177&uicType=BULSTAT"
+      )
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.exists).toBe(true);
+    expect(body.isOwnedByCurrentUser).toBe(false);
+    expect(body.message).toMatch(/не може да бъде добавена като ваша/i);
   });
 });

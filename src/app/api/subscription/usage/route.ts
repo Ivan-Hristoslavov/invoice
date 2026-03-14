@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { PLAN_LIMITS } from "@/middleware/subscription";
 import { resolveSessionUser } from "@/lib/session-user";
+import { type ExportCapability } from "@/lib/subscription-plans";
 
 export interface UsageData {
   plan: string;
@@ -31,7 +32,7 @@ export interface UsageData {
   };
   features: {
     customBranding: boolean;
-    export: boolean | string;
+    export: ExportCapability;
     creditNotes: boolean;
     emailSending: boolean;
     apiAccess: boolean;
@@ -107,11 +108,20 @@ export async function GET(request: NextRequest) {
       .select("*", { count: "exact", head: true })
       .eq("userId", userId);
 
-    // Get user/team member count
-    const { count: userCount } = await supabase
-      .from("UserRole")
-      .select("*", { count: "exact", head: true })
+    const { data: ownedCompanies } = await supabase
+      .from("Company")
+      .select("id")
       .eq("userId", userId);
+
+    const ownedCompanyIds = (ownedCompanies || []).map((company) => company.id);
+    const { count: invitedMemberCount } =
+      ownedCompanyIds.length > 0
+        ? await supabase
+            .from("UserRole")
+            .select("*", { count: "exact", head: true })
+            .in("companyId", ownedCompanyIds)
+            .neq("role", "OWNER")
+        : { count: 0 };
 
     const usageData: UsageData = {
       plan,
@@ -134,7 +144,7 @@ export async function GET(request: NextRequest) {
         limit: limits.maxProducts === Infinity ? -1 : limits.maxProducts,
       },
       users: {
-        used: userCount || 1, // At least 1 (the owner)
+        used: Math.max(1, (invitedMemberCount || 0) + 1),
         limit: limits.maxUsers,
       },
       features: {

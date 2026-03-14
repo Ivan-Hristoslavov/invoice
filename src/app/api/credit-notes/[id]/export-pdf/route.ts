@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { generateCreditNotePdfServer } from "@/lib/credit-note-pdf";
 import { resolveSessionUser } from "@/lib/session-user";
 import { withDocumentSnapshots } from "@/lib/document-snapshots";
+import { canExportFormat, getSubscriptionPlan } from "@/lib/subscription-plans";
 
 export async function GET(
   request: NextRequest,
@@ -23,6 +24,21 @@ export async function GET(
     }
 
     const supabase = createAdminClient();
+    const { data: subscriptions } = await supabase
+      .from("Subscription")
+      .select("plan, status")
+      .eq("userId", sessionUser.id)
+      .in("status", ["ACTIVE", "TRIALING", "PAST_DUE"])
+      .order("createdAt", { ascending: false })
+      .limit(1);
+    const plan = getSubscriptionPlan(subscriptions?.[0]?.plan);
+
+    if (!canExportFormat(plan.features.export, "pdf")) {
+      return NextResponse.json(
+        { error: "PDF експортът е наличен само за PRO и BUSINESS." },
+        { status: 403 }
+      );
+    }
 
     // Fetch credit note with all related data
     const { data: creditNote, error: creditNoteError } = await supabase

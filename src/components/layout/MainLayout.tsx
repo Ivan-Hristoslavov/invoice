@@ -55,9 +55,9 @@ export function MainLayout({ children }: MainLayoutProps) {
             <main
               id="main-content"
               tabIndex={-1}
-              className="min-w-0 flex-1 animate-in overflow-x-hidden p-3 pt-4 fade-in duration-150 focus:outline-none sm:p-4 lg:p-5 xl:p-6"
+              className="min-w-0 flex-1 animate-in overflow-x-hidden px-3 pb-6 pt-4 fade-in duration-150 focus:outline-none sm:px-4 sm:pb-8 sm:pt-5 lg:px-5 lg:pb-10 lg:pt-6 xl:px-6"
             >
-              <div className="mx-auto w-full max-w-7xl pb-5 sm:pb-6">
+              <div className="mx-auto w-full max-w-[1440px] pb-2 sm:pb-3">
                 {children}
               </div>
             </main>

@@ -30,6 +30,7 @@ import { bg } from "date-fns/locale";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
 import { isIssuedLikeStatus, normalizeInvoiceStatus, type AppInvoiceStatus } from "@/lib/invoice-status";
+import { InvoiceWorkspaceSetup } from "@/components/invoice/InvoiceWorkspaceSetup";
 
 export const metadata: Metadata = {
   title: `Табло | ${APP_NAME}`,
@@ -347,6 +348,10 @@ export default async function DashboardPage() {
     }
   ];
 
+  const hasCompanies = (companyCount || 0) > 0;
+  const hasClients = (clientCount || 0) > 0;
+  const hasInvoiceWorkspaceSetup = hasCompanies && hasClients;
+
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Header */}
@@ -367,13 +372,26 @@ export default async function DashboardPage() {
           color="green"
           className="shadow-lg hover:shadow-xl transition-shadow btn-responsive"
         >
-          <Link href="/invoices/new" className="flex items-center whitespace-nowrap">
+          <Link href={hasInvoiceWorkspaceSetup ? "/invoices/new" : "/invoices"} className="flex items-center whitespace-nowrap">
             <Plus className="mr-1.5 h-4 w-4" />
-            <span className="hidden sm:inline">Нова фактура</span>
-            <span className="sm:hidden">Нова</span>
+            <span className="hidden sm:inline">
+              {hasInvoiceWorkspaceSetup ? "Нова фактура" : "Настрой фактуриране"}
+            </span>
+            <span className="sm:hidden">
+              {hasInvoiceWorkspaceSetup ? "Нова" : "Старт"}
+            </span>
           </Link>
         </Button>
       </div>
+
+      {!hasInvoiceWorkspaceSetup && (
+        <InvoiceWorkspaceSetup
+          hasCompanies={hasCompanies}
+          hasClients={hasClients}
+          title="Започнете с настройката на фактурирането"
+          description="След първия вход е най-лесно първо да добавите фирма и клиент. Щом и двете са готови, ще можете да създавате фактури без блокиращи стъпки."
+        />
+      )}
 
       {/* Stats Grid */}
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
@@ -398,7 +416,7 @@ export default async function DashboardPage() {
       {/* Quick Actions & Recent Invoices */}
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
         {/* Quick Actions - only show when usage loaded and user is allowed */}
-        <DashboardQuickActions />
+        <DashboardQuickActions hasInvoiceWorkspaceSetup={hasInvoiceWorkspaceSetup} />
 
         {/* Recent Invoices */}
         <Card className="lg:col-span-2 border border-border/50 shadow-md">

@@ -18,7 +18,11 @@ import { ApiStatusCode } from "@/types/api";
 import { checkSubscriptionLimits } from "@/middleware/subscription";
 import cuid from "cuid";
 import { resolveSessionUser } from "@/lib/session-user";
-import { getDatabaseStatusesForAppStatus } from "@/lib/invoice-status";
+import {
+  getDatabaseStatusesForAppStatus,
+  normalizeInvoiceStatus,
+} from "@/lib/invoice-status";
+import { getAccessibleCompaniesForUser } from "@/lib/team";
 
 // Schema для валидация на заявката
 const InvoiceQuerySchema = z.object({
@@ -120,6 +124,20 @@ export async function GET(request: NextRequest) {
         const supabase = createAdminClient();
         
         // Build Supabase query
+        const accessibleCompanies = await getAccessibleCompaniesForUser(sessionUser.id);
+        const accessibleCompanyIds = accessibleCompanies.map((company) => company.id);
+
+        if (accessibleCompanyIds.length === 0) {
+          return NextResponse.json(
+            formatApiResponse([], true, {
+              page,
+              pageSize,
+              totalPages: 0,
+              totalItems: 0,
+            })
+          );
+        }
+
         let query = supabase
           .from("Invoice")
           .select(`
@@ -128,7 +146,7 @@ export async function GET(request: NextRequest) {
             company:Company(id, name),
             items:InvoiceItem(*)
           `, { count: 'exact' })
-          .eq("userId", sessionUser.id);
+          .in("companyId", accessibleCompanyIds);
         
         // Apply filters
         if (params.status) {
@@ -169,6 +187,7 @@ export async function GET(request: NextRequest) {
         // Конвертиране на Decimal стойности към числа
         const serializedInvoices: InvoiceResponse[] = (invoices || []).map((invoice: any) => ({
           ...invoice,
+          status: normalizeInvoiceStatus(invoice.status),
           subtotal: Number(invoice.subtotal || 0),
           taxAmount: Number(invoice.taxAmount || 0),
           total: Number(invoice.total || 0),
@@ -278,7 +297,7 @@ export async function POST(request: NextRequest) {
             // Get next invoice number using InvoiceSequence (per-user numbering, 10-digit format)
             const { getNextInvoiceSequence } = await import("@/lib/invoice-sequence");
             const { invoiceNumber } = await getNextInvoiceSequence(
-              sessionUser.id,
+              company.userId,
               validatedData.companyId,
               company.bulstatNumber
             );
@@ -288,7 +307,7 @@ export async function POST(request: NextRequest) {
               .from("Invoice")
               .select("id")
               .eq("invoiceNumber", invoiceNumber)
-              .eq("userId", sessionUser.id)
+              .eq("userId", company.userId)
               .single();
             
             if (existingInvoice) {
@@ -306,7 +325,7 @@ export async function POST(request: NextRequest) {
               invoiceNumber,
               clientId: validatedData.clientId,
               companyId: validatedData.companyId,
-              userId: sessionUser.id,
+              userId: company.userId,
               issueDate: new Date(validatedData.issueDate).toISOString(),
               dueDate: new Date(validatedData.dueDate).toISOString(),
               supplyDate: validatedData.supplyDate ? new Date(validatedData.supplyDate).toISOString() : new Date(validatedData.issueDate).toISOString(),
@@ -390,7 +409,7 @@ export async function POST(request: NextRequest) {
           .insert(itemsData);
         
         if (itemsError) {
-          await supabase.from("Invoice").delete().eq("id", invoiceId).eq("userId", sessionUser.id);
+          await supabase.from("Invoice").delete().eq("id", invoiceId).eq("userId", company.userId);
           throw itemsError;
         }
         

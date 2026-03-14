@@ -25,8 +25,11 @@ export async function GET(
 
   if (!API_KEY) {
     return NextResponse.json(
-      { error: "CompanyBook API ключът не е конфигуриран" },
-      { status: 500 }
+      {
+        error: "Автоматичното попълване по ЕИК е временно недостъпно. Можете да продължите с ръчно въвеждане.",
+        featureUnavailable: true,
+      },
+      { status: 503 }
     );
   }
 
@@ -49,8 +52,11 @@ export async function GET(
         );
       }
       return NextResponse.json(
-        { error: "Грешка при заявка към CompanyBook API" },
-        { status: response.status }
+        {
+          error: "CompanyBook временно не отговаря. Можете да продължите с ръчно въвеждане.",
+          featureUnavailable: true,
+        },
+        { status: 503 }
       );
     }
 
@@ -59,8 +65,11 @@ export async function GET(
   } catch (error) {
     console.error("CompanyBook API error:", error);
     return NextResponse.json(
-      { error: "Неуспешна връзка с CompanyBook API" },
-      { status: 502 }
+      {
+        error: "Неуспешна връзка с CompanyBook API. Можете да продължите с ръчно въвеждане.",
+        featureUnavailable: true,
+      },
+      { status: 503 }
     );
   }
 }

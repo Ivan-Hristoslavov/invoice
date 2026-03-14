@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 // Define Role type locally since we're not using Prisma on client side
 type Role = 'ADMIN' | 'OWNER' | 'MANAGER' | 'ACCOUNTANT' | 'VIEWER';
+const editableRoles: Exclude<Role, "OWNER">[] = ['ADMIN', 'MANAGER', 'ACCOUNTANT', 'VIEWER'];
 import { UserCog, Check, X, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,6 +52,7 @@ export default function UserRoleActions({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role>(currentRole);
+  const canEditRole = currentRole !== "OWNER";
   
   // Function to update user role
   const handleUpdateRole = async () => {
@@ -122,17 +124,22 @@ export default function UserRoleActions({
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm">
+          <button
+            type="button"
+            className="inline-flex min-h-10 items-center justify-center rounded-2xl px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+          >
             <UserCog className="h-4 w-4" />
             <span className="sr-only">Действия с потребител</span>
-          </Button>
+          </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Действия с потребител</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setIsOpen(true)}>
-            Промяна на роля
-          </DropdownMenuItem>
+          {canEditRole ? (
+            <DropdownMenuItem onClick={() => setIsOpen(true)}>
+              Промяна на роля
+            </DropdownMenuItem>
+          ) : null}
           {!isCurrentUser && (
             <DropdownMenuItem
               onClick={() => setIsDeleteDialogOpen(true)}
@@ -144,99 +151,109 @@ export default function UserRoleActions({
         </DropdownMenuContent>
       </DropdownMenu>
       
-      {/* Change Role Dialog */}
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Промяна на роля на потребител</DialogTitle>
-            <DialogDescription>
-              Обновете ролята и разрешенията за този потребител.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="role">Роля</Label>
-              <Select
-                value={selectedRole}
-                onValueChange={(value) => setSelectedRole(value as Role)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Изберете роля" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="OWNER">Собственик</SelectItem>
-                  <SelectItem value="MANAGER">Мениджър</SelectItem>
-                  <SelectItem value="ACCOUNTANT">Счетоводител</SelectItem>
-                  <SelectItem value="VIEWER">Наблюдател</SelectItem>
-                </SelectContent>
-              </Select>
+      {isOpen && canEditRole ? (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Промяна на роля на потребител</DialogTitle>
+              <DialogDescription>
+                Обновете ролята и разрешенията за този потребител.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="role">Роля</Label>
+                <Select
+                  value={selectedRole}
+                  onValueChange={(value) => setSelectedRole(value as Role)}
+                  aria-label="Роля на потребителя"
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Изберете роля" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {editableRoles.map((role) => (
+                      <SelectItem key={role} value={role}>
+                        {role === "ADMIN"
+                          ? "Администратор"
+                          : role === "MANAGER"
+                            ? "Мениджър"
+                            : role === "ACCOUNTANT"
+                              ? "Счетоводител"
+                              : "Наблюдател"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label>Разрешения на ролята</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {selectedRole === "OWNER" && (
+                    "Пълен достъп до всички функции на компанията, включително управление на потребители."
+                  )}
+                  {selectedRole === "MANAGER" && (
+                    "Може да създава и управлява повечето ресурси, но не може да изтрива или управлява потребители."
+                  )}
+                  {selectedRole === "ACCOUNTANT" && (
+                    "Може да управлява фактури, плащания и финансови записи."
+                  )}
+                  {selectedRole === "VIEWER" && (
+                    "Само за четене - може да вижда информация, но не може да прави промени."
+                  )}
+                </p>
+              </div>
             </div>
             
-            <div>
-              <Label>Разрешения на ролята</Label>
-              <p className="text-sm text-muted-foreground mt-1">
-                {selectedRole === "OWNER" && (
-                  "Пълен достъп до всички функции на компанията, включително управление на потребители."
-                )}
-                {selectedRole === "MANAGER" && (
-                  "Може да създава и управлява повечето ресурси, но не може да изтрива или управлява потребители."
-                )}
-                {selectedRole === "ACCOUNTANT" && (
-                  "Може да управлява фактури, плащания и финансови записи."
-                )}
-                {selectedRole === "VIEWER" && (
-                  "Само за четене - може да вижда информация, но не може да прави промени."
-                )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsOpen(false)}>
+                Отказ
+              </Button>
+              <Button onClick={handleUpdateRole} disabled={isLoading}>
+                {isLoading ? "Обновяване..." : "Запази промените"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ) : null}
+      
+      {isDeleteDialogOpen ? (
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Премахни потребител</DialogTitle>
+              <DialogDescription>
+                Сигурни ли сте, че искате да премахнете този потребител от компанията? Това действие не може да бъде отменено.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="flex items-center p-4 bg-amber-50 rounded-md border border-amber-200">
+              <AlertTriangle className="h-5 w-5 text-amber-500 mr-2" />
+              <p className="text-sm text-amber-700">
+                Това ще отмени достъпа на потребителя до данните на вашата компания.
               </p>
             </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsOpen(false)}>
-              Отказ
-            </Button>
-            <Button onClick={handleUpdateRole} disabled={isLoading}>
-              {isLoading ? "Обновяване..." : "Запази промените"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Remove User Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Премахни потребител</DialogTitle>
-            <DialogDescription>
-              Сигурни ли сте, че искате да премахнете този потребител от компанията? Това действие не може да бъде отменено.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="flex items-center p-4 bg-amber-50 rounded-md border border-amber-200">
-            <AlertTriangle className="h-5 w-5 text-amber-500 mr-2" />
-            <p className="text-sm text-amber-700">
-              Това ще отмени достъпа на потребителя до данните на вашата компания.
-            </p>
-          </div>
-          
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsDeleteDialogOpen(false)}
-            >
-              Отказ
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleRemoveUser}
-              disabled={isLoading}
-            >
-              {isLoading ? "Премахване..." : "Премахни потребител"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsDeleteDialogOpen(false)}
+              >
+                Отказ
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleRemoveUser}
+                disabled={isLoading}
+              >
+                {isLoading ? "Премахване..." : "Премахни потребител"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ) : null}
     </>
   );
 } 

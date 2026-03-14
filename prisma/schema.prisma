@@ -45,6 +45,8 @@ model User {
   invoiceSequences InvoiceSequence[]
   auditLogs     AuditLog[]
   passwordResetTokens PasswordResetToken[]
+  sentTeamInvites TeamInvite[] @relation("TeamInviteInvitedBy")
+  acceptedTeamInvites TeamInvite[] @relation("TeamInviteInvitedUser")
 }
 
 model Account {
@@ -141,6 +143,7 @@ model Company {
   debitNotes        DebitNote[]
   invoiceSequences  InvoiceSequence[]
   userRoles         UserRole[]
+  teamInvites       TeamInvite[]
 }
 
 model Client {
@@ -456,6 +459,28 @@ model UserRole {
   company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
 
   @@unique([userId, companyId])
+}
+
+model TeamInvite {
+  id              String   @id @default(cuid())
+  companyId       String
+  email           String
+  role            Role     @default(VIEWER)
+  token           String   @unique
+  status          String   @default("PENDING")
+  invitedByUserId String
+  invitedUserId   String?
+  expiresAt       DateTime
+  acceptedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invitedBy       User     @relation("TeamInviteInvitedBy", fields: [invitedByUserId], references: [id], onDelete: Cascade)
+  invitedUser     User?    @relation("TeamInviteInvitedUser", fields: [invitedUserId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, status])
+  @@index([email, status])
 }
 
 model RolePermission {

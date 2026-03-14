@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
+import { type ExportCapability } from "@/lib/subscription-plans";
 
 export interface UsageData {
   plan: string;
@@ -29,7 +30,7 @@ export interface UsageData {
   };
   features: {
     customBranding: boolean;
-    export: boolean | string;
+    export: ExportCapability;
     creditNotes: boolean;
     emailSending: boolean;
     apiAccess: boolean;
