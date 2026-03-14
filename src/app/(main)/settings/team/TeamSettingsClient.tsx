@@ -239,7 +239,7 @@ export default function TeamSettingsClient({
             <CardDescription>Собственикът, активните роли и достъпът им до компанията.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3 md:hidden">
+            <div className="space-y-3 2xl:hidden">
               {members.map((member) => (
                 <div key={member.userId} className="rounded-2xl border border-border/60 bg-card/70 p-4">
                   <div className="flex items-start justify-between gap-3">
@@ -264,7 +264,7 @@ export default function TeamSettingsClient({
               ))}
             </div>
 
-            <div className="hidden md:block">
+            <div className="hidden 2xl:block">
               <div className="overflow-hidden rounded-[28px] border border-border/60 bg-card/85 shadow-sm">
                 <table className="min-w-full border-collapse">
                   <thead className="bg-muted/35">
@@ -396,14 +396,14 @@ export default function TeamSettingsClient({
                         Роля: {getRoleLabel(invite.role)} · Валидна до {new Date(invite.expiresAt).toLocaleDateString("bg-BG")}
                       </p>
                     </div>
-                    <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                    <div className="mt-3">
+                      <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
                         <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleInviteAction(invite.id, "copy")}
-                        disabled={pendingInviteId === invite.id}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleInviteAction(invite.id, "copy")}
+                          disabled={pendingInviteId === invite.id}
                           className="w-full justify-center"
                         >
                           <Copy className="mr-2 h-4 w-4" />
@@ -426,7 +426,7 @@ export default function TeamSettingsClient({
                           size="sm"
                           onClick={() => handleInviteAction(invite.id, "revoke")}
                           disabled={pendingInviteId === invite.id}
-                          className="w-full justify-center sm:col-span-2 xl:col-span-1"
+                          className="w-full justify-center md:col-span-2 xl:col-span-1"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
                           Оттегли
