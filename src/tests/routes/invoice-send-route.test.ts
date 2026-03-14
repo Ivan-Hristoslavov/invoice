@@ -97,7 +97,7 @@ describe("POST /api/invoices/[id]/send", () => {
     vi.resetModules();
   });
 
-  it("sends a draft invoice and persists the compatible issued database status", async () => {
+  it("sends a draft invoice and persists the issued database status", async () => {
     const { client, update } = createSupabaseMock("DRAFT");
     mockCreateAdminClient.mockReturnValue(client);
 
@@ -119,7 +119,7 @@ describe("POST /api/invoices/[id]/send", () => {
     );
     expect(update).toHaveBeenCalledWith(
       expect.objectContaining({
-        status: "PAID",
+        status: "ISSUED",
       })
     );
   });

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
 import { getStripeInstance } from '@/lib/stripe';
 import { getCountryCode } from '@/lib/utils';
+import { createAdminClient } from "@/lib/supabase/server";
+import { resolveSessionUser } from "@/lib/session-user";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,10 +13,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Find the user's company (assume one company per user for now)
-    const company = await prisma.company.findFirst({
-      where: { userId: session.user.id },
-    });
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const supabase = createAdminClient();
+    const { data: company, error: companyError } = await supabase
+      .from("Company")
+      .select("id, name, email, country, stripeAccountId")
+      .eq("userId", sessionUser.id)
+      .order("createdAt", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (companyError) {
+      throw companyError;
+    }
+
     if (!company) {
       return NextResponse.json({ error: 'Company not found' }, { status: 404 });
     }
@@ -25,17 +40,16 @@ export async function POST(request: NextRequest) {
 
     // If no Stripe account, create one
     if (!stripeAccountId) {
-      // Convert country name to ISO code using the utility function
       const countryCode = getCountryCode(company.country);
-      
+
       const account = await stripe.accounts.create({
         type: 'express',
-        country: countryCode, // Use the ISO country code
+        country: countryCode,
         email: company.email || undefined,
         business_type: 'company',
         business_profile: {
           name: company.name,
-          product_description: 'Invoice payments via RapidFrame',
+          product_description: 'Invoice payments via invoice app',
         },
         capabilities: {
           transfers: { requested: true },
@@ -43,13 +57,17 @@ export async function POST(request: NextRequest) {
         },
       });
       stripeAccountId = account.id;
-      await prisma.company.update({
-        where: { id: company.id },
-        data: { stripeAccountId },
-      });
+      const { error: updateError } = await supabase
+        .from("Company")
+        .update({ stripeAccountId, updatedAt: new Date().toISOString() })
+        .eq("id", company.id)
+        .eq("userId", sessionUser.id);
+
+      if (updateError) {
+        throw updateError;
+      }
     }
 
-    // Create onboarding link
     const accountLink = await stripe.accountLinks.create({
       account: stripeAccountId,
       refresh_url: process.env.NEXT_PUBLIC_APP_URL + '/settings/company?stripe=refresh',

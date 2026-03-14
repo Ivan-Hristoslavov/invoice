@@ -39,6 +39,7 @@ const Select = React.forwardRef<HTMLDivElement, SelectProps>(
       }}
       isDisabled={disabled}
       fullWidth
+      aria-label={props["aria-label"] ?? "Избор"}
       {...props}
     >
       {children}
@@ -83,7 +84,7 @@ const SelectTrigger = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <HeroUISelect.Trigger
     ref={ref}
-    className={cn("w-full justify-between", className)}
+    className={cn("min-h-11 w-full justify-between rounded-2xl px-4 text-sm font-medium sm:min-h-12", className)}
     {...props}
   >
     {children as any}
@@ -101,7 +102,7 @@ const SelectContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & { position?: string }
 >(({ className, children }, ref) => (
-  <HeroUISelect.Popover className={cn("z-[100]", className)}>
+  <HeroUISelect.Popover className={cn("z-100", className)}>
     <ListBox ref={ref} className="p-1 max-h-[300px] overflow-y-auto">
       {children}
     </ListBox>

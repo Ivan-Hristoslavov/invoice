@@ -25,6 +25,7 @@ import { BackgroundShapes } from "@/components/ui/background-shapes";
 import { shouldReduceBrowserEffects } from "@/lib/browser-effects";
 import { cn } from "@/lib/utils";
 import { Pagination } from "@/components/ui/pagination";
+import { SUBSCRIPTION_PLANS } from "@/lib/subscription-plans";
 
 function HCard({
   className,
@@ -166,7 +167,10 @@ const pricingPlans: PricingPlan[] = [
   {
     key: "FREE",
     name: "Безплатен",
-    price: { monthly: 0, yearly: 0 },
+    price: {
+      monthly: SUBSCRIPTION_PLANS.FREE.monthlyPrice,
+      yearly: SUBSCRIPTION_PLANS.FREE.yearlyPrice,
+    },
     description: "За стартиращи бизнеси",
     icon: FileText,
     gradient: "from-slate-500 to-slate-600",
@@ -184,7 +188,10 @@ const pricingPlans: PricingPlan[] = [
   {
     key: "STARTER",
     name: "Стартер",
-    price: { monthly: 4.99, yearly: 49.99 },
+    price: {
+      monthly: SUBSCRIPTION_PLANS.STARTER.monthlyPrice,
+      yearly: SUBSCRIPTION_PLANS.STARTER.yearlyPrice,
+    },
     description: "За фрийлансъри",
     icon: Zap,
     gradient: "from-blue-500 to-indigo-600",
@@ -202,7 +209,10 @@ const pricingPlans: PricingPlan[] = [
   {
     key: "PRO",
     name: "Про",
-    price: { monthly: 8.99, yearly: 89.99 },
+    price: {
+      monthly: SUBSCRIPTION_PLANS.PRO.monthlyPrice,
+      yearly: SUBSCRIPTION_PLANS.PRO.yearlyPrice,
+    },
     description: "За малки бизнеси",
     icon: Star,
     gradient: "from-emerald-500 to-teal-600",
@@ -221,7 +231,10 @@ const pricingPlans: PricingPlan[] = [
   {
     key: "BUSINESS",
     name: "Бизнес",
-    price: { monthly: 19.99, yearly: 199.99 },
+    price: {
+      monthly: SUBSCRIPTION_PLANS.BUSINESS.monthlyPrice,
+      yearly: SUBSCRIPTION_PLANS.BUSINESS.yearlyPrice,
+    },
     description: "За предприятия",
     icon: Crown,
     gradient: "from-violet-500 to-purple-600",

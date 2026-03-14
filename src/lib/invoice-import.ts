@@ -30,7 +30,7 @@ export const CSV_HEADERS = [
   'companyId',
   'issueDate', // YYYY-MM-DD
   'dueDate', // YYYY-MM-DD
-  'status', // Optional: DRAFT, UNPAID, PAID, OVERDUE, CANCELLED
+  'status', // Optional: DRAFT, ISSUED, VOIDED, CANCELLED
   'currency', // Optional, defaults to USD
   'notes', // Optional
   'termsAndConditions', // Optional

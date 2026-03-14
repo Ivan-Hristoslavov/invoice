@@ -35,6 +35,7 @@ export interface ValidationIssue {
 
 interface ValidationOptions {
   requireMol?: boolean;
+  skipIdentifierFormatValidation?: boolean;
 }
 
 export function normalizePartyInput<T extends BulgarianPartyInput>(input: T): T {
@@ -139,7 +140,11 @@ export function validateBulgarianPartyInput(
     });
   }
 
-  if (normalized.bulstatNumber && normalized.uicType !== "EGN") {
+  if (
+    normalized.bulstatNumber &&
+    normalized.uicType !== "EGN" &&
+    !options.skipIdentifierFormatValidation
+  ) {
     if (!validateBulgarianEik(normalized.bulstatNumber)) {
       issues.push({
         path: ["bulstatNumber"],
@@ -148,7 +153,11 @@ export function validateBulgarianPartyInput(
     }
   }
 
-  if (normalized.uicType === "EGN" && normalized.bulstatNumber) {
+  if (
+    normalized.uicType === "EGN" &&
+    normalized.bulstatNumber &&
+    !options.skipIdentifierFormatValidation
+  ) {
     if (!validateBulgarianEgn(normalized.bulstatNumber)) {
       issues.push({
         path: ["bulstatNumber"],

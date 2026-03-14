@@ -348,7 +348,7 @@ export default function InvoiceImportClient({ clients, companies, products }: In
             <div>
               <h3 className="text-lg font-medium mb-2">Optional Fields</h3>
               <ul className="list-disc pl-5 space-y-1">
-                <li><code className="bg-muted p-1 rounded">status</code> - Invoice status (DRAFT, UNPAID, PAID, OVERDUE, CANCELLED)</li>
+                <li><code className="bg-muted p-1 rounded">status</code> - Invoice status (DRAFT, ISSUED, VOIDED, CANCELLED)</li>
                 <li><code className="bg-muted p-1 rounded">currency</code> - Currency code (USD, EUR, etc.)</li>
                 <li><code className="bg-muted p-1 rounded">notes</code> - Additional notes for the invoice</li>
                 <li><code className="bg-muted p-1 rounded">termsAndConditions</code> - Terms and conditions</li>

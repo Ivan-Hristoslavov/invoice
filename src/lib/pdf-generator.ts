@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import jsPDF from 'jspdf';
+import { normalizeInvoiceStatus } from '@/lib/invoice-status';
 
 // Colors for professional design
 const COLORS = {
@@ -265,18 +266,17 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
   // Status badge - text only, no background for black & white printing
   yPos += 8;
   const status = invoice.status || 'DRAFT';
+  const normalizedStatus = normalizeInvoiceStatus(status);
   const statusText =
-    status === 'DRAFT'
+    normalizedStatus === 'DRAFT'
       ? 'ЧЕРНОВА'
-      : status === 'ISSUED'
+      : normalizedStatus === 'ISSUED'
         ? 'ИЗДАДЕНА'
-        : status === 'VOIDED'
+        : normalizedStatus === 'VOIDED'
           ? 'АНУЛИРАНА'
-          : status === 'CANCELLED'
+          : normalizedStatus === 'CANCELLED'
             ? 'СТОРНИРАНА'
-            : status === 'PAID'
-              ? 'ИЗДАДЕНА'
-              : status;
+            : normalizedStatus;
   
   doc.setFontSize(9);
   doc.setTextColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);

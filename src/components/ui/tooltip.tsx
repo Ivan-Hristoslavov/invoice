@@ -20,20 +20,15 @@ Tooltip.displayName = "Tooltip";
 const TooltipTrigger = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<typeof HeroUITooltip.Trigger> & { asChild?: boolean }
->(({ asChild, className, children, ...props }, ref) => {
-  if (asChild) {
-    return <>{children}</>;
-  }
-  return (
-    <HeroUITooltip.Trigger
-      ref={ref}
-      className={cn("cursor-default", className)}
-      {...props}
-    >
-      {children}
-    </HeroUITooltip.Trigger>
-  );
-});
+>(({ asChild: _asChild, className, children, ...props }, ref) => (
+  <HeroUITooltip.Trigger
+    ref={ref}
+    className={cn("cursor-default", className)}
+    {...props}
+  >
+    {children}
+  </HeroUITooltip.Trigger>
+));
 TooltipTrigger.displayName = "TooltipTrigger";
 
 // Accept `side` for shadcn compat but ignore it (HeroUI uses `placement` on root Tooltip)

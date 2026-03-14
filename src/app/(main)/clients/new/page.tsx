@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { z } from "zod";
@@ -14,6 +14,7 @@ import {
   MapPin,
   Receipt,
   Building2,
+  FilePenLine,
   Mail,
   Phone,
   CheckCircle2,
@@ -50,6 +51,46 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { validateBulgarianPartyInput } from "@/lib/bulgarian-party";
 import { applyApiValidationDetails } from "@/lib/form-errors";
+
+type ClientCreationMode = "eik" | "manual";
+
+function ModeOptionCard({
+  title,
+  description,
+  caption,
+  onClick,
+  icon,
+}: {
+  title: string;
+  description: string;
+  caption: string;
+  onClick: () => void;
+  icon: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group relative overflow-hidden rounded-[28px] border border-border/70 bg-card text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+    >
+      <div className="absolute inset-x-0 top-0 h-24 bg-linear-to-br from-primary/14 via-primary/6 to-transparent opacity-80" />
+      <div className="relative space-y-5 p-6 sm:p-7">
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/12 text-primary ring-1 ring-primary/15">
+            {icon}
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-lg font-semibold tracking-tight text-foreground">{title}</h3>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-3 text-sm text-muted-foreground">
+          {caption}
+        </div>
+      </div>
+    </button>
+  );
+}
 
 // Step indicator component
 function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { title: string; icon: React.ReactNode }[] }) {
@@ -118,7 +159,9 @@ const clientSchema = z.object({
   uicType: z.enum(["BULSTAT", "EGN"]).default("BULSTAT"),
   locale: z.string().default("bg"),
 }).superRefine((value, ctx) => {
-  const { issues } = validateBulgarianPartyInput(value);
+  const { issues } = validateBulgarianPartyInput(value, {
+    skipIdentifierFormatValidation: true,
+  });
 
   for (const issue of issues) {
     ctx.addIssue({
@@ -164,6 +207,9 @@ export default function NewClientPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [confirmed, setConfirmed] = useState(false);
+  const [clientCreationMode, setClientCreationMode] = useState<ClientCreationMode | null>(null);
+  const [isCheckingClientIdentifier, setIsCheckingClientIdentifier] = useState(false);
+  const duplicateCheckRequestRef = useRef(0);
 
   const steps = [
     { title: "Основни данни", icon: <User className="h-4 w-4" /> },
@@ -197,6 +243,27 @@ export default function NewClientPage() {
   });
 
   const formValues = form.watch();
+  const bulstatFieldError = form.formState.errors.bulstatNumber;
+
+  const clearDuplicateBulstatError = useCallback(() => {
+    if (form.getFieldState("bulstatNumber").error?.type === "duplicate") {
+      form.clearErrors("bulstatNumber");
+    }
+  }, [form]);
+
+  const handleCreationModeSelect = useCallback((mode: ClientCreationMode) => {
+    setClientCreationMode(mode);
+    setCurrentStep(0);
+    setConfirmed(false);
+  }, []);
+
+  const handleBackToModeSelection = useCallback(() => {
+    setClientCreationMode(null);
+    setCurrentStep(0);
+    setConfirmed(false);
+    setIsCheckingClientIdentifier(false);
+    clearDuplicateBulstatError();
+  }, [clearDuplicateBulstatError]);
 
   const handleCompanyBookSuccess = useCallback((fields: Record<string, unknown>) => {
     const fieldMap: Record<string, keyof ClientFormInputValues> = {
@@ -244,6 +311,79 @@ export default function NewClientPage() {
     await lookupCompany(eik);
   }, [form, lookupCompany]);
 
+  useEffect(() => {
+    if (clientCreationMode !== "manual") {
+      duplicateCheckRequestRef.current += 1;
+      setIsCheckingClientIdentifier(false);
+      clearDuplicateBulstatError();
+      return;
+    }
+
+    const normalizedBulstat = getDigitsOnly(formValues.bulstatNumber || "");
+    const hasNonDuplicateError =
+      Boolean(bulstatFieldError) && bulstatFieldError?.type !== "duplicate";
+
+    if (!normalizedBulstat || hasNonDuplicateError) {
+      duplicateCheckRequestRef.current += 1;
+      setIsCheckingClientIdentifier(false);
+      clearDuplicateBulstatError();
+      return;
+    }
+
+    clearDuplicateBulstatError();
+    const requestId = duplicateCheckRequestRef.current + 1;
+    duplicateCheckRequestRef.current = requestId;
+
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        setIsCheckingClientIdentifier(true);
+        const params = new URLSearchParams({
+          bulstatNumber: normalizedBulstat,
+          uicType: formValues.uicType || "BULSTAT",
+        });
+        const response = await fetch(`/api/clients?${params.toString()}`, {
+          cache: "no-store",
+        });
+
+        if (!response.ok) return;
+
+        const payload = (await response.json()) as {
+          exists?: boolean;
+          message?: string | null;
+        };
+
+        if (duplicateCheckRequestRef.current !== requestId) return;
+
+        if (payload.exists) {
+          form.setError("bulstatNumber", {
+            type: "duplicate",
+            message: payload.message || "Вече имате клиент с този ЕИК/БУЛСТАТ.",
+          });
+          return;
+        }
+
+        clearDuplicateBulstatError();
+      } catch {
+        // Best-effort client-side duplicate check only.
+      } finally {
+        if (duplicateCheckRequestRef.current === requestId) {
+          setIsCheckingClientIdentifier(false);
+        }
+      }
+    }, 350);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [
+    bulstatFieldError,
+    clearDuplicateBulstatError,
+    clientCreationMode,
+    form,
+    formValues.bulstatNumber,
+    formValues.uicType,
+  ]);
+
   async function onSubmit(data: ClientFormValues) {
     setIsLoading(true);
 
@@ -253,7 +393,10 @@ export default function NewClientPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          entryMode: clientCreationMode || "manual",
+        }),
       });
 
       if (!response.ok) {
@@ -338,48 +481,104 @@ export default function NewClientPage() {
         </div>
       </div>
 
-      {/* Quick EIK Lookup - always visible */}
-      <div className="mx-auto mb-6 max-w-2xl">
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="space-y-4 p-4 sm:p-5">
-            <div className="flex items-start gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                <Search className="h-4 w-4 text-primary" />
+      {!clientCreationMode ? (
+        <div className="mx-auto max-w-5xl space-y-6">
+          <div className="overflow-hidden rounded-[32px] border border-border/70 bg-linear-to-br from-card via-card to-primary/5 px-6 py-8 text-center shadow-lg shadow-black/5 sm:px-8 sm:py-10">
+            <div className="mx-auto max-w-2xl space-y-3">
+              <h2 className="text-3xl font-semibold tracking-tight text-foreground">Как искате да създадете клиента?</h2>
+              <p className="text-sm leading-6 text-muted-foreground sm:text-base">
+                Изберете най-удобния начин. При автоматично попълване първо търсите по ЕИК, а при ръчното попълване въвеждате данните сами.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <ModeOptionCard
+              title="Автоматично попълване с ЕИК"
+              description="Въвеждате ЕИК/БУЛСТАТ, проверяваме фирмата и попълваме наличните данни вместо вас."
+              caption="Подходящо за български фирми, когато искате да спестите ръчно попълване."
+              onClick={() => handleCreationModeSelect("eik")}
+              icon={<Search className="h-5 w-5" />}
+            />
+            <ModeOptionCard
+              title="Ръчно попълване"
+              description="Въвеждате данните на клиента сами и контролирате всяко поле."
+              caption="Подходящо за чуждестранни клиенти, физически лица или когато данните не идват от регистър."
+              onClick={() => handleCreationModeSelect("manual")}
+              icon={<FilePenLine className="h-5 w-5" />}
+            />
+          </div>
+        </div>
+      ) : (
+        <>
+      <div className="mx-auto mb-6 max-w-4xl">
+        <Card className="overflow-hidden border-border/70 bg-linear-to-br from-card via-card to-primary/5 shadow-lg shadow-black/5">
+          <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/12 text-primary ring-1 ring-primary/15">
+                {clientCreationMode === "eik" ? <Search className="h-5 w-5" /> : <FilePenLine className="h-5 w-5" />}
               </div>
               <div className="min-w-0">
-                <h3 className="font-semibold text-sm">Бързо попълване по ЕИК</h3>
-                <p className="text-xs text-muted-foreground">Въведете ЕИК/БУЛСТАТ и данните ще се попълнят автоматично от Търговския регистър</p>
+                <p className="text-lg font-semibold tracking-tight">
+                  {clientCreationMode === "eik" ? "Автоматично попълване с ЕИК" : "Ръчно попълване"}
+                </p>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                  {clientCreationMode === "eik"
+                    ? "Първо потърсете клиента по ЕИК и след това довършете липсващите данни."
+                    : "Попълнете стъпките ръчно. Няма автоматично търсене по регистър в този режим."}
+                </p>
               </div>
             </div>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Input
-                placeholder="Въведете ЕИК (напр. 204676177)"
-                inputMode="numeric"
-                className="h-11 flex-1"
-                value={formValues.bulstatNumber || ""}
-                onChange={(e) => form.setValue("bulstatNumber", e.target.value.replace(/\D/g, ""), { shouldValidate: true })}
-              />
-              <Button
-                type="button"
-                variant="default"
-                className="h-11 w-full shrink-0 gap-2 px-4 sm:w-auto"
-                disabled={isLookupLoading || !(formValues.bulstatNumber || "").match(/^\d{9,13}$/)}
-                onClick={handleEikLookup}
-              >
-                {isLookupLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Search className="h-4 w-4" />
-                )}
-                Зареди данни
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Най-добър резултат ще получите с 9 до 13 цифри, без интервали и символи.
-            </p>
+            <Button type="button" variant="outline" onClick={handleBackToModeSelection} className="w-full sm:w-auto">
+              Назад към избор
+            </Button>
           </CardContent>
         </Card>
       </div>
+
+      {clientCreationMode === "eik" && (
+        <div className="mx-auto mb-6 max-w-2xl">
+          <Card className="border-primary/20 bg-primary/5">
+            <CardContent className="space-y-4 p-4 sm:p-5">
+              <div className="flex items-start gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <Search className="h-4 w-4 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-sm">Бързо попълване по ЕИК</h3>
+                  <p className="text-xs text-muted-foreground">Въведете ЕИК/БУЛСТАТ и данните ще се попълнят автоматично от Търговския регистър.</p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  placeholder="Въведете ЕИК (напр. 204676177)"
+                  inputMode="numeric"
+                  className="h-11 flex-1"
+                  value={formValues.bulstatNumber || ""}
+                  onChange={(e) => form.setValue("bulstatNumber", e.target.value.replace(/\D/g, ""), { shouldValidate: true })}
+                />
+                <Button
+                  type="button"
+                  variant="default"
+                  className="h-11 w-full shrink-0 gap-2 px-4 sm:w-auto"
+                  disabled={isLookupLoading || !(formValues.bulstatNumber || "").match(/^\d{9,13}$/)}
+                  onClick={handleEikLookup}
+                >
+                  {isLookupLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Search className="h-4 w-4" />
+                  )}
+                  Зареди данни
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Най-добър резултат ще получите с 9 до 13 цифри, без интервали и символи.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Step indicator */}
       <StepIndicator currentStep={currentStep} steps={steps} />
@@ -646,23 +845,32 @@ export default function NewClientPage() {
                                   value={field.value || ""}
                                   onChange={(e) => field.onChange(getDigitsOnly(e.target.value))}
                                 />
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  className="h-12 w-full shrink-0 px-3 sm:w-auto"
-                                  disabled={isLookupLoading || !field.value || field.value.length < 9}
-                                  onClick={handleEikLookup}
-                                  title="Зареди данни от Търговски регистър"
-                                >
-                                  {isLookupLoading ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <Search className="h-4 w-4" />
-                                  )}
-                                  <span className="hidden sm:inline ml-1.5">Зареди</span>
-                                </Button>
+                                {clientCreationMode === "eik" && (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="h-12 w-full shrink-0 px-3 sm:w-auto"
+                                    disabled={isLookupLoading || !field.value || field.value.length < 9}
+                                    onClick={handleEikLookup}
+                                    title="Зареди данни от Търговски регистър"
+                                  >
+                                    {isLookupLoading ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Search className="h-4 w-4" />
+                                    )}
+                                    <span className="hidden sm:inline ml-1.5">Зареди</span>
+                                  </Button>
+                                )}
                               </div>
                             </FormControl>
+                            <FormDescription>
+                              {clientCreationMode === "eik"
+                                ? "Може да заредите данни по ЕИК или да редактирате полето ръчно."
+                                : isCheckingClientIdentifier
+                                  ? "Проверяваме във вашата база дали този идентификатор вече се използва."
+                                  : "В ръчен режим проверяваме само дали идентификаторът вече съществува във вашата база."}
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -917,6 +1125,8 @@ export default function NewClientPage() {
           </div>
         </form>
       </Form>
+        </>
+      )}
     </div>
   );
 }

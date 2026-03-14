@@ -2,9 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
-import { checkSubscriptionLimits } from "@/middleware/subscription";
 import { format } from "date-fns";
 import Papa from "papaparse";
+import { resolveSessionUser } from "@/lib/session-user";
+import { getDatabaseStatusesForAppStatus } from "@/lib/invoice-status";
+import {
+  canExportFormat,
+  getSubscriptionPlan,
+  type ExportFormat,
+} from "@/lib/subscription-plans";
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,26 +19,15 @@ export async function GET(request: NextRequest) {
     if (!session?.user) {
       return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
-    
-    // Check subscription limits - експорт
-    const exportLimitCheck = await checkSubscriptionLimits(
-      session.user.id as string,
-      'export'
-    );
-    
-    if (!exportLimitCheck.allowed) {
-      return NextResponse.json(
-        { error: exportLimitCheck.message || "Експортът не е наличен за вашия план" },
-        { status: 403 }
-      );
+
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Потребителят не е намерен" }, { status: 401 });
     }
-
-    // Get user ID
-    const userId = session.user.id;
-
+    
     // Get query parameters
     const { searchParams } = new URL(request.url);
-    const format = searchParams.get("format") || "csv";
+    const format = (searchParams.get("format") || "csv") as ExportFormat;
     const companyId = searchParams.get("companyId");
     const clientId = searchParams.get("clientId");
     const status = searchParams.get("status");
@@ -40,6 +35,32 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get("endDate");
 
     const supabase = createAdminClient();
+    const { data: subscriptions } = await supabase
+      .from("Subscription")
+      .select("plan, status")
+      .eq("userId", sessionUser.id)
+      .in("status", ["ACTIVE", "TRIALING", "PAST_DUE"])
+      .order("createdAt", { ascending: false })
+      .limit(1);
+    const plan = getSubscriptionPlan(subscriptions?.[0]?.plan);
+
+    if (!["csv", "json"].includes(format)) {
+      return NextResponse.json(
+        { error: "Неподдържан формат за експорт" },
+        { status: 400 }
+      );
+    }
+
+    if (!canExportFormat(plan.features.export, format)) {
+      const errorMessage =
+        format === "csv"
+          ? "CSV експортът не е наличен за вашия план."
+          : "JSON експортът е наличен само за PRO и BUSINESS.";
+      return NextResponse.json(
+        { error: errorMessage },
+        { status: 403 }
+      );
+    }
     
     // Build Supabase query
     let query = supabase
@@ -50,7 +71,7 @@ export async function GET(request: NextRequest) {
         company:Company(id, name),
         items:InvoiceItem(*)
       `)
-      .eq("userId", session.user.id);
+      .eq("userId", sessionUser.id);
     
     if (companyId) {
       query = query.eq("companyId", companyId);
@@ -61,7 +82,11 @@ export async function GET(request: NextRequest) {
     }
     
     if (status) {
-      query = query.eq("status", status);
+      const matchingStatuses = getDatabaseStatusesForAppStatus(status);
+      query =
+        matchingStatuses.length > 1
+          ? query.in("status", matchingStatuses)
+          : query.eq("status", matchingStatuses[0]);
     }
     
     if (startDate) {
@@ -109,14 +134,9 @@ export async function GET(request: NextRequest) {
           "Content-Disposition": `attachment; filename="invoices-export-${formatDate(new Date())}.csv"`,
         },
       });
-    } else if (format === "json") {
+    } else {
       // Return as JSON
       return NextResponse.json({ invoices });
-    } else {
-      return NextResponse.json(
-        { error: "Неподдържан формат за експорт" },
-        { status: 400 }
-      );
     }
   } catch (error) {
     console.error("Грешка при експорт на фактури:", error);

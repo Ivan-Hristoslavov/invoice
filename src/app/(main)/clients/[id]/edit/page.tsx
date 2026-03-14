@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Building2, Mail, Phone, Save, Search, Loader2 } from "lucide-react";
+import { ArrowLeft, Building2, Mail, Phone, Save, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useCompanyBookLookup } from "@/hooks/useCompanyBookLookup";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { validateBulgarianPartyInput } from "@/lib/bulgarian-party";
 import { applyApiValidationDetails } from "@/lib/form-errors";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 const clientSchema = z.object({
   name: z.string().min(1, "Името на клиента е задължително"),
@@ -234,7 +235,7 @@ export default function EditClientPage() {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="flex items-center gap-3 text-muted-foreground">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+          <LoadingSpinner size="small" />
           Зареждане...
         </div>
       </div>
@@ -242,24 +243,26 @@ export default function EditClientPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4">
-      <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-card/70 p-4 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
+    <div className="app-page-shell mx-auto max-w-6xl">
+      <div className="rounded-2xl border border-border/60 bg-card/70 p-4 shadow-sm backdrop-blur">
+        <div className="page-header">
+          <div className="flex min-w-0 items-start gap-3">
           <Button variant="ghost" size="sm" asChild className="rounded-full px-3">
             <Link href={`/clients/${params.id}`}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Назад
             </Link>
           </Button>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Редактиране на клиент</h1>
-            <p className="text-sm text-muted-foreground">По-компактна форма за контактни, адресни и данъчни данни.</p>
+          <div className="min-w-0">
+            <h1 className="page-title">Редактиране на клиент</h1>
+            <p className="card-description mt-1">По-компактна форма за контактни, адресни и данъчни данни.</p>
           </div>
         </div>
-        <Button type="submit" form="edit-client-form" disabled={isLoading} className="hidden rounded-full px-5 sm:inline-flex">
-          <Save className="mr-2 h-4 w-4" />
-          {isLoading ? "Запазване..." : "Запази"}
-        </Button>
+          <Button type="submit" form="edit-client-form" disabled={isLoading} className="hidden sm:inline-flex">
+            <Save className="mr-2 h-4 w-4" />
+            {isLoading ? "Запазване..." : "Запази"}
+          </Button>
+        </div>
       </div>
 
       {/* Quick EIK Lookup */}
@@ -273,23 +276,23 @@ export default function EditClientPage() {
             <p className="text-xs text-muted-foreground">Въведете ЕИК/БУЛСТАТ и данните ще се попълнят автоматично от Търговския регистър</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <Input
             placeholder="Въведете ЕИК (напр. 204676177)"
             inputMode="numeric"
-            className="h-11 flex-1"
+            className="flex-1"
             value={form.watch("bulstatNumber") || ""}
             onChange={(e) => form.setValue("bulstatNumber", e.target.value.replace(/\D/g, ""), { shouldValidate: true })}
           />
           <Button
             type="button"
             variant="default"
-            className="h-11 px-4 shrink-0 gap-2"
+            className="shrink-0 gap-2"
             disabled={isLookupLoading || !(form.watch("bulstatNumber") || "").match(/^\d{9,13}$/)}
             onClick={handleEikLookup}
           >
             {isLookupLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <LoadingSpinner size="small" />
             ) : (
               <Search className="h-4 w-4" />
             )}
@@ -490,7 +493,7 @@ export default function EditClientPage() {
                             title="Зареди данни от Търговски регистър"
                           >
                             {isLookupLoading ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <LoadingSpinner size="small" />
                             ) : (
                               <Search className="h-4 w-4" />
                             )}
@@ -608,10 +611,10 @@ export default function EditClientPage() {
           </Card>
 
           <div className="flex flex-col gap-3 border-t border-border/50 pt-1 sm:flex-row sm:justify-end">
-            <Button type="button" variant="outline" asChild>
+            <Button type="button" variant="outline" asChild className="btn-responsive">
               <Link href={`/clients/${params.id}`}>Отказ</Link>
             </Button>
-            <Button type="submit" disabled={isLoading} className="gap-2">
+            <Button type="submit" disabled={isLoading} className="btn-responsive gap-2">
               <Save className="h-4 w-4" />
               {isLoading ? "Запазване..." : "Запази промените"}
             </Button>

@@ -99,7 +99,11 @@ export function useSubscriptionLimit(): UseSubscriptionLimitResult {
 
   const canUseFeature = useCallback((feature: keyof UsageData['features']): boolean => {
     if (!usage) return false;
-    return usage.features[feature];
+    if (feature === "export") {
+      return usage.features.export !== "none";
+    }
+
+    return Boolean(usage.features[feature]);
   }, [usage]);
 
   const getInvoiceUsage = useCallback(() => {

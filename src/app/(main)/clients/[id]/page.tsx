@@ -11,9 +11,10 @@ import { format } from "date-fns";
 import { Metadata } from "next";
 import { APP_NAME } from "@/config/constants";
 import { Badge } from "@/components/ui/badge";
+import { normalizeInvoiceStatus } from "@/lib/invoice-status";
 
 // Define the invoice status type
-type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'PAID' | 'VOIDED' | 'CANCELLED';
+type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'VOIDED' | 'CANCELLED';
 
 // Define the invoice type
 interface Invoice {
@@ -156,9 +157,9 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
               : client.locale;
   
   return (
-    <div className="space-y-4">
+    <div className="app-page-shell">
       <div className="rounded-2xl border border-border/60 bg-card/70 p-4 shadow-sm backdrop-blur">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="page-header">
           <div className="space-y-3">
             <Button variant="ghost" size="sm" asChild className="h-9 rounded-full px-3">
               <Link href="/clients" className="flex items-center whitespace-nowrap">
@@ -168,7 +169,7 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
             </Button>
 
             <div className="space-y-2">
-              <h1 className="text-3xl font-semibold tracking-tight">{client.name}</h1>
+              <h1 className="page-title">{client.name}</h1>
               <div className="flex flex-wrap gap-2">
                 {client.bulstatNumber && <Badge variant="outline">ЕИК: {client.bulstatNumber}</Badge>}
                 {client.vatRegistrationNumber && (
@@ -181,14 +182,14 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" asChild className="h-10 rounded-full px-4 whitespace-nowrap">
+          <div className="app-page-actions">
+            <Button variant="outline" size="sm" asChild className="btn-responsive whitespace-nowrap">
               <Link href={`/clients/${client.id}/edit`} className="flex items-center whitespace-nowrap">
                 <Edit className="mr-2 h-4 w-4" />
                 Редактиране
               </Link>
             </Button>
-            <Button size="sm" asChild className="h-10 rounded-full px-4 whitespace-nowrap">
+            <Button size="sm" asChild className="btn-responsive whitespace-nowrap">
               <Link href={`/invoices/new?client=${client.id}`} className="flex items-center whitespace-nowrap">
                 <FileText className="mr-2 h-4 w-4" />
                 Нова фактура
@@ -278,8 +279,38 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
                   </Button>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                <>
+                  <div className="space-y-3 md:hidden">
+                    {invoiceList.map((invoice) => (
+                      <Link
+                        key={invoice.id}
+                        href={`/invoices/${invoice.id}`}
+                        className="block rounded-2xl border border-border/60 bg-background/60 p-4 transition-colors hover:bg-muted/30"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-xs uppercase tracking-wide text-muted-foreground">Фактура</p>
+                            <p className="mt-1 truncate font-semibold text-primary">{invoice.invoiceNumber}</p>
+                          </div>
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${getStatusStyles(invoice.status)}`}>
+                            {getStatusText(invoice.status)}
+                          </span>
+                        </div>
+                        <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <p className="text-xs uppercase tracking-wide text-muted-foreground">Дата</p>
+                            <p className="mt-1 font-medium">{format(new Date(invoice.issueDate), "dd.MM.yyyy")}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs uppercase tracking-wide text-muted-foreground">Сума</p>
+                            <p className="mt-1 font-semibold">{Number(invoice.total).toFixed(2)} €</p>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                  <div className="hidden overflow-x-auto md:block">
+                    <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border/50">
                         <th className="px-2 pb-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Фактура</th>
@@ -306,8 +337,9 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
                         </tr>
                       ))}
                     </tbody>
-                  </table>
-                </div>
+                    </table>
+                  </div>
+                </>
               )}
 
               {invoiceList.length > 0 && (
@@ -358,9 +390,8 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
 }
 
 function getStatusStyles(status: InvoiceStatus) {
-  switch (status) {
+  switch (normalizeInvoiceStatus(status)) {
     case "ISSUED":
-    case "PAID":
       return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400";
     case "DRAFT":
       return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400";
@@ -374,9 +405,8 @@ function getStatusStyles(status: InvoiceStatus) {
 }
 
 function getStatusText(status: InvoiceStatus) {
-  switch (status) {
+  switch (normalizeInvoiceStatus(status)) {
     case "ISSUED":
-    case "PAID":
       return "Издадена";
     case "DRAFT":
       return "Чернова";

@@ -94,7 +94,7 @@ export async function POST(
       const { error: updateError } = await supabase
         .from("Invoice")
         .update({ 
-          status: getDatabaseStatusForAppStatus("ISSUED", invoice.status),
+          status: getDatabaseStatusForAppStatus("ISSUED"),
           updatedAt: new Date().toISOString()
         })
         .eq("id", id)

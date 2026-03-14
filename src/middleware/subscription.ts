@@ -3,62 +3,47 @@ import { getServerSession } from 'next-auth';
 import { createAdminClient } from '@/lib/supabase/server';
 import { authOptions } from '@/lib/auth';
 import { resolveSessionUser } from '@/lib/session-user';
+import {
+  hasAnyExportAccess,
+  getSubscriptionPlan,
+  SUBSCRIPTION_PLANS,
+  type ExportCapability,
+  type SubscriptionPlanKey,
+} from '@/lib/subscription-plans';
 
-// Plan feature limits
-export const PLAN_LIMITS = {
-  FREE: {
-    maxInvoicesPerMonth: 3,
-    maxCompanies: 1,
-    maxClients: 5,
-    maxProducts: 10,
-    allowCustomBranding: false, // No logo
-    allowExport: false, // No export
-    allowCreditNotes: false, // No credit notes
-    allowEmailSending: true, // TEMPORARILY UNLOCKED FOR TESTING
-    maxUsers: 1,
-    allowApiAccess: false,
-    storageLimit: 50 * 1024 * 1024, // 50MB
-  },
-  STARTER: {
-    maxInvoicesPerMonth: 15,
-    maxCompanies: 1,
-    maxClients: 25,
-    maxProducts: 50,
-    allowCustomBranding: false, // No logo
-    allowExport: 'csv', // CSV only
-    allowCreditNotes: false, // No credit notes
-    allowEmailSending: true, // TEMPORARILY UNLOCKED FOR TESTING
-    maxUsers: 1,
-    allowApiAccess: false,
-    storageLimit: 200 * 1024 * 1024, // 200MB
-  },
-  PRO: {
-    maxInvoicesPerMonth: Infinity,
-    maxCompanies: 3,
-    maxClients: 100,
-    maxProducts: 200,
-    allowCustomBranding: true, // With logo
-    allowExport: true, // PDF/CSV export
-    allowCreditNotes: true, // Credit notes
-    allowEmailSending: true, // Email sending
-    maxUsers: 2,
-    allowApiAccess: false,
-    storageLimit: 1024 * 1024 * 1024, // 1GB
-  },
-  BUSINESS: {
-    maxInvoicesPerMonth: Infinity,
-    maxCompanies: 10,
-    maxClients: Infinity, // Unlimited clients
-    maxProducts: Infinity, // Unlimited products
-    allowCustomBranding: true, // With logo
-    allowExport: true, // PDF/CSV export
-    allowCreditNotes: true, // Credit notes
-    allowEmailSending: true, // Email sending
-    maxUsers: 5, // Multiple users with roles
-    allowApiAccess: true, // Read-only API
-    storageLimit: 10 * 1024 * 1024 * 1024, // 10GB
-  },
-};
+export const PLAN_LIMITS = Object.fromEntries(
+  Object.entries(SUBSCRIPTION_PLANS).map(([planKey, definition]) => [
+    planKey,
+    {
+      maxInvoicesPerMonth: definition.limits.maxInvoicesPerMonth,
+      maxCompanies: definition.limits.maxCompanies,
+      maxClients: definition.limits.maxClients,
+      maxProducts: definition.limits.maxProducts,
+      allowCustomBranding: definition.features.customBranding,
+      allowExport: definition.features.export,
+      allowCreditNotes: definition.features.creditNotes,
+      allowEmailSending: definition.features.emailSending,
+      maxUsers: definition.limits.maxUsers,
+      allowApiAccess: definition.features.apiAccess,
+      storageLimit: definition.limits.storageLimit,
+    },
+  ])
+) as Record<
+  SubscriptionPlanKey,
+  {
+    maxInvoicesPerMonth: number;
+    maxCompanies: number;
+    maxClients: number;
+    maxProducts: number;
+    allowCustomBranding: boolean;
+    allowExport: ExportCapability;
+    allowCreditNotes: boolean;
+    allowEmailSending: boolean;
+    maxUsers: number;
+    allowApiAccess: boolean;
+    storageLimit: number;
+  }
+>;
 
 // Middleware to check subscription status
 export async function checkSubscription(req: NextRequest) {
@@ -127,7 +112,7 @@ export async function checkSubscriptionLimits(
   const subscription = subscriptions && subscriptions.length > 0 ? subscriptions[0] : null;
 
   // No subscription = FREE plan
-  const plan = (subscription?.plan || 'FREE') as keyof typeof PLAN_LIMITS;
+  const plan = getSubscriptionPlan(subscription?.plan).key;
   const limits = PLAN_LIMITS[plan];
 
   switch (feature) {
@@ -248,11 +233,12 @@ export async function checkSubscriptionLimits(
       break;
 
     case 'export':
-      if (!limits.allowExport) {
+      if (!hasAnyExportAccess(limits.allowExport)) {
         return {
           allowed: false,
           plan,
-          message: `Експорт на фактури е наличен само в PRO и BUSINESS плановете. Надградете за да експортирате вашите фактури.`,
+          message:
+            "Експортът е заключен за FREE плана. Надградете до STARTER за CSV експорт или до PRO/BUSINESS за JSON и PDF експорт.",
         };
       }
       break;
@@ -288,12 +274,20 @@ export async function checkSubscriptionLimits(
       break;
 
     case 'users':
-      // Check user count (team members)
-      const { count: userCount } = await supabase
-        .from('UserRole')
-        .select('*', { count: 'exact', head: true })
-        .eq('userId', userId)
-        .neq('role', 'OWNER'); // Count team members, not owner
+      const { data: ownedCompanies } = await supabase
+        .from('Company')
+        .select('id')
+        .eq('userId', userId);
+
+      const ownedCompanyIds = (ownedCompanies || []).map((company) => company.id);
+      const { count: userCount } =
+        ownedCompanyIds.length > 0
+          ? await supabase
+              .from('UserRole')
+              .select('*', { count: 'exact', head: true })
+              .in('companyId', ownedCompanyIds)
+              .neq('role', 'OWNER')
+          : { count: 0 };
       
       if (userCount && userCount >= limits.maxUsers) {
         return {

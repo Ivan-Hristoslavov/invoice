@@ -3,6 +3,7 @@ export const APP_INVOICE_STATUSES = ["DRAFT", "ISSUED", "VOIDED", "CANCELLED"] a
 export type AppInvoiceStatus = (typeof APP_INVOICE_STATUSES)[number];
 
 const issuedLikeStatuses = new Set(["ISSUED", "UNPAID", "PAID", "OVERDUE"]);
+const databaseIssuedLikeStatuses = ["UNPAID", "PAID", "OVERDUE"] as const;
 
 export function normalizeInvoiceStatus(status?: string | null): AppInvoiceStatus {
   if (!status) return "DRAFT";
@@ -17,21 +18,14 @@ export function isIssuedLikeStatus(status?: string | null): boolean {
 }
 
 export function getDatabaseStatusForAppStatus(
-  status: AppInvoiceStatus,
-  currentDatabaseStatus?: string | null
+  status: AppInvoiceStatus
 ): string {
-  if (status !== "ISSUED") return status;
-
-  if (currentDatabaseStatus && issuedLikeStatuses.has(currentDatabaseStatus)) {
-    return currentDatabaseStatus;
-  }
-
-  // The deployed database still contains legacy values in some environments.
-  return "PAID";
+  if (status === "ISSUED") return "UNPAID";
+  return status;
 }
 
 export function getDatabaseStatusesForAppStatus(status?: string | null): string[] {
   if (!status) return [];
-  if (status === "ISSUED") return ["ISSUED", "UNPAID", "PAID", "OVERDUE"];
+  if (status === "ISSUED") return [...databaseIssuedLikeStatuses];
   return [status];
 }

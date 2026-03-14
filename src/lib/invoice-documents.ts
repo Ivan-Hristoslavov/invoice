@@ -1,4 +1,5 @@
 import { createClientSnapshot, createCompanySnapshot, createItemSnapshots } from "@/lib/document-snapshots";
+import { getAccessibleCompaniesForUser, getAccessibleOwnerUserIdsForUser } from "@/lib/team";
 
 export async function fetchOwnedCompanyAndClient(
   supabase: any,
@@ -6,19 +7,26 @@ export async function fetchOwnedCompanyAndClient(
   companyId: string,
   clientId: string
 ) {
+  const [accessibleCompanies, accessibleOwnerIds] = await Promise.all([
+    getAccessibleCompaniesForUser(userId),
+    getAccessibleOwnerUserIdsForUser(userId),
+  ]);
+
+  const accessibleCompanyIds = accessibleCompanies.map((company) => company.id);
+
   const [{ data: company, error: companyError }, { data: client, error: clientError }] =
     await Promise.all([
       supabase
         .from("Company")
         .select("*")
         .eq("id", companyId)
-        .eq("userId", userId)
+        .in("id", accessibleCompanyIds)
         .maybeSingle(),
       supabase
         .from("Client")
         .select("*")
         .eq("id", clientId)
-        .eq("userId", userId)
+        .in("userId", accessibleOwnerIds)
         .maybeSingle(),
     ]);
 
@@ -35,11 +43,13 @@ export async function fetchProductsByIds(
 ) {
   if (productIds.length === 0) return new Map<string, Record<string, any>>();
 
+  const accessibleOwnerIds = await getAccessibleOwnerUserIdsForUser(userId);
+
   const { data: products, error } = await supabase
     .from("Product")
     .select("id, name, unit, taxRate")
     .in("id", productIds)
-    .eq("userId", userId);
+    .in("userId", accessibleOwnerIds);
 
   if (error) throw error;
 

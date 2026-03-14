@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, ReactNode } from "react";
+import { useEffect, useState, ReactNode } from "react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { exportInvoicesToCsv, exportInvoicesToJson, exportInvoiceAsPdf } from "@/lib/invoice-export";
 import { useRouter } from "next/navigation";
 import { Download, FileSpreadsheet, FileText } from "lucide-react";
+import { type ExportCapability } from "@/lib/subscription-plans";
 
 interface Company {
   id: string;
@@ -26,6 +27,7 @@ interface ExportDialogProps {
   companies: Company[];
   clients: Client[];
   invoiceId?: string;
+  exportCapability?: ExportCapability;
   isOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
   children?: ReactNode;
@@ -35,6 +37,7 @@ export default function ExportDialog({
   companies,
   clients,
   invoiceId,
+  exportCapability = "none",
   isOpen,
   onOpenChange,
   children
@@ -48,6 +51,18 @@ export default function ExportDialog({
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [isExporting, setIsExporting] = useState(false);
+  const canExportJson = exportCapability === "full";
+  const canExportPdf = exportCapability === "full" && Boolean(invoiceId);
+
+  useEffect(() => {
+    if (exportFormat === "json" && !canExportJson) {
+      setExportFormat("csv");
+    }
+
+    if (exportFormat === "pdf" && !canExportPdf) {
+      setExportFormat("csv");
+    }
+  }, [canExportJson, canExportPdf, exportFormat]);
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -65,10 +80,15 @@ export default function ExportDialog({
         await exportInvoicesToCsv(filters);
         toast.success("Invoices exported successfully as CSV");
       } else if (exportFormat === "json") {
+        if (!canExportJson) {
+          throw new Error("JSON export requires PRO or BUSINESS.");
+        }
         const result = await exportInvoicesToJson(filters);
-        // Do something with the JSON data
         toast.success(`${result.invoices.length} invoices exported as JSON`);
       } else if (exportFormat === "pdf" && invoiceId) {
+        if (!canExportPdf) {
+          throw new Error("PDF export requires PRO or BUSINESS.");
+        }
         await exportInvoiceAsPdf(invoiceId);
         toast.success("Invoice exported as PDF");
       }
@@ -122,13 +142,27 @@ export default function ExportDialog({
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="pdf" id="pdf" disabled={!invoiceId} />
+                <RadioGroupItem value="json" id="json" disabled={!canExportJson} />
+                <Label htmlFor="json" className="flex items-center gap-2 cursor-pointer">
+                  <FileText className="h-4 w-4" />
+                  JSON{!canExportJson && " (PRO / BUSINESS)"}
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="pdf" id="pdf" disabled={!canExportPdf} />
                 <Label htmlFor="pdf" className="flex items-center gap-2 cursor-pointer">
                   <FileText className="h-4 w-4" />
-                  PDF{!invoiceId && " (available for single invoice only)"}
+                  PDF
+                  {!invoiceId && " (available for single invoice only)"}
+                  {invoiceId && exportCapability !== "full" && " (PRO / BUSINESS)"}
                 </Label>
               </div>
             </RadioGroup>
+            {exportCapability === "csv" && (
+              <p className="text-sm text-muted-foreground">
+                Вашият план позволява CSV експорт. JSON и PDF експортът са налични в PRO и BUSINESS.
+              </p>
+            )}
           </div>
 
           {/* Filter Options (only show for CSV/JSON exports) */}
@@ -177,9 +211,8 @@ export default function ExportDialog({
                   <SelectContent>
                     <SelectItem value="">All statuses</SelectItem>
                     <SelectItem value="DRAFT">Draft</SelectItem>
-                    <SelectItem value="UNPAID">Unpaid</SelectItem>
-                    <SelectItem value="PAID">Paid</SelectItem>
-                    <SelectItem value="OVERDUE">Overdue</SelectItem>
+                    <SelectItem value="ISSUED">Issued</SelectItem>
+                    <SelectItem value="VOIDED">Voided</SelectItem>
                     <SelectItem value="CANCELLED">Cancelled</SelectItem>
                   </SelectContent>
                 </Select>

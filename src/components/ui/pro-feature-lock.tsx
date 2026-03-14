@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { hasPlanAccess } from "@/lib/subscription-plans";
 
 type PlanType = "PRO" | "BUSINESS";
 
@@ -40,16 +41,7 @@ interface ProFeatureLockProps {
  * Checks if a plan has access to features of required plan
  */
 function hasAccess(currentPlan: string | null | undefined, requiredPlan: PlanType): boolean {
-  const planHierarchy: Record<string, number> = {
-    FREE: 0,
-    PRO: 1,
-    BUSINESS: 2,
-  };
-
-  const current = planHierarchy[currentPlan || "FREE"] ?? 0;
-  const required = planHierarchy[requiredPlan] ?? 1;
-
-  return current >= required;
+  return hasPlanAccess(currentPlan, requiredPlan);
 }
 
 /**
@@ -104,7 +96,7 @@ export function ProFeatureLock({
         )}
       >
         <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 p-2 rounded-full bg-amber-100 dark:bg-amber-900/50">
+          <div className="shrink-0 rounded-full bg-amber-100 p-2 dark:bg-amber-900/50">
             <Crown className="h-5 w-5 text-amber-600 dark:text-amber-400" />
           </div>
           <div className="flex-1 min-w-0">
@@ -120,17 +112,18 @@ export function ProFeatureLock({
               {displayMessage}
             </p>
             {showUpgradeLink && (
-              <Link href="/settings/subscription">
-                <Button
-                  size="sm"
-                  className="bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
-                  onClick={onUpgradeClick}
-                >
+              <Button
+                asChild
+                size="sm"
+                className="bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+                onClick={onUpgradeClick}
+              >
+                <Link href="/settings/subscription">
                   <Sparkles className="h-4 w-4 mr-2" />
                   Надградете до {requiredPlan}
                   <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             )}
           </div>
         </div>
@@ -155,12 +148,12 @@ export function ProFeatureLock({
               {displayMessage}
             </p>
             {showUpgradeLink && (
-              <Link href="/settings/subscription">
-                <Button size="sm" variant="outline" onClick={onUpgradeClick}>
+              <Button asChild size="sm" variant="outline" onClick={onUpgradeClick}>
+                <Link href="/settings/subscription">
                   <Crown className="h-4 w-4 mr-2 text-amber-500" />
                   Надградете
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             )}
           </div>
         </div>
@@ -208,21 +201,23 @@ export function ProFeatureLock({
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
+            asChild
             variant="outline"
-            disabled
             className={cn(
-              "relative cursor-not-allowed opacity-70",
+              "relative border-dashed border-amber-300 hover:border-amber-400 dark:border-amber-700 dark:hover:border-amber-600",
               className
             )}
           >
-            <Lock className="h-4 w-4 mr-2" />
-            {children || "Заключено"}
-            <Badge
-              variant={getPlanBadgeVariant(requiredPlan)}
-              className="ml-2 text-xs px-1.5 py-0"
-            >
-              {requiredPlan}
-            </Badge>
+            <Link href="/settings/subscription">
+              <Lock className="h-4 w-4 mr-2" />
+              {children || "Заключено"}
+              <Badge
+                variant={getPlanBadgeVariant(requiredPlan)}
+                className="ml-2 text-xs px-1.5 py-0"
+              >
+                {requiredPlan}
+              </Badge>
+            </Link>
           </Button>
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-xs">
@@ -315,14 +310,15 @@ export function LockedButton({
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Link href="/settings/subscription">
-            <Button
-              variant="outline"
-              className={cn(
-                "relative border-dashed border-amber-300 dark:border-amber-700 hover:border-amber-400 dark:hover:border-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30",
-                className
-              )}
-            >
+          <Button
+            asChild
+            variant="outline"
+            className={cn(
+              "relative border-dashed border-amber-300 dark:border-amber-700 hover:border-amber-400 dark:hover:border-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30",
+              className
+            )}
+          >
+            <Link href="/settings/subscription">
               <Lock className="h-4 w-4 mr-2 text-amber-500" />
               {children}
               <Badge
@@ -331,8 +327,8 @@ export function LockedButton({
               >
                 {requiredPlan}
               </Badge>
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </TooltipTrigger>
         <TooltipContent>
           <p>Надградете до {requiredPlan} за тази функция</p>

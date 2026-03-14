@@ -13,7 +13,7 @@ import {
 // Valid status transitions for the current invoice lifecycle.
 const VALID_TRANSITIONS: Record<AppInvoiceStatus, AppInvoiceStatus[]> = {
   DRAFT: ["ISSUED", "VOIDED"],
-  ISSUED: ["CANCELLED"],
+  ISSUED: [],
   VOIDED: [],
   CANCELLED: [],
 };
@@ -99,10 +99,7 @@ export async function PATCH(
       );
     }
 
-    const nextDatabaseStatus = getDatabaseStatusForAppStatus(
-      requestedStatus,
-      invoice.status
-    );
+    const nextDatabaseStatus = getDatabaseStatusForAppStatus(requestedStatus);
 
     // Update invoice status
     const { data: updatedInvoice, error: updateError } = await supabase

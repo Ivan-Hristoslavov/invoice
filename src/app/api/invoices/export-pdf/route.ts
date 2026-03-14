@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { generateInvoicePdfServer } from "@/lib/pdf-generator";
 import { resolveSessionUser } from "@/lib/session-user";
 import { withDocumentSnapshots } from "@/lib/document-snapshots";
+import { canExportFormat, getSubscriptionPlan } from "@/lib/subscription-plans";
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,6 +17,22 @@ export async function GET(request: NextRequest) {
     const sessionUser = await resolveSessionUser(session.user);
     if (!sessionUser) {
       return NextResponse.json({ error: "Потребителят не е намерен" }, { status: 404 });
+    }
+
+    const { data: subscriptions } = await supabaseAdmin
+      .from("Subscription")
+      .select("plan, status")
+      .eq("userId", sessionUser.id)
+      .in("status", ["ACTIVE", "TRIALING", "PAST_DUE"])
+      .order("createdAt", { ascending: false })
+      .limit(1);
+    const plan = getSubscriptionPlan(subscriptions?.[0]?.plan);
+
+    if (!canExportFormat(plan.features.export, "pdf")) {
+      return NextResponse.json(
+        { error: "PDF експортът е наличен само за PRO и BUSINESS." },
+        { status: 403 }
+      );
     }
 
     // Get query parameters

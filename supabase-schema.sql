@@ -299,6 +299,24 @@ CREATE TABLE IF NOT EXISTS "UserRole" (
 );
 
 -- CreateTable
+CREATE TABLE IF NOT EXISTS "TeamInvite" (
+    "id" TEXT NOT NULL,
+    "companyId" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "role" "Role" NOT NULL DEFAULT 'VIEWER',
+    "token" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'PENDING',
+    "invitedByUserId" TEXT NOT NULL,
+    "invitedUserId" TEXT,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "acceptedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TeamInvite_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE IF NOT EXISTS "RolePermission" (
     "id" TEXT NOT NULL,
     "role" "Role" NOT NULL,
@@ -396,6 +414,15 @@ CREATE UNIQUE INDEX IF NOT EXISTS "Permission_name_key" ON "Permission"("name");
 CREATE UNIQUE INDEX IF NOT EXISTS "UserRole_userId_companyId_key" ON "UserRole"("userId", "companyId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX IF NOT EXISTS "TeamInvite_token_key" ON "TeamInvite"("token");
+
+-- CreateIndex
+CREATE INDEX IF NOT EXISTS "TeamInvite_companyId_status_idx" ON "TeamInvite"("companyId", "status");
+
+-- CreateIndex
+CREATE INDEX IF NOT EXISTS "TeamInvite_email_status_idx" ON "TeamInvite"("email", "status");
+
+-- CreateIndex
 CREATE UNIQUE INDEX IF NOT EXISTS "RolePermission_role_permissionId_key" ON "RolePermission"("role", "permissionId");
 
 -- CreateIndex
@@ -491,6 +518,21 @@ BEGIN
     -- UserRole -> Company
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'UserRole_companyId_fkey') THEN
         ALTER TABLE "UserRole" ADD CONSTRAINT "UserRole_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "Company"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+
+    -- TeamInvite -> Company
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'TeamInvite_companyId_fkey') THEN
+        ALTER TABLE "TeamInvite" ADD CONSTRAINT "TeamInvite_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "Company"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+
+    -- TeamInvite -> User (invited by)
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'TeamInvite_invitedByUserId_fkey') THEN
+        ALTER TABLE "TeamInvite" ADD CONSTRAINT "TeamInvite_invitedByUserId_fkey" FOREIGN KEY ("invitedByUserId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+
+    -- TeamInvite -> User (accepted by)
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'TeamInvite_invitedUserId_fkey') THEN
+        ALTER TABLE "TeamInvite" ADD CONSTRAINT "TeamInvite_invitedUserId_fkey" FOREIGN KEY ("invitedUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
     END IF;
     
     -- RolePermission -> Permission

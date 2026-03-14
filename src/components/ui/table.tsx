@@ -6,18 +6,33 @@ import { cn } from "@/lib/utils";
 
 interface TableProps extends React.ComponentProps<typeof HeroUITable> {
   stickyHeader?: boolean;
+  contentAriaLabel?: string;
+  contentClassName?: string;
+  scrollContainerClassName?: string;
 }
 
 const TableBase = React.forwardRef<HTMLDivElement, TableProps>(
-  ({ className, stickyHeader = false, children, variant = "secondary", ...props }, ref) => (
+  (
+    {
+      className,
+      stickyHeader = false,
+      children,
+      variant = "secondary",
+      contentAriaLabel = "Таблица",
+      contentClassName,
+      scrollContainerClassName,
+      ...props
+    },
+    ref
+  ) => (
     <HeroUITable
       ref={ref}
       variant={variant}
-      className={cn("rounded-2xl border border-border/50 bg-transparent", className)}
+      className={cn("overflow-hidden rounded-[28px] border border-border/60 bg-card/85 shadow-sm", className)}
       {...props}
     >
-      <HeroUITable.ScrollContainer className={cn(stickyHeader && "max-h-[600px]")}>
-        <HeroUITable.Content aria-label="Таблица">
+      <HeroUITable.ScrollContainer className={cn(stickyHeader && "max-h-[600px]", scrollContainerClassName)}>
+        <HeroUITable.Content aria-label={contentAriaLabel} className={cn("min-w-full", contentClassName)}>
           {children}
         </HeroUITable.Content>
       </HeroUITable.ScrollContainer>
@@ -110,6 +125,7 @@ const TableHead = React.forwardRef<HTMLTableCellElement, TableHeadProps>(
       allowsSorting={sortable}
       className={cn(
         "px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground",
+        "sm:px-5",
         className
       )}
       {...props}
@@ -126,7 +142,7 @@ const TableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <HeroUITable.Cell
     ref={ref}
-    className={cn("px-4 py-3 align-middle", className)}
+    className={cn("px-4 py-3.5 align-middle sm:px-5", className)}
     {...props}
   />
 ));

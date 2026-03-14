@@ -5,11 +5,11 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { resolveSessionUser } from "@/lib/session-user";
 import {
   formatValidationIssues,
+  normalizePartyInput,
   validateBulgarianPartyInput,
 } from "@/lib/bulgarian-party";
+import { getAccessibleCompaniesForUser } from "@/lib/team";
 import { z } from "zod";
-import Stripe from 'stripe';
-import { getStripeInstance } from '@/lib/stripe';
 import cuid from "cuid";
 
 // Define validation schema for company data
@@ -80,16 +80,67 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams;
+    const bulstatNumber = searchParams.get("bulstatNumber");
+    const uicType = searchParams.get("uicType");
     const query = searchParams.get("query") || "";
     const page = parseInt(searchParams.get("page") || "0");
     const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get("pageSize") || "12")));
 
     const supabase = createAdminClient();
 
+    if (bulstatNumber) {
+      const normalizedBulstat =
+        normalizePartyInput({
+          name: "Company duplicate check",
+          bulstatNumber,
+          uicType: uicType === "EGN" ? "EGN" : "BULSTAT",
+        }).bulstatNumber || "";
+
+      if (!normalizedBulstat || uicType === "EGN") {
+        return NextResponse.json({
+          exists: false,
+          bulstatNumber: normalizedBulstat,
+        });
+      }
+
+      const { data: company } = await supabase
+        .from("Company")
+        .select("id, userId")
+        .eq("bulstatNumber", normalizedBulstat)
+        .limit(1)
+        .maybeSingle();
+
+      if (!company) {
+        return NextResponse.json({
+          exists: false,
+          bulstatNumber: normalizedBulstat,
+        });
+      }
+
+      const isOwnedByCurrentUser = company.userId === sessionUser.id;
+      const message = isOwnedByCurrentUser
+        ? "Вече сте добавили компания с този ЕИК/БУЛСТАТ."
+        : "Тази компания е регистрирана и не може да бъде добавена като ваша.";
+
+      return NextResponse.json({
+        exists: true,
+        bulstatNumber: normalizedBulstat,
+        isOwnedByCurrentUser,
+        message,
+      });
+    }
+
+    const accessibleCompanies = await getAccessibleCompaniesForUser(sessionUser.id);
+    const accessibleCompanyIds = accessibleCompanies.map((company) => company.id);
+
+    if (accessibleCompanyIds.length === 0) {
+      return NextResponse.json(page > 0 ? { data: [], meta: { page, pageSize, totalItems: 0, totalPages: 0 } } : []);
+    }
+
     let companyQuery = supabase
       .from("Company")
       .select("*", { count: "exact" })
-      .eq("userId", sessionUser.id);
+      .in("id", accessibleCompanyIds);
 
     if (query) {
       companyQuery = companyQuery.or(
@@ -257,70 +308,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-// --- STRIPE CONNECT ONBOARDING ENDPOINT ---
-export async function POST_STRIPE_CONNECT_ONBOARDING(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const sessionUser = await resolveSessionUser(session.user);
-    if (!sessionUser) {
-      return NextResponse.json({ error: "Invalid session" }, { status: 401 });
-    }
-
-    // Find the user's company (assume one company per user for now)
-    const supabase = createAdminClient();
-    const { data: companies, error: findError } = await supabase
-      .from("Company")
-      .select("*")
-      .eq("userId", sessionUser.id)
-      .limit(1);
-    
-    const company = companies?.[0];
-    if (!company) {
-      return NextResponse.json({ error: 'Company not found' }, { status: 404 });
-    }
-
-    const stripe = await getStripeInstance();
-    let stripeAccountId = company.stripeAccountId;
-
-    // If no Stripe account, create one
-    if (!stripeAccountId) {
-      const account = await stripe.accounts.create({
-        type: 'express',
-        country: company.country || 'BG',
-        email: company.email || undefined,
-        business_type: 'company',
-        business_profile: {
-          name: company.name,
-          product_description: 'Invoice payments via RapidFrame',
-        },
-        capabilities: {
-          transfers: { requested: true },
-          card_payments: { requested: true },
-        },
-      });
-      stripeAccountId = account.id;
-      await supabase
-        .from("Company")
-        .update({ stripeAccountId, updatedAt: new Date().toISOString() })
-        .eq("id", company.id);
-    }
-
-    // Create onboarding link
-    const accountLink = await stripe.accountLinks.create({
-      account: stripeAccountId,
-      refresh_url: process.env.NEXT_PUBLIC_APP_URL + '/settings/company?stripe=refresh',
-      return_url: process.env.NEXT_PUBLIC_APP_URL + '/settings/company?stripe=success',
-      type: 'account_onboarding',
-    });
-
-    return NextResponse.json({ url: accountLink.url });
-  } catch (error) {
-    console.error('Stripe Connect onboarding error:', error);
-    return NextResponse.json({ error: 'Failed to create Stripe onboarding link' }, { status: 500 });
-  }
-} 

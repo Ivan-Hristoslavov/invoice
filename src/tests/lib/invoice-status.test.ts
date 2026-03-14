@@ -16,17 +16,15 @@ describe("invoice-status", () => {
 
   it("returns all compatible database values for the issued filter", () => {
     expect(getDatabaseStatusesForAppStatus("ISSUED")).toEqual([
-      "ISSUED",
       "UNPAID",
       "PAID",
       "OVERDUE",
     ]);
   });
 
-  it("reuses an existing legacy issued-like status when persisting", () => {
-    expect(getDatabaseStatusForAppStatus("ISSUED", "PAID")).toBe("PAID");
-    expect(getDatabaseStatusForAppStatus("ISSUED", "UNPAID")).toBe("UNPAID");
-    expect(getDatabaseStatusForAppStatus("ISSUED", "DRAFT")).toBe("PAID");
+  it("maps the app issued status to the initial database status", () => {
+    expect(getDatabaseStatusForAppStatus("ISSUED")).toBe("UNPAID");
+    expect(getDatabaseStatusForAppStatus("VOIDED")).toBe("VOIDED");
   });
 
   it("detects issued-like statuses consistently", () => {

@@ -1,79 +1,36 @@
-# 📊 Резюме на обновяването на абонаментния модел
+# Subscription Summary
 
-## ✅ Завършени промени
+## Current plan model
 
-### 1. Schema и база данни
-- ✅ Обновен `SubscriptionPlan` enum: `FREE`, `PRO`, `BUSINESS`
-- ✅ Обновени `PLAN_LIMITS` с новите ограничения
+The app now uses four public plans from a shared source of truth:
 
-### 2. Ценообразуване
-- ✅ **FREE**: 0 EUR (безплатно завинаги)
-- ✅ **PRO**: 13 EUR/месец или 130 EUR/година (≈ 25 BGN/месец или 255 BGN/година)
-- ✅ **BUSINESS**: 28 EUR/месец или 280 EUR/година (≈ 55 BGN/месец или 550 BGN/година)
-- ✅ 20% отстъпка за годишни планове
+- `FREE`: 0 EUR
+- `STARTER`: 4.99 EUR/month or 49.99 EUR/year
+- `PRO`: 8.99 EUR/month or 89.99 EUR/year
+- `BUSINESS`: 19.99 EUR/month or 199.99 EUR/year
 
-### 3. Ограничения по планове
+## Current limits
 
-| Функция | FREE | PRO | BUSINESS |
-|---------|------|-----|----------|
-| **Фактури** | 3/месец | ∞ | ∞ |
-| **Фирми** | 1 | 1 | 5 |
-| **Лого** | ❌ | ✅ | ✅ |
-| **PDF** | Basic (воден знак) | Pro | Pro |
-| **Кредитни известия** | ❌ | ✅ | ✅ |
-| **Експорт** | ❌ | ✅ | ✅ |
-| **Имейл изпращане** | ❌ | ✅ | ✅ |
-| **Потребители** | 1 | 1 | 5 |
-| **API достъп** | ❌ | ❌ | ✅ |
-| **Поддръжка** | Basic | Standard | Priority |
+| Feature | FREE | STARTER | PRO | BUSINESS |
+|---------|------|---------|-----|----------|
+| Invoices / month | 3 | 15 | Unlimited | Unlimited |
+| Companies | 1 | 1 | 3 | 10 |
+| Clients | 5 | 25 | 100 | Unlimited |
+| Products | 10 | 50 | 200 | Unlimited |
+| Credit/debit notes | No | No | Yes | Yes |
+| Email sending | No | No | Yes | Yes |
+| Export | No | CSV | Full | Full |
+| API access | No | No | No | Yes |
+| Team members | 1 | 1 | 2 | 5 |
 
-### 4. Обновени файлове
-- ✅ `prisma/schema.prisma` - нови планове
-- ✅ `src/lib/stripe.ts` - нови цени и features
-- ✅ `src/middleware/subscription.ts` - нови ограничения и проверки (мигрирано към Supabase)
-- ✅ `src/services/subscription-service.ts` - обновени планове
+## Implementation notes
 
-## ⏳ Останали задачи
+- Pricing, Stripe price IDs, feature flags, limits, and plan order live in `src/lib/subscription-plans.ts`.
+- Runtime limit enforcement uses `src/middleware/subscription.ts`.
+- Checkout routes and Stripe webhook syncing use price-ID-based plan mapping instead of amount thresholds.
+- Billing and public pricing UI now read the same plan definitions.
 
-### 1. API проверки (критично)
-- [ ] Проверка за брой фактури при `POST /api/invoices`
-- [ ] Проверка за брой фирми при `POST /api/companies`
-- [ ] Проверка за лого при PDF генериране
-- [ ] Проверка за експорт при `GET /api/invoices/export`
-- [ ] Проверка за кредитни известия при `POST /api/invoices/[id]/cancel`
-- [ ] Проверка за имейл при `POST /api/invoices/[id]/send`
+## Verification status
 
-### 2. UI обновления
-- [ ] Обновяване на `SubscriptionPlans.tsx` компонента
-- [ ] Добавяне на месечен/годишен toggle
-- [ ] Показване на upgrade prompts
-- [ ] Disable на функции за FREE план
-
-### 3. Stripe конфигурация
-- [ ] Създаване на Stripe products
-- [ ] Създаване на Stripe prices (месечни и годишни)
-- [ ] Обновяване на environment variables
-
-## 🎯 Препоръки
-
-### За FREE план:
-- Показвай ясно лимитите в UI
-- Добави upgrade CTA след 2-ра фактура
-- Покажи какво получават с PRO
-
-### За PRO план:
-- Маркирай като "Най-популярен"
-- Подчертай неограничените фактури
-- Покажи годишната отстъпка
-
-### За BUSINESS план:
-- Фокусирай се върху счетоводители и агенции
-- Подчертай API достъпа
-- Покажи приоритетната поддръжка
-
-## 💡 Следващи стъпки
-
-1. **Добави проверки в API endpoints** (най-важно)
-2. **Обнови UI компонентите**
-3. **Конфигурирай Stripe**
-4. **Тествай всички ограничения**
+- Focused regression tests pass for company conflicts, invoice status persistence, and credit/debit note restrictions.
+- `npm run build` passes on Next.js 16.
