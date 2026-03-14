@@ -4,6 +4,7 @@ import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import cuid from "cuid";
 import { createAdminClient } from "@/lib/supabase/server";
+import { consumeMagicLinkToken, findOrCreateMagicLinkUser } from "@/lib/magic-link";
 
 const oneDayInSeconds = 60 * 60 * 24;
 const isProduction = process.env.NODE_ENV === "production";
@@ -44,9 +45,33 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        magicToken: { label: "Magic token", type: "text" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.email) {
+          return null;
+        }
+
+        const normalizedEmail = credentials.email.trim().toLowerCase();
+        const magicToken = credentials.magicToken?.trim();
+
+        if (magicToken) {
+          const consumedToken = await consumeMagicLinkToken(normalizedEmail, magicToken);
+          if (!consumedToken) {
+            return null;
+          }
+
+          const user = await findOrCreateMagicLinkUser(normalizedEmail);
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            image: user.image,
+          };
+        }
+
+        if (!credentials.password) {
           return null;
         }
 
@@ -55,7 +80,7 @@ export const authOptions: NextAuthOptions = {
         const { data: user, error } = await supabase
           .from("User")
           .select("id, email, name, password, image")
-          .eq("email", credentials.email)
+          .eq("email", normalizedEmail)
           .single();
 
         if (error || !user || !user.password) {

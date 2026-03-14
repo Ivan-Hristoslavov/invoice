@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer';
 import { exportInvoicePdfBuffer } from './invoice-export';
 import { createAdminClient } from './supabase/server';
 import { withDocumentSnapshots } from './document-snapshots';
+import { APP_NAME } from "@/config/constants";
 
 // Lazy initialization helper to avoid build-time errors
 function getSmtpTransporter() {
@@ -385,6 +386,92 @@ export async function sendPasswordResetEmail({
         <p style="font-size: 12px; color: #9ca3af;">
           Това е автоматично генериран имейл от ${appName}. Моля, не отговаряйте.
         </p>
+      </div>
+    `,
+  });
+}
+
+export async function sendTeamInviteEmail({
+  to,
+  companyName,
+  inviterName,
+  roleLabel,
+  acceptUrl,
+  magicLinkUrl,
+}: {
+  to: string;
+  companyName: string;
+  inviterName: string;
+  roleLabel: string;
+  acceptUrl: string;
+  magicLinkUrl: string;
+}) {
+  const transporter = getSmtpTransporter();
+  const fromAddress = getFromAddress();
+  const from = process.env.NEXT_PUBLIC_APP_DOMAIN
+    ? `${APP_NAME} <${fromAddress}>`
+    : fromAddress;
+
+  await transporter.sendMail({
+    from,
+    to,
+    subject: `Покана за екипа в ${companyName}`,
+    html: `
+      <div style="margin:0;padding:32px 16px;background:#0f172a;color:#e5eefb;font-family:Inter,Arial,sans-serif;">
+        <div style="max-width:640px;margin:0 auto;">
+          <div style="margin-bottom:20px;">
+            <div style="display:inline-block;padding:8px 14px;border:1px solid rgba(255,255,255,0.12);border-radius:999px;background:rgba(14,165,233,0.10);font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#7dd3fc;">
+              ${APP_NAME}
+            </div>
+          </div>
+
+          <div style="background:linear-gradient(180deg,#111827 0%,#0f172a 100%);border:1px solid rgba(148,163,184,0.18);border-radius:28px;padding:32px;box-shadow:0 24px 80px rgba(15,23,42,0.35);">
+            <h1 style="margin:0 0 12px;font-size:32px;line-height:1.1;font-weight:800;color:#f8fafc;">
+              Покана за достъп до екипа
+            </h1>
+            <p style="margin:0 0 24px;font-size:16px;line-height:1.7;color:#cbd5e1;">
+              <strong style="color:#f8fafc;">${inviterName}</strong> ви покани в компанията
+              <strong style="color:#f8fafc;">${companyName}</strong> с роля
+              <strong style="color:#f8fafc;">${roleLabel}</strong>.
+            </p>
+
+            <div style="margin:0 0 24px;padding:18px 20px;border-radius:20px;background:rgba(15,23,42,0.6);border:1px solid rgba(148,163,184,0.14);">
+              <div style="font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#94a3b8;margin-bottom:10px;">
+                Как работи
+              </div>
+              <div style="font-size:15px;line-height:1.7;color:#dbe7f5;">
+                Натиснете бутона по-долу и ще влезете с еднократен сигурен magic link.
+                Ако нямате акаунт, ще бъде създаден автоматично за този имейл.
+              </div>
+            </div>
+
+            <div style="margin:28px 0 18px;">
+              <a href="${magicLinkUrl}" style="display:inline-block;padding:16px 28px;border-radius:16px;background:linear-gradient(135deg,#14b8a6 0%,#2563eb 100%);color:#ffffff;text-decoration:none;font-weight:800;font-size:16px;">
+                Приеми поканата
+              </a>
+            </div>
+
+            <p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#94a3b8;">
+              Ако бутонът не работи, използвайте този линк:
+            </p>
+            <p style="margin:0 0 22px;word-break:break-word;">
+              <a href="${magicLinkUrl}" style="color:#7dd3fc;text-decoration:none;">${magicLinkUrl}</a>
+            </p>
+
+            <div style="padding-top:20px;border-top:1px solid rgba(148,163,184,0.14);">
+              <p style="margin:0 0 10px;font-size:14px;line-height:1.6;color:#cbd5e1;">
+                Алтернативно можете да отворите директния invite линк:
+              </p>
+              <p style="margin:0;word-break:break-word;">
+                <a href="${acceptUrl}" style="color:#94a3b8;text-decoration:none;">${acceptUrl}</a>
+              </p>
+            </div>
+          </div>
+
+          <p style="margin:18px 6px 0;font-size:12px;line-height:1.6;color:#64748b;">
+            Това е автоматично генериран имейл от ${APP_NAME}. Ако не очаквате тази покана, игнорирайте съобщението.
+          </p>
+        </div>
       </div>
     `,
   });

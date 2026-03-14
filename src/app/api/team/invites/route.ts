@@ -15,6 +15,23 @@ import {
 } from "@/lib/team";
 import { supabaseAdmin } from "@/lib/supabase";
 import { checkSubscriptionLimits } from "@/middleware/subscription";
+import { createMagicLinkToken } from "@/lib/magic-link";
+import { sendTeamInviteEmail } from "@/lib/email";
+
+function getRoleLabel(role: string) {
+  switch (role) {
+    case "ADMIN":
+      return "Администратор";
+    case "MANAGER":
+      return "Мениджър";
+    case "ACCOUNTANT":
+      return "Счетоводител";
+    case "VIEWER":
+      return "Наблюдател";
+    default:
+      return role;
+  }
+}
 
 const CreateInviteSchema = z.object({
   companyId: z.string().min(1),
@@ -114,10 +131,25 @@ export async function POST(request: NextRequest) {
     }
 
     const inviteUrl = `${request.nextUrl.origin}/team/accept?token=${invite.token}`;
+    const magicLogin = await createMagicLinkToken(invite.email);
+    const magicLinkUrl =
+      `${request.nextUrl.origin}/signin?email=${encodeURIComponent(invite.email)}` +
+      `&magicToken=${encodeURIComponent(magicLogin.token)}` +
+      `&callbackUrl=${encodeURIComponent(`/team/accept?token=${invite.token}`)}`;
+
+    await sendTeamInviteEmail({
+      to: invite.email,
+      companyName: company.name,
+      inviterName: sessionUser.name || sessionUser.email,
+      roleLabel: getRoleLabel(invite.role),
+      acceptUrl: inviteUrl,
+      magicLinkUrl,
+    });
 
     return NextResponse.json({
       invite,
       inviteUrl,
+      magicLinkUrl,
       message: "Поканата е създадена успешно",
     });
   } catch (error) {

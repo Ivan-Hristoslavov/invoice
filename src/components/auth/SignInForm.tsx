@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
@@ -16,10 +16,15 @@ export function SignInForm() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isMagicLoading, setIsMagicLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const hasAttemptedMagicLinkRef = useRef(false);
 
   const authError = searchParams.get("error");
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const magicToken = searchParams.get("magicToken");
+  const inviteEmail = searchParams.get("email");
   const oauthErrorMessage = useMemo(() => {
     if (!authError) return "";
 
@@ -46,6 +51,40 @@ export function SignInForm() {
     setError("");
   }, [oauthErrorMessage]);
 
+  useEffect(() => {
+    if (inviteEmail) {
+      setEmail(inviteEmail);
+    }
+  }, [inviteEmail]);
+
+  useEffect(() => {
+    if (!magicToken || !inviteEmail || hasAttemptedMagicLinkRef.current) return;
+
+    hasAttemptedMagicLinkRef.current = true;
+
+    const runMagicSignIn = async () => {
+      setIsMagicLoading(true);
+      setError("");
+
+      const result = await signIn("credentials", {
+        redirect: false,
+        email: inviteEmail,
+        magicToken,
+      });
+
+      if (result?.error) {
+        setError("Magic линкът е невалиден или е изтекъл. Поискайте нова покана.");
+        setIsMagicLoading(false);
+        return;
+      }
+
+      router.push(callbackUrl);
+      router.refresh();
+    };
+
+    void runMagicSignIn();
+  }, [callbackUrl, inviteEmail, magicToken, router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -64,7 +103,8 @@ export function SignInForm() {
         return;
       }
 
-      router.push("/dashboard");
+      router.push(callbackUrl);
+      router.refresh();
     } catch (error) {
       setError("Нещо се обърка. Моля, опитайте отново.");
       setIsLoading(false);
@@ -73,7 +113,7 @@ export function SignInForm() {
 
   const handleGoogleSignIn = () => {
     setIsGoogleLoading(true);
-    signIn("google", { callbackUrl: "/dashboard" });
+    signIn("google", { callbackUrl });
   };
 
   return (
@@ -86,9 +126,17 @@ export function SignInForm() {
           Добре дошли обратно
         </h1>
         <p className="text-sm text-muted-foreground">
-          Въведете данните си за достъп
+          {isMagicLoading ? "Потвърждаваме сигурния линк за достъп" : "Въведете данните си за достъп"}
         </p>
       </div>
+
+      {magicToken && inviteEmail && (
+        <div className="mb-4 rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3">
+          <p className="text-sm text-muted-foreground">
+            Влизате с покана за <strong>{inviteEmail}</strong>.
+          </p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">

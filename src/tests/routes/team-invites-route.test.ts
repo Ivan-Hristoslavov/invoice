@@ -11,6 +11,8 @@ const mockGetCompanyRoleForUser = vi.fn();
 const mockGetTeamMembersForCompany = vi.fn();
 const mockNormalizeTeamInviteEmail = vi.fn((email: string) => email.trim().toLowerCase());
 const mockRandomUUID = vi.fn();
+const mockCreateMagicLinkToken = vi.fn();
+const mockSendTeamInviteEmail = vi.fn();
 
 vi.mock("next-auth", () => ({
   getServerSession: mockGetServerSession,
@@ -42,6 +44,14 @@ vi.mock("crypto", () => ({
   default: {
     randomUUID: mockRandomUUID,
   },
+}));
+
+vi.mock("@/lib/magic-link", () => ({
+  createMagicLinkToken: mockCreateMagicLinkToken,
+}));
+
+vi.mock("@/lib/email", () => ({
+  sendTeamInviteEmail: mockSendTeamInviteEmail,
 }));
 
 const mockSupabaseFrom = vi.fn();
@@ -78,6 +88,7 @@ describe("team invite routes", () => {
     mockResolveSessionUser.mockResolvedValue({
       id: "member-user",
       email: "member@example.com",
+      name: "Member User",
     });
     mockCheckSubscriptionLimits.mockResolvedValue({ allowed: true });
     mockCanManageCompanyTeam.mockReturnValue(true);
@@ -86,6 +97,11 @@ describe("team invite routes", () => {
     mockGetCompanyRoleForUser.mockResolvedValue("OWNER");
     mockGetTeamMembersForCompany.mockResolvedValue([]);
     mockRandomUUID.mockReturnValue("invite-id");
+    mockCreateMagicLinkToken.mockResolvedValue({
+      token: "magic-token",
+      email: "new.user@example.com",
+      expires: "2026-03-15T12:00:00.000Z",
+    });
   });
 
   afterEach(() => {
@@ -175,6 +191,14 @@ describe("team invite routes", () => {
       })
     );
     expect(body.inviteUrl).toBe("http://localhost/team/accept?token=invite-token");
+    expect(body.magicLinkUrl).toContain("magicToken=magic-token");
+    expect(mockSendTeamInviteEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "new.user@example.com",
+        companyName: "Acme",
+        roleLabel: "Мениджър",
+      })
+    );
   });
 
   it("accepts a pending invite and creates company membership", async () => {

@@ -119,9 +119,9 @@ export default function TeamSettingsClient({
 
       if (payload.inviteUrl && navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(payload.inviteUrl);
-        toast.success("Поканата е създадена и линкът е копиран");
+        toast.success("Поканата е изпратена по имейл и линкът е копиран");
       } else {
-        toast.success("Поканата е създадена");
+        toast.success("Поканата е изпратена по имейл");
       }
 
       setEmail("");
@@ -161,7 +161,7 @@ export default function TeamSettingsClient({
 
       if (action === "resend" && payload.inviteUrl && navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(payload.inviteUrl);
-        toast.success("Поканата е подновена и линкът е копиран");
+        toast.success("Поканата е изпратена отново по имейл и линкът е копиран");
       } else {
         toast.success(action === "revoke" ? "Поканата е оттеглена" : "Поканата е обновена");
       }
@@ -385,39 +385,41 @@ export default function TeamSettingsClient({
                       </p>
                     </div>
                     <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                      <Button
+                      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                        <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => handleInviteAction(invite.id, "copy")}
                         disabled={pendingInviteId === invite.id}
-                        className="btn-responsive"
-                      >
-                        <Copy className="mr-2 h-4 w-4" />
-                        Копирай линк
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleInviteAction(invite.id, "resend")}
-                        disabled={pendingInviteId === invite.id}
-                        className="btn-responsive"
-                      >
-                        <RefreshCcw className="mr-2 h-4 w-4" />
-                        Поднови
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleInviteAction(invite.id, "revoke")}
-                        disabled={pendingInviteId === invite.id}
-                        className="btn-responsive"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Оттегли
-                      </Button>
+                          className="w-full justify-center"
+                        >
+                          <Copy className="mr-2 h-4 w-4" />
+                          Копирай линк
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleInviteAction(invite.id, "resend")}
+                          disabled={pendingInviteId === invite.id}
+                          className="w-full justify-center"
+                        >
+                          <RefreshCcw className="mr-2 h-4 w-4" />
+                          Поднови
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleInviteAction(invite.id, "revoke")}
+                          disabled={pendingInviteId === invite.id}
+                          className="w-full justify-center sm:col-span-2 xl:col-span-1"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Оттегли
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))
