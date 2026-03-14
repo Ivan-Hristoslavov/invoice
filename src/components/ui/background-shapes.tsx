@@ -1,7 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
-
 interface BackgroundShapesProps {
   variant?: "default" | "subtle" | "vibrant";
   className?: string;
@@ -76,176 +74,37 @@ export function BackgroundShapes({
       {showShapes && (
         <>
           {/* Floating circle - top left - large and blurred */}
-          <motion.div
-            className="absolute top-[15%] left-[10%] w-32 h-32 rounded-full bg-emerald-500/10 dark:bg-emerald-400/10 blur-xl"
-            animate={{
-              y: [0, -50, 0],
-              x: [0, 30, 0],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 25,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
+          <div className="animate-orb-float-slow absolute top-[15%] left-[10%] h-32 w-32 rounded-full bg-emerald-500/10 blur-xl dark:bg-emerald-400/10" />
 
           {/* Floating square - top right - blurred */}
-          <motion.div
-            className="absolute top-[20%] right-[15%] w-24 h-24 bg-purple-500/10 dark:bg-purple-400/10 rounded-2xl blur-xl"
-            animate={{
-              y: [0, 40, 0],
-              x: [0, -20, 0],
-              rotate: [0, 45, 0],
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
+          <div className="animate-orb-float-diagonal absolute top-[20%] right-[15%] h-24 w-24 rounded-2xl bg-purple-500/10 blur-xl dark:bg-purple-400/10" />
 
           {/* Floating blob - center left - very blurred */}
-          <motion.div
-            className="absolute top-[45%] left-[5%] w-40 h-40 bg-cyan-500/8 dark:bg-cyan-400/8 rounded-full blur-2xl"
-            animate={{
-              y: [0, -30, 0],
-              x: [0, 25, 0],
-              scale: [1, 1.15, 1],
-            }}
-            transition={{
-              duration: 22,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
+          <div className="animate-orb-float-slower absolute top-[45%] left-[5%] h-40 w-40 rounded-full bg-cyan-500/8 blur-2xl dark:bg-cyan-400/8" />
 
           {/* Floating diamond shape - bottom left - blurred */}
-          <motion.div
-            className="absolute bottom-[25%] left-[20%] w-28 h-28 bg-pink-500/8 dark:bg-pink-400/8 rounded-3xl rotate-45 blur-xl"
-            animate={{
-              y: [0, 35, 0],
-              x: [0, -15, 0],
-              scale: [1, 1.1, 1],
-            }}
-            transition={{
-              duration: 28,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
+          <div className="animate-orb-float-reverse absolute bottom-[25%] left-[20%] h-28 w-28 rotate-45 rounded-3xl bg-pink-500/8 blur-xl dark:bg-pink-400/8" />
 
           {/* Floating ring - center right - large and blurred */}
-          <motion.div
-            className="absolute top-[35%] right-[8%] w-36 h-36 rounded-full bg-blue-500/8 dark:bg-blue-400/8 blur-2xl"
-            animate={{
-              y: [0, -45, 0],
-              x: [0, -20, 0],
-              scale: [1, 0.85, 1],
-            }}
-            transition={{
-              duration: 30,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
+          <div className="animate-orb-float-slower absolute top-[35%] right-[8%] h-36 w-36 rounded-full bg-blue-500/8 blur-2xl dark:bg-blue-400/8" />
 
           {/* Medium floating blobs */}
-          <motion.div
-            className="absolute top-[60%] left-[15%] w-20 h-20 rounded-full bg-emerald-500/10 dark:bg-emerald-400/10 blur-xl"
-            animate={{
-              y: [0, -25, 0],
-              x: [0, 20, 0],
-            }}
-            transition={{
-              duration: 18,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-          <motion.div
-            className="absolute top-[25%] left-[40%] w-16 h-16 rounded-full bg-purple-500/10 dark:bg-purple-400/10 blur-xl"
-            animate={{
-              y: [0, 30, 0],
-              x: [0, -25, 0],
-            }}
-            transition={{
-              duration: 16,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-          <motion.div
-            className="absolute bottom-[35%] right-[25%] w-24 h-24 rounded-full bg-cyan-500/10 dark:bg-cyan-400/10 blur-xl"
-            animate={{
-              y: [0, -35, 0],
-              x: [0, 15, 0],
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
+          <div className="animate-orb-float-diagonal absolute top-[60%] left-[15%] h-20 w-20 rounded-full bg-emerald-500/10 blur-xl dark:bg-emerald-400/10" />
+          <div className="animate-orb-float-reverse absolute top-[25%] left-[40%] h-16 w-16 rounded-full bg-purple-500/10 blur-xl dark:bg-purple-400/10" />
+          <div className="animate-orb-float-diagonal absolute bottom-[35%] right-[25%] h-24 w-24 rounded-full bg-cyan-500/10 blur-xl dark:bg-cyan-400/10" />
 
           {/* Floating elongated shape - blurred */}
-          <motion.div
-            className="absolute top-[70%] right-[40%] w-32 h-12 bg-linear-to-r from-amber-500/8 via-orange-500/10 to-amber-500/8 rounded-full blur-xl"
-            animate={{
-              rotate: [0, 15, -15, 0],
-              scale: [1, 1.2, 1],
-              x: [0, 30, 0],
-            }}
-            transition={{
-              duration: 24,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
+          <div className="animate-orb-sway absolute top-[70%] right-[40%] h-12 w-32 rounded-full bg-linear-to-r from-amber-500/8 via-orange-500/10 to-amber-500/8 blur-xl" />
 
           {/* Cross/Plus shape - blurred */}
-          <motion.div
-            className="absolute bottom-[40%] left-[35%] blur-lg"
-            animate={{
-              rotate: [0, 90, 0],
-              scale: [1, 0.8, 1],
-              y: [0, 20, 0],
-            }}
-            transition={{
-              duration: 22,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          >
+          <div className="animate-orb-rotate absolute bottom-[40%] left-[35%] blur-lg">
             <div className="w-16 h-4 bg-indigo-500/10 dark:bg-indigo-400/10 rounded-full" />
             <div className="w-4 h-16 bg-indigo-500/10 dark:bg-indigo-400/10 rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-          </motion.div>
+          </div>
 
           {/* Extra floating orbs for depth */}
-          <motion.div
-            className="absolute top-[80%] left-[60%] w-20 h-20 rounded-full bg-rose-500/8 dark:bg-rose-400/8 blur-2xl"
-            animate={{
-              y: [0, -40, 0],
-              x: [0, -30, 0],
-            }}
-            transition={{
-              duration: 26,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-          <motion.div
-            className="absolute top-[10%] left-[60%] w-28 h-28 rounded-full bg-teal-500/8 dark:bg-teal-400/8 blur-2xl"
-            animate={{
-              y: [0, 35, 0],
-              x: [0, 20, 0],
-            }}
-            transition={{
-              duration: 28,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
+          <div className="animate-orb-float-reverse absolute top-[80%] left-[60%] h-20 w-20 rounded-full bg-rose-500/8 blur-2xl dark:bg-rose-400/8" />
+          <div className="animate-orb-float-slow absolute top-[10%] left-[60%] h-28 w-28 rounded-full bg-teal-500/8 blur-2xl dark:bg-teal-400/8" />
         </>
       )}
     </div>

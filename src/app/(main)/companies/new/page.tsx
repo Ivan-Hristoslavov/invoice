@@ -48,6 +48,8 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
+import { validateBulgarianPartyInput } from "@/lib/bulgarian-party";
+import { applyApiValidationDetails } from "@/lib/form-errors";
 
 // Step indicator component
 function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { title: string; icon: React.ReactNode }[] }) {
@@ -120,10 +122,49 @@ const companySchema = z.object({
   bankAccount: z.string().optional().or(z.literal("")),
   bankSwift: z.string().optional().or(z.literal("")),
   bankIban: z.string().optional().or(z.literal("")),
+}).superRefine((value, ctx) => {
+  const { issues } = validateBulgarianPartyInput(value, { requireMol: true });
+
+  for (const issue of issues) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: issue.path,
+      message: issue.message,
+    });
+  }
 });
 
 type CompanyFormInputValues = z.input<typeof companySchema>;
 type CompanyFormValues = z.output<typeof companySchema>;
+
+function getStepForCompanyField(field?: string) {
+  switch (field) {
+    case "name":
+    case "email":
+    case "phone":
+      return 0;
+    case "address":
+    case "city":
+    case "state":
+    case "zipCode":
+    case "country":
+      return 1;
+    case "bulstatNumber":
+    case "vatRegistered":
+    case "vatRegistrationNumber":
+    case "mol":
+    case "uicType":
+    case "accountablePerson":
+      return 2;
+    case "bankName":
+    case "bankAccount":
+    case "bankSwift":
+    case "bankIban":
+      return 3;
+    default:
+      return 0;
+  }
+}
 
 export default function NewCompanyPage() {
   const router = useRouter();
@@ -228,7 +269,14 @@ export default function NewCompanyPage() {
       });
 
       if (!response.ok) {
-        const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
+        const errorPayload = (await response.json().catch(() => null)) as {
+          error?: string;
+          details?: Array<{ path?: string[]; message?: string }>;
+        } | null;
+        const invalidFields = applyApiValidationDetails(form, errorPayload?.details);
+        if (invalidFields.length > 0) {
+          setCurrentStep(getStepForCompanyField(invalidFields[0] as string));
+        }
         throw new Error(errorPayload?.error || "Неуспешно създаване на компания");
       }
 
@@ -282,6 +330,12 @@ export default function NewCompanyPage() {
       default:
         return true;
     }
+  };
+
+  const handleInvalidSubmit = (errors: typeof form.formState.errors) => {
+    const firstField = Object.keys(errors)[0];
+    setCurrentStep(getStepForCompanyField(firstField));
+    toast.error("Моля, коригирайте отбелязаните полета.");
   };
 
   return (
@@ -349,7 +403,7 @@ export default function NewCompanyPage() {
 
       {/* Form */}
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form onSubmit={form.handleSubmit(onSubmit, handleInvalidSubmit)}>
           {/* Step content - all steps rendered but hidden with CSS */}
           <div className="mb-8">
             {/* Step 0: Basic Info */}

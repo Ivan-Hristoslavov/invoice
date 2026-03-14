@@ -22,18 +22,19 @@ import {
   FileText,
   XCircle,
   Mail,
+  MoreVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
 import DocumentsTab from "@/components/invoice/DocumentsTab";
 import { getDocuments } from "@/lib/services/document-service";
 import { exportInvoiceAsPdf, printInvoicePdf } from "@/lib/invoice-export";
 import { StatusChangeModal } from "@/components/invoice/StatusChangeModal";
+import { CancelInvoiceModal } from "@/components/invoice/CancelInvoiceModal";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { Lock, Crown } from "lucide-react";
 import {
@@ -42,6 +43,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 // Payment link functionality removed - invoices are for issuance only
 
 type InvoiceItem = {
@@ -119,6 +126,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
   const [isChangingStatus, setIsChangingStatus] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [showIssueModal, setShowIssueModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [isLoadingAuditLogs, setIsLoadingAuditLogs] = useState(false);
   
@@ -138,7 +146,25 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
     if (activeTab === 'history' && auditLogs.length === 0 && !isLoadingAuditLogs) {
       fetchAuditLogs();
     }
-  }, [activeTab]);
+  }, [activeTab, auditLogs.length, isLoadingAuditLogs]);
+
+  useEffect(() => {
+    if (activeTab !== "documents" || documents.length > 0 || isLoadingDocuments) return;
+
+    const fetchDocuments = async () => {
+      setIsLoadingDocuments(true);
+      try {
+        const docs = await getDocuments(invoice.id);
+        setDocuments(docs);
+      } catch (error) {
+        toast.error("Грешка при зареждане на документите");
+      } finally {
+        setIsLoadingDocuments(false);
+      }
+    };
+
+    void fetchDocuments();
+  }, [activeTab, documents.length, invoice.id, isLoadingDocuments]);
 
   const fetchAuditLogs = async () => {
     setIsLoadingAuditLogs(true);
@@ -228,13 +254,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
     }
   };
 
-  const handleCancelInvoice = async () => {
-    const reason = prompt("Моля, въведете причина за отмяна на фактурата:");
-    if (!reason || reason.trim() === "") {
-      toast.error("Причината за отмяна е задължителна");
-      return;
-    }
-    
+  const handleCancelInvoice = async (reason: string) => {
     try {
       setIsSendingEmail(true);
       const response = await fetch(`/api/invoices/${invoice.id}/cancel`, {
@@ -244,7 +264,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
       });
       
       if (response.ok) {
-        const data = await response.json();
+        await response.json();
         toast.success("Фактурата е отменена", {
           description: "Кредитното известие е създадено успешно",
         });
@@ -438,7 +458,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
   };
 
   return (
-    <div className="mx-auto max-w-[1400px] px-0 sm:px-4">
+    <div className="mx-auto max-w-[1400px] px-3 sm:px-4">
       {/* Header */}
       <div className="flex flex-col gap-4 mb-6">
         {/* Top row: Back button */}
@@ -470,11 +490,12 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
           </div>
           
           {/* Actions */}
-          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <div className="flex w-full flex-col gap-2 sm:w-auto">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
             {/* Draft actions */}
             {invoice.status === "DRAFT" && (
               <>
-                <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-none">
+                <Button variant="outline" size="sm" asChild className="h-10 sm:flex-none">
                   <Link href={`/invoices/${invoice.id}/edit`} className="flex items-center whitespace-nowrap">
                     <Edit className="w-4 h-4 mr-1.5" />
                     Редактирай
@@ -482,7 +503,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
                 </Button>
                 <Button 
                   size="sm"
-                  className="gradient-primary hover:opacity-90 text-white border-0 flex-1 sm:flex-none"
+                  className="h-10 gradient-primary hover:opacity-90 text-white border-0 sm:flex-none"
                   onClick={() => setShowIssueModal(true)}
                   disabled={isChangingStatus}
                 >
@@ -497,8 +518,8 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
             <Button 
               variant="destructive" 
               size="sm"
-              className="flex-1 sm:flex-none"
-              onClick={handleCancelInvoice}
+              className="h-10 sm:flex-none"
+              onClick={() => setShowCancelModal(true)}
               disabled={isSendingEmail}
             >
               <AlertTriangle className="w-4 h-4 mr-1.5" />
@@ -510,35 +531,66 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
           <Button
             variant="outline"
             size="sm"
-            className="flex-1 sm:flex-none"
+            className="hidden h-10 sm:inline-flex sm:flex-none"
             onClick={handleDuplicateInvoice}
             disabled={isDuplicating}
           >
             <Copy className="w-4 h-4 mr-1.5" />
             {isDuplicating ? "..." : "Дублирай"}
           </Button>
-          <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={handlePrintInvoice}>
+          <Button variant="outline" size="sm" className="hidden h-10 sm:inline-flex sm:flex-none" onClick={handlePrintInvoice}>
             <Printer className="w-4 h-4 mr-1.5" />
             Принт
           </Button>
-          <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={handleExportPdf} title="Изтегли оригинал">
-            <Download className="w-4 h-4" />
+          <Button variant="outline" size="sm" className="hidden h-10 sm:inline-flex sm:flex-none" onClick={handleExportPdf} title="Изтегли оригинал">
+            <Download className="w-4 h-4 mr-1.5" />
+            PDF
           </Button>
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={() => exportInvoiceAsPdf(invoice.id, true)}
             title="Изтегли копие"
-            className="text-muted-foreground flex-1 sm:flex-none"
+            className="hidden text-muted-foreground sm:inline-flex sm:h-10 sm:flex-none"
           >
-            <Copy className="w-4 h-4" />
+            <Copy className="w-4 h-4 mr-1.5" />
+            Копие
           </Button>
-        </div>
+            </div>
+            <div className="sm:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-10 w-full">
+                    <MoreVertical className="mr-2 h-4 w-4" />
+                    Още действия
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={handleDuplicateInvoice} disabled={isDuplicating}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    Дублирай
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handlePrintInvoice}>
+                    <Printer className="mr-2 h-4 w-4" />
+                    Принт
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportPdf}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Изтегли PDF
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => exportInvoiceAsPdf(invoice.id, true)}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    Изтегли копие
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="grid gap-8 md:grid-cols-3">
-        <div className="md:col-span-2 space-y-8">
+      <div className="grid gap-5 md:grid-cols-3 md:gap-8">
+        <div className="space-y-5 md:col-span-2 md:space-y-8">
           <Card className="overflow-hidden">
             <CardHeader className="pb-0">
               <CardTitle className="text-xl">Информация за фактурата</CardTitle>
@@ -567,8 +619,8 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
                 </TabsList>
               </div>
 
-              <TabsContent value="details" className="p-6 pt-4">
-                <div className="grid gap-8 md:grid-cols-2">
+              <TabsContent value="details" className="p-4 pt-4 sm:p-6 sm:pt-4">
+                <div className="grid gap-6 md:grid-cols-2 md:gap-8">
                   <div>
                     <h3 className="font-medium mb-4 text-base">Информация за компанията</h3>
                     <div className="space-y-3 text-base">
@@ -594,26 +646,26 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
                   </div>
                 </div>
 
-                <div className="grid gap-8 md:grid-cols-2 mt-8">
+                <div className="mt-6 grid gap-6 md:grid-cols-2 md:gap-8">
                   <div>
                     <h3 className="font-medium mb-4 text-base">Детайли на фактурата</h3>
                     <div className="space-y-3 text-base">
-                      <div className="flex justify-between">
+                      <div className="flex items-start justify-between gap-4">
                         <span className="text-muted-foreground">Дата на издаване</span>
-                        <span>{format(new Date(invoice.issueDate), "dd.MM.yyyy")}</span>
+                        <span className="text-right">{format(new Date(invoice.issueDate), "dd.MM.yyyy")}</span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex items-start justify-between gap-4">
                         <span className="text-muted-foreground">Дата на плащане</span>
-                        <span>{format(new Date(invoice.dueDate), "dd.MM.yyyy")}</span>
+                        <span className="text-right">{format(new Date(invoice.dueDate), "dd.MM.yyyy")}</span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex items-start justify-between gap-4">
                         <span className="text-muted-foreground">Валута</span>
-                        <span>{invoice.currency}</span>
+                        <span className="text-right">{invoice.currency}</span>
                       </div>
                       {invoice.paymentMethod && (
-                        <div className="flex justify-between">
+                        <div className="flex items-start justify-between gap-4">
                           <span className="text-muted-foreground">Начин на плащане</span>
-                          <span>{getPaymentMethodText(invoice.paymentMethod)}</span>
+                          <span className="text-right">{getPaymentMethodText(invoice.paymentMethod)}</span>
                         </div>
                       )}
                     </div>
@@ -759,11 +811,11 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
 
               {/* Payments tab removed - invoices are for issuance only */}
 
-              <TabsContent value="documents" className="p-6 pt-2">
+              <TabsContent value="documents" className="p-4 pt-2 sm:p-6 sm:pt-2">
                 <DocumentsTab invoiceId={invoice.id} documents={documents} />
               </TabsContent>
 
-              <TabsContent value="history" className="p-6 pt-2">
+              <TabsContent value="history" className="p-4 pt-2 sm:p-6 sm:pt-2">
                 {isLoadingAuditLogs ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
@@ -909,6 +961,12 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
           {renderClientCommunication()}
         </div>
       </div>
+      <CancelInvoiceModal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirm={handleCancelInvoice}
+        invoiceNumber={invoice.invoiceNumber}
+      />
     </div>
   );
 } 

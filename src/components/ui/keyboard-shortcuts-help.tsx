@@ -34,6 +34,8 @@ export function KeyboardShortcutsHelp({ trigger }: KeyboardShortcutsHelpProps) {
 
   // Open with ? key
   React.useEffect(() => {
+    if (isMobile) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "?" && !e.ctrlKey && !e.metaKey && !e.altKey) {
         const target = e.target as HTMLElement;
@@ -50,7 +52,9 @@ export function KeyboardShortcutsHelp({ trigger }: KeyboardShortcutsHelpProps) {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [isMobile]);
+
+  if (isMobile) return null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

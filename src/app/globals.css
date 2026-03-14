@@ -232,6 +232,61 @@
   -webkit-backdrop-filter: none !important;
 }
 
+@keyframes orb-float-slow {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(18px, -28px, 0) scale(1.08); }
+}
+
+@keyframes orb-float-slower {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(12px, -22px, 0) scale(1.05); }
+}
+
+@keyframes orb-float-diagonal {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(-16px, 18px, 0); }
+}
+
+@keyframes orb-float-reverse {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-14px, 20px, 0) scale(0.96); }
+}
+
+@keyframes orb-sway {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+  33% { transform: translate3d(12px, -8px, 0) rotate(8deg) scale(1.04); }
+  66% { transform: translate3d(-10px, 6px, 0) rotate(-8deg) scale(0.98); }
+}
+
+@keyframes orb-rotate {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+  50% { transform: translate3d(0, 12px, 0) rotate(90deg) scale(0.92); }
+}
+
+.animate-orb-float-slow {
+  animation: orb-float-slow 24s ease-in-out infinite;
+}
+
+.animate-orb-float-slower {
+  animation: orb-float-slower 30s ease-in-out infinite;
+}
+
+.animate-orb-float-diagonal {
+  animation: orb-float-diagonal 20s ease-in-out infinite;
+}
+
+.animate-orb-float-reverse {
+  animation: orb-float-reverse 26s ease-in-out infinite;
+}
+
+.animate-orb-sway {
+  animation: orb-sway 22s ease-in-out infinite;
+}
+
+.animate-orb-rotate {
+  animation: orb-rotate 22s ease-in-out infinite;
+}
+
 @utility page-title {
   /* ============================================
      TYPOGRAPHY SYSTEM - Responsive text sizes

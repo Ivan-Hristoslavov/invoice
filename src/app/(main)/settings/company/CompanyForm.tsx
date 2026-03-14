@@ -27,6 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { validateBulgarianPartyInput } from "@/lib/bulgarian-party";
+import { applyApiValidationDetails } from "@/lib/form-errors";
 
 const companyInfoSchema = z.object({
   id: z.string().optional(),
@@ -51,6 +53,16 @@ const companyInfoSchema = z.object({
   accountablePerson: z.string().optional().or(z.literal("")),
   uicType: z.enum(["BULSTAT", "EGN"]).optional(),
   stripeAccountId: z.string().optional().or(z.literal("")),
+}).superRefine((value, ctx) => {
+  const { issues } = validateBulgarianPartyInput(value, { requireMol: true });
+
+  for (const issue of issues) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: issue.path,
+      message: issue.message,
+    });
+  }
 });
 
 const bankInfoSchema = z.object({
@@ -169,7 +181,11 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
       });
 
       if (!response.ok) {
-        const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
+        const errorPayload = (await response.json().catch(() => null)) as {
+          error?: string;
+          details?: Array<{ path?: string[]; message?: string }>;
+        } | null;
+        applyApiValidationDetails(form, errorPayload?.details);
         throw new Error(
           errorPayload?.error || `Неуспешно ${isNewCompany ? "създаване" : "обновяване"} на информацията за компанията`
         );

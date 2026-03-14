@@ -4,16 +4,18 @@ import * as matchers from '@testing-library/jest-dom/matchers';
 import '@testing-library/jest-dom';
 import { server } from './mocks/server';
 
-// Polyfill HTMLFormElement.requestSubmit for jsdom
-if (!HTMLFormElement.prototype.requestSubmit) {
-  HTMLFormElement.prototype.requestSubmit = function (submitter?: HTMLElement | null) {
+// jsdom exposes requestSubmit but throws "Not implemented", so override it.
+Object.defineProperty(HTMLFormElement.prototype, 'requestSubmit', {
+  configurable: true,
+  value: function (submitter?: HTMLElement | null) {
     if (submitter) {
       submitter.click();
-    } else {
-      this.submit();
+      return;
     }
-  };
-}
+
+    this.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+  },
+});
 
 // Extend Vitest's expect method with methods from react-testing-library
 expect.extend(matchers);

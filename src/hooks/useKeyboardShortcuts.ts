@@ -15,7 +15,7 @@ interface Shortcut {
 }
 
 // Global keyboard shortcuts for the application
-export function useKeyboardShortcuts() {
+export function useKeyboardShortcuts(enabled = true) {
   const router = useRouter();
 
   const shortcuts: Shortcut[] = [
@@ -93,9 +93,11 @@ export function useKeyboardShortcuts() {
   }, [router]);
 
   useEffect(() => {
+    if (!enabled) return;
+
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
+  }, [enabled, handleKeyDown]);
 
   return shortcuts;
 }

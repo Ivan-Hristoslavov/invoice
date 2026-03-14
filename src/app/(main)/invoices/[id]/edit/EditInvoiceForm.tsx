@@ -41,6 +41,7 @@ import {
   CardDescription
 } from "@/components/ui/card";
 import { Input, NumericInput } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -528,17 +529,17 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
   
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-2">
           <Button variant="ghost" size="sm" asChild className="back-btn rounded-full px-3">
             <Link href={`/invoices/${invoiceId}`}>
               <ArrowLeft className="w-4 h-4 mr-1.5" />
               Назад
             </Link>
           </Button>
-          <h1 className="text-xl font-bold">Редактиране #{invoiceData.invoiceNumber}</h1>
+          <h1 className="truncate text-lg font-bold sm:text-xl">Редактиране #{invoiceData.invoiceNumber}</h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2 sm:justify-end">
           <DropdownMenu>
             <DropdownMenuTrigger className="h-8 px-3 border rounded-md hover:bg-muted">
               <MoreVertical className="w-4 h-4" />
@@ -596,6 +597,7 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
             form="invoice-form" 
             size="sm"
             disabled={isLoading}
+            className="hidden sm:inline-flex"
           >
             <Save className="w-4 h-4 mr-1.5" />
             {isLoading ? "Запазване..." : "Запази"}
@@ -825,7 +827,7 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                   </div>
                 ) : (
                   <>
-                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-3">
                       {items.map((item, index) => {
                         const productName = productNames[item.id] || (item.productId ? products.find(p => p.id === item.productId)?.name : null);
                         return (
@@ -851,7 +853,7 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                     
                     {/* Totals */}
                     <div className="mt-4 flex justify-end border-t pt-4">
-                      <div className="min-w-[240px] space-y-2 rounded-2xl bg-linear-to-br from-muted/50 to-muted/30 p-4">
+                      <div className="w-full space-y-2 rounded-2xl bg-linear-to-br from-muted/50 to-muted/30 p-4 sm:min-w-[240px] sm:w-auto">
                         <div className="flex justify-between gap-6 text-sm">
                           <span className="text-muted-foreground">Междинна сума:</span>
                           <span className="font-medium">{totals.subtotal} {invoiceData.currency}</span>
@@ -878,24 +880,37 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="notes">Бележки</Label>
-                  <Input
+                  <Textarea
                     id="notes"
                     value={invoiceData.notes}
                     onChange={(e) => handleInputChange('notes', e.target.value)}
                     placeholder="Допълнителна информация за фактурата"
+                    className="min-h-28"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="termsAndConditions">Общи условия</Label>
-                  <Input
+                  <Textarea
                     id="termsAndConditions"
                     value={invoiceData.termsAndConditions}
                     onChange={(e) => handleInputChange('termsAndConditions', e.target.value)}
                     placeholder="Условия за плащане и други допълнителни условия"
+                    className="min-h-28"
                   />
                 </div>
               </CardContent>
             </Card>
+          </div>
+          <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] mt-6 rounded-2xl border border-border/70 bg-background/95 p-3 shadow-lg backdrop-blur sm:static sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
+            <div className="flex items-center justify-between gap-3 sm:border-t sm:pt-6">
+              <Button variant="outline" asChild className="min-w-[120px]">
+                <Link href={`/invoices/${invoiceId}`}>Отказ</Link>
+              </Button>
+              <Button type="submit" form="invoice-form" disabled={isLoading} className="min-w-[160px]">
+                <Save className="mr-1.5 h-4 w-4" />
+                {isLoading ? "Запазване..." : "Запази промените"}
+              </Button>
+            </div>
           </div>
         </div>
       </form>
