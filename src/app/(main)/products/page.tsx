@@ -51,6 +51,7 @@ export default async function ProductsPage() {
     .select("*")
     .eq("userId", sessionUser.id)
     .in("status", ["ACTIVE", "TRIALING", "PAST_DUE"])
+    .order("createdAt", { ascending: false })
     .limit(1);
   
   const subscription = subscriptions && subscriptions.length > 0 ? subscriptions[0] : null;
