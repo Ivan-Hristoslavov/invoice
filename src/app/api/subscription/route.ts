@@ -2,32 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
-
-// Mock subscription data for development when database is unavailable
-const mockSubscription = {
-  id: 'mock-subscription-id',
-  plan: 'FREE',
-  status: 'ACTIVE',
-  cancelAtPeriodEnd: false,
-  currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
-  paymentHistory: [
-    {
-      id: 'mock-payment-id-1',
-      amount: 10,
-      currency: 'USD',
-      status: 'PAID',
-      createdAt: new Date().toISOString()
-    }
-  ],
-  history: [
-    {
-      id: 'mock-status-id-1',
-      status: 'ACTIVE',
-      event: 'Subscription created',
-      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() // 5 days ago
-    }
-  ]
-};
+import { resolveSessionUser } from '@/lib/session-user';
 
 export async function GET() {
   try {
@@ -37,7 +12,10 @@ export async function GET() {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    console.log('Fetching subscription for user:', session.user.id);
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
 
     try {
       // Get user's subscription from database
@@ -55,7 +33,7 @@ export async function GET() {
           createdAt,
           updatedAt
         `)
-        .eq('userId', session.user.id)
+        .eq('userId', sessionUser.id)
         .in('status', ['ACTIVE', 'TRIALING', 'PAST_DUE'])
         .order('createdAt', { ascending: false })
         .limit(1)
@@ -63,11 +41,10 @@ export async function GET() {
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching subscription:', error);
-        // Return mock data on error
-        return NextResponse.json({ 
-          subscription: mockSubscription,
-          _mock: true
-        });
+        return NextResponse.json(
+          { error: 'Неуспешно зареждане на абонамента' },
+          { status: 503 }
+        );
       }
 
       // Get payment history if subscription exists
@@ -90,8 +67,6 @@ export async function GET() {
         paymentHistory = payments || [];
         history = statusHistory || [];
       }
-
-      console.log('Found subscription:', subscription ? `${subscription.id} (${subscription.plan})` : 'none');
 
       if (!subscription) {
         // Default to FREE plan if no subscription exists
@@ -116,13 +91,11 @@ export async function GET() {
         }
       });
     } catch (dbError: any) {
-      console.warn('Database error, using mock subscription data:', dbError.message);
-      
-      // Return mock data when database is unavailable
-      return NextResponse.json({ 
-        subscription: mockSubscription,
-        _mock: true
-      });
+      console.warn('Database error fetching subscription:', dbError.message);
+      return NextResponse.json(
+        { error: 'Неуспешно зареждане на абонамента' },
+        { status: 503 }
+      );
     }
   } catch (error) {
     console.error('Error fetching subscription:', error);

@@ -439,7 +439,7 @@ export default function HomePage() {
         />
 
         {/* ── Header ── */}
-        <header className="sticky top-0 z-50 w-full glass-card rounded-none! border-t-0! border-l-0! border-r-0!">
+        <header className="sticky top-0 z-50 w-full rounded-none border-x-0 border-t-0 glass-card">
           <div className="container mx-auto flex h-14 items-center justify-between px-3 sm:h-16 sm:px-4 md:px-6">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -1259,7 +1259,7 @@ export default function HomePage() {
         </section>
 
         {/* ── Footer ── */}
-        <footer className="mt-auto border-t px-4 py-6 glass-card rounded-none! border-l-0! border-r-0! border-b-0! sm:py-10">
+        <footer className="mt-auto border-t border-x-0 border-b-0 px-4 py-6 rounded-none glass-card sm:py-10">
           <div className="container mx-auto max-w-6xl">
             <div className="mb-6 grid grid-cols-1 gap-6 md:mb-10 md:grid-cols-4 md:gap-10">
               <div>

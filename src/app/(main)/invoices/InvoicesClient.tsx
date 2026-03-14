@@ -31,7 +31,9 @@ import {
   Printer,
   Trash2,
   Ban,
-  Copy
+  Copy,
+  Crown,
+  AlertTriangle
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -63,8 +65,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { ProFeatureLock, UsageCounter, LockedButton } from "@/components/ui/pro-feature-lock";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Table } from "@heroui/react";
-import { Crown, AlertTriangle } from "lucide-react";
+import { Table } from "@/components/ui/table";
 
 interface Invoice {
   id: string;

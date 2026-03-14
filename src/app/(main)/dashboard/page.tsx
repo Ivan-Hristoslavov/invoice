@@ -29,8 +29,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import { bg } from "date-fns/locale";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
-
-type InvoiceStatus = "DRAFT" | "ISSUED" | "CANCELLED";
+import { isIssuedLikeStatus, normalizeInvoiceStatus, type AppInvoiceStatus } from "@/lib/invoice-status";
 
 export const metadata: Metadata = {
   title: `Табло | ${APP_NAME}`,
@@ -43,7 +42,7 @@ interface InvoiceWithClient {
   issueDate: Date;
   dueDate: Date;
   total: number;
-  status: InvoiceStatus;
+  status: AppInvoiceStatus;
   client: {
     id: string;
     name: string;
@@ -130,7 +129,7 @@ export default async function DashboardPage() {
       issueDate: new Date(inv.issueDate),
       dueDate: new Date(inv.dueDate),
       total: Number(inv.total),
-      status: inv.status as InvoiceStatus,
+      status: normalizeInvoiceStatus(inv.status),
       client: {
         id: client?.id || inv.clientId,
         name: client?.name || 'Неизвестен клиент'
@@ -150,10 +149,10 @@ export default async function DashboardPage() {
   
   // Calculate invoice counts
   const invoiceCounts = (allInvoices || []).reduce((acc: Record<string, number>, invoice: InvoiceRow) => {
-    const status = invoice.status as InvoiceStatus;
+    const status = normalizeInvoiceStatus(invoice.status);
     acc[status] = (acc[status] || 0) + 1;
     return acc;
-  }, {} as Record<string, number>);
+  }, {} as Record<AppInvoiceStatus, number>);
   
   const counts = {
     total: allInvoices?.length || 0,
@@ -163,7 +162,7 @@ export default async function DashboardPage() {
   };
   
   // Get total from issued invoices
-  const issuedInvoices = (allInvoices || []).filter((inv: InvoiceRow) => inv.status === 'ISSUED');
+  const issuedInvoices = (allInvoices || []).filter((inv: InvoiceRow) => isIssuedLikeStatus(inv.status));
   const totalIssued = issuedInvoices.reduce((sum: number, inv: InvoiceRow) => sum + Number(inv.total || 0), 0);
   
   // Current month boundaries
@@ -175,7 +174,7 @@ export default async function DashboardPage() {
     (inv: InvoiceRow) => new Date(inv.createdAt!) >= startOfMonth
   );
   const thisMonthTotal = thisMonthInvoices
-    .filter((inv: InvoiceRow) => inv.status === 'ISSUED')
+    .filter((inv: InvoiceRow) => isIssuedLikeStatus(inv.status))
     .reduce((sum: number, inv: InvoiceRow) => sum + Number(inv.total || 0), 0);
 
   // Previous month invoices for trend calculation
@@ -186,15 +185,15 @@ export default async function DashboardPage() {
     }
   );
   const prevMonthTotal = prevMonthInvoices
-    .filter((inv: InvoiceRow) => inv.status === 'ISSUED')
+    .filter((inv: InvoiceRow) => isIssuedLikeStatus(inv.status))
     .reduce((sum: number, inv: InvoiceRow) => sum + Number(inv.total || 0), 0);
   const prevMonthIssuedTotal = prevMonthInvoices
-    .filter((inv: InvoiceRow) => inv.status === 'ISSUED')
+    .filter((inv: InvoiceRow) => isIssuedLikeStatus(inv.status))
     .reduce((sum: number, inv: InvoiceRow) => sum + Number(inv.total || 0), 0);
 
   // Overall issued total trend (current month issued vs prev month issued)
   const currentMonthIssuedTotal = thisMonthInvoices
-    .filter((inv: InvoiceRow) => inv.status === 'ISSUED')
+    .filter((inv: InvoiceRow) => isIssuedLikeStatus(inv.status))
     .reduce((sum: number, inv: InvoiceRow) => sum + Number(inv.total || 0), 0);
   const totalTrend = calcTrend(currentMonthIssuedTotal, prevMonthIssuedTotal);
 

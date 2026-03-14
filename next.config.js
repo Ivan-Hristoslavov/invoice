@@ -1,11 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  distDir: '.next',
   output: 'standalone',
   images: {
-    domains: ['res.cloudinary.com'], // Ако използвате Cloudinary за изображения
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+      },
+    ],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    imageSizes: [32, 48, 64, 96, 128, 256, 384],
     formats: ['image/webp'],
   },
   experimental: {
@@ -17,11 +21,6 @@ const nextConfig = {
     // Temporarily ignoring TypeScript errors for build to succeed
     // This should be removed once the type issues with NextJS 15 are resolved
     ignoreBuildErrors: true,
-  },
-  eslint: {
-    // !! WARN !!
-    // Temporarily ignoring ESLint errors for build to succeed
-    ignoreDuringBuilds: true,
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',

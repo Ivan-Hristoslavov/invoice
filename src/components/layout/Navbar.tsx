@@ -53,7 +53,7 @@ export function Navbar() {
   }
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 w-full glass-card rounded-none! border-t-0! border-x-0! border-b border-border" role="banner">
+    <header className="fixed inset-x-0 top-0 z-50 w-full rounded-none border-x-0 border-t-0 border-b border-border glass-card" role="banner">
       <div className="flex items-center h-14 sm:h-16">
         {/* Logo - Left side */}
         <Link
@@ -103,7 +103,7 @@ export function Navbar() {
 
           {/* User Menu */}
           <DropdownMenu>
-            <DropdownMenuTrigger>
+            <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 aria-label="Потребителско меню"
@@ -154,14 +154,14 @@ export function Navbar() {
                 )}
               </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <Link href="/settings/profile" className="cursor-pointer flex items-center w-full">
+              <DropdownMenuItem asChild>
+                <Link href="/settings/profile" className="flex w-full items-center">
                   <User className="mr-2 h-4 w-4" />
                   Профил
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link href="/settings" className="cursor-pointer flex items-center w-full">
+              <DropdownMenuItem asChild>
+                <Link href="/settings" className="flex w-full items-center">
                   <Settings className="mr-2 h-4 w-4" />
                   Настройки
                 </Link>

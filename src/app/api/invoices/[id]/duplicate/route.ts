@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { generateNextInvoiceNumber } from "@/lib/invoice-number";
 import { logAction } from "@/lib/audit-log";
 import { resolveSessionUser } from "@/lib/session-user";
+import { checkSubscriptionLimits } from "@/middleware/subscription";
 
 export async function POST(
   request: NextRequest,
@@ -23,6 +24,14 @@ export async function POST(
     const userId = sessionUser.id;
     const { id } = await params;
     const supabase = createAdminClient();
+
+    const invoiceLimitCheck = await checkSubscriptionLimits(userId, "invoices");
+    if (!invoiceLimitCheck.allowed) {
+      return NextResponse.json(
+        { error: invoiceLimitCheck.message || "Достигнат е лимитът за фактури за вашия план" },
+        { status: 403 }
+      );
+    }
 
     const { data: original, error: fetchError } = await supabase
       .from("Invoice")
@@ -116,6 +125,7 @@ export async function POST(
       }));
       const { error: itemsError } = await supabase.from("InvoiceItem").insert(items);
       if (itemsError) {
+        await supabase.from("Invoice").delete().eq("id", newInvoice.id).eq("userId", userId);
         console.error("Duplicate invoice items insert error:", itemsError);
         return NextResponse.json(
           { error: "Грешка при копиране на артикулите", details: itemsError.message },

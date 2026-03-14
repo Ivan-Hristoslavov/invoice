@@ -59,39 +59,13 @@ export default async function InvoicesPage() {
 
   const supabase = createAdminClient();
   
-  // Fetch invoices from the database
-  // First get invoices created by the user
-  const { data: userInvoices, error: invoicesError } = await supabase
+  // Fetch invoices created by the current user only.
+  const { data: userInvoices } = await supabase
     .from("Invoice")
     .select("*, client:Client(*)")
     .eq("userId", sessionUser.id)
     .order("issueDate", { ascending: false });
-  
-  // Get invoices where user is the client (need to get client IDs first)
-  const { data: userClients } = await supabase
-    .from("Client")
-    .select("id")
-    .eq("userId", sessionUser.id);
-  
-  const clientIds = (userClients || []).map(c => c.id);
-  
-  let clientInvoices: any[] = [];
-  if (clientIds.length > 0) {
-    const { data: ci } = await supabase
-      .from("Invoice")
-      .select("*, client:Client(*)")
-      .in("clientId", clientIds)
-      .order("issueDate", { ascending: false });
-    clientInvoices = ci || [];
-  }
-  
-  // Combine and deduplicate invoices
-  const allInvoices = [...(userInvoices || []), ...clientInvoices];
-  const uniqueInvoices = Array.from(
-    new Map(allInvoices.map(inv => [inv.id, inv])).values()
-  );
-  
-  const invoices = uniqueInvoices;
+  const invoices = userInvoices || [];
 
   // Fetch clients and companies for export dialog
   const { data: clients } = await supabase

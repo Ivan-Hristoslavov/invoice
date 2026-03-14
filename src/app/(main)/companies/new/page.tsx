@@ -8,9 +8,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ArrowLeft,
-  ArrowRight,
   Check,
   Building2,
+  ChevronDown,
+  FilePenLine,
   MapPin,
   Receipt,
   CreditCard,
@@ -50,51 +51,133 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { validateBulgarianPartyInput } from "@/lib/bulgarian-party";
 import { applyApiValidationDetails } from "@/lib/form-errors";
+import { cn } from "@/lib/utils";
 
-// Step indicator component
-function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { title: string; icon: React.ReactNode }[] }) {
+type CompanySectionStatus = "complete" | "partial" | "missing" | "invalid" | "optional";
+
+function hasMeaningfulValue(value: unknown) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") return value.trim().length > 0;
+  return value !== null && value !== undefined;
+}
+
+function getStatusBadge(status: CompanySectionStatus) {
+  switch (status) {
+    case "complete":
+      return {
+        label: "Попълнено",
+        className: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+      };
+    case "invalid":
+      return {
+        label: "Иска корекция",
+        className: "border-destructive/20 bg-destructive/10 text-destructive",
+      };
+    case "partial":
+      return {
+        label: "Частично",
+        className: "border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-400",
+      };
+    case "optional":
+      return {
+        label: "По избор",
+        className: "border-border/70 bg-muted/40 text-muted-foreground",
+      };
+    default:
+      return {
+        label: "Липсват данни",
+        className: "border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400",
+      };
+  }
+}
+
+function ModeOptionCard({
+  title,
+  description,
+  caption,
+  onClick,
+  icon,
+}: {
+  title: string;
+  description: string;
+  caption: string;
+  onClick: () => void;
+  icon: React.ReactNode;
+}) {
   return (
-    <div className="mb-6 space-y-3">
-      <div className="flex items-center justify-between rounded-xl border bg-card/70 px-3 py-2 text-sm sm:hidden">
-        <span className="font-medium text-foreground">{steps[currentStep]?.title}</span>
-        <span className="text-xs text-muted-foreground">
-          Стъпка {currentStep + 1}/{steps.length}
-        </span>
+    <button
+      type="button"
+      onClick={onClick}
+      className="group relative overflow-hidden rounded-[28px] border border-border/70 bg-card text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+    >
+      <div className="absolute inset-x-0 top-0 h-24 bg-linear-to-br from-primary/14 via-primary/6 to-transparent opacity-80" />
+      <div className="relative space-y-5 p-6 sm:p-7">
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/12 text-primary ring-1 ring-primary/15">
+            {icon}
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-lg font-semibold tracking-tight text-foreground">{title}</h3>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-3 text-sm text-muted-foreground">
+          {caption}
+        </div>
       </div>
-      <div className="overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      <div className="mx-auto flex min-w-max items-center justify-center gap-2 px-1">
-      {steps.map((step, index) => (
-        <div key={index} className="flex items-center gap-1.5 sm:gap-2">
-          <div className="flex flex-col items-center gap-2">
-            <div className={`
-              relative flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all duration-300 sm:h-10 sm:w-10
-              ${index < currentStep 
-                ? 'bg-emerald-500 border-emerald-500 text-white' 
-                : index === currentStep 
-                  ? 'bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/25' 
-                  : 'bg-muted border-muted-foreground/20 text-muted-foreground'}
-            `}>
-              <div className="absolute inset-0 flex items-center justify-center">
-                {index < currentStep ? (
-                  <Check className="h-4 w-4" />
-                ) : (
-                  <div className="flex items-center justify-center h-4 w-4">
-                    {step.icon}
-                  </div>
-                )}
-              </div>
+    </button>
+  );
+}
+
+function SectionPanel({
+  index,
+  title,
+  description,
+  icon,
+  badge,
+  helperText,
+  isOpen,
+  onOpen,
+  children,
+}: {
+  index: number;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  badge: ReturnType<typeof getStatusBadge>;
+  helperText: string;
+  isOpen: boolean;
+  onOpen: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div data-company-section={index}>
+      <Card className={cn("overflow-hidden border-border/70 bg-card/85", isOpen && "border-primary/30 shadow-lg shadow-primary/5")}>
+        <button
+          type="button"
+          onClick={onOpen}
+          className="flex w-full items-start gap-4 p-5 text-left sm:p-6"
+          aria-expanded={isOpen}
+        >
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            {icon}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-base font-semibold text-foreground sm:text-lg">{title}</h3>
+              <span className={cn("inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium", badge.className)}>
+                {badge.label}
+              </span>
             </div>
-            <p className={`hidden text-xs font-medium whitespace-nowrap text-center sm:block ${index === currentStep ? 'text-foreground' : 'text-muted-foreground'}`}>
-              {step.title}
+            <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+            <p className="mt-3 text-xs font-medium text-muted-foreground/90">
+              {helperText}
             </p>
           </div>
-          {index < steps.length - 1 && (
-            <div className={`h-0.5 w-6 transition-all duration-300 sm:w-12 md:w-16 ${index < currentStep ? 'bg-emerald-500' : 'bg-muted-foreground/20'}`} />
-          )}
-        </div>
-      ))}
-      </div>
-      </div>
+          <ChevronDown className={cn("mt-1 h-5 w-5 shrink-0 text-muted-foreground transition-transform", isOpen && "rotate-180 text-foreground")} />
+        </button>
+        {isOpen && <CardContent className="border-t border-border/60 p-5 pt-5 sm:p-6 sm:pt-6">{children}</CardContent>}
+      </Card>
     </div>
   );
 }
@@ -136,6 +219,7 @@ const companySchema = z.object({
 
 type CompanyFormInputValues = z.input<typeof companySchema>;
 type CompanyFormValues = z.output<typeof companySchema>;
+type CompanyCreationMode = "eik" | "manual";
 
 function getStepForCompanyField(field?: string) {
   switch (field) {
@@ -171,13 +255,38 @@ export default function NewCompanyPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [confirmed, setConfirmed] = useState(false);
+  const [companyCreationMode, setCompanyCreationMode] = useState<CompanyCreationMode | null>(null);
+  const [lookupResult, setLookupResult] = useState<Record<string, unknown> | null>(null);
 
-  const steps = [
-    { title: "Основни данни", icon: <Building2 className="h-4 w-4" /> },
-    { title: "Адрес", icon: <MapPin className="h-4 w-4" /> },
-    { title: "Данъчни данни", icon: <Receipt className="h-4 w-4" /> },
-    { title: "Банкова сметка", icon: <CreditCard className="h-4 w-4" /> },
-    { title: "Преглед", icon: <Check className="h-4 w-4" /> },
+  const sections = [
+    {
+      title: "Основни данни",
+      description: "Име, имейл и телефон за контакт",
+      icon: <Building2 className="h-5 w-5" />,
+      fields: ["name", "email", "phone"] as const,
+      requiredFields: ["name"] as const,
+    },
+    {
+      title: "Адрес",
+      description: "Адрес за фактуриране и местоположение",
+      icon: <MapPin className="h-5 w-5" />,
+      fields: ["address", "city", "state", "zipCode", "country"] as const,
+      requiredFields: ["address", "city"] as const,
+    },
+    {
+      title: "Данъчни данни",
+      description: "ЕИК, ЗДДС и представляващо лице",
+      icon: <Receipt className="h-5 w-5" />,
+      fields: ["bulstatNumber", "uicType", "vatRegistered", "vatRegistrationNumber", "mol", "accountablePerson"] as const,
+      requiredFields: ["bulstatNumber", "mol"] as const,
+    },
+    {
+      title: "Банкова сметка",
+      description: "Банка, IBAN и SWIFT при нужда",
+      icon: <CreditCard className="h-5 w-5" />,
+      fields: ["bankName", "bankIban", "bankSwift", "bankAccount"] as const,
+      requiredFields: [] as const,
+    },
   ];
 
   const form = useForm<CompanyFormInputValues, unknown, CompanyFormValues>({
@@ -210,6 +319,20 @@ export default function NewCompanyPage() {
 
   const formValues = form.watch();
 
+  const scrollToTop = useCallback(() => {
+    if (typeof window === "undefined") return;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  const focusSection = useCallback((stepIndex: number) => {
+    setCurrentStep(stepIndex);
+    requestAnimationFrame(() => {
+      if (typeof window === "undefined") return;
+      const section = document.querySelector(`[data-company-section="${stepIndex}"]`);
+      section?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, []);
+
   const handleCompanyBookSuccess = useCallback((fields: Record<string, unknown>) => {
     const fieldMap: Record<string, keyof CompanyFormInputValues> = {
       name: "name",
@@ -237,6 +360,9 @@ export default function NewCompanyPage() {
       }
     }
 
+    setLookupResult(fields);
+    setCurrentStep(0);
+
     toast.success("Данните са заредени", {
       description: `${filledCount} полета бяха автоматично попълнени от Търговския регистър.`,
     });
@@ -255,6 +381,22 @@ export default function NewCompanyPage() {
     }
     await lookupCompany(eik);
   }, [form, lookupCompany]);
+
+  const handleCreationModeSelect = useCallback((mode: CompanyCreationMode) => {
+    setCompanyCreationMode(mode);
+    setCurrentStep(0);
+    setConfirmed(false);
+    setLookupResult(null);
+    scrollToTop();
+  }, [scrollToTop]);
+
+  const handleBackToModeSelection = useCallback(() => {
+    setCompanyCreationMode(null);
+    setCurrentStep(0);
+    setConfirmed(false);
+    setLookupResult(null);
+    scrollToTop();
+  }, [scrollToTop]);
 
   async function onSubmit(data: CompanyFormValues) {
     setIsLoading(true);
@@ -275,7 +417,7 @@ export default function NewCompanyPage() {
         } | null;
         const invalidFields = applyApiValidationDetails(form, errorPayload?.details);
         if (invalidFields.length > 0) {
-          setCurrentStep(getStepForCompanyField(invalidFields[0] as string));
+          focusSection(getStepForCompanyField(invalidFields[0] as string));
         }
         throw new Error(errorPayload?.error || "Неуспешно създаване на компания");
       }
@@ -308,114 +450,234 @@ export default function NewCompanyPage() {
     return emailRegex.test(email);
   };
 
-  const canProceed = () => {
-    switch (currentStep) {
-      case 0: {
-        const nameValid = formValues.name.trim().length > 0;
-        const emailValid = isValidEmail(formValues.email || "");
-        return nameValid && emailValid;
-      }
-      case 1: {
-        const addressValid = (formValues.address ?? "").trim().length > 0;
-        const cityValid = (formValues.city ?? "").trim().length > 0;
-        return addressValid && cityValid;
-      }
-      case 2: {
-        const bulstatValid = (formValues.bulstatNumber ?? "").trim().length > 0;
-        const molValid = (formValues.mol ?? "").trim().length > 0;
-        return bulstatValid && molValid;
-      }
-      case 3:
-        return true;
-      default:
-        return true;
-    }
+  const fieldLabels: Partial<Record<keyof CompanyFormValues, string>> = {
+    name: "име",
+    address: "адрес",
+    city: "град",
+    bulstatNumber: "ЕИК",
+    mol: "МОЛ",
   };
 
-  const handleInvalidSubmit = (errors: typeof form.formState.errors) => {
+  const getSectionStatus = useCallback((section: typeof sections[number]): CompanySectionStatus => {
+    const hasErrors = section.fields.some((field) => Boolean(form.formState.errors[field]));
+    if (hasErrors) return "invalid";
+
+    const missingRequired = section.requiredFields.filter((field) => !hasMeaningfulValue(formValues[field]));
+    if (missingRequired.length > 0) return "missing";
+
+    const hasAnyValue = section.fields.some((field) => hasMeaningfulValue(formValues[field]));
+    if (section.requiredFields.length === 0 && !hasAnyValue) return "optional";
+
+    const allFieldsFilled = section.fields.every((field) => hasMeaningfulValue(formValues[field]));
+    if (!allFieldsFilled) return "partial";
+
+    return "complete";
+  }, [form.formState.errors, formValues, sections]);
+
+  const getSectionHelperText = useCallback((section: typeof sections[number]) => {
+    const missingRequired = section.requiredFields
+      .filter((field) => !hasMeaningfulValue(formValues[field]))
+      .map((field) => fieldLabels[field] ?? field);
+
+    if (missingRequired.length > 0) {
+      return `Липсват: ${missingRequired.join(", ")}.`;
+    }
+
+    const filledCount = section.fields.filter((field) => hasMeaningfulValue(formValues[field])).length;
+    if (section.requiredFields.length === 0 && filledCount === 0) {
+      return "Няма въведени банкови данни. Това поле е по избор.";
+    }
+
+    if (getSectionStatus(section) === "invalid") {
+      return "Има поле, което иска корекция преди запазване.";
+    }
+
+    return `${filledCount} от ${section.fields.length} полета са попълнени.`;
+  }, [fieldLabels, formValues, getSectionStatus, sections]);
+
+  const canSubmit = confirmed && isValidEmail(formValues.email || "") && sections.slice(0, 3).every((section) => getSectionStatus(section) === "complete");
+  const shouldShowEditableSections = companyCreationMode === "manual" || Boolean(lookupResult);
+
+  const handleInvalidSubmit = useCallback((errors: typeof form.formState.errors) => {
     const firstField = Object.keys(errors)[0];
-    setCurrentStep(getStepForCompanyField(firstField));
+    focusSection(getStepForCompanyField(firstField));
     toast.error("Моля, коригирайте отбелязаните полета.");
-  };
+  }, [focusSection]);
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
+    <div className="space-y-6 pb-24 sm:pb-8">
       <div className="mb-4 sm:mb-6">
-        <div className="flex items-center gap-2 sm:gap-3 mb-2">
+        <div className="mb-2 flex items-center gap-2 sm:gap-3">
           <Button variant="ghost" size="icon" asChild className="h-8 w-8 rounded-full">
             <Link href="/companies">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0 flex-1">
             <h1 className="page-title truncate">Нова компания</h1>
             <p className="card-description hidden sm:block">Добавете нова компания за издаване на фактури</p>
           </div>
         </div>
       </div>
 
-      {/* Quick EIK Lookup - always visible */}
-      <div className="mx-auto mb-6 max-w-2xl">
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="space-y-4 p-4 sm:p-5">
-            <div className="flex items-start gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                <Search className="h-4 w-4 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <h3 className="font-semibold text-sm">Бързо попълване по ЕИК</h3>
-                <p className="text-xs text-muted-foreground">Въведете ЕИК/БУЛСТАТ и данните ще се попълнят автоматично от Търговския регистър</p>
-              </div>
+      {!companyCreationMode ? (
+        <div className="mx-auto max-w-5xl space-y-6">
+          <div className="overflow-hidden rounded-[32px] border border-border/70 bg-linear-to-br from-card via-card to-primary/5 px-6 py-8 text-center shadow-lg shadow-black/5 sm:px-8 sm:py-10">
+            <div className="mx-auto max-w-2xl space-y-3">
+              <h2 className="text-3xl font-semibold tracking-tight text-foreground">Как искате да създадете компанията?</h2>
+              <p className="text-sm leading-6 text-muted-foreground sm:text-base">
+                Изберете най-удобния начин. При автоматично попълване първо търсите по ЕИК, а после редактирате само липсващото.
+              </p>
             </div>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Input
-                placeholder="Въведете ЕИК (напр. 204676177)"
-                inputMode="numeric"
-                className="h-11 flex-1"
-                value={formValues.bulstatNumber || ""}
-                onChange={(e) => form.setValue("bulstatNumber", e.target.value.replace(/\D/g, ""), { shouldValidate: true })}
-              />
-              <Button
-                type="button"
-                variant="default"
-                className="h-11 w-full shrink-0 gap-2 px-4 sm:w-auto"
-                disabled={isLookupLoading || !(formValues.bulstatNumber || "").match(/^\d{9,13}$/)}
-                onClick={handleEikLookup}
-              >
-                {isLookupLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Search className="h-4 w-4" />
-                )}
-                Зареди данни
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Най-добър резултат ще получите с 9 до 13 цифри, без интервали и символи.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
 
-      {/* Step indicator */}
-      <StepIndicator currentStep={currentStep} steps={steps} />
+          <div className="grid gap-4 lg:grid-cols-2">
+            <ModeOptionCard
+              title="Автоматично попълване с ЕИК"
+              description="Въвеждате ЕИК/БУЛСТАТ, проверяваме фирмата и попълваме наличните данни вместо вас."
+              caption="Най-подходящо за бързо създаване и минимална ръчна работа."
+              onClick={() => handleCreationModeSelect("eik")}
+              icon={<Search className="h-5 w-5" />}
+            />
+            <ModeOptionCard
+              title="Ръчно попълване"
+              description="Започвате директно с формата и сами решавате кои секции да попълните и редактирате."
+              caption="Добър избор за нови фирми, чуждестранни данни или пълен ръчен контрол."
+              onClick={() => handleCreationModeSelect("manual")}
+              icon={<FilePenLine className="h-5 w-5" />}
+            />
+          </div>
+        </div>
+      ) : (
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit, handleInvalidSubmit)} className="mx-auto max-w-5xl space-y-6">
+            <Card className="overflow-hidden border-border/70 bg-linear-to-br from-card via-card to-primary/5 shadow-lg shadow-black/5">
+              <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/12 text-primary ring-1 ring-primary/15">
+                    {companyCreationMode === "eik" ? <Search className="h-5 w-5" /> : <FilePenLine className="h-5 w-5" />}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-lg font-semibold tracking-tight">
+                      {companyCreationMode === "eik" ? "Автоматично попълване с ЕИК" : "Ръчно попълване"}
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                      {companyCreationMode === "eik"
+                        ? "Първо намерете фирмата по ЕИК. После ще видите кои секции са попълнени и кои още искат данни."
+                        : "Попълвайте секциите в произволен ред. Статусът им се обновява автоматично."}
+                    </p>
+                  </div>
+                </div>
+                <Button type="button" variant="outline" onClick={handleBackToModeSelection} className="w-full sm:w-auto">
+                  Назад към избор
+                </Button>
+              </CardContent>
+            </Card>
 
-      {/* Form */}
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit, handleInvalidSubmit)}>
-          {/* Step content - all steps rendered but hidden with CSS */}
-          <div className="mb-8">
-            {/* Step 0: Basic Info */}
-            <div className={currentStep === 0 ? "block" : "hidden"}>
-              <div className="max-w-2xl mx-auto space-y-6">
-                <div className="text-center mb-8">
-                  <h2 className="text-2xl font-bold mb-2">Основна информация</h2>
-                  <p className="text-muted-foreground">Въведете основните данни за компанията</p>
+            {companyCreationMode === "eik" && (
+              <Card className="overflow-hidden border-primary/20 bg-primary/5">
+                <CardContent className="space-y-4 p-5 sm:p-6">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary">
+                      <Search className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-base font-semibold">Намерете фирма по ЕИК</h3>
+                      <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                        Първо показваме само това поле. След успешно намиране ще отворим редакция на попълнените и липсващите секции.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <Input
+                      placeholder="Въведете ЕИК (напр. 204676177)"
+                      inputMode="numeric"
+                      className="h-12 flex-1"
+                      value={formValues.bulstatNumber || ""}
+                      onChange={(e) => {
+                        setLookupResult(null);
+                        form.setValue("bulstatNumber", e.target.value.replace(/\D/g, ""), { shouldValidate: true });
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      className="h-12 w-full gap-2 px-5 sm:w-auto"
+                      disabled={isLookupLoading || !(formValues.bulstatNumber || "").match(/^\d{9,13}$/)}
+                      onClick={handleEikLookup}
+                    >
+                      {isLookupLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                      Зареди данни
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Най-добър резултат ще получите с 9 до 13 цифри, без интервали и символи.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {lookupResult && (
+              <Card className="border-emerald-500/20 bg-emerald-500/5">
+                <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Намерена фирма</p>
+                    <h3 className="mt-1 text-lg font-semibold text-foreground">{String(lookupResult.name || formValues.name || "Намерена компания")}</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {[lookupResult.bulstatNumber || formValues.bulstatNumber, lookupResult.city || formValues.city, lookupResult.address || formValues.address]
+                        .filter(Boolean)
+                        .join(" • ")}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-emerald-500/20 bg-background/80 px-4 py-3 text-sm text-muted-foreground">
+                    Прегледайте секциите отдолу и редактирайте само нужните полета.
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {shouldShowEditableSections ? (
+              <>
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  {sections.map((section, index) => {
+                    const badge = getStatusBadge(getSectionStatus(section));
+                    return (
+                      <button
+                        key={section.title}
+                        type="button"
+                        onClick={() => focusSection(index)}
+                        className={cn(
+                          "rounded-2xl border p-4 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
+                          currentStep === index
+                            ? "border-primary/40 bg-primary/8 shadow-md shadow-primary/10"
+                            : "border-border/70 bg-card hover:border-primary/30 hover:bg-primary/5"
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-foreground">{section.title}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">{getSectionHelperText(section)}</p>
+                          </div>
+                          <span className={cn("inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-[11px] font-medium", badge.className)}>
+                            {badge.label}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
 
-                <Card>
-                  <CardContent className="pt-6 space-y-6">
+                <div className="space-y-4">
+                  <SectionPanel
+                    index={0}
+                    title="Основни данни"
+                    description="Име на компанията и контакти за фактуриране"
+                    icon={<Building2 className="h-5 w-5" />}
+                    badge={getStatusBadge(getSectionStatus(sections[0]))}
+                    helperText={getSectionHelperText(sections[0])}
+                    isOpen={currentStep === 0}
+                    onOpen={() => focusSection(0)}
+                  >
+                    <div className="grid gap-6 lg:grid-cols-2 [&_label]:text-[15px] [&_label]:font-semibold [&_p]:leading-6">
                     <FormField
                       control={form.control}
                       name="name"
@@ -524,21 +786,20 @@ export default function NewCompanyPage() {
                         )}
                       />
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+                    </div>
+                  </SectionPanel>
 
-            {/* Step 1: Address */}
-            <div className={currentStep === 1 ? "block" : "hidden"}>
-              <div className="max-w-2xl mx-auto space-y-6">
-                <div className="text-center mb-8">
-                  <h2 className="text-2xl font-bold mb-2">Адрес</h2>
-                  <p className="text-muted-foreground">Въведете адреса на компанията</p>
-                </div>
-
-                <Card>
-                  <CardContent className="pt-6 space-y-6">
+                  <SectionPanel
+                    index={1}
+                    title="Адрес"
+                    description="Адресът, градът и държавата за фирмата"
+                    icon={<MapPin className="h-5 w-5" />}
+                    badge={getStatusBadge(getSectionStatus(sections[1]))}
+                    helperText={getSectionHelperText(sections[1])}
+                    isOpen={currentStep === 1}
+                    onOpen={() => focusSection(1)}
+                  >
+                    <div className="grid gap-6 lg:grid-cols-2 [&_label]:text-[15px] [&_label]:font-semibold [&_p]:leading-6">
                     <FormField
                       control={form.control}
                       name="address"
@@ -618,21 +879,20 @@ export default function NewCompanyPage() {
                         )}
                       />
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+                    </div>
+                  </SectionPanel>
 
-            {/* Step 2: Tax Info */}
-            <div className={currentStep === 2 ? "block" : "hidden"}>
-              <div className="max-w-2xl mx-auto space-y-6">
-                <div className="text-center mb-8">
-                  <h2 className="text-2xl font-bold mb-2">Данъчна информация</h2>
-                  <p className="text-muted-foreground">Въведете данъчните данни за НАП</p>
-                </div>
-
-                <Card>
-                  <CardContent className="pt-6 space-y-6">
+                  <SectionPanel
+                    index={2}
+                    title="Данъчни данни"
+                    description="ЕИК, ЗДДС и представляващо лице"
+                    icon={<Receipt className="h-5 w-5" />}
+                    badge={getStatusBadge(getSectionStatus(sections[2]))}
+                    helperText={getSectionHelperText(sections[2])}
+                    isOpen={currentStep === 2}
+                    onOpen={() => focusSection(2)}
+                  >
+                    <div className="grid gap-6 lg:grid-cols-2 [&_label]:text-[15px] [&_label]:font-semibold [&_p]:leading-6">
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                       <FormField
                         control={form.control}
@@ -764,21 +1024,20 @@ export default function NewCompanyPage() {
                         )}
                       />
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+                    </div>
+                  </SectionPanel>
 
-            {/* Step 3: Bank Info */}
-            <div className={currentStep === 3 ? "block" : "hidden"}>
-              <div className="max-w-2xl mx-auto space-y-6">
-                <div className="text-center mb-8">
-                  <h2 className="text-2xl font-bold mb-2">Банкова информация</h2>
-                  <p className="text-muted-foreground">Въведете банковите данни за получаване на плащания</p>
-                </div>
-
-                <Card>
-                  <CardContent className="pt-6 space-y-6">
+                  <SectionPanel
+                    index={3}
+                    title="Банкова сметка"
+                    description="По избор: банка, IBAN, SWIFT и сметка"
+                    icon={<CreditCard className="h-5 w-5" />}
+                    badge={getStatusBadge(getSectionStatus(sections[3]))}
+                    helperText={getSectionHelperText(sections[3])}
+                    isOpen={currentStep === 3}
+                    onOpen={() => focusSection(3)}
+                  >
+                    <div className="grid gap-6 lg:grid-cols-2 [&_label]:text-[15px] [&_label]:font-semibold [&_p]:leading-6">
                     <FormField
                       control={form.control}
                       name="bankName"
@@ -838,33 +1097,25 @@ export default function NewCompanyPage() {
                         )}
                       />
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-
-            {/* Step 4: Review */}
-            <div className={currentStep === 4 ? "block" : "hidden"}>
-              <div className="max-w-2xl mx-auto space-y-6">
-                <div className="text-center mb-8">
-                  <h2 className="text-2xl font-bold mb-2">Преглед на данните</h2>
-                  <p className="text-muted-foreground">Проверете информацията преди създаване</p>
-                </div>
-
-                <Card className="overflow-hidden border-2">
-                  <div className="p-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center">
-                        <Building2 className="h-8 w-8" />
-                      </div>
-                      <div>
-                        <h3 className="text-2xl font-bold">{formValues.name || "Без име"}</h3>
-                        {formValues.email && <p className="text-muted-foreground">{formValues.email}</p>}
-                      </div>
                     </div>
-                  </div>
+                  </SectionPanel>
 
-                  <CardContent className="p-6 space-y-6">
+                  <div className="mx-auto max-w-5xl">
+                    <Card className="overflow-hidden border-border/70 bg-card/90 shadow-lg shadow-black/5">
+                      <div className="border-b border-border/60 p-6">
+                        <p className="text-sm font-medium text-muted-foreground">Преглед преди създаване</p>
+                        <div className="mt-4 flex items-center gap-4">
+                          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
+                            <Building2 className="h-8 w-8" />
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="text-2xl font-bold">{formValues.name || "Без име"}</h3>
+                            {formValues.email && <p className="text-muted-foreground">{formValues.email}</p>}
+                          </div>
+                        </div>
+                      </div>
+
+                      <CardContent className="space-y-6 p-6">
                     {/* Contact Info */}
                     <div>
                       <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Контакти</h4>
@@ -957,69 +1208,45 @@ export default function NewCompanyPage() {
                         <span className="font-medium">Потвърждавам,</span> че информацията за компанията е коректна и искам да я създам.
                       </label>
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </div>
-
-          {/* Navigation */}
-          <div className="sticky bottom-0 z-20 -mx-1 rounded-2xl border border-border/70 bg-background/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 shadow-lg backdrop-blur supports-backdrop-filter:bg-background/85 sm:static sm:mx-0 sm:rounded-none sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:shadow-none sm:backdrop-blur-0">
-            <div className="mb-3 flex items-center justify-between text-xs text-muted-foreground sm:hidden">
-              <span className="font-medium text-foreground">{steps[currentStep]?.title}</span>
-              <span>
-                Стъпка {currentStep + 1} от {steps.length}
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-3 sm:border-t sm:pt-6">
-              <div className="flex">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-                  disabled={currentStep === 0}
-                  className="h-11 w-full justify-center gap-2"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Назад
-                </Button>
-              </div>
-
-              <div className="flex">
-                {currentStep < 4 ? (
-                  <Button
-                    type="button"
-                    onClick={() => setCurrentStep(currentStep + 1)}
-                    disabled={!canProceed()}
-                    className="h-11 w-full justify-center gap-2"
-                  >
-                    Напред
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                ) : (
-                  <Button
-                    type="submit"
-                    disabled={isLoading || !confirmed}
-                    className="h-11 w-full justify-center gap-2 border-0 gradient-primary hover:opacity-90 disabled:opacity-50"
-                  >
-                    {isLoading ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Създаване...
-                      </>
-                    ) : (
-                      <>
-                        <Check className="h-4 w-4" />
-                        Създай компания
-                      </>
-                    )}
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-        </form>
-      </Form>
+                    <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background/70 p-4 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-sm text-muted-foreground">
+                        {canSubmit
+                          ? "Всичко задължително е попълнено. Може да създадете компанията."
+                          : "Попълнете задължителните секции и потвърдете данните, за да продължите."}
+                      </p>
+                      <Button
+                        type="submit"
+                        disabled={isLoading || !canSubmit}
+                        className="h-11 w-full justify-center gap-2 border-0 gradient-primary hover:opacity-90 disabled:opacity-50 sm:w-auto sm:min-w-52"
+                      >
+                        {isLoading ? (
+                          <>
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                            Създаване...
+                          </>
+                        ) : (
+                          <>
+                            <Check className="h-4 w-4" />
+                            Създай компания
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <Card className="border-dashed border-border/70 bg-card/60">
+                <CardContent className="p-6 text-center text-sm text-muted-foreground">
+                  Въведете ЕИК и заредете фирмата, за да се покажат редактиращите секции.
+                </CardContent>
+              </Card>
+            )}
+          </form>
+        </Form>
+      )}
     </div>
   );
 }

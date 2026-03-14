@@ -88,8 +88,8 @@ export async function POST(req: Request) {
   
   try {
     const body = await req.text();
-    const headersList = headers();
-    const signature = (await headersList).get("stripe-signature") || "";
+    const headersList = await headers();
+    const signature = headersList.get("stripe-signature") || "";
     const stripe = getStripe();
 
     // In production, webhook secret is required to prevent fake payment/activation
