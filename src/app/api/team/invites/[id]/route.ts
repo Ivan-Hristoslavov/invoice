@@ -95,19 +95,33 @@ export async function PATCH(
       `&magicToken=${encodeURIComponent(magicLogin.token)}` +
       `&callbackUrl=${encodeURIComponent(`/team/accept?token=${updatedInvite.token}`)}`;
 
-    await sendTeamInviteEmail({
-      to: updatedInvite.email,
-      companyName: company?.name || "вашата компания",
-      inviterName: sessionUser.name || sessionUser.email || "Екипът",
-      roleLabel: getRoleLabel(updatedInvite.role),
-      acceptUrl: inviteUrl,
-      magicLinkUrl,
-    });
+    let emailSent = false;
+    let emailError: string | null = null;
+
+    try {
+      await sendTeamInviteEmail({
+        to: updatedInvite.email,
+        companyName: company?.name || "вашата компания",
+        inviterName: sessionUser.name || sessionUser.email || "Екипът",
+        roleLabel: getRoleLabel(updatedInvite.role),
+        acceptUrl: inviteUrl,
+        magicLinkUrl,
+      });
+      emailSent = true;
+    } catch (emailSendError) {
+      emailError =
+        emailSendError instanceof Error
+          ? emailSendError.message
+          : "Неуспешно изпращане на поканата по имейл";
+      console.error("Error resending team invite email:", emailSendError);
+    }
 
     return NextResponse.json({
       invite: updatedInvite,
       inviteUrl,
       magicLinkUrl,
+      emailSent,
+      emailError,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
