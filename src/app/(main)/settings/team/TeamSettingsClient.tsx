@@ -119,9 +119,17 @@ export default function TeamSettingsClient({
 
       if (payload.inviteUrl && navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(payload.inviteUrl);
-        toast.success("Поканата е изпратена по имейл и линкът е копиран");
+        if (payload.emailSent === false) {
+          toast.warning(payload.emailError || "Поканата е създадена, но имейлът не беше изпратен. Линкът е копиран.");
+        } else {
+          toast.success("Поканата е изпратена по имейл и линкът е копиран");
+        }
       } else {
-        toast.success("Поканата е изпратена по имейл");
+        if (payload.emailSent === false) {
+          toast.warning(payload.emailError || "Поканата е създадена, но имейлът не беше изпратен.");
+        } else {
+          toast.success("Поканата е изпратена по имейл");
+        }
       }
 
       setEmail("");
@@ -161,7 +169,11 @@ export default function TeamSettingsClient({
 
       if (action === "resend" && payload.inviteUrl && navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(payload.inviteUrl);
-        toast.success("Поканата е изпратена отново по имейл и линкът е копиран");
+        if (payload.emailSent === false) {
+          toast.warning(payload.emailError || "Поканата е обновена, но имейлът не беше изпратен. Линкът е копиран.");
+        } else {
+          toast.success("Поканата е изпратена отново по имейл и линкът е копиран");
+        }
       } else {
         toast.success(action === "revoke" ? "Поканата е оттеглена" : "Поканата е обновена");
       }

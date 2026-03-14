@@ -137,20 +137,36 @@ export async function POST(request: NextRequest) {
       `&magicToken=${encodeURIComponent(magicLogin.token)}` +
       `&callbackUrl=${encodeURIComponent(`/team/accept?token=${invite.token}`)}`;
 
-    await sendTeamInviteEmail({
-      to: invite.email,
-      companyName: company.name,
-      inviterName: sessionUser.name || sessionUser.email,
-      roleLabel: getRoleLabel(invite.role),
-      acceptUrl: inviteUrl,
-      magicLinkUrl,
-    });
+    let emailSent = false;
+    let emailError: string | null = null;
+
+    try {
+      await sendTeamInviteEmail({
+        to: invite.email,
+        companyName: company.name,
+        inviterName: sessionUser.name || sessionUser.email,
+        roleLabel: getRoleLabel(invite.role),
+        acceptUrl: inviteUrl,
+        magicLinkUrl,
+      });
+      emailSent = true;
+    } catch (emailSendError) {
+      emailError =
+        emailSendError instanceof Error
+          ? emailSendError.message
+          : "Неуспешно изпращане на поканата по имейл";
+      console.error("Error sending team invite email:", emailSendError);
+    }
 
     return NextResponse.json({
       invite,
       inviteUrl,
       magicLinkUrl,
-      message: "Поканата е създадена успешно",
+      emailSent,
+      emailError,
+      message: emailSent
+        ? "Поканата е създадена успешно"
+        : "Поканата е създадена, но имейлът не беше изпратен",
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
