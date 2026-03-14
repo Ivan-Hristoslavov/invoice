@@ -381,7 +381,7 @@ export default function ProductPage() {
                     <FormItem>
                       <FormLabel>Единица</FormLabel>
                       <FormControl>
-                        <Select defaultValue={field.value} onValueChange={field.onChange}>
+                        <Select value={field.value} onValueChange={field.onChange}>
                           <SelectTrigger className="h-11">
                             <SelectValue placeholder="Изберете единица" />
                           </SelectTrigger>

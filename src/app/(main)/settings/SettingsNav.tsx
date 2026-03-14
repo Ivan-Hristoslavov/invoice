@@ -76,7 +76,7 @@ export function SettingsNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="sticky top-[calc(env(safe-area-inset-top)+4rem)] flex flex-col rounded-2xl border border-border/60 bg-card/85 p-3 shadow-sm backdrop-blur sm:top-[calc(env(safe-area-inset-top)+4.5rem)] sm:p-4">
+    <nav className="flex flex-col rounded-2xl border border-border/60 bg-card p-3 shadow-sm lg:sticky lg:top-20 lg:p-4">
       {/* Header */}
       <div className="mb-3 flex items-center justify-between gap-3 px-1 py-1">
         <div className="flex items-center gap-2">
@@ -97,7 +97,7 @@ export function SettingsNav() {
       </div>
 
       {/* Mobile horizontal navigation */}
-      <div className="lg:hidden overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="overflow-x-auto pb-1 lg:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <div className="flex min-w-max gap-2 pr-3">
           {navSections.flatMap((section) => section.items).map((item) => {
             const Icon = iconMap[item.iconName as keyof typeof iconMap];

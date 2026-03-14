@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -146,7 +146,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
     if (activeTab === 'history' && auditLogs.length === 0 && !isLoadingAuditLogs) {
       fetchAuditLogs();
     }
-  }, [activeTab, auditLogs.length, isLoadingAuditLogs]);
+  }, [activeTab, auditLogs.length, fetchAuditLogs, isLoadingAuditLogs]);
 
   useEffect(() => {
     if (activeTab !== "documents" || documents.length > 0 || isLoadingDocuments) return;
@@ -166,7 +166,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
     void fetchDocuments();
   }, [activeTab, documents.length, invoice.id, isLoadingDocuments]);
 
-  const fetchAuditLogs = async () => {
+  const fetchAuditLogs = useCallback(async () => {
     setIsLoadingAuditLogs(true);
     try {
       const response = await fetch(`/api/audit-logs?invoiceId=${invoice.id}`);
@@ -179,7 +179,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
     } finally {
       setIsLoadingAuditLogs(false);
     }
-  };
+  }, [invoice.id]);
 
   // Issue invoice (change status from DRAFT to ISSUED)
   const handleIssueInvoice = async () => {
@@ -233,7 +233,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
     try {
       setIsSendingEmail(true);
       
-      await fetch(`/api/invoices/${invoice.id}/send`, {
+      const response = await fetch(`/api/invoices/${invoice.id}/send`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -242,13 +242,20 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
           type: 'invoice_only'
         }),
       });
+
+      if (!response.ok) {
+        const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(errorPayload?.error || "Грешка при изпращане на фактурата");
+      }
       
       toast.success("Фактурата е изпратена успешно", {
         description: `Фактурата е изпратена на ${invoice.client.email}`,
       });
     } catch (error) {
       console.error('Error sending invoice:', error);
-      toast.error("Грешка при изпращане на фактурата");
+      toast.error(
+        error instanceof Error ? error.message : "Грешка при изпращане на фактурата"
+      );
     } finally {
       setIsSendingEmail(false);
     }
@@ -427,7 +434,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
               <Button
                 variant="destructive"
                 className="w-full justify-start text-left h-auto py-3"
-                onClick={handleCancelInvoice}
+                onClick={() => setShowCancelModal(true)}
                 disabled={isSendingEmail}
               >
                 <div className="flex items-center gap-4">
@@ -495,7 +502,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
             {/* Draft actions */}
             {invoice.status === "DRAFT" && (
               <>
-                <Button variant="outline" size="sm" asChild className="h-10 sm:flex-none">
+                <Button variant="outline" size="sm" asChild className="h-10 rounded-xl sm:flex-none">
                   <Link href={`/invoices/${invoice.id}/edit`} className="flex items-center whitespace-nowrap">
                     <Edit className="w-4 h-4 mr-1.5" />
                     Редактирай
@@ -503,7 +510,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
                 </Button>
                 <Button 
                   size="sm"
-                  className="h-10 gradient-primary hover:opacity-90 text-white border-0 sm:flex-none"
+                  className="h-10 rounded-xl border-0 text-white gradient-primary hover:opacity-90 sm:flex-none"
                   onClick={() => setShowIssueModal(true)}
                   disabled={isChangingStatus}
                 >
@@ -518,7 +525,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
             <Button 
               variant="destructive" 
               size="sm"
-              className="h-10 sm:flex-none"
+              className="col-span-2 h-10 rounded-xl sm:col-span-1 sm:flex-none"
               onClick={() => setShowCancelModal(true)}
               disabled={isSendingEmail}
             >
@@ -531,18 +538,18 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
           <Button
             variant="outline"
             size="sm"
-            className="hidden h-10 sm:inline-flex sm:flex-none"
+            className="hidden h-10 rounded-xl sm:inline-flex sm:flex-none"
             onClick={handleDuplicateInvoice}
             disabled={isDuplicating}
           >
             <Copy className="w-4 h-4 mr-1.5" />
             {isDuplicating ? "..." : "Дублирай"}
           </Button>
-          <Button variant="outline" size="sm" className="hidden h-10 sm:inline-flex sm:flex-none" onClick={handlePrintInvoice}>
+          <Button variant="outline" size="sm" className="hidden h-10 rounded-xl sm:inline-flex sm:flex-none" onClick={handlePrintInvoice}>
             <Printer className="w-4 h-4 mr-1.5" />
             Принт
           </Button>
-          <Button variant="outline" size="sm" className="hidden h-10 sm:inline-flex sm:flex-none" onClick={handleExportPdf} title="Изтегли оригинал">
+          <Button variant="outline" size="sm" className="hidden h-10 rounded-xl sm:inline-flex sm:flex-none" onClick={handleExportPdf} title="Изтегли оригинал">
             <Download className="w-4 h-4 mr-1.5" />
             PDF
           </Button>
@@ -551,7 +558,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
             size="sm" 
             onClick={() => exportInvoiceAsPdf(invoice.id, true)}
             title="Изтегли копие"
-            className="hidden text-muted-foreground sm:inline-flex sm:h-10 sm:flex-none"
+                    className="hidden text-muted-foreground sm:inline-flex sm:h-10 sm:flex-none"
           >
             <Copy className="w-4 h-4 mr-1.5" />
             Копие
@@ -560,7 +567,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
             <div className="sm:hidden">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-10 w-full">
+                  <Button variant="outline" size="sm" className="h-10 w-full rounded-xl">
                     <MoreVertical className="mr-2 h-4 w-4" />
                     Още действия
                   </Button>
@@ -600,17 +607,17 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
               onValueChange={setActiveTab}
               className="w-full"
             >
-              <div className="overflow-x-auto px-4 pt-4 pb-1 sm:px-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <TabsList className="mb-2 flex min-w-max gap-1 rounded-xl border border-border/40 bg-muted/40 p-1 h-auto">
-                  <TabsTrigger value="details" className="min-h-10 whitespace-nowrap rounded-lg px-3 text-sm font-medium text-muted-foreground data-selected:bg-background data-selected:text-foreground data-selected:shadow-sm">Детайли</TabsTrigger>
-                  <TabsTrigger value="items" className="min-h-10 whitespace-nowrap rounded-lg px-3 text-sm font-medium text-muted-foreground data-selected:bg-background data-selected:text-foreground data-selected:shadow-sm">Артикули</TabsTrigger>
-                  <TabsTrigger value="documents" className="min-h-10 whitespace-nowrap rounded-lg px-3 text-sm font-medium text-muted-foreground data-selected:bg-background data-selected:text-foreground data-selected:shadow-sm">
+              <div className="px-4 pb-1 pt-4 sm:px-6">
+                <TabsList className="mb-2 grid h-auto grid-cols-2 gap-1 rounded-xl border border-border/40 bg-muted/40 p-1 sm:flex">
+                  <TabsTrigger value="details" className="min-h-10 rounded-lg px-3 text-sm font-medium text-muted-foreground data-selected:bg-background data-selected:text-foreground data-selected:shadow-sm">Детайли</TabsTrigger>
+                  <TabsTrigger value="items" className="min-h-10 rounded-lg px-3 text-sm font-medium text-muted-foreground data-selected:bg-background data-selected:text-foreground data-selected:shadow-sm">Артикули</TabsTrigger>
+                  <TabsTrigger value="documents" className="min-h-10 rounded-lg px-3 text-sm font-medium text-muted-foreground data-selected:bg-background data-selected:text-foreground data-selected:shadow-sm">
                     <span className="flex items-center gap-1.5">
                       <Paperclip className="h-3.5 w-3.5" />
                       Документи
                     </span>
                   </TabsTrigger>
-                  <TabsTrigger value="history" className="min-h-10 whitespace-nowrap rounded-lg px-3 text-sm font-medium text-muted-foreground data-selected:bg-background data-selected:text-foreground data-selected:shadow-sm">
+                  <TabsTrigger value="history" className="min-h-10 rounded-lg px-3 text-sm font-medium text-muted-foreground data-selected:bg-background data-selected:text-foreground data-selected:shadow-sm">
                     <span className="flex items-center gap-1.5">
                       <History className="h-3.5 w-3.5" />
                       История
@@ -621,7 +628,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
 
               <TabsContent value="details" className="p-4 pt-4 sm:p-6 sm:pt-4">
                 <div className="grid gap-6 md:grid-cols-2 md:gap-8">
-                  <div>
+                  <div className="rounded-2xl border border-border/60 bg-muted/15 p-4 sm:p-5">
                     <h3 className="font-medium mb-4 text-base">Информация за компанията</h3>
                     <div className="space-y-3 text-base">
                       <p>{invoice.company.name}</p>
@@ -629,7 +636,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
                       {invoice.company.phone && <p>{invoice.company.phone}</p>}
                     </div>
                   </div>
-                  <div>
+                  <div className="rounded-2xl border border-border/60 bg-muted/15 p-4 sm:p-5">
                     <h3 className="font-medium mb-4 text-base">Информация за клиента</h3>
                     <div className="space-y-3 text-base">
                       <p>{invoice.client.name}</p>
@@ -647,7 +654,7 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
                 </div>
 
                 <div className="mt-6 grid gap-6 md:grid-cols-2 md:gap-8">
-                  <div>
+                  <div className="rounded-2xl border border-border/60 bg-muted/15 p-4 sm:p-5">
                     <h3 className="font-medium mb-4 text-base">Детайли на фактурата</h3>
                     <div className="space-y-3 text-base">
                       <div className="flex items-start justify-between gap-4">

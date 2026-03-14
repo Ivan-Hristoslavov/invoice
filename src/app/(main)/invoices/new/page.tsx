@@ -1470,12 +1470,12 @@ function NewInvoiceContent() {
                 </div>
               </div>
 
-              <div className="grid w-full gap-3 sm:flex sm:items-center sm:justify-between">
+              <div className="grid w-full grid-cols-2 gap-3 sm:flex sm:items-center sm:justify-between">
               <Button
                 variant="outline"
                 onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
                 disabled={currentStep === 0}
-                className="h-11 w-full gap-2 sm:w-auto"
+                className="h-11 w-full gap-2 justify-center sm:w-auto"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Назад
@@ -1489,7 +1489,7 @@ function NewInvoiceContent() {
                       (currentStep === 0 && !selectedClient) ||
                       (currentStep === 1 && !invoiceData.companyId)
                     }
-                    className="h-11 w-full gap-2 sm:w-auto"
+                    className="h-11 w-full gap-2 justify-center sm:w-auto"
                   >
                     Напред
                     <ArrowRight className="h-4 w-4" />
@@ -1497,7 +1497,7 @@ function NewInvoiceContent() {
                 ) : !isLoadingUsage && !canCreateInvoice && isFree ? (
                   <Link href="/settings/subscription" className="w-full sm:w-auto">
                     <Button
-                      className="h-11 w-full gap-2 border-dashed border-amber-300 dark:border-amber-700 hover:border-amber-400"
+                      className="h-11 w-full gap-2 justify-center border-dashed border-amber-300 dark:border-amber-700 hover:border-amber-400"
                       variant="outline"
                     >
                       <Lock className="h-4 w-4 text-amber-500" />
@@ -1511,7 +1511,7 @@ function NewInvoiceContent() {
                   <Button
                     onClick={handleSubmit}
                     disabled={isLoading}
-                    className="h-11 w-full gap-2 bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 sm:w-auto"
+                    className="h-11 w-full gap-2 justify-center bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 sm:w-auto"
                   >
                     {isLoading ? (
                       <>

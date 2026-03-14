@@ -671,8 +671,11 @@ export default function InvoicesClient({
       {/* Invoices List */}
       <Card className="border-0 shadow-lg">
         <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
+              <Badge variant="info" className="mb-2">
+                Документи
+              </Badge>
               <CardTitle>Списък с фактури</CardTitle>
               <CardDescription>
                 {filteredInvoices.length} от {invoices.length} фактури
@@ -681,7 +684,7 @@ export default function InvoicesClient({
             {canCreateInvoices && (isLoadingUsage || canCreateInvoice) && (
               <Button 
                 asChild 
-                className="gradient-primary hover:opacity-90 text-white border-0 shadow-lg transition-all"
+                className="h-11 w-full border-0 text-white shadow-lg transition-all gradient-primary hover:opacity-90 sm:w-auto"
               >
                 <Link href="/invoices/new" className="flex items-center whitespace-nowrap">
                   <Plus className="mr-2 h-4 w-4" />
@@ -736,9 +739,9 @@ export default function InvoicesClient({
                   const statusConfig = getStatusConfig(invoice.status);
                   const StatusIcon = statusConfig.icon;
                   return (
-                    <div key={invoice.id} className="rounded-xl border bg-card p-4 shadow-xs">
+                    <div key={invoice.id} className="rounded-2xl border border-border/60 bg-card p-4 shadow-xs">
                       <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-3">
+                        <div className="flex min-w-0 items-start gap-3">
                           <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
                             (invoice.status === 'ISSUED' || invoice.status === 'PAID')
                               ? 'bg-emerald-500/10'
@@ -754,37 +757,37 @@ export default function InvoicesClient({
                                 : 'text-red-600'
                             }`} />
                           </div>
-                          <div>
-                            <p className="font-semibold text-sm">{invoice.invoiceNumber}</p>
-                            <p className="text-xs text-muted-foreground">{invoice.client.name}</p>
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold text-sm">{invoice.invoiceNumber}</p>
+                            <p className="truncate text-xs text-muted-foreground">{invoice.client.name}</p>
                             <p className="text-xs text-muted-foreground">
                               {format(new Date(invoice.issueDate), "d MMM yyyy", { locale: bg })}
                             </p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-bold">{formatPrice(Number(invoice.total))} €</p>
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border mt-2 ${statusConfig.className}`}>
+                        <div className="shrink-0 text-right">
+                          <p className="text-sm font-bold tabular-nums">{formatPrice(Number(invoice.total))} €</p>
+                          <span className={`mt-2 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${statusConfig.className}`}>
                             <StatusIcon className="h-3 w-3" />
                             {statusConfig.label}
                           </span>
                         </div>
                       </div>
                       <div className="mt-4 grid grid-cols-2 gap-2">
-                        <Button size="sm" variant="outline" asChild className="h-10 justify-center">
+                        <Button size="sm" variant="outline" asChild className="h-10 justify-center rounded-xl">
                           <Link href={`/invoices/${invoice.id}`}>
                             <Eye className="mr-2 h-4 w-4" />
                             Преглед
                           </Link>
                         </Button>
                         {invoice.userId === currentUserId && invoice.status === "DRAFT" && (
-                          <Button size="sm" className="h-10 justify-center gradient-primary border-0 text-white hover:opacity-90" onClick={() => openStatusModal(invoice, "ISSUED")}>
+                          <Button size="sm" className="h-10 justify-center rounded-xl border-0 text-white gradient-primary hover:opacity-90" onClick={() => openStatusModal(invoice, "ISSUED")}>
                             <FileCheck className="mr-2 h-4 w-4" />
                             Издай
                           </Button>
                         )}
                         {invoice.userId === currentUserId && invoice.status === "DRAFT" ? (
-                          <Button size="sm" variant="outline" asChild className="h-10 justify-center">
+                          <Button size="sm" variant="outline" asChild className="h-10 justify-center rounded-xl">
                             <Link href={`/invoices/${invoice.id}/edit`}>
                               <Edit className="mr-2 h-4 w-4" />
                               Редакция
@@ -794,7 +797,7 @@ export default function InvoicesClient({
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-10 justify-center"
+                            className="h-10 justify-center rounded-xl"
                             onClick={async () => {
                               try {
                                 const response = await fetch(`/api/invoices/${invoice.id}/duplicate`, { method: "POST" });
@@ -818,7 +821,7 @@ export default function InvoicesClient({
                         )}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="col-span-2 h-10 justify-center">
+                            <Button variant="outline" className="col-span-2 h-10 justify-center rounded-xl">
                               <MoreHorizontal className="mr-2 h-4 w-4" />
                               Още действия
                             </Button>

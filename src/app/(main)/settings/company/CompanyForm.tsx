@@ -196,11 +196,6 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
       });
       
       router.refresh();
-      
-      // If we just created a new company, reload the page to show both forms properly
-      if (isNewCompany) {
-        window.location.reload();
-      }
     } catch (error) {
       const errorMessage =
         error instanceof Error

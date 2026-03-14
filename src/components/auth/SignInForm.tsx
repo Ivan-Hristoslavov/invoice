@@ -78,17 +78,20 @@ export function SignInForm() {
 
   return (
     <div className="w-full animate-in fade-in duration-300">
-      <div className="text-center mb-5">
-        <h1 className="text-2xl font-bold tracking-tight mb-1">
+      <div className="mb-6 text-center">
+        <div className="mb-3 inline-flex items-center rounded-full border border-emerald-500/20 bg-emerald-500/8 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-400">
+          Сигурен достъп
+        </div>
+        <h1 className="mb-1.5 text-3xl font-bold tracking-tight">
           Добре дошли обратно
         </h1>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-sm text-muted-foreground">
           Въведете данните си за достъп
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Label htmlFor="email" className="text-sm font-medium">
             Имейл
           </Label>
@@ -102,14 +105,14 @@ export function SignInForm() {
               placeholder="ime@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="h-11 pl-10 text-base md:text-sm"
+              className="h-12 rounded-2xl border-border/60 bg-background/70 pl-10 text-base shadow-sm transition-[border-color,box-shadow,background-color] focus-visible:border-primary/60 focus-visible:bg-background focus-visible:ring-4 focus-visible:ring-primary/10 md:text-sm"
               required
               autoComplete="email"
             />
           </div>
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password" className="text-sm font-medium">
               Парола
@@ -128,7 +131,7 @@ export function SignInForm() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="h-11 pl-10 pr-10 text-base md:text-sm"
+              className="h-12 rounded-2xl border-border/60 bg-background/70 pl-10 pr-10 text-base shadow-sm transition-[border-color,box-shadow,background-color] focus-visible:border-primary/60 focus-visible:bg-background focus-visible:ring-4 focus-visible:ring-primary/10 md:text-sm"
               required
               autoComplete="current-password"
             />
@@ -150,7 +153,7 @@ export function SignInForm() {
 
         <Button
           type="submit"
-          className="w-full h-10 gradient-primary hover:opacity-90 font-medium"
+          className="h-12 w-full rounded-2xl border-0 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 gradient-primary hover:opacity-90"
           disabled={isLoading}
         >
           {isLoading ? (
@@ -163,17 +166,17 @@ export function SignInForm() {
 
         <div className="relative py-3">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border" />
+            <div className="w-full border-t border-border/60" />
           </div>
           <div className="relative flex justify-center">
-            <span className="bg-card px-3 text-xs text-muted-foreground">или</span>
+            <span className="rounded-full border border-border/60 bg-card px-3 py-1 text-[11px] text-muted-foreground shadow-sm">или</span>
           </div>
         </div>
 
         <Button
           type="button"
           variant="outline"
-          className="w-full h-10 border-border"
+          className="h-12 w-full rounded-2xl border-border/60 bg-background/55 shadow-sm hover:bg-muted/50"
           onClick={handleGoogleSignIn}
           disabled={isGoogleLoading}
         >
@@ -191,7 +194,7 @@ export function SignInForm() {
         </Button>
       </form>
 
-      <p className="mt-4 text-center text-xs text-muted-foreground">
+      <p className="mt-5 text-center text-xs text-muted-foreground">
         Нямате акаунт?{" "}
         <Link href="/signup" className="text-primary font-semibold hover:underline">
           Създайте безплатен акаунт

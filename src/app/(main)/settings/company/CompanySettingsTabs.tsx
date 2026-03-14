@@ -53,10 +53,12 @@ export function CompanySettingsTabs({ company }: CompanySettingsTabsProps) {
           <Building2 className="h-4 w-4 mr-2" />
           Основни
         </TabsTrigger>
-        <TabsTrigger value="bank" className="min-h-10 whitespace-nowrap rounded-xl px-3">
-          <CreditCard className="h-4 w-4 mr-2" />
-          Банка
-        </TabsTrigger>
+        {!isNew && (
+          <TabsTrigger value="bank" className="min-h-10 whitespace-nowrap rounded-xl px-3">
+            <CreditCard className="h-4 w-4 mr-2" />
+            Банка
+          </TabsTrigger>
+        )}
         {!isNew && (
           <TabsTrigger value="logo" className="min-h-10 whitespace-nowrap rounded-xl px-3">
             <Image className="h-4 w-4 mr-2" />
@@ -109,36 +111,38 @@ export function CompanySettingsTabs({ company }: CompanySettingsTabsProps) {
         </Card>
       </TabsContent>
 
-      <TabsContent value="bank">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                <CreditCard className="h-4 w-4 text-blue-500" />
+      {!isNew && (
+        <TabsContent value="bank">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <CreditCard className="h-4 w-4 text-blue-500" />
+                </div>
+                <div>
+                  <CardTitle>Банкова информация</CardTitle>
+                  <CardDescription>
+                    Банковите ви детайли ще се показват на фактурите
+                  </CardDescription>
+                </div>
               </div>
-              <div>
-                <CardTitle>Банкова информация</CardTitle>
-                <CardDescription>
-                  Банковите ви детайли ще се показват на фактурите
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <CompanyForm
-              defaultValues={{
-                id: company?.id || "",
-                bankName: company?.bankName || "",
-                bankAccount: company?.bankAccount || "",
-                bankSwift: company?.bankSwift || "",
-                bankIban: company?.bankIban || "",
-              }}
-              isBankInfo={true}
-              isNewCompany={isNew}
-            />
-          </CardContent>
-        </Card>
-      </TabsContent>
+            </CardHeader>
+            <CardContent>
+              <CompanyForm
+                defaultValues={{
+                  id: company?.id || "",
+                  bankName: company?.bankName || "",
+                  bankAccount: company?.bankAccount || "",
+                  bankSwift: company?.bankSwift || "",
+                  bankIban: company?.bankIban || "",
+                }}
+                isBankInfo={true}
+                isNewCompany={isNew}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      )}
 
       {!isNew && (
         <TabsContent value="logo">

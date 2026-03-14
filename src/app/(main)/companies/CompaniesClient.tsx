@@ -108,6 +108,9 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex-1">
+          <Badge variant="info" className="mb-2">
+            Фирмени профили
+          </Badge>
           <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Компании</h1>
             {!isLoadingUsage && companyUsage.limit !== Infinity && (

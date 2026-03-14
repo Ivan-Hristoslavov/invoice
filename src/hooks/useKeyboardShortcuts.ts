@@ -8,6 +8,7 @@ type ShortcutHandler = () => void;
 interface Shortcut {
   key: string;
   ctrl?: boolean;
+  meta?: boolean;
   shift?: boolean;
   alt?: boolean;
   handler: ShortcutHandler;
@@ -47,21 +48,21 @@ export function useKeyboardShortcuts(enabled = true) {
     // Create shortcuts
     {
       key: "n",
-      ctrl: true,
+      alt: true,
       handler: () => router.push("/invoices/new"),
       description: "Нова фактура",
     },
     {
       key: "n",
-      ctrl: true,
+      alt: true,
       shift: true,
       handler: () => router.push("/clients/new"),
       description: "Нов клиент",
     },
     // Settings
     {
-      key: ",",
-      ctrl: true,
+      key: "s",
+      alt: true,
       handler: () => router.push("/settings"),
       description: "Настройки",
     },
@@ -73,18 +74,22 @@ export function useKeyboardShortcuts(enabled = true) {
     if (
       target.tagName === "INPUT" ||
       target.tagName === "TEXTAREA" ||
+      target.tagName === "SELECT" ||
       target.isContentEditable
     ) {
       return;
     }
 
+    if (event.defaultPrevented || event.isComposing) return;
+
     for (const shortcut of shortcuts) {
-      const ctrlMatch = shortcut.ctrl ? (event.ctrlKey || event.metaKey) : !(event.ctrlKey || event.metaKey);
+      const ctrlMatch = shortcut.ctrl ? event.ctrlKey : !event.ctrlKey;
+      const metaMatch = shortcut.meta ? event.metaKey : !event.metaKey;
       const shiftMatch = shortcut.shift ? event.shiftKey : !event.shiftKey;
       const altMatch = shortcut.alt ? event.altKey : !event.altKey;
       const keyMatch = event.key.toLowerCase() === shortcut.key.toLowerCase();
 
-      if (ctrlMatch && shiftMatch && altMatch && keyMatch) {
+      if (ctrlMatch && metaMatch && shiftMatch && altMatch && keyMatch) {
         event.preventDefault();
         shortcut.handler();
         return;
@@ -114,17 +119,21 @@ export function useCustomShortcut(
       if (
         target.tagName === "INPUT" ||
         target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT" ||
         target.isContentEditable
       ) {
         return;
       }
 
-      const ctrlMatch = options.ctrl ? (event.ctrlKey || event.metaKey) : !(event.ctrlKey || event.metaKey);
+      if (event.defaultPrevented || event.isComposing) return;
+
+      const ctrlMatch = options.ctrl ? event.ctrlKey : !event.ctrlKey;
+      const metaMatch = !event.metaKey;
       const shiftMatch = options.shift ? event.shiftKey : !event.shiftKey;
       const altMatch = options.alt ? event.altKey : !event.altKey;
       const keyMatch = event.key.toLowerCase() === key.toLowerCase();
 
-      if (ctrlMatch && shiftMatch && altMatch && keyMatch) {
+      if (ctrlMatch && metaMatch && shiftMatch && altMatch && keyMatch) {
         event.preventDefault();
         handler();
       }
@@ -149,15 +158,15 @@ export const shortcutsHelp = [
   {
     category: "Създаване",
     shortcuts: [
-      { keys: ["Ctrl", "N"], description: "Нова фактура" },
-      { keys: ["Ctrl", "Shift", "N"], description: "Нов клиент" },
+      { keys: ["Alt", "N"], description: "Нова фактура" },
+      { keys: ["Alt", "Shift", "N"], description: "Нов клиент" },
     ],
   },
   {
     category: "Действия",
     shortcuts: [
       { keys: ["Ctrl", "K"], description: "Търсене" },
-      { keys: ["Ctrl", ","], description: "Настройки" },
+      { keys: ["Alt", "S"], description: "Настройки" },
       { keys: ["Esc"], description: "Затвори" },
     ],
   },

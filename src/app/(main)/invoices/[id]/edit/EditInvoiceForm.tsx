@@ -901,12 +901,12 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
               </CardContent>
             </Card>
           </div>
-          <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] mt-6 rounded-2xl border border-border/70 bg-background/95 p-3 shadow-lg backdrop-blur sm:static sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
-            <div className="flex items-center justify-between gap-3 sm:border-t sm:pt-6">
-              <Button variant="outline" asChild className="min-w-[120px]">
+          <div className="sticky bottom-0 mt-6 rounded-2xl border border-border/70 bg-background/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 shadow-lg backdrop-blur supports-backdrop-filter:bg-background/85 sm:static sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:backdrop-blur-0">
+            <div className="grid grid-cols-2 gap-3 sm:border-t sm:pt-6">
+              <Button variant="outline" asChild className="h-11 w-full justify-center sm:min-w-[120px]">
                 <Link href={`/invoices/${invoiceId}`}>Отказ</Link>
               </Button>
-              <Button type="submit" form="invoice-form" disabled={isLoading} className="min-w-[160px]">
+              <Button type="submit" form="invoice-form" disabled={isLoading} className="h-11 w-full justify-center sm:min-w-[160px]">
                 <Save className="mr-1.5 h-4 w-4" />
                 {isLoading ? "Запазване..." : "Запази промените"}
               </Button>
