@@ -4,14 +4,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Cookie, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
 
 const COOKIE_CONSENT_KEY = "cookie-consent";
 
@@ -50,58 +42,63 @@ export function CookieConsent() {
   if (!mounted || !isVisible) return null;
 
   return (
-    <Dialog open={isVisible} onOpenChange={(open) => !open && handleEssentialOnly()}>
-      <DialogContent
-        className="max-w-[calc(100%-1rem)] rounded-[2rem] border-border bg-card px-5 py-6 text-card-foreground shadow-2xl sm:max-w-lg sm:px-6"
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-3 pb-3 sm:px-4 sm:pb-4">
+      <div
+        className="pointer-events-auto mx-auto max-w-5xl rounded-3xl border border-border/70 bg-card/95 p-3.5 text-card-foreground shadow-2xl backdrop-blur-xl sm:p-5"
+        role="dialog"
         aria-labelledby="cookie-title"
         aria-describedby="cookie-desc"
       >
-        <DialogHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-500/20 sm:h-10 sm:w-10 sm:rounded-xl">
-              <Cookie className="h-5 w-5 text-amber-500" />
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-amber-500/15 sm:h-10 sm:w-10">
+                <Cookie className="h-4 w-4 text-amber-500" />
+              </div>
+              <div className="min-w-0">
+                <h2 id="cookie-title" className="text-base font-semibold sm:text-lg">
+                  Използваме бисквитки
+                </h2>
+                <p
+                  id="cookie-desc"
+                  className="mt-1 max-w-3xl text-sm leading-5 text-muted-foreground sm:leading-6"
+                >
+                  Използваме необходими бисквитки за вход и сигурност, а с ваше
+                  съгласие и допълнителни за по-добро изживяване.{" "}
+                  <Link
+                    href="/cookies"
+                    className="font-medium text-primary hover:underline underline-offset-4"
+                  >
+                    Научете повече
+                  </Link>
+                </p>
+              </div>
             </div>
-            <DialogTitle id="cookie-title" className="text-left text-xl sm:text-lg">
-              Използваме бисквитки
-            </DialogTitle>
+            <p className="mt-2 hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
+              <Shield className="h-3 w-3 shrink-0 text-primary" />
+              GDPR съвместимост и контрол върху избора ви.
+            </p>
           </div>
-          <DialogDescription id="cookie-desc" className="pt-1 text-left text-base leading-8 text-muted-foreground sm:text-sm sm:leading-7">
-            Използваме бисквитки за подобряване на изживяването ви. Можете да приемете всички или само необходимите.{" "}
-            <Link
-              href="/cookies"
-              className="text-primary font-medium hover:underline underline-offset-4"
+
+          <div className="flex flex-row flex-wrap gap-2 lg:shrink-0">
+            <Button
+              variant="outline"
+              onClick={handleEssentialOnly}
+              className="h-11 flex-1 rounded-full border-border px-4 text-sm"
             >
-              Научете повече
-            </Link>
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="mt-2 flex flex-col items-center gap-3 sm:items-stretch sm:gap-2">
-          <Button
-            variant="outline"
-            onClick={handleEssentialOnly}
-            className="h-12 w-full max-w-76 rounded-full border-border text-base sm:h-10 sm:w-auto sm:max-w-none sm:text-sm"
-          >
-            Само необходими
-          </Button>
-          <Link href="/cookies" className="flex w-full justify-center">
-            <Button variant="ghost" className="h-10 text-base text-muted-foreground sm:text-sm">
-              Настройки
+              Само необходими
             </Button>
-          </Link>
-          <Button
-            onClick={handleAcceptAll}
-            className="h-12 w-full max-w-[20rem] rounded-full text-base gradient-primary hover:opacity-90 sm:h-10 sm:w-auto sm:max-w-none sm:text-sm"
-          >
-            <Shield className="h-4 w-4 mr-2" />
-            Приемам всички
-          </Button>
-        </DialogFooter>
-        <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
-          <Shield className="h-3 w-3 text-primary shrink-0" />
-          GDPR съвместим • Вашите данни са защитени
-        </p>
-      </DialogContent>
-    </Dialog>
+            <Button
+              onClick={handleAcceptAll}
+              className="h-11 flex-1 rounded-full px-4 text-sm gradient-primary hover:opacity-90"
+            >
+              <Shield className="mr-2 h-4 w-4" />
+              Приемам всички
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 

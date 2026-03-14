@@ -77,12 +77,12 @@ export default function ProductsClient({
   const withTax = products.filter((p) => p.taxRate > 0).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Soft Upgrade Prompts */}
       {isApproachingLimit && (
         <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
           <AlertTriangle className="h-4 w-4 text-amber-600" />
-          <AlertDescription className="flex items-center justify-between">
+          <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-amber-800 dark:text-amber-200">
               {productsRemaining === 1 ? (
                 <>Остава ви само <strong>1 продукт</strong> в {plan} плана.</>
@@ -92,7 +92,7 @@ export default function ProductsClient({
               {' '}Надградете за повече продукти.
             </span>
             <Link href="/settings/subscription" className="flex items-center whitespace-nowrap">
-              <Button size="sm" variant="outline" className="ml-4 border-amber-300 text-amber-700 hover:bg-amber-100">
+              <Button size="sm" variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-100 sm:ml-4">
                 <Crown className="h-4 w-4 mr-2" />
                 Надградете
               </Button>
@@ -104,7 +104,7 @@ export default function ProductsClient({
       {isAtLimit && (
         <Alert className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
           <XCircle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="flex items-center justify-between">
+          <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-red-800 dark:text-red-200">
               Достигнахте лимита от <strong>{productLimit} продукта</strong> за {plan} плана.
               {plan === 'FREE' && ' Надградете до STARTER за до 50 продукта или до PRO за до 200.'}
@@ -112,7 +112,7 @@ export default function ProductsClient({
               {plan === 'PRO' && ' Надградете до BUSINESS за неограничени продукти.'}
             </span>
             <Link href="/settings/subscription" className="flex items-center whitespace-nowrap">
-              <Button size="sm" className="ml-4 bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
+              <Button size="sm" className="bg-linear-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 sm:ml-4">
                 <Crown className="h-4 w-4 mr-2" />
                 Надградете
               </Button>
@@ -122,10 +122,10 @@ export default function ProductsClient({
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold tracking-tight">Продукти</h1>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Продукти</h1>
             {productLimit !== -1 && (
               <UsageCounter 
                 used={totalProducts} 
@@ -144,10 +144,10 @@ export default function ProductsClient({
             size="3" 
             variant="solid" 
             color="green"
-            className="shadow-lg"
+            className="h-11 w-full shadow-lg sm:h-auto sm:w-auto"
           >
             <Link href="/products/new" className="flex items-center whitespace-nowrap">
-              <Plus className="mr-2 h-5 w-5" />
+              <Plus className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
               Нов продукт
             </Link>
           </Button>
@@ -157,7 +157,7 @@ export default function ProductsClient({
             size="3" 
             variant="soft" 
             color="gray"
-            className="shadow-lg"
+            className="h-11 w-full shadow-lg sm:h-auto sm:w-auto"
           >
             <Link href="/settings/subscription" className="flex items-center whitespace-nowrap">
               <Lock className="mr-2 h-4 w-4" />
@@ -168,7 +168,7 @@ export default function ProductsClient({
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
         <CardStatsMetric
           title="Общо продукти"
           value={totalProducts}
@@ -194,7 +194,7 @@ export default function ProductsClient({
       {/* Search & View Toggle */}
       <Card className="border-0 shadow-lg">
         <CardContent className="p-3 sm:p-4">
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input 
@@ -204,7 +204,7 @@ export default function ProductsClient({
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50">
+            <div className="hidden items-center gap-1 rounded-lg bg-muted/50 p-1 sm:flex">
               <Button
                 variant={viewMode === "cards" ? "default" : "ghost"}
                 size="sm"
@@ -255,26 +255,26 @@ export default function ProductsClient({
         </Card>
       ) : viewMode === "cards" ? (
         /* Cards View */
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {paginatedProducts.map((product) => (
             <Link key={product.id} href={`/products/${product.id}`}>
-              <Card className="h-full min-h-[120px] border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group cursor-pointer">
-                <CardContent className="p-5 h-full flex flex-col items-center text-center">
+              <Card className="group h-full min-h-[112px] cursor-pointer border-0 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                <CardContent className="flex h-full flex-col items-center p-4 text-center sm:p-5">
                   {/* Name */}
-                  <h3 className="font-semibold group-hover:text-primary transition-colors truncate w-full">
+                  <h3 className="w-full truncate text-sm font-semibold transition-colors group-hover:text-primary sm:text-base">
                     {product.name}
                   </h3>
                   
                   {/* Description */}
                   {product.description && (
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-1 w-full">
+                    <p className="mt-1 line-clamp-1 w-full text-[11px] text-muted-foreground sm:text-xs">
                       {product.description}
                     </p>
                   )}
                   
                   {/* Price */}
-                  <div className="mt-auto pt-3 w-full border-t flex items-center justify-center gap-2">
-                    <span className="text-lg font-bold">
+                  <div className="mt-auto flex w-full items-center justify-center gap-1.5 border-t pt-3">
+                    <span className="text-base font-bold sm:text-lg">
                       {product.price.toFixed(2)} €
                     </span>
                     <span className="text-xs text-muted-foreground">/ {product.unit}</span>

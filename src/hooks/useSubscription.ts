@@ -49,13 +49,11 @@ export function useSubscription(): UseSubscriptionReturn {
 
       try {
         setIsLoading(true);
-        console.log('Fetching subscription data...');
-        const response = await fetch(`/api/subscription?t=${Date.now()}`);
+        const response = await fetch('/api/subscription');
         if (!response.ok) {
           throw new Error(`Failed to fetch subscription: ${response.status} ${response.statusText}`);
         }
         const data = await response.json();
-        console.log('Subscription API response:', data);
         setSubscription(data.subscription);
       } catch (err: any) {
         console.error('Error fetching subscription:', err);
@@ -71,7 +69,6 @@ export function useSubscription(): UseSubscriptionReturn {
   const createCheckoutSession = async (plan: string, billingInterval: 'monthly' | 'yearly' = 'yearly') => {
     try {
       setIsLoading(true);
-      console.log("Creating checkout session for plan:", plan, "interval:", billingInterval);
       
       // Get direct Stripe URL instead of creating a checkout session
       const response = await fetch('/api/subscription/direct-link', {
@@ -85,20 +82,14 @@ export function useSubscription(): UseSubscriptionReturn {
         }),
       });
 
-      console.log("Response status:", response.status);
-      
       if (!response.ok) {
         const errorData = await response.text();
         console.error("Error response:", errorData);
         throw new Error(errorData || 'Failed to get checkout link');
       }
-
       const data = await response.json();
-      console.log("Direct link data:", data);
 
       if (data.url) {
-        console.log("Redirecting to direct URL:", data.url);
-        
         // Always try to open in a new tab
         const newWindow = window.open(data.url, '_blank', 'noopener,noreferrer');
         
@@ -114,10 +105,7 @@ export function useSubscription(): UseSubscriptionReturn {
           link.click();
           document.body.removeChild(link);
         }
-      } else {
-        console.error("No URL returned");
-        throw new Error('No checkout URL returned');
-      }
+      } else throw new Error('No checkout URL returned');
     } catch (err: any) {
       console.error('Checkout error:', err);
       setError(err.message || 'Failed to start checkout process');

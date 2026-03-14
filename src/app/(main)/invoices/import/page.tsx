@@ -5,6 +5,7 @@ import { Metadata } from "next";
 import InvoiceImportClient from "./InvoiceImportClient";
 import { createAdminClient } from "@/lib/supabase/server";
 import { checkPermission } from "@/lib/permissions";
+import { resolveSessionUser } from "@/lib/session-user";
 
 export const metadata: Metadata = {
   title: "Import Invoices - Invoicy",
@@ -15,6 +16,11 @@ export default async function InvoiceImportPage() {
   const session = await getServerSession(authOptions);
   
   if (!session?.user) {
+    redirect("/signin?callbackUrl=/invoices/import");
+  }
+
+  const sessionUser = await resolveSessionUser(session.user);
+  if (!sessionUser) {
     redirect("/signin?callbackUrl=/invoices/import");
   }
 
@@ -30,21 +36,21 @@ export default async function InvoiceImportPage() {
   const { data: clients } = await supabase
     .from("Client")
     .select("id, name, email")
-    .eq("userId", session.user.id)
+    .eq("userId", sessionUser.id)
     .order("name", { ascending: true });
 
   // Get companies for this user to populate the dropdown
   const { data: companies } = await supabase
     .from("Company")
     .select("id, name")
-    .eq("userId", session.user.id)
+    .eq("userId", sessionUser.id)
     .order("name", { ascending: true });
 
   // Get products for this user to populate the dropdown
   const { data: products } = await supabase
     .from("Product")
     .select("id, name, price, taxRate")
-    .eq("userId", session.user.id)
+    .eq("userId", sessionUser.id)
     .order("name", { ascending: true });
 
   return (

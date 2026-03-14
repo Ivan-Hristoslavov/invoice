@@ -22,6 +22,14 @@ const formatPrice = (value: number): string => {
   // Otherwise show 2 decimal places
   return rounded.toFixed(2);
 };
+
+function formatLongDate(value: string): string {
+  return new Date(value).toLocaleDateString("bg-BG", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { 
@@ -89,12 +97,13 @@ import { FormDatePicker } from "@/components/ui/date-picker";
 // Step indicator component
 function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { title: string; icon: React.ReactNode }[] }) {
   return (
-    <div className="flex items-center justify-center mb-8 gap-2">
+    <div className="mb-6 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="mx-auto flex min-w-max items-center justify-center gap-2 px-1">
       {steps.map((step, index) => (
-        <div key={index} className="flex items-center gap-2">
+        <div key={index} className="flex items-center gap-1.5 sm:gap-2">
           <div className="flex flex-col items-center gap-2">
             <div className={`
-              flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300 relative
+              relative flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all duration-300 sm:h-10 sm:w-10
               ${index < currentStep 
                 ? 'bg-emerald-500 border-emerald-500 text-white' 
                 : index === currentStep 
@@ -111,15 +120,16 @@ function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { t
                 )}
               </div>
             </div>
-            <p className={`text-xs font-medium whitespace-nowrap text-center ${index === currentStep ? 'text-foreground' : 'text-muted-foreground'}`}>
+            <p className={`hidden text-xs font-medium whitespace-nowrap text-center sm:block ${index === currentStep ? 'text-foreground' : 'text-muted-foreground'}`}>
               {step.title}
             </p>
           </div>
           {index < steps.length - 1 && (
-            <div className={`w-8 sm:w-12 md:w-16 h-0.5 transition-all duration-300 ${index < currentStep ? 'bg-emerald-500' : 'bg-muted-foreground/20'}`} />
+            <div className={`h-0.5 w-6 transition-all duration-300 sm:w-12 md:w-16 ${index < currentStep ? 'bg-emerald-500' : 'bg-muted-foreground/20'}`} />
           )}
         </div>
       ))}
+      </div>
     </div>
   );
 }
@@ -128,7 +138,7 @@ function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { t
 function ProductCard({ 
   product, 
   currency, 
-  onAdd 
+  onAdd
 }: { 
   product: any; 
   currency: string; 
@@ -137,7 +147,7 @@ function ProductCard({
   return (
     <div
       onClick={onAdd}
-      className="group relative overflow-hidden rounded-lg border border-border bg-card p-3 cursor-pointer transition-all duration-200 hover:border-primary/50 hover:shadow-md hover:bg-primary/[0.02]"
+      className="group relative overflow-hidden rounded-lg border border-border bg-card p-3 cursor-pointer transition-all duration-200 hover:border-primary/50 hover:shadow-md hover:bg-primary/2"
     >
       <div className="flex items-center gap-3">
         {/* Add button */}
@@ -271,7 +281,7 @@ function InvoiceItemCard({
             type="button"
             variant="ghost"
             size="sm"
-            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10 transition-all rounded"
+            className="h-7 w-7 rounded p-0 text-destructive opacity-100 transition-all hover:bg-destructive/10 sm:h-6 sm:w-6 sm:opacity-0 sm:group-hover:opacity-100"
             onClick={onRemove}
           >
             <Trash2 className="h-3 w-3" />
@@ -487,6 +497,23 @@ function NewInvoiceContent() {
     return { subtotal, tax, total };
   }, [items]);
 
+  const selectedCompany = useMemo(
+    () => companies.find((company) => company.id === invoiceData.companyId),
+    [companies, invoiceData.companyId]
+  );
+
+  const previewItems = useMemo(
+    () => items.filter((item) => item.description.trim()),
+    [items]
+  );
+
+  const paymentMethodLabel = useMemo(() => {
+    if (invoiceData.paymentMethod === "BANK_TRANSFER") return "Банков превод";
+    if (invoiceData.paymentMethod === "CASH") return "В брой";
+    if (invoiceData.paymentMethod === "CREDIT_CARD") return "Кредитна/дебитна карта";
+    return "Друго";
+  }, [invoiceData.paymentMethod]);
+
   // Handlers
   const selectClient = useCallback((client: any) => {
     setSelectedClient(client);
@@ -633,9 +660,9 @@ function NewInvoiceContent() {
       // Step 0: Client Selection
       case 0:
         return (
-          <div className="space-y-6">
+          <div className="space-y-5">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold mb-2">Изберете клиент</h2>
+              <h2 className="mb-1.5 text-xl font-bold sm:text-2xl">Изберете клиент</h2>
               <p className="text-muted-foreground">Изберете съществуващ клиент или създайте нов</p>
             </div>
             
@@ -696,15 +723,15 @@ function NewInvoiceContent() {
       // Step 1: Invoice Details
       case 1:
         return (
-          <div className="space-y-6">
+          <div className="space-y-5">
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold mb-1">Детайли на фактурата</h2>
+              <h2 className="mb-1 text-xl font-bold sm:text-2xl">Детайли на фактурата</h2>
               <p className="text-muted-foreground text-sm">Настройте основните данни за фактурата</p>
             </div>
 
             {/* Compact invoice number summary */}
             <Card className="border-primary/15 bg-linear-to-r from-primary/8 via-card to-card shadow-sm">
-              <CardContent className="p-4 sm:p-5">
+              <CardContent className="p-4">
                 <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary">
@@ -714,7 +741,7 @@ function NewInvoiceContent() {
                       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                         Номер на фактура
                       </p>
-                      <p className="truncate font-mono text-xl font-semibold tracking-tight sm:text-2xl">
+                      <p className="truncate font-mono text-lg font-semibold tracking-tight sm:text-xl">
                         {invoiceData.invoiceNumber || "—"}
                       </p>
                     </div>
@@ -730,7 +757,7 @@ function NewInvoiceContent() {
             </Card>
 
             {/* Main 2-column layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
               {/* Left: Date & Payment fields (3/5 on lg) */}
               <div className="lg:col-span-3 space-y-5">
                 <Card>
@@ -821,7 +848,7 @@ function NewInvoiceContent() {
                     </CardHeader>
                     <CardContent>
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold flex-shrink-0 text-sm">
+                        <div className="w-10 h-10 rounded-full bg-primary shrink-0 flex items-center justify-center text-primary-foreground font-semibold text-sm">
                           {selectedClient.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -830,7 +857,7 @@ function NewInvoiceContent() {
                             <p className="text-xs text-muted-foreground truncate">{selectedClient.email}</p>
                           )}
                         </div>
-                        <Button variant="ghost" size="sm" onClick={() => setCurrentStep(0)} className="flex-shrink-0 h-8 px-2">
+                        <Button variant="ghost" size="sm" onClick={() => setCurrentStep(0)} className="shrink-0 h-8 px-2">
                           <Edit className="h-3.5 w-3.5" />
                         </Button>
                       </div>
@@ -890,9 +917,9 @@ function NewInvoiceContent() {
       // Step 2: Products
       case 2:
         return (
-          <div className="space-y-6">
+          <div className="space-y-5">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold mb-2">Добавете продукти</h2>
+              <h2 className="mb-1.5 text-xl font-bold sm:text-2xl">Добавете продукти</h2>
               <p className="text-muted-foreground">Изберете от каталога или добавете ръчно</p>
             </div>
             
@@ -921,7 +948,7 @@ function NewInvoiceContent() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {filteredProducts.map((product) => (
                       <ProductCard
                         key={product.id}
@@ -941,7 +968,7 @@ function NewInvoiceContent() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
                   <div className="flex-1 min-w-0">
                     <CardTitle className="card-title flex items-center gap-2">
-                      <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                      <ShoppingCart className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
                       <span className="truncate">Артикули</span>
                     </CardTitle>
                     <CardDescription className="card-description mt-1">{items.length} артикул(а)</CardDescription>
@@ -987,121 +1014,156 @@ function NewInvoiceContent() {
       // Step 3: Review
       case 3:
         return (
-          <div className="space-y-6">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold mb-1">Преглед на фактурата</h2>
-              <p className="text-muted-foreground text-sm">Проверете данните преди създаване</p>
+          <div className="space-y-5">
+            <div className="flex flex-col gap-2 text-center sm:text-left">
+              <h2 className="text-xl font-bold sm:text-2xl">Преглед на фактурата</h2>
+              <p className="text-sm text-muted-foreground">
+                Проверете документа и сумите преди създаване.
+              </p>
             </div>
-            
-            {/* Invoice preview */}
-            <Card className="solid-card overflow-hidden border-2 bg-white dark:bg-slate-900">
-              {/* Header */}
-              <div className="p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">Фактура №</p>
-                    <p className="text-3xl font-bold font-mono">{invoiceData.invoiceNumber}</p>
-                  </div>
-                  <Badge variant="secondary" className="text-base px-4 py-2">
-                    {invoiceData.currency}
-                  </Badge>
-                </div>
-              </div>
-              
-              <CardContent className="p-6 lg:p-8">
-                <div className="space-y-8">
-                  {/* Client & Company */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Building2 className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">От</p>
-                      </div>
-                      <p className="text-lg font-semibold">{companies.find(c => c.id === invoiceData.companyId)?.name || '-'}</p>
-                      {companies.find(c => c.id === invoiceData.companyId)?.email && (
-                        <p className="text-sm text-muted-foreground">{companies.find(c => c.id === invoiceData.companyId)?.email}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 mb-3">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">До</p>
-                      </div>
-                      <p className="text-lg font-semibold">{selectedClient?.name || '-'}</p>
-                      {selectedClient?.email && (
-                        <p className="text-sm text-muted-foreground">{selectedClient.email}</p>
-                      )}
-                      {selectedClient?.phone && (
-                        <p className="text-sm text-muted-foreground">{selectedClient.phone}</p>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <Separator />
-                  
-                  {/* Dates & Payment */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Дата на издаване</p>
-                      </div>
-                      <p className="text-base font-semibold">{new Date(invoiceData.issueDate).toLocaleDateString('bg-BG', { 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                      })}</p>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Краен срок</p>
-                      </div>
-                      <p className="text-base font-semibold">{new Date(invoiceData.dueDate).toLocaleDateString('bg-BG', { 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                      })}</p>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Начин на плащане</p>
-                      </div>
-                      <p className="text-base font-semibold">
-                        {invoiceData.paymentMethod === 'BANK_TRANSFER' ? 'Банков превод' :
-                         invoiceData.paymentMethod === 'CASH' ? 'В брой' :
-                         invoiceData.paymentMethod === 'CREDIT_CARD' ? 'Кредитна/дебитна карта' : 'Друго'}
+
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1.8fr)_320px]">
+              <Card className="solid-card overflow-hidden border-2 bg-white dark:bg-slate-900">
+                <div className="border-b border-border/60 bg-muted/20 p-4">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                        Фактура №:
+                      </span>
+                      <p className="min-w-0 truncate font-mono text-base font-bold tracking-tight sm:text-lg">
+                        {invoiceData.invoiceNumber}
                       </p>
                     </div>
-                  </div>
-                  
-                  <Separator />
-                  
-                  {/* Items Table */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <ShoppingCart className="h-5 w-5 text-muted-foreground" />
-                      <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Артикули</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="secondary" className="px-2.5 py-1 text-xs sm:text-sm">
+                        {invoiceData.currency}
+                      </Badge>
+                      <Badge variant="outline" className="px-2.5 py-1 text-xs sm:text-sm">
+                        {previewItems.length} {previewItems.length === 1 ? "артикул" : "артикула"}
+                      </Badge>
                     </div>
-                    <div className="border rounded-lg overflow-hidden">
-                      <div className="bg-muted/50 px-4 py-3 grid grid-cols-12 gap-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b">
+                  </div>
+                </div>
+
+                <CardContent className="space-y-4 p-4 sm:p-5">
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
+                      <div className="mb-2 flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">От</p>
+                      </div>
+                      <div className="space-y-1.5">
+                        <p className="text-sm font-semibold sm:text-base">{selectedCompany?.name || "-"}</p>
+                        {selectedCompany?.email && (
+                          <p className="text-xs text-muted-foreground sm:text-sm">{selectedCompany.email}</p>
+                        )}
+                        {selectedCompany?.address && (
+                          <p className="text-xs text-muted-foreground sm:text-sm">{selectedCompany.address}</p>
+                        )}
+                        {selectedCompany?.city && (
+                          <p className="text-xs text-muted-foreground sm:text-sm">{selectedCompany.city}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
+                      <div className="mb-2 flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">До</p>
+                      </div>
+                      <div className="space-y-1.5">
+                        <p className="text-sm font-semibold sm:text-base">{selectedClient?.name || "-"}</p>
+                        {selectedClient?.email && (
+                          <p className="text-xs text-muted-foreground sm:text-sm">{selectedClient.email}</p>
+                        )}
+                        {selectedClient?.phone && (
+                          <p className="text-xs text-muted-foreground sm:text-sm">{selectedClient.phone}</p>
+                        )}
+                        {(selectedClient?.city || selectedClient?.country) && (
+                          <p className="text-xs text-muted-foreground sm:text-sm">
+                            {[selectedClient?.city, selectedClient?.country].filter(Boolean).join(", ")}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Артикули
+                      </p>
+                    </div>
+
+                    <div className="space-y-2.5 md:hidden">
+                      {previewItems.map((item, index) => {
+                        const itemTotal = item.quantity * item.unitPrice;
+                        const itemTotalWithVat = itemTotal + itemTotal * (item.taxRate / 100);
+
+                        return (
+                          <div key={item.id} className="rounded-xl border border-border/70 bg-card/70 p-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                  Артикул {index + 1}
+                                </p>
+                                <p className="mt-1 wrap-break-word text-sm font-semibold">{item.description}</p>
+                              </div>
+                              <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                                x{item.quantity}
+                              </span>
+                            </div>
+
+                            <div className="mt-3 grid grid-cols-2 gap-2.5 text-sm">
+                              <div className="rounded-lg bg-muted/30 p-2.5">
+                                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Ед. цена</p>
+                                <p className="mt-1 font-semibold">
+                                  {formatPrice(item.unitPrice)} {invoiceData.currency}
+                                </p>
+                              </div>
+                              <div className="rounded-lg bg-muted/30 p-2.5">
+                                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">ДДС</p>
+                                <p className="mt-1 font-semibold">{item.taxRate}%</p>
+                              </div>
+                              <div className="rounded-lg bg-muted/30 p-2.5">
+                                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Подсума</p>
+                                <p className="mt-1 font-semibold">
+                                  {formatPrice(itemTotal)} {invoiceData.currency}
+                                </p>
+                              </div>
+                              <div className="rounded-lg bg-primary/5 p-2.5">
+                                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Общо с ДДС</p>
+                                <p className="mt-1 font-semibold text-primary">
+                                  {formatPrice(itemTotalWithVat)} {invoiceData.currency}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="hidden overflow-hidden rounded-lg border md:block">
+                      <div className="grid grid-cols-12 gap-3 border-b bg-muted/50 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                         <div className="col-span-1 text-center">№</div>
                         <div className="col-span-6">Описание</div>
                         <div className="col-span-2 text-right">Количество</div>
                         <div className="col-span-3 text-right">Общо</div>
                       </div>
                       <div className="divide-y">
-                        {items.filter(i => i.description).map((item, index) => {
-                          // Line item total = quantity × unit price (without VAT)
+                        {previewItems.map((item, index) => {
                           const itemTotal = item.quantity * item.unitPrice;
+
                           return (
-                            <div key={item.id} className="px-4 py-4 grid grid-cols-12 gap-4 hover:bg-muted/30 transition-colors">
-                              <div className="col-span-1 text-center text-sm font-medium text-muted-foreground">
+                            <div key={item.id} className="grid grid-cols-12 gap-3 px-3 py-3 transition-colors hover:bg-muted/30">
+                              <div className="col-span-1 text-center text-xs font-medium text-muted-foreground sm:text-sm">
                                 {index + 1}
                               </div>
                               <div className="col-span-6">
-                                <p className="font-semibold mb-1">{item.description}</p>
+                                <p className="mb-0.5 text-sm font-semibold">{item.description}</p>
                                 <p className="text-xs text-muted-foreground">
                                   {formatPrice(item.unitPrice)} {invoiceData.currency} × {item.quantity} (ДДС {item.taxRate}%)
                                 </p>
@@ -1110,7 +1172,7 @@ function NewInvoiceContent() {
                                 {item.quantity}
                               </div>
                               <div className="col-span-3 text-right">
-                                <p className="font-semibold">
+                                <p className="text-sm font-semibold">
                                   {formatPrice(itemTotal)} {invoiceData.currency}
                                 </p>
                               </div>
@@ -1120,28 +1182,81 @@ function NewInvoiceContent() {
                       </div>
                     </div>
                   </div>
-                  
-                  {/* Totals */}
-                  <div className="bg-linear-to-br from-muted/50 to-muted/30 rounded-xl p-6 space-y-3 border">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground font-medium">Подсума</span>
-                      <span className="font-semibold">{formatPrice(totals.subtotal)} {invoiceData.currency}</span>
+                </CardContent>
+              </Card>
+
+              <div className="space-y-4 xl:sticky xl:top-20 xl:self-start">
+                <Card className="border-border/70">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Receipt className="h-4 w-4 text-primary" />
+                      Обобщение
+                    </CardTitle>
+                    <CardDescription>Най-важното за документа на едно място.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2.5">
+                    <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-1">
+                      <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground">Дата на издаване</p>
+                        <p className="mt-1 text-sm font-semibold">{formatLongDate(invoiceData.issueDate)}</p>
+                      </div>
+                      <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground">Краен срок</p>
+                        <p className="mt-1 text-sm font-semibold">{formatLongDate(invoiceData.dueDate)}</p>
+                      </div>
+                      <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground">Начин на плащане</p>
+                        <p className="mt-1 text-sm font-semibold">{paymentMethodLabel}</p>
+                      </div>
+                      <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground">Място на издаване</p>
+                        <p className="mt-1 text-sm font-semibold">{invoiceData.placeOfIssue || "-"}</p>
+                      </div>
+                      <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground">Дата на доставка</p>
+                        <p className="mt-1 text-sm font-semibold">{formatLongDate(invoiceData.supplyDate)}</p>
+                      </div>
+                      <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground">Тип</p>
+                        <p className="mt-1 text-sm font-semibold">{invoiceData.isOriginal ? "Оригинал" : "Копие"}</p>
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground font-medium">ДДС</span>
-                      <span className="font-semibold">{formatPrice(totals.tax)} {invoiceData.currency}</span>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-primary/20 bg-linear-to-br from-primary/5 via-background to-primary/10">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Суми</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="space-y-2 rounded-xl border border-border/60 bg-background/50 p-3">
+                      <div className="flex items-center justify-between gap-3 text-sm">
+                        <span className="font-medium text-muted-foreground">Подсума</span>
+                        <span className="font-semibold tabular-nums">
+                          {formatPrice(totals.subtotal)} {invoiceData.currency}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-3 text-sm">
+                        <span className="font-medium text-muted-foreground">ДДС</span>
+                        <span className="font-semibold tabular-nums">
+                          {formatPrice(totals.tax)} {invoiceData.currency}
+                        </span>
+                      </div>
                     </div>
-                    <Separator className="my-3" />
-                    <div className="flex justify-between items-center pt-2">
-                      <span className="text-lg font-bold">Общо</span>
-                      <span className="text-2xl font-bold text-primary">
-                        {getCurrencySymbol(invoiceData.currency)} {formatPrice(totals.total)}
-                      </span>
+                    <div className="rounded-xl bg-primary/10 p-3">
+                      <div className="flex items-end justify-between gap-3">
+                        <span className="text-sm font-semibold uppercase tracking-wide text-foreground/90">
+                          Общо
+                        </span>
+                        <span className="text-xl font-bold text-primary tabular-nums sm:text-2xl">
+                          {getCurrencySymbol(invoiceData.currency)} {formatPrice(totals.total)}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </div>
         );
 
@@ -1164,7 +1279,7 @@ function NewInvoiceContent() {
         <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-950/50">
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center flex-shrink-0">
+              <div className="h-10 w-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 shrink-0 flex items-center justify-center">
                 <Building2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               </div>
               <div className="flex-1">
@@ -1222,9 +1337,9 @@ function NewInvoiceContent() {
         </Alert>
       )}
 
-      <div className="max-w-5xl mx-auto">
+      <div className="mx-auto w-full max-w-7xl">
         {/* Header */}
-        <div className="mb-4 sm:mb-6">
+        <div className="mb-4 sm:mb-5">
           <div className="flex items-center gap-2 sm:gap-3 mb-2">
             <Button variant="ghost" size="icon" asChild className="back-btn h-8 w-8 rounded-full">
               <Link href="/invoices">
@@ -1249,14 +1364,14 @@ function NewInvoiceContent() {
 
         {/* Wizard shell */}
         <Card className="rounded-2xl border-border/60 bg-linear-to-br from-card/80 via-card to-card/90 shadow-xl shadow-primary/5">
-          <CardHeader className="pb-4 border-b border-border/40">
+          <CardHeader className="border-b border-border/40 pb-3">
             <StepIndicator currentStep={currentStep} steps={steps} />
           </CardHeader>
-          <CardContent className="pt-6">
+          <CardContent className="pt-5">
             {renderStepContent()}
           </CardContent>
-          <CardFooter className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-6 border-t border-border/40 mt-4">
-            <div className="flex justify-start">
+          <CardFooter className="mt-3 border-t border-border/40 pt-5">
+            <div className="flex w-full items-center justify-between gap-3">
               <Button
                 variant="outline"
                 onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
@@ -1266,53 +1381,53 @@ function NewInvoiceContent() {
                 <ArrowLeft className="h-4 w-4" />
                 Назад
               </Button>
-            </div>
-            
-            <div className="flex justify-end gap-3 w-full sm:w-auto">
-              {currentStep < 3 ? (
-                <Button
-                  onClick={() => setCurrentStep(currentStep + 1)}
-                  disabled={
-                    (currentStep === 0 && !selectedClient) ||
-                    (currentStep === 1 && !invoiceData.companyId)
-                  }
-                  className="gap-2"
-                >
-                  Напред
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              ) : !isLoadingUsage && !canCreateInvoice && isFree ? (
-                <Link href="/settings/subscription">
+
+              <div className="flex justify-end">
+                {currentStep < 3 ? (
                   <Button
-                    className="gap-2 border-dashed border-amber-300 dark:border-amber-700 hover:border-amber-400"
-                    variant="outline"
+                    onClick={() => setCurrentStep(currentStep + 1)}
+                    disabled={
+                      (currentStep === 0 && !selectedClient) ||
+                      (currentStep === 1 && !invoiceData.companyId)
+                    }
+                    className="gap-2"
                   >
-                    <Lock className="h-4 w-4 text-amber-500" />
-                    Създай фактура
-                    <span className="ml-1 text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">
-                      PRO
-                    </span>
+                    Напред
+                    <ArrowRight className="h-4 w-4" />
                   </Button>
-                </Link>
-              ) : (
-                <Button
-                  onClick={handleSubmit}
-                  disabled={isLoading}
-                  className="gap-2 bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Създаване...
-                    </>
-                  ) : (
-                    <>
-                      <Check className="h-4 w-4" />
+                ) : !isLoadingUsage && !canCreateInvoice && isFree ? (
+                  <Link href="/settings/subscription">
+                    <Button
+                      className="gap-2 border-dashed border-amber-300 dark:border-amber-700 hover:border-amber-400"
+                      variant="outline"
+                    >
+                      <Lock className="h-4 w-4 text-amber-500" />
                       Създай фактура
-                    </>
-                  )}
-                </Button>
-              )}
+                      <span className="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700 dark:bg-amber-900 dark:text-amber-300">
+                        PRO
+                      </span>
+                    </Button>
+                  </Link>
+                ) : (
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={isLoading}
+                    className="gap-2 bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                  >
+                    {isLoading ? (
+                      <>
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                        Създаване...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="h-4 w-4" />
+                        Създай фактура
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
             </div>
           </CardFooter>
         </Card>

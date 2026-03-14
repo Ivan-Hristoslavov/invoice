@@ -1,14 +1,21 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { checkSubscriptionLimits } from '@/middleware/subscription';
+import { resolveSessionUser } from '@/lib/session-user';
 
 export async function GET(req: Request) {
   try {
     // Get the session
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
     
     if (!session?.user) {
       return new NextResponse('Unauthorized', { status: 401 });
+    }
+
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return new NextResponse('User not found', { status: 404 });
     }
 
     // Get the feature to check from query params
@@ -27,7 +34,7 @@ export async function GET(req: Request) {
 
     // Check subscription limits
     const checkResult = await checkSubscriptionLimits(
-      session.user.id as string,
+      sessionUser.id,
       feature as 'invoices' | 'companies' | 'customBranding' | 'export' | 'creditNotes' | 'emailSending' | 'apiAccess' | 'users'
     );
 

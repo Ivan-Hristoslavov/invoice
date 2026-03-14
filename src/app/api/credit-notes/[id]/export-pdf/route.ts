@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { generateCreditNotePdfServer } from "@/lib/credit-note-pdf";
+import { resolveSessionUser } from "@/lib/session-user";
+import { withDocumentSnapshots } from "@/lib/document-snapshots";
 
 export async function GET(
   request: NextRequest,
@@ -15,6 +17,10 @@ export async function GET(
     if (!session?.user) {
       return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Потребителят не е намерен" }, { status: 404 });
+    }
 
     const supabase = createAdminClient();
 
@@ -26,7 +32,7 @@ export async function GET(
         items:CreditNoteItem(*)
       `)
       .eq("id", id)
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .single();
 
     if (creditNoteError || !creditNote) {
@@ -41,10 +47,13 @@ export async function GET(
     ]);
 
     const creditNoteData = {
-      ...creditNote,
+      ...withDocumentSnapshots(
+        creditNote,
+        companyResult.data,
+        clientResult.data,
+        creditNote.items || []
+      ),
       invoice: invoiceResult.data,
-      client: clientResult.data,
-      company: companyResult.data,
     };
 
     // Generate PDF

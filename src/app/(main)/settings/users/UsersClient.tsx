@@ -103,12 +103,12 @@ export default function UsersClient({ company, usersWithRoles, currentUserId }: 
   const totalUsers = usersWithRoles.length;
 
   return (
-    <div>
+    <div className="space-y-4 sm:space-y-6">
       {/* Subscription Warning for FREE/PRO plan */}
       {!isBusiness && totalUsers >= userUsage.limit && (
-        <Alert className="mb-6 border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
+        <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
           <Lock className="h-4 w-4 text-amber-600" />
-          <AlertDescription className="flex items-center justify-between">
+          <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-amber-800 dark:text-amber-200">
               {isFree 
                 ? "Вашият FREE план позволява само 1 потребител."
@@ -117,7 +117,7 @@ export default function UsersClient({ company, usersWithRoles, currentUserId }: 
               {" "}Надградете до BUSINESS за до 5 потребители.
             </span>
             <Link href="/settings/subscription">
-              <Button size="sm" className="ml-4 bg-linear-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white">
+              <Button size="sm" className="bg-linear-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 sm:ml-4">
                 <Crown className="h-4 w-4 mr-2" />
                 Надградете до BUSINESS
               </Button>
@@ -126,10 +126,10 @@ export default function UsersClient({ company, usersWithRoles, currentUserId }: 
         </Alert>
       )}
 
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold">Управление на потребители</h1>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="text-2xl font-bold sm:text-3xl">Управление на потребители</h1>
             {!isLoadingUsage && (
               <UsageCounter 
                 used={totalUsers} 
@@ -143,7 +143,7 @@ export default function UsersClient({ company, usersWithRoles, currentUserId }: 
           </p>
         </div>
         {canAddUser ? (
-          <Button asChild>
+          <Button asChild className="w-full sm:w-auto">
             <Link href="/settings/users/invite">
               <UserPlus className="mr-2 h-4 w-4" />
               Покани потребител
@@ -164,6 +164,38 @@ export default function UsersClient({ company, usersWithRoles, currentUserId }: 
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="space-y-3 md:hidden">
+            {usersWithRoles.map((userRole) => (
+              <div key={userRole.id} className="rounded-2xl border border-border/60 bg-card/70 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{userRole.user.name || "Потребител без име"}</p>
+                    <p className="mt-1 truncate text-sm text-muted-foreground">{userRole.user.email}</p>
+                  </div>
+                  <UserRoleActions
+                    userId={userRole.user.id}
+                    currentRole={userRole.role}
+                    companyId={company.id}
+                    isCurrentUser={userRole.user.id === currentUserId}
+                  />
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <Chip
+                    color={getRoleChipColor(userRole.role)}
+                    variant="soft"
+                    size="sm"
+                  >
+                    {getRoleLabel(userRole.role)}
+                  </Chip>
+                  <span className="text-xs text-muted-foreground">
+                    {getRoleDescription(userRole.role)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden md:block">
           <Table variant="secondary" className="rounded-2xl border border-border/50 bg-transparent">
             <Table.ScrollContainer>
               <Table.Content aria-label="Потребители на компанията">
@@ -223,6 +255,7 @@ export default function UsersClient({ company, usersWithRoles, currentUserId }: 
               </Table.Content>
             </Table.ScrollContainer>
           </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

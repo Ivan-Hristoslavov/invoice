@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Save, Plus, Trash2, MoreVertical, Eye, FileCheck, Printer, Download } from "lucide-react";
+import { ArrowLeft, Save, Plus, Trash2, MoreVertical, Eye, FileCheck, Printer, Download, Search, Package } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { exportInvoiceAsPdf } from "@/lib/invoice-export";
+import { exportInvoiceAsPdf, printInvoicePdf } from "@/lib/invoice-export";
 
 // Helper function to format price - removes unnecessary trailing zeros
 const formatPrice = (value: number): string => {
@@ -50,6 +50,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FormDatePicker } from "@/components/ui/date-picker";
+import { Loading } from "@/components/ui/loading";
 import { toast } from "sonner";
 
 interface EditInvoiceFormProps {
@@ -84,6 +85,7 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
   const [products, setProducts] = useState<any[]>([]);
   const [client, setClient] = useState<any>(null);
   const [productNames, setProductNames] = useState<Record<string, string>>({});
+  const [productSearchQuery, setProductSearchQuery] = useState("");
 
   // Invoice item card component
   const InvoiceItemCard = ({
@@ -110,80 +112,78 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
     const itemTotal = parseFloat(item.quantity || 0) * parseFloat(item.unitPrice || 0);
     const itemTax = itemTotal * (parseFloat(item.taxRate || 0) / 100);
     const itemTotalWithTax = itemTotal + itemTax;
-    
+
     return (
-      <div className="group relative bg-linear-to-br from-card to-card/80 rounded-xl border border-border/60 shadow-xs hover:shadow-md hover:border-primary/40 transition-all duration-200">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-border/40 bg-muted/30 rounded-t-xl">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-linear-to-br from-primary to-primary/80 flex items-center justify-center text-xs font-bold text-primary-foreground shadow-xs">
+      <div className="group rounded-2xl border border-border/60 bg-card/95 shadow-xs transition-all duration-200 hover:border-primary/35 hover:shadow-sm">
+        <div className="flex items-center justify-between border-b border-border/40 bg-muted/20 px-4 py-3">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs">
               {index + 1}
             </div>
-            <span className="text-xs font-medium text-muted-foreground truncate max-w-[120px]">
-              {productName || 'Артикул'}
-            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold leading-none">Артикул</p>
+              <p className="mt-1 truncate text-xs text-muted-foreground">
+                {productName || "Ръчно добавен ред"}
+              </p>
+            </div>
           </div>
           {canRemove && (
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              className="h-7 w-7 p-0 opacity-40 group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10 transition-all rounded-lg"
+              className="h-8 w-8 rounded-xl p-0 text-destructive opacity-60 transition-all hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
               onClick={onRemove}
+              aria-label={`Премахни артикул ${index + 1}`}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
           )}
         </div>
-        
-        {/* Content: description first, then quantity/price/vat */}
-        <div className="p-4 space-y-4">
+
+        <div className="space-y-4 p-4">
           <div className="space-y-1.5">
             <label className="block text-xs font-medium text-muted-foreground">Описание</label>
             <Input
               value={item.description}
               onChange={(e) => onDescriptionChange(e.target.value)}
               placeholder="Описание на артикула..."
-              className="h-10 text-sm font-medium border-border/60 w-full"
+              className="h-10 w-full border-border/60 text-sm font-medium"
             />
           </div>
-          <div className="border-t border-border/50 pt-4">
-            <p className="text-xs font-medium text-muted-foreground mb-3">Количество и цена</p>
-            <div className="grid grid-cols-1 min-[375px]:grid-cols-3 gap-3">
+
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="space-y-1.5">
-              <label className="block text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">К-во</label>
+              <label className="block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">К-во</label>
               <NumericInput
                 value={item.quantity}
                 onChange={(e) => onQuantityChange(e.target.value)}
-                className="h-9 sm:h-8 text-sm text-center font-medium w-full"
+                className="h-10 text-center text-sm font-medium"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="block text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">Цена</label>
+              <label className="block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Цена</label>
               <NumericInput
                 value={item.unitPrice}
                 onChange={(e) => onPriceChange(e.target.value)}
-                className="h-9 sm:h-8 text-sm font-medium w-full"
+                className="h-10 text-sm font-medium"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="block text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">ДДС %</label>
+              <label className="block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">ДДС %</label>
               <NumericInput
                 value={item.taxRate}
                 onChange={(e) => onTaxChange(e.target.value)}
-                className="h-9 sm:h-8 text-sm text-center font-medium w-full"
+                className="h-10 text-center text-sm font-medium"
               />
             </div>
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Общо</label>
+              <div className="flex h-10 items-center rounded-md border border-primary/15 bg-primary/5 px-3 text-sm font-semibold text-primary">
+                {formatPrice(itemTotalWithTax)} {invoiceData.currency}
+              </div>
+            </div>
           </div>
-          </div>
-        </div>
-        
-        {/* Footer */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-t border-border/40 bg-linear-to-r from-primary/5 to-primary/10 rounded-b-xl">
-          <span className="text-xs text-muted-foreground">Общо с ДДС</span>
-          <span className="text-base font-bold text-primary">
-            {formatPrice(itemTotalWithTax)} {invoiceData.currency}
-          </span>
         </div>
       </div>
     );
@@ -364,6 +364,16 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
       }));
     }
   };
+
+  const filteredProducts = useMemo(() => {
+    const query = productSearchQuery.trim().toLowerCase();
+    if (!query) return products;
+
+    return products.filter((product) =>
+      product.name?.toLowerCase().includes(query) ||
+      product.description?.toLowerCase().includes(query)
+    );
+  }, [productSearchQuery, products]);
   
   // Calculate totals
   const calculateTotals = () => {
@@ -486,8 +496,8 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
   // If still loading, show loading state
   if (isLoadingData) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-lg text-muted-foreground">Зареждане...</p>
+      <div className="flex h-64 items-center justify-center">
+        <Loading size="lg" />
       </div>
     );
   }
@@ -553,39 +563,10 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem
-                onClick={async () => {
+                onClick={() => {
                   try {
-                    // Fetch PDF and open in new window for printing
-                    const response = await fetch(`/api/invoices/export-pdf?invoiceId=${invoiceId}`);
-                    
-                    if (!response.ok) {
-                      throw new Error('Грешка при генерирането на PDF');
-                    }
-                    
-                    const blob = await response.blob();
-                    const url = URL.createObjectURL(blob);
-                    
-                    // Create a link element and click it to open PDF in new tab
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.target = '_blank';
-                    link.style.display = 'none';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    
-                    // Wait a bit for PDF to open, then try to print
-                    setTimeout(() => {
-                      // Try to find the new window and print
-                      // Note: This may not work in all browsers due to security restrictions
-                      // The user may need to manually print from the PDF viewer
-                      toast.info("PDF файлът беше отворен. Моля, използвайте бутона за принтиране в браузъра.");
-                    }, 500);
-                    
-                    // Clean up URL after a delay
-                    setTimeout(() => {
-                      URL.revokeObjectURL(url);
-                    }, 1000);
+                    printInvoicePdf(invoiceId);
+                    toast.info("PDF файлът беше отворен в нов раздел. Използвайте Print от PDF прегледа.");
                   } catch (error) {
                     console.error("Error printing invoice:", error);
                     toast.error("Грешка при принтирането на фактурата");
@@ -623,8 +604,8 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
       </div>
 
       <form id="invoice-form" onSubmit={handleSubmit}>
-        <div className="grid gap-6 md:grid-cols-3">
-          <div className="md:col-span-2 space-y-6">
+        <div className="space-y-6">
+          <div className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Детайли на фактурата</CardTitle>
@@ -756,26 +737,95 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                       {items.length} артикул(а)
                     </CardDescription>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addItem}
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Добави
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addItem}
+                    >
+                      <Plus className="mr-1 h-4 w-4" />
+                      Ръчно
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-5">
+                <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold">Добави от продукти</p>
+                      <p className="text-xs text-muted-foreground">
+                        Избери готов продукт или добави ръчно нов ред.
+                      </p>
+                    </div>
+                    {products.length > 0 && (
+                      <div className="relative w-full sm:w-72">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          type="search"
+                          value={productSearchQuery}
+                          onChange={(e) => setProductSearchQuery(e.target.value)}
+                          placeholder="Търси продукт..."
+                          className="h-10 pl-10"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {products.length > 0 ? (
+                    filteredProducts.length > 0 ? (
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {filteredProducts.map((product) => (
+                          <button
+                            key={product.id}
+                            type="button"
+                            onClick={() => addProductAsItem(product.id)}
+                            className="rounded-2xl border border-border/60 bg-background p-3 text-left transition-all hover:border-primary/35 hover:bg-primary/5"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold">{product.name}</p>
+                                {product.description ? (
+                                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                                    {product.description}
+                                  </p>
+                                ) : null}
+                              </div>
+                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                <Plus className="h-4 w-4" />
+                              </div>
+                            </div>
+                            <div className="mt-3 flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground">Цена</span>
+                              <span className="font-semibold">
+                                {formatPrice(Number(product.price || 0))} {invoiceData.currency}
+                              </span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="mt-4 rounded-2xl border border-dashed border-border/60 bg-background/70 p-4 text-sm text-muted-foreground">
+                        Няма намерени продукти по това търсене.
+                      </div>
+                    )
+                  ) : (
+                    <div className="mt-4 rounded-2xl border border-dashed border-border/60 bg-background/70 p-4 text-sm text-muted-foreground">
+                      Нямате добавени продукти. Можете да продължите с ръчно добавени артикули.
+                    </div>
+                  )}
+                </div>
+
                 {items.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
+                  <div className="rounded-2xl border border-dashed border-border/60 bg-muted/10 py-10 text-center text-muted-foreground">
+                    <Package className="mx-auto mb-3 h-10 w-10 opacity-40" />
                     <p className="font-medium">Няма артикули</p>
-                    <p className="text-sm mt-1">Добавете артикул към фактурата</p>
+                    <p className="mt-1 text-sm">Добавете продукт отгоре или създайте ръчен ред.</p>
                   </div>
                 ) : (
                   <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
                       {items.map((item, index) => {
                         const productName = productNames[item.id] || (item.productId ? products.find(p => p.id === item.productId)?.name : null);
                         return (
@@ -800,8 +850,8 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                     </div>
                     
                     {/* Totals */}
-                    <div className="flex justify-end pt-4 mt-4 border-t">
-                      <div className="bg-linear-to-br from-muted/50 to-muted/30 rounded-xl p-4 space-y-2 min-w-[200px]">
+                    <div className="mt-4 flex justify-end border-t pt-4">
+                      <div className="min-w-[240px] space-y-2 rounded-2xl bg-linear-to-br from-muted/50 to-muted/30 p-4">
                         <div className="flex justify-between gap-6 text-sm">
                           <span className="text-muted-foreground">Междинна сума:</span>
                           <span className="font-medium">{totals.subtotal} {invoiceData.currency}</span>
@@ -844,46 +894,6 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                     placeholder="Условия за плащане и други допълнителни условия"
                   />
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-          
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Добавяне на продукти</CardTitle>
-                <CardDescription>
-                  Добавете бързо съществуващи продукти към фактурата
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {products.length > 0 ? (
-                  <div className="space-y-3">
-                    {products.map((product) => (
-                      <div key={product.id} className="flex justify-between items-center p-3 border rounded-md hover:bg-muted">
-                        <div>
-                          <h4 className="font-medium">{product.name}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {product.price} {invoiceData.currency} / {product.unit}
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => addProductAsItem(product.id)}
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Добави
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Нямате добавени продукти. Добавете продукти от секция "Продукти".
-                  </p>
-                )}
               </CardContent>
             </Card>
           </div>

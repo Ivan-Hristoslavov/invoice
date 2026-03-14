@@ -6,12 +6,21 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { logAction } from "@/lib/audit-log";
 import cuid from "cuid";
+import { resolveSessionUser } from "@/lib/session-user";
+import {
+  createDocumentSnapshots,
+  fetchOwnedCompanyAndClient,
+  fetchProductsByIds,
+  prepareDocumentItems,
+} from "@/lib/invoice-documents";
+import { withDocumentSnapshots } from "@/lib/document-snapshots";
 
 // Helper function removed - no longer needed with Supabase
 
 // Schema for invoice update validation
 const invoiceItemSchema = z.object({
   id: z.union([z.number(), z.string()]).optional(), // Can be number, string or undefined for new items
+  productId: z.string().optional(),
   description: z.string().min(1, "Описанието е задължително"),
   quantity: z.number().min(0.01, "Количеството трябва да е по-голямо от 0"),
   unitPrice: z.number().min(0, "Единичната цена не може да е отрицателна"),
@@ -46,6 +55,10 @@ export async function GET(
     if (!session?.user) {
       return Response.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return Response.json({ error: "Потребителят не е намерен" }, { status: 404 });
+    }
 
     const supabase = createAdminClient();
     
@@ -62,8 +75,8 @@ export async function GET(
     }
 
     // Check if user has access (owner or admin)
-    if (invoiceCheck.userId !== session.user.id) {
-      console.error("Отказан достъп: потребител", session.user.id, "опита да достъпи фактура на", invoiceCheck.userId);
+    if (invoiceCheck.userId !== sessionUser.id) {
+      console.error("Отказан достъп: потребител", sessionUser.id, "опита да достъпи фактура на", invoiceCheck.userId);
       return Response.json({ error: "Достъпът е отказан" }, { status: 403 });
     }
 
@@ -88,10 +101,12 @@ export async function GET(
     ]);
 
     const fullInvoice = {
-      ...invoice,
-      client: clientResult.data,
-      company: companyResult.data,
-      items: itemsResult.data || [],
+      ...withDocumentSnapshots(
+        invoice,
+        companyResult.data,
+        clientResult.data,
+        itemsResult.data || []
+      ),
       creditNote: creditNoteResult.data
     };
 
@@ -116,6 +131,10 @@ export async function PUT(
     if (!session?.user) {
       return Response.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return Response.json({ error: "Потребителят не е намерен" }, { status: 404 });
+    }
 
     const supabase = createAdminClient();
     
@@ -123,7 +142,7 @@ export async function PUT(
       .from("Invoice")
       .select("*")
       .eq("id", id)
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .single();
 
     if (invoiceError || !invoice) {
@@ -138,35 +157,51 @@ export async function PUT(
       );
     }
 
-    const data = await request.json();
+    const data = invoiceUpdateSchema.parse(await request.json());
+    const { company, client } = await fetchOwnedCompanyAndClient(
+      supabase,
+      sessionUser.id,
+      data.companyId,
+      data.clientId
+    );
 
-    // Calculate totals from items
-    let subtotal = 0;
-    let taxAmount = 0;
-    
-    const items = data.items.map((item: any) => {
-      const itemSubtotal = item.quantity * item.unitPrice;
-      const itemTax = itemSubtotal * (item.taxRate / 100);
-      const itemTotal = itemSubtotal + itemTax;
-      
-      subtotal += itemSubtotal;
-      taxAmount += itemTax;
-      
-      return {
-        id: cuid(),
-        invoiceId: id,
-        description: item.description,
-        quantity: item.quantity.toString(),
-        unitPrice: item.unitPrice.toString(),
-        taxRate: item.taxRate.toString(),
-        subtotal: itemSubtotal.toString(),
-        taxAmount: itemTax.toString(),
-        total: itemTotal.toString(),
-        productId: item.productId || null,
-      };
-    });
-    
-    const total = subtotal + taxAmount;
+    if (!company) {
+      return Response.json({ error: "Компанията не е намерена" }, { status: 404 });
+    }
+
+    if (!client) {
+      return Response.json({ error: "Клиентът не е намерен" }, { status: 404 });
+    }
+
+    const productIds = data.items
+      .map((item) => item.productId)
+      .filter((productId): productId is string => Boolean(productId));
+    const productById = await fetchProductsByIds(
+      supabase,
+      sessionUser.id,
+      productIds
+    );
+    const preparedInputItems = data.items.map((item: any) => ({
+      ...item,
+      id: cuid(),
+    }));
+    const { preparedItems, subtotal, taxAmount, total } = prepareDocumentItems(
+      preparedInputItems,
+      productById
+    );
+    const items = preparedItems.map((item) => ({
+      id: item.id,
+      invoiceId: id,
+      description: item.description,
+      quantity: item.quantity.toString(),
+      unitPrice: item.unitPrice.toString(),
+      unit: item.unit,
+      taxRate: item.taxRate.toString(),
+      subtotal: item.subtotal.toString(),
+      taxAmount: item.taxAmount.toString(),
+      total: item.total.toString(),
+      productId: item.productId || null,
+    }));
 
     // Delete existing items
     await supabase
@@ -190,7 +225,10 @@ export async function PUT(
         supplyDate: data.supplyDate ? new Date(data.supplyDate).toISOString() : new Date(data.issueDate).toISOString(),
         currency: data.currency,
         placeOfIssue: data.placeOfIssue || invoice.placeOfIssue || "София",
-        paymentMethod: data.paymentMethod || invoice.paymentMethod || "BANK_TRANSFER",
+        paymentMethod:
+          data.paymentMethod === "CARD"
+            ? "CREDIT_CARD"
+            : data.paymentMethod || invoice.paymentMethod || "BANK_TRANSFER",
         isEInvoice: data.isEInvoice !== undefined ? data.isEInvoice : invoice.isEInvoice,
         isOriginal: data.isOriginal !== undefined ? data.isOriginal : invoice.isOriginal,
         notes: data.notes || null,
@@ -198,6 +236,8 @@ export async function PUT(
         subtotal: subtotal.toString(),
         taxAmount: taxAmount.toString(),
         total: total.toString(),
+        bulstatNumber: company.bulstatNumber || null,
+        ...createDocumentSnapshots(company, client, preparedItems, productById),
         updatedAt: new Date().toISOString(),
       })
       .eq("id", id)
@@ -211,7 +251,7 @@ export async function PUT(
     // Log audit action
     const headers = request.headers;
     await logAction({
-      userId: session.user.id as string,
+      userId: sessionUser.id,
       action: 'UPDATE',
       entityType: 'INVOICE',
       entityId: id,
@@ -246,6 +286,13 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
         { status: 401 }
       );
     }
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json(
+        { error: "Потребителят не е намерен" },
+        { status: 404 }
+      );
+    }
     const supabase = createAdminClient();
     
     // Check if invoice exists and belongs to user
@@ -253,7 +300,7 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
       .from("Invoice")
       .select("*")
       .eq("id", invoiceId)
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .single();
 
     if (invoiceError || !existingInvoice) {
@@ -263,6 +310,16 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
       );
     }
     
+    if (existingInvoice.status !== "DRAFT") {
+      return NextResponse.json(
+        {
+          error:
+            "Само чернови фактури могат да бъдат изтривани. За издадени фактури използвайте анулиране и кредитно известие.",
+        },
+        { status: 400 }
+      );
+    }
+
     // Delete related invoice items (cascade should handle this, but we do it explicitly)
     await supabase
       .from("InvoiceItem")
@@ -284,7 +341,7 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     // Log audit action
     const headers = request.headers;
     await logAction({
-      userId: session.user.id as string,
+      userId: sessionUser.id,
       action: 'DELETE',
       entityType: 'INVOICE',
       entityId: invoiceId,

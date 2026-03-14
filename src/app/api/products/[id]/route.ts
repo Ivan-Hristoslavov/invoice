@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
+import { resolveSessionUser } from "@/lib/session-user";
 import { z } from "zod";
 
 const productSchema = z.object({
@@ -27,6 +28,14 @@ export async function GET(
       );
     }
 
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json(
+        { error: "Сесията ви е невалидна. Моля, влезте отново." },
+        { status: 401 }
+      );
+    }
+
     // Получаване на ID параметър по правилния асинхронен начин
     const productId = (await context.params).id;
 
@@ -35,7 +44,7 @@ export async function GET(
       .from("Product")
       .select("*")
       .eq("id", productId)
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .single();
     
     if (error || !product) {
@@ -77,6 +86,14 @@ export async function PUT(
       );
     }
 
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json(
+        { error: "Сесията ви е невалидна. Моля, влезте отново." },
+        { status: 401 }
+      );
+    }
+
     // Получаване на ID параметър по правилния асинхронен начин
     const productId = (await context.params).id;
     const json = await request.json();
@@ -91,7 +108,7 @@ export async function PUT(
       .from("Product")
       .select("*")
       .eq("id", productId)
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .single();
 
     if (checkError || !existingProduct) {
@@ -152,6 +169,14 @@ export async function DELETE(
       );
     }
 
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json(
+        { error: "Сесията ви е невалидна. Моля, влезте отново." },
+        { status: 401 }
+      );
+    }
+
     // Получаване на ID параметър по правилния асинхронен начин
     const productId = (await context.params).id;
 
@@ -162,7 +187,7 @@ export async function DELETE(
       .from("Product")
       .select("*")
       .eq("id", productId)
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .single();
 
     if (checkError || !existingProduct) {

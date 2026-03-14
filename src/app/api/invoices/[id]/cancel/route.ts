@@ -5,6 +5,9 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
 import { logAction } from "@/lib/audit-log";
 import cuid from "cuid";
+import { resolveSessionUser } from "@/lib/session-user";
+import { withDocumentSnapshots } from "@/lib/document-snapshots";
+import { getNextDocumentNumber } from "@/lib/document-numbering";
 
 /**
  * POST /api/invoices/[id]/cancel
@@ -21,6 +24,10 @@ export async function POST(
     if (!session?.user) {
       return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Потребителят не е намерен" }, { status: 404 });
+    }
 
     // Get the invoice
     const { data: invoice, error: invoiceError } = await supabaseAdmin
@@ -28,11 +35,11 @@ export async function POST(
       .select(`
         *,
         items:InvoiceItem(*),
-        client:Client(id, name),
-        company:Company(id, name, bulstatNumber)
+        client:Client(*),
+        company:Company(*)
       `)
       .eq("id", id)
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .single();
 
     if (invoiceError || !invoice) {
@@ -66,50 +73,65 @@ export async function POST(
       // No body provided, use default reason
     }
 
-    // Generate credit note number using Bulgarian format (per-user, like invoices)
-    const { generateBulgarianInvoiceNumber } = await import("@/lib/bulgarian-invoice");
-    const currentYear = new Date().getFullYear();
-    const startOfYear = new Date(currentYear, 0, 1).toISOString();
-    
-    // Count credit notes for this user in the current year
-    const { count: creditNoteCount } = await supabaseAdmin
-      .from("CreditNote")
-      .select("*", { count: "exact", head: true })
-      .eq("userId", session.user.id)
-      .gte("createdAt", startOfYear);
-    
-    const sequence = (creditNoteCount || 0) + 1;
-    // Get company EIK for Bulgarian numbering format
-    const { data: company } = await supabaseAdmin
-      .from("Company")
-      .select("bulstatNumber")
-      .eq("id", invoice.companyId)
-      .single();
-    const companyEik = company?.bulstatNumber || undefined;
-    const creditNoteNumber = generateBulgarianInvoiceNumber(sequence, companyEik, 'credit-note');
-
     // Create credit note
     const creditNoteId = cuid();
-    const { data: creditNote, error: creditNoteError } = await supabaseAdmin
-      .from("CreditNote")
-      .insert({
-        id: creditNoteId,
-        creditNoteNumber,
-        invoiceId: invoice.id,
-        clientId: invoice.clientId,
+    const snapshotInvoice = withDocumentSnapshots(
+      invoice,
+      invoice.company,
+      invoice.client,
+      invoice.items || []
+    );
+    const maxRetries = 3;
+    let creditNoteNumber = "";
+    let creditNote: any = null;
+    let creditNoteError: any = null;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      creditNoteNumber = await getNextDocumentNumber({
+        supabase: supabaseAdmin,
+        table: "CreditNote",
+        numberColumn: "creditNoteNumber",
+        userId: sessionUser.id,
         companyId: invoice.companyId,
-        userId: session.user.id,
-        issueDate: new Date().toISOString(),
-        reason,
-        subtotal: invoice.subtotal,
-        taxAmount: invoice.taxAmount,
-        total: invoice.total,
-        currency: invoice.currency,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      })
-      .select()
-      .single();
+        companyEik: invoice.company?.bulstatNumber,
+        type: "credit-note",
+      });
+
+      const result = await supabaseAdmin
+        .from("CreditNote")
+        .insert({
+          id: creditNoteId,
+          creditNoteNumber,
+          invoiceId: invoice.id,
+          clientId: invoice.clientId,
+          companyId: invoice.companyId,
+          userId: sessionUser.id,
+          issueDate: new Date().toISOString(),
+          reason,
+          subtotal: invoice.subtotal,
+          taxAmount: invoice.taxAmount,
+          total: invoice.total,
+          currency: invoice.currency,
+          sellerSnapshot: snapshotInvoice.company,
+          buyerSnapshot: snapshotInvoice.client,
+          itemsSnapshot: snapshotInvoice.items,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      creditNote = result.data;
+      creditNoteError = result.error;
+
+      if (!creditNoteError) {
+        break;
+      }
+
+      if (creditNoteError.code !== "23505" || attempt === maxRetries - 1) {
+        break;
+      }
+    }
 
     if (creditNoteError) {
       console.error("Грешка при създаване на кредитно известие:", creditNoteError);
@@ -121,17 +143,17 @@ export async function POST(
 
     // Create credit note items (copy from invoice items)
     if (invoice.items && invoice.items.length > 0) {
-      const creditNoteItems = invoice.items.map((item: any) => ({
+      const creditNoteItems = snapshotInvoice.items.map((item: any) => ({
         id: cuid(),
         creditNoteId,
         description: item.description,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
+        unit: item.unit || "бр.",
         taxRate: item.taxRate,
         subtotal: item.subtotal,
         taxAmount: item.taxAmount,
         total: item.total,
-        productId: item.productId,
       }));
 
       await supabaseAdmin
@@ -145,7 +167,7 @@ export async function POST(
       .update({
         status: "CANCELLED",
         cancelledAt: new Date().toISOString(),
-        cancelledBy: session.user.id,
+        cancelledBy: sessionUser.id,
         creditNoteId,
         updatedAt: new Date().toISOString(),
       })
@@ -165,7 +187,7 @@ export async function POST(
     // Log audit action
     const headers = request.headers;
     await logAction({
-      userId: session.user.id as string,
+      userId: sessionUser.id,
       action: "CANCEL",
       entityType: "INVOICE",
       entityId: id,

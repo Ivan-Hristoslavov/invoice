@@ -6,11 +6,18 @@ import { withErrorHandling } from "@/middleware/error-handler";
 import { withRateLimit } from "@/middleware/rate-limiter";
 import { withAuthorization } from "@/middleware/authorization";
 import { formatApiResponse, formatPaginationParams } from "@/lib/api-utils";
+import {
+  createDocumentSnapshots,
+  fetchOwnedCompanyAndClient,
+  fetchProductsByIds,
+  prepareDocumentItems,
+} from "@/lib/invoice-documents";
 import { z } from "zod";
 import { invoiceSchema, invoiceItemSchema } from "@/lib/validations/forms";
 import { ApiStatusCode } from "@/types/api";
 import { checkSubscriptionLimits } from "@/middleware/subscription";
 import cuid from "cuid";
+import { resolveSessionUser } from "@/lib/session-user";
 
 // Schema для валидация на заявката
 const InvoiceQuerySchema = z.object({
@@ -69,6 +76,10 @@ export async function GET(request: NextRequest) {
         if (!session?.user) {
           throw new Error("Неоторизиран достъп");
         }
+        const sessionUser = await resolveSessionUser(session.user);
+        if (!sessionUser) {
+          throw new Error("Потребителят не е намерен");
+        }
 
         // Извличане на параметрите от заявката
         const searchParams = Object.fromEntries(request.nextUrl.searchParams.entries());
@@ -116,7 +127,7 @@ export async function GET(request: NextRequest) {
             company:Company(id, name),
             items:InvoiceItem(*)
           `, { count: 'exact' })
-          .eq("userId", session.user.id);
+          .eq("userId", sessionUser.id);
         
         // Apply filters
         if (params.status) {
@@ -189,6 +200,10 @@ export async function POST(request: NextRequest) {
         if (!session?.user) {
           throw new Error("Неоторизиран достъп");
         }
+        const sessionUser = await resolveSessionUser(session.user);
+        if (!sessionUser) {
+          throw new Error("Потребителят не е намерен");
+        }
 
         // Парсване на тялото на заявката
         const body = await request.json();
@@ -198,7 +213,7 @@ export async function POST(request: NextRequest) {
         
         // Проверка за subscription limits - брой фактури
         const invoiceLimitCheck = await checkSubscriptionLimits(
-          session.user.id as string,
+          sessionUser.id,
           'invoices'
         );
         
@@ -211,50 +226,41 @@ export async function POST(request: NextRequest) {
         
         const supabase = createAdminClient();
         
-        // Get company for EIK (needed for invoice number)
-        const { data: company } = await supabase
-          .from("Company")
-          .select("bulstatNumber")
-          .eq("id", validatedData.companyId)
-          .eq("userId", session.user.id)
-          .single();
-        
+        const { company, client } = await fetchOwnedCompanyAndClient(
+          supabase,
+          sessionUser.id,
+          validatedData.companyId,
+          validatedData.clientId
+        );
+
         if (!company) {
           return NextResponse.json(
             { error: "Компанията не е намерена" },
             { status: 404 }
           );
         }
+
+        if (!client) {
+          return NextResponse.json(
+            { error: "Клиентът не е намерен" },
+            { status: 404 }
+          );
+        }
         
-        // Изчисляване на суми
-        let subtotal = 0;
-        let taxAmount = 0;
-        
-        const preparedItems = validatedData.items.map((item: any) => {
-          const itemPrice = Number(item.price);
-          const itemQuantity = Number(item.quantity);
-          const itemTaxRate = item.taxRate !== undefined ? Number(item.taxRate) : 0;
-          
-          const lineSubtotal = itemPrice * itemQuantity;
-          const lineTax = lineSubtotal * (itemTaxRate / 100);
-          
-          subtotal += lineSubtotal;
-          taxAmount += lineTax;
-          
-          return {
-            id: cuid(),
-            description: item.description,
-            quantity: itemQuantity,
-            unitPrice: itemPrice,
-            taxRate: itemTaxRate,
-            subtotal: lineSubtotal,
-            taxAmount: lineTax,
-            total: lineSubtotal + lineTax,
-            productId: item.productId || null,
-          };
-        });
-        
-        const total = subtotal + taxAmount;
+        const productIds = validatedData.items
+          .map((item) => item.productId)
+          .filter((productId): productId is string => Boolean(productId));
+        const productById = await fetchProductsByIds(
+          supabase,
+          sessionUser.id,
+          productIds
+        );
+        const preparedInputItems = validatedData.items.map((item: any) => ({
+          ...item,
+          id: cuid(),
+        }));
+        const { preparedItems, subtotal, taxAmount, total } =
+          prepareDocumentItems(preparedInputItems, productById);
         const invoiceId = cuid();
         
         // Retry logic for invoice creation (handles duplicate invoice numbers)
@@ -266,8 +272,10 @@ export async function POST(request: NextRequest) {
           try {
             // Get next invoice number using InvoiceSequence (per-user numbering, 10-digit format)
             const { getNextInvoiceSequence } = await import("@/lib/invoice-sequence");
-            const { invoiceNumber, sequence } = await getNextInvoiceSequence(
-              session.user.id as string
+            const { invoiceNumber } = await getNextInvoiceSequence(
+              sessionUser.id,
+              validatedData.companyId,
+              company.bulstatNumber
             );
             
             // Check if invoice number already exists for this user (race condition check)
@@ -275,7 +283,7 @@ export async function POST(request: NextRequest) {
               .from("Invoice")
               .select("id")
               .eq("invoiceNumber", invoiceNumber)
-              .eq("userId", session.user.id)
+              .eq("userId", sessionUser.id)
               .single();
             
             if (existingInvoice) {
@@ -293,7 +301,7 @@ export async function POST(request: NextRequest) {
               invoiceNumber,
               clientId: validatedData.clientId,
               companyId: validatedData.companyId,
-              userId: session.user.id,
+              userId: sessionUser.id,
               issueDate: new Date(validatedData.issueDate).toISOString(),
               dueDate: new Date(validatedData.dueDate).toISOString(),
               supplyDate: validatedData.supplyDate ? new Date(validatedData.supplyDate).toISOString() : new Date(validatedData.issueDate).toISOString(),
@@ -306,9 +314,19 @@ export async function POST(request: NextRequest) {
               currency: validatedData.currency || "EUR",
               locale: validatedData.locale || "bg",
               placeOfIssue: validatedData.placeOfIssue || "София",
-              paymentMethod: validatedData.paymentMethod || "BANK_TRANSFER",
+              paymentMethod:
+                validatedData.paymentMethod === "CARD"
+                  ? "CREDIT_CARD"
+                  : validatedData.paymentMethod || "BANK_TRANSFER",
               isEInvoice: validatedData.isEInvoice || false,
               isOriginal: validatedData.isOriginal !== false,
+              bulstatNumber: company.bulstatNumber || null,
+              ...createDocumentSnapshots(
+                company,
+                client,
+                preparedItems,
+                productById
+              ),
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             };
@@ -355,6 +373,7 @@ export async function POST(request: NextRequest) {
           description: item.description,
           quantity: item.quantity.toString(),
           unitPrice: item.unitPrice.toString(),
+          unit: item.unit,
           taxRate: item.taxRate.toString(),
           subtotal: item.subtotal.toString(),
           taxAmount: item.taxAmount.toString(),
@@ -385,7 +404,7 @@ export async function POST(request: NextRequest) {
         const { logAction } = await import("@/lib/audit-log");
         const headers = request.headers;
         await logAction({
-          userId: session.user.id as string,
+          userId: sessionUser.id,
           action: 'CREATE',
           entityType: 'INVOICE',
           entityId: invoiceId,

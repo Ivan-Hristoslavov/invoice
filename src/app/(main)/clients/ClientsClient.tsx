@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Building, Plus, Search, Users, Lock, AlertTriangle, XCircle, Crown, LayoutGrid, List } from "lucide-react";
+import { Building, Plus, Search, Users, Lock, AlertTriangle, XCircle, Crown, LayoutGrid, List, Pencil } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
 import { Button } from "@/components/ui/button";
@@ -183,7 +183,7 @@ export default function ClientsClient({
       {/* Search & View Toggle */}
       <Card className="border-0 shadow-lg">
         <CardContent className="p-3 sm:p-4">
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input 
@@ -193,7 +193,7 @@ export default function ClientsClient({
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50">
+            <div className="hidden items-center gap-1 rounded-lg bg-muted/50 p-1 sm:flex">
               <Button
                 variant={viewMode === "cards" ? "default" : "ghost"}
                 size="sm"
@@ -246,11 +246,30 @@ export default function ClientsClient({
         /* Cards View */
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {paginatedClients.map((client) => (
-            <Link key={client.id} href={`/clients/${client.id}`}>
-              <Card className="h-full min-h-[140px] border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group cursor-pointer">
-                <CardContent className="p-5 h-full flex flex-col items-center text-center">
+            <div key={client.id} className="group relative">
+              <Card
+                className="h-full min-h-[150px] border-0 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer"
+                onClick={() => window.location.href = `/clients/${client.id}`}
+              >
+                <div
+                  className="absolute right-3 top-3 z-10 opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <Button
+                    asChild
+                    size="sm"
+                    variant="outline"
+                    className="h-8 rounded-full border-border/60 bg-background/95 px-3 shadow-sm backdrop-blur"
+                  >
+                    <Link href={`/clients/${client.id}/edit`} className="flex items-center gap-1.5 whitespace-nowrap">
+                      <Pencil className="h-3.5 w-3.5" />
+                      Редакция
+                    </Link>
+                  </Button>
+                </div>
+                <CardContent className="flex h-full flex-col items-center p-4 text-center sm:p-5">
                   {/* Name */}
-                  <h3 className="font-semibold text-lg group-hover:text-primary transition-colors truncate w-full">
+                  <h3 className="w-full truncate text-base font-semibold transition-colors group-hover:text-primary sm:text-lg">
                     {client.name}
                   </h3>
                   
@@ -275,12 +294,12 @@ export default function ClientsClient({
                   </div>
                 </CardContent>
               </Card>
-            </Link>
+            </div>
           ))}
         </div>
       ) : (
         /* Table View */
-        <Card className="border-0 shadow-lg overflow-hidden">
+        <Card className="hidden overflow-hidden border-0 shadow-lg sm:block">
           <Table>
             <TableHeader>
               <TableRow className="border-b border-border/50">
@@ -289,13 +308,14 @@ export default function ClientsClient({
                 <TableHead className="font-medium text-muted-foreground">Телефон</TableHead>
                 <TableHead className="font-medium text-muted-foreground">Локация</TableHead>
                 <TableHead className="font-medium text-muted-foreground text-center">Фактури</TableHead>
+                <TableHead className="w-[120px] text-right font-medium text-muted-foreground">Действия</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedClients.map((client) => (
                 <TableRow
                   key={client.id}
-                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  className="group cursor-pointer transition-colors hover:bg-muted/50"
                   onClick={() => window.location.href = `/clients/${client.id}`}
                 >
                   <TableCell>
@@ -319,6 +339,19 @@ export default function ClientsClient({
                     <span className="inline-flex items-center justify-center min-w-8 px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
                       {invoiceCounts[client.id] || 0}
                     </span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div
+                      className="flex justify-end opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <Button asChild size="sm" variant="ghost" className="h-8 rounded-full px-3">
+                        <Link href={`/clients/${client.id}/edit`} className="flex items-center gap-1.5 whitespace-nowrap">
+                          <Pencil className="h-3.5 w-3.5" />
+                          Редакция
+                        </Link>
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

@@ -1,113 +1,100 @@
 import { createAdminClient } from "@/lib/supabase/server";
+import { generateBulgarianInvoiceNumber } from "@/lib/bulgarian-invoice";
 
-/**
- * Format invoice number as 10 digits (0000000001, 0000000002, etc.)
- */
-function formatInvoiceNumber(sequence: number): string {
-  return sequence.toString().padStart(10, '0');
-}
-
-/**
- * Get next invoice sequence for a user
- * Returns the next sequence number based on user's invoice count
- * Invoice numbers are per-user, starting from user's startingInvoiceNumber or 1
- * Format: 10 digits (0000000001, 0000000002, etc.)
- */
 export async function getNextInvoiceSequence(
   userId: string,
+  companyId: string,
+  companyEik?: string | null,
   maxRetries: number = 5
 ): Promise<{ sequence: number; invoiceNumber: string }> {
   const supabase = createAdminClient();
+  const year = new Date().getFullYear();
   
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      // Get user's starting invoice number
-      const { data: user, error: userError } = await supabase
-        .from("User")
-        .select("startingInvoiceNumber")
-        .eq("id", userId)
-        .single();
-
-      if (userError) {
-        throw userError;
-      }
-
-      // Get the highest invoice number for this user
-      const { data: invoices, error: invoicesError } = await supabase
-        .from("Invoice")
-        .select("invoiceNumber")
+      const { data: existingSequence, error: sequenceError } = await supabase
+        .from("InvoiceSequence")
+        .select("id, sequence")
         .eq("userId", userId)
-        .order("invoiceNumber", { ascending: false })
-        .limit(1);
+        .eq("companyId", companyId)
+        .eq("year", year)
+        .maybeSingle();
 
-      if (invoicesError && invoicesError.code !== 'PGRST116') { // PGRST116 = no rows returned
-        throw invoicesError;
+      if (sequenceError) {
+        throw sequenceError;
       }
 
       let nextSequence: number;
-      
-      if (invoices && invoices.length > 0) {
-        // Extract number from existing invoice (remove leading zeros)
-        const lastNumber = parseInt(invoices[0].invoiceNumber, 10);
-        const calculatedNext = lastNumber + 1;
-        
-        // If user has set a starting invoice number and the calculated next is less than it,
-        // use the starting number instead (for migration scenarios)
-        if (user?.startingInvoiceNumber && calculatedNext < user.startingInvoiceNumber) {
-          nextSequence = user.startingInvoiceNumber;
-        } else {
-          nextSequence = calculatedNext;
+      if (existingSequence) {
+        nextSequence = existingSequence.sequence + 1;
+
+        const { error: updateError } = await supabase
+          .from("InvoiceSequence")
+          .update({
+            sequence: nextSequence,
+            updatedAt: new Date().toISOString(),
+          })
+          .eq("id", existingSequence.id);
+
+        if (updateError) {
+          throw updateError;
         }
       } else {
-        // No invoices yet - use user's starting number or default to 1
-        nextSequence = user?.startingInvoiceNumber || 1;
+        nextSequence = 1;
+
+        const { error: insertError } = await supabase
+          .from("InvoiceSequence")
+          .insert({
+            companyId,
+            userId,
+            year,
+            sequence: nextSequence,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+
+        if (insertError && insertError.code !== "23505") {
+          throw insertError;
+        }
+
+        if (insertError?.code === "23505") {
+          await new Promise((resolve) => setTimeout(resolve, 50 * (attempt + 1)));
+          continue;
+        }
       }
-      
-      // Generate 10-digit invoice number
-      const invoiceNumber = formatInvoiceNumber(nextSequence);
-      
+
+      const invoiceNumber = generateBulgarianInvoiceNumber(
+        nextSequence,
+        companyEik ?? undefined,
+        "invoice"
+      );
+
       return { sequence: nextSequence, invoiceNumber };
     } catch (error) {
-      // If this is the last attempt, throw the error
       if (attempt === maxRetries - 1) {
         throw error;
       }
-      // Otherwise, wait and retry
-      await new Promise(resolve => setTimeout(resolve, 50 * (attempt + 1)));
+      await new Promise((resolve) => setTimeout(resolve, 50 * (attempt + 1)));
     }
   }
   
   throw new Error("Failed to get next invoice sequence after all retries");
 }
 
-/**
- * Get current sequence number without incrementing
- */
 export async function getCurrentSequence(
-  userId: string
+  userId: string,
+  companyId: string
 ): Promise<number> {
   const supabase = createAdminClient();
+  const year = new Date().getFullYear();
   
-  // Get user's starting invoice number
-  const { data: user } = await supabase
-    .from("User")
-    .select("startingInvoiceNumber")
-    .eq("id", userId)
-    .single();
-
-  // Get the highest invoice number for this user
-  const { data: invoices } = await supabase
-    .from("Invoice")
-    .select("invoiceNumber")
+  const { data: sequence } = await supabase
+    .from("InvoiceSequence")
+    .select("sequence")
     .eq("userId", userId)
-    .order("invoiceNumber", { ascending: false })
-    .limit(1);
+    .eq("companyId", companyId)
+    .eq("year", year)
+    .maybeSingle();
 
-  if (invoices && invoices.length > 0) {
-    // Extract number from existing invoice
-    return parseInt(invoices[0].invoiceNumber, 10);
-  }
-  
-  // No invoices yet - return user's starting number or 0
-  return user?.startingInvoiceNumber || 0;
+  return sequence?.sequence || 0;
 }

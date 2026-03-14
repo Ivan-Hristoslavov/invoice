@@ -23,6 +23,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { APP_NAME } from "@/config/constants";
 import { createAdminClient } from "@/lib/supabase/server";
+import { resolveSessionUser } from "@/lib/session-user";
 import { format, formatDistanceToNow } from "date-fns";
 import { bg } from "date-fns/locale";
 import { StatsCard } from "@/components/dashboard/StatsCard";
@@ -43,6 +44,10 @@ interface InvoiceWithClient {
   total: number;
   status: InvoiceStatus;
   client: {
+    id: string;
+    name: string;
+  };
+  company: {
     id: string;
     name: string;
   };
@@ -78,7 +83,12 @@ function calcTrend(current: number, previous: number): { text: string; up: boole
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   
-  if (!session || !session.user) {
+  if (!session?.user) {
+    redirect("/signin");
+  }
+
+  const sessionUser = await resolveSessionUser(session.user);
+  if (!sessionUser) {
     redirect("/signin");
   }
   
@@ -87,22 +97,29 @@ export default async function DashboardPage() {
   // Get recent invoices
   const { data: recentInvoicesData } = await supabase
     .from("Invoice")
-    .select("id, invoiceNumber, issueDate, dueDate, total, status, clientId")
-    .eq("userId", session.user.id)
+    .select("id, invoiceNumber, issueDate, dueDate, total, status, clientId, companyId")
+    .eq("userId", sessionUser.id)
     .order("issueDate", { ascending: false })
     .limit(5);
   
   // Get client data for the invoices
-  interface InvoiceRow { id: string; invoiceNumber: string; issueDate: string; dueDate: string; total: number; status: string; clientId: string; createdAt?: string; }
+  interface InvoiceRow { id: string; invoiceNumber: string; issueDate: string; dueDate: string; total: number; status: string; clientId: string; companyId: string; createdAt?: string; }
   interface ClientRow { id: string; name: string; }
+  interface CompanyRow { id: string; name: string; }
 
   const clientIds = [...new Set((recentInvoicesData || []).map((inv: InvoiceRow) => inv.clientId))];
+  const companyIds = [...new Set((recentInvoicesData || []).map((inv: InvoiceRow) => inv.companyId))];
   const { data: clientsData } = await supabase
     .from("Client")
     .select("id, name")
     .in("id", clientIds.length > 0 ? clientIds : ['']);
+  const { data: companiesData } = await supabase
+    .from("Company")
+    .select("id, name")
+    .in("id", companyIds.length > 0 ? companyIds : ['']);
   
   const clientsMap = new Map((clientsData || []).map((c: ClientRow) => [c.id, c]));
+  const companiesMap = new Map((companiesData || []).map((c: CompanyRow) => [c.id, c]));
   
   const recentInvoices: InvoiceWithClient[] = (recentInvoicesData || []).map((inv: InvoiceRow) => {
     const client = clientsMap.get(inv.clientId);
@@ -116,6 +133,10 @@ export default async function DashboardPage() {
       client: {
         id: client?.id || inv.clientId,
         name: client?.name || 'Неизвестен клиент'
+      },
+      company: {
+        id: inv.companyId,
+        name: companiesMap.get(inv.companyId)?.name || "Неизвестна компания",
       }
     };
   });
@@ -124,7 +145,7 @@ export default async function DashboardPage() {
   const { data: allInvoices } = await supabase
     .from("Invoice")
     .select("id, status, total, createdAt")
-    .eq("userId", session.user.id);
+    .eq("userId", sessionUser.id);
   
   // Calculate invoice counts
   const invoiceCounts = (allInvoices || []).reduce((acc: Record<string, number>, invoice: InvoiceRow) => {
@@ -188,18 +209,18 @@ export default async function DashboardPage() {
   const { count: clientCount } = await supabase
     .from("Client")
     .select("*", { count: "exact", head: true })
-    .eq("userId", session.user.id);
+    .eq("userId", sessionUser.id);
 
   const { count: clientsThisMonth } = await supabase
     .from("Client")
     .select("*", { count: "exact", head: true })
-    .eq("userId", session.user.id)
+    .eq("userId", sessionUser.id)
     .gte("createdAt", startOfMonth.toISOString());
 
   const { count: clientsPrevMonth } = await supabase
     .from("Client")
     .select("*", { count: "exact", head: true })
-    .eq("userId", session.user.id)
+    .eq("userId", sessionUser.id)
     .gte("createdAt", startOfPrevMonth.toISOString())
     .lt("createdAt", startOfMonth.toISOString());
 
@@ -208,26 +229,72 @@ export default async function DashboardPage() {
   const { count: companyCount } = await supabase
     .from("Company")
     .select("*", { count: "exact", head: true })
-    .eq("userId", session.user.id);
+    .eq("userId", sessionUser.id);
 
   // Credit note & debit note counts
   const { count: creditNoteCount } = await supabase
     .from("CreditNote")
     .select("*", { count: "exact", head: true })
-    .eq("userId", session.user.id);
+    .eq("userId", sessionUser.id);
 
   const { count: debitNoteCount } = await supabase
     .from("DebitNote")
     .select("*", { count: "exact", head: true })
-    .eq("userId", session.user.id);
+    .eq("userId", sessionUser.id);
 
   // Audit log (last 5 entries)
   const { data: auditLogs } = await supabase
     .from("AuditLog")
     .select("id, action, entityType, entityId, createdAt")
-    .eq("userId", session.user.id)
+    .eq("userId", sessionUser.id)
     .order("createdAt", { ascending: false })
     .limit(5);
+
+  const auditInvoiceIds = [...new Set((auditLogs || [])
+    .filter((log: { entityType: string; entityId?: string }) => log.entityType === "INVOICE" && log.entityId)
+    .map((log: { entityId?: string }) => log.entityId as string))];
+  const auditCompanyIds = [...new Set((auditLogs || [])
+    .filter((log: { entityType: string; entityId?: string }) => log.entityType === "COMPANY" && log.entityId)
+    .map((log: { entityId?: string }) => log.entityId as string))];
+  const auditClientIds = [...new Set((auditLogs || [])
+    .filter((log: { entityType: string; entityId?: string }) => log.entityType === "CLIENT" && log.entityId)
+    .map((log: { entityId?: string }) => log.entityId as string))];
+
+  const { data: auditInvoicesData } = auditInvoiceIds.length > 0
+    ? await supabase
+        .from("Invoice")
+        .select("id, invoiceNumber, clientId, companyId, total, status")
+        .in("id", auditInvoiceIds)
+        .eq("userId", sessionUser.id)
+    : { data: [] as Array<{ id: string; invoiceNumber: string; clientId: string; companyId: string; total: number; status: string }> };
+
+  const auditInvoiceClientIds = [...new Set((auditInvoicesData || []).map((invoice) => invoice.clientId).filter(Boolean))];
+  const auditInvoiceCompanyIds = [...new Set((auditInvoicesData || []).map((invoice) => invoice.companyId).filter(Boolean))];
+
+  const mergedClientIds = [...new Set([...clientIds, ...auditClientIds, ...auditInvoiceClientIds])];
+  const mergedCompanyIds = [...new Set([...companyIds, ...auditCompanyIds, ...auditInvoiceCompanyIds])];
+
+  const { data: mergedClientsData } = await supabase
+    .from("Client")
+    .select("id, name")
+    .in("id", mergedClientIds.length > 0 ? mergedClientIds : [""]);
+  const { data: mergedCompaniesData } = await supabase
+    .from("Company")
+    .select("id, name")
+    .in("id", mergedCompanyIds.length > 0 ? mergedCompanyIds : [""]);
+
+  const mergedClientsMap = new Map((mergedClientsData || []).map((client: ClientRow) => [client.id, client]));
+  const mergedCompaniesMap = new Map((mergedCompaniesData || []).map((company: CompanyRow) => [company.id, company]));
+  const auditInvoicesMap = new Map(
+    (auditInvoicesData || []).map((invoice) => [
+      invoice.id,
+      {
+        ...invoice,
+        clientName: mergedClientsMap.get(invoice.clientId)?.name || "Неизвестен клиент",
+        companyName: mergedCompaniesMap.get(invoice.companyId)?.name || "Неизвестна компания",
+      },
+    ])
+  );
 
   const stats = [
     {
@@ -337,7 +404,7 @@ export default async function DashboardPage() {
               <CardTitle className="card-title">Последни фактури</CardTitle>
               <CardDescription className="card-description">Най-новите фактури</CardDescription>
             </div>
-            <Button variant="ghost" size="sm" asChild className="tiny-text flex-shrink-0">
+            <Button variant="ghost" size="sm" asChild className="tiny-text shrink-0">
               <Link href="/invoices" className="flex items-center gap-1">
                 <span className="hidden sm:inline">Всички</span>
                 <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
@@ -370,7 +437,7 @@ export default async function DashboardPage() {
                     className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/50 transition-all duration-200 group"
                   >
                     <div className="flex items-center gap-4 flex-1 min-w-0">
-                      <div className={`h-11 w-11 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                      <div className={`h-11 w-11 rounded-lg shrink-0 flex items-center justify-center ${
                         invoice.status === 'ISSUED' 
                           ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
                           : invoice.status === 'DRAFT'
@@ -390,7 +457,7 @@ export default async function DashboardPage() {
                         <p className="text-xs text-muted-foreground truncate">{invoice.client.name}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 flex-shrink-0">
+                    <div className="flex items-center gap-4 shrink-0">
                       <div className="text-right">
                         <p className="font-bold text-sm">{invoice.total.toFixed(2)} €</p>
                         <p className="text-xs text-muted-foreground">
@@ -465,7 +532,7 @@ export default async function DashboardPage() {
               <CardTitle className="card-title">Последна активност</CardTitle>
               <CardDescription className="card-description">Скорошни действия в системата</CardDescription>
             </div>
-            <Button variant="ghost" size="sm" asChild className="tiny-text flex-shrink-0">
+            <Button variant="ghost" size="sm" asChild className="tiny-text shrink-0">
               <Link href="/settings/audit-logs" className="flex items-center gap-1">
                 <span className="hidden sm:inline">Всички</span>
                 <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
@@ -484,9 +551,7 @@ export default async function DashboardPage() {
                 </p>
               </div>
             ) : (
-              <div className="relative">
-                <div className="absolute left-[19px] top-3 bottom-3 w-px bg-border/70" />
-                <div className="space-y-4">
+              <div className="space-y-2.5">
                   {auditLogs.map((log: { id: string; action: string; entityType: string; entityId?: string; createdAt: string }) => {
                     const actionLabel = actionLabels[log.action] || log.action;
                     const entityLabel = entityLabels[log.entityType] || log.entityType;
@@ -494,10 +559,27 @@ export default async function DashboardPage() {
                       addSuffix: true,
                       locale: bg,
                     });
+                    const relatedInvoice = log.entityType === "INVOICE" && log.entityId
+                      ? auditInvoicesMap.get(log.entityId)
+                      : null;
+                    const relatedCompany = log.entityType === "COMPANY" && log.entityId
+                      ? mergedCompaniesMap.get(log.entityId)
+                      : null;
+                    const relatedClient = log.entityType === "CLIENT" && log.entityId
+                      ? mergedClientsMap.get(log.entityId)
+                      : null;
+
+                    const contextText = relatedInvoice
+                      ? `№ ${relatedInvoice.invoiceNumber} • ${relatedInvoice.companyName} • ${relatedInvoice.clientName}`
+                      : relatedCompany
+                        ? relatedCompany.name
+                        : relatedClient
+                          ? relatedClient.name
+                          : null;
 
                     return (
-                      <div key={log.id} className="flex items-start gap-3 relative">
-                        <div className="h-[38px] w-[38px] rounded-full bg-muted border-2 border-background flex items-center justify-center flex-shrink-0 z-10">
+                      <div key={log.id} className="flex items-start gap-3 rounded-xl border border-border/50 bg-muted/20 p-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-background border border-border/60">
                           {log.action === "CREATE" && <Plus className="h-4 w-4 text-emerald-600" />}
                           {log.action === "UPDATE" && <FileText className="h-4 w-4 text-blue-600" />}
                           {log.action === "CANCEL" && <XCircle className="h-4 w-4 text-red-600" />}
@@ -508,20 +590,41 @@ export default async function DashboardPage() {
                             <Activity className="h-4 w-4 text-muted-foreground" />
                           )}
                         </div>
-                        <div className="flex-1 min-w-0 pt-1">
-                          <p className="text-sm">
-                            <span className="font-medium">{actionLabel}</span>
-                            {" "}
-                            <span className="text-muted-foreground">{entityLabel}</span>
-                          </p>
-                          <p className="tiny-text text-muted-foreground mt-0.5">
-                            {timeAgo}
-                          </p>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-sm leading-5">
+                                <span className="font-medium">{actionLabel}</span>{" "}
+                                <span className="text-muted-foreground">{entityLabel}</span>
+                              </p>
+                              {contextText ? (
+                                <p className="mt-1 truncate text-xs text-muted-foreground">
+                                  {contextText}
+                                </p>
+                              ) : null}
+                            </div>
+                            <p className="shrink-0 text-[11px] text-muted-foreground">
+                              {timeAgo}
+                            </p>
+                          </div>
+                          {relatedInvoice ? (
+                            <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
+                              <span className={`rounded-full px-2 py-0.5 font-medium ${
+                                relatedInvoice.status === "ISSUED"
+                                  ? "bg-emerald-500/10 text-emerald-600"
+                                  : relatedInvoice.status === "DRAFT"
+                                    ? "bg-amber-500/10 text-amber-600"
+                                    : "bg-red-500/10 text-red-600"
+                              }`}>
+                                {relatedInvoice.status === "ISSUED" ? "Издадена" : relatedInvoice.status === "DRAFT" ? "Чернова" : "Отказана"}
+                              </span>
+                              <span>{Number(relatedInvoice.total).toFixed(2)} €</span>
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     );
                   })}
-                </div>
               </div>
             )}
           </CardContent>

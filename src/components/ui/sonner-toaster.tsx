@@ -8,8 +8,8 @@ export function Toaster() {
       placement="top end"
       gap={10}
       maxVisibleToasts={4}
-      className="z-50"
-      width={460}
+      className="z-50 pt-[calc(env(safe-area-inset-top)+0.75rem)] pr-[calc(env(safe-area-inset-right)+0.75rem)] pl-3 sm:pl-0"
+      width="min(420px, calc(100vw - 1rem - env(safe-area-inset-left) - env(safe-area-inset-right)))"
     />
   );
 }

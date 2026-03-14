@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
+import { resolveSessionUser } from "@/lib/session-user";
+import {
+  formatValidationIssues,
+  validateBulgarianPartyInput,
+} from "@/lib/bulgarian-party";
 import { z } from "zod";
 
 const clientSchema = z.object({
@@ -34,6 +39,11 @@ export async function GET(
       return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
 
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Сесията ви е невалидна. Моля, влезте отново." }, { status: 401 });
+    }
+
     const { id } = await context.params;
     const supabase = createAdminClient();
 
@@ -41,7 +51,7 @@ export async function GET(
       .from("Client")
       .select("*")
       .eq("id", id)
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .single();
 
     if (error || !client) {
@@ -69,9 +79,22 @@ export async function PUT(
       return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
 
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Сесията ви е невалидна. Моля, влезте отново." }, { status: 401 });
+    }
+
     const { id } = await context.params;
     const json = await request.json();
     const validated = clientSchema.parse(json);
+    const { normalized, issues } = validateBulgarianPartyInput(validated);
+
+    if (issues.length > 0) {
+      return NextResponse.json(
+        { error: "Неуспешна валидация", details: formatValidationIssues(issues) },
+        { status: 400 }
+      );
+    }
 
     const supabase = createAdminClient();
 
@@ -79,7 +102,7 @@ export async function PUT(
       .from("Client")
       .select("id")
       .eq("id", id)
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .single();
 
     if (existingClientError || !existingClient) {
@@ -89,26 +112,32 @@ export async function PUT(
     const { data: client, error } = await supabase
       .from("Client")
       .update({
-        name: validated.name,
-        email: validated.email || null,
-        phone: validated.phone || null,
-        address: validated.address || null,
-        city: validated.city || null,
-        state: validated.state || null,
-        zipCode: validated.zipCode || null,
-        country: validated.country || null,
-        vatNumber: validated.vatNumber || null,
-        taxIdNumber: validated.taxIdNumber || null,
-        bulstatNumber: validated.bulstatNumber || null,
-        vatRegistered: validated.vatRegistered ?? false,
-        vatRegistrationNumber: validated.vatRegistrationNumber || null,
-        mol: validated.mol || null,
-        uicType: validated.uicType ?? "BULSTAT",
-        locale: validated.locale || "bg",
+        name: normalized.name,
+        email: normalized.email || null,
+        phone: normalized.phone || null,
+        address: normalized.address || null,
+        city: normalized.city || null,
+        state: normalized.state || null,
+        zipCode: normalized.zipCode || null,
+        country: normalized.country || null,
+        vatNumber: normalized.vatRegistrationNumber || normalized.vatNumber || null,
+        taxIdNumber: normalized.taxIdNumber || null,
+        bulstatNumber: normalized.bulstatNumber || null,
+        vatRegistered: normalized.vatRegistered ?? false,
+        vatRegistrationNumber: normalized.vatRegistrationNumber || normalized.vatNumber || null,
+        mol: normalized.mol || null,
+        uicType: normalized.uicType ?? "BULSTAT",
+        locale: normalized.locale || "bg",
+        taxComplianceSystem:
+          normalized.country?.toLowerCase() === "българия" ||
+          normalized.country?.toLowerCase() === "bulgaria" ||
+          normalized.bulstatNumber
+            ? "bulgarian"
+            : "general",
         updatedAt: new Date().toISOString(),
       })
       .eq("id", id)
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .select()
       .single();
 

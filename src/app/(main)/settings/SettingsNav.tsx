@@ -9,9 +9,11 @@ import {
   Users, 
   CreditCard,
   FileText,
-  Settings
+  Settings,
+  ArrowLeft
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 const navSections = [
   {
@@ -74,21 +76,29 @@ export function SettingsNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex flex-col">
+    <nav className="flex flex-col rounded-2xl border border-border/60 bg-card/70 p-3 shadow-sm backdrop-blur sm:p-4">
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-2 mb-4">
-        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+      <div className="mb-3 flex items-center justify-between gap-3 px-1 py-1">
+        <div className="flex items-center gap-2">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
           <Settings className="h-4 w-4 text-primary" />
         </div>
         <div>
           <h2 className="text-sm font-semibold">Настройки</h2>
           <p className="text-[10px] text-muted-foreground">Управление на акаунта</p>
         </div>
+        </div>
+        <Button asChild variant="ghost" size="sm" className="h-8 rounded-full px-3 lg:hidden">
+          <Link href="/dashboard" className="flex items-center gap-1.5 whitespace-nowrap">
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Назад
+          </Link>
+        </Button>
       </div>
 
       {/* Mobile horizontal navigation */}
-      <div className="lg:hidden overflow-x-auto -mx-4 px-4 pb-2">
-        <div className="flex gap-1.5 min-w-max">
+      <div className="lg:hidden overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex min-w-max gap-2 pr-3">
           {navSections.flatMap((section) => section.items).map((item) => {
             const Icon = iconMap[item.iconName as keyof typeof iconMap];
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -97,9 +107,9 @@ export function SettingsNav() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors",
+                  "inline-flex min-h-10 items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-medium transition-colors snap-start",
                   isActive
-                    ? "bg-primary text-primary-foreground border-primary shadow-xs"
+                    ? "border-primary bg-primary text-primary-foreground shadow-xs"
                     : "bg-card border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
                 )}
               >
@@ -112,7 +122,7 @@ export function SettingsNav() {
       </div>
 
       {/* Desktop vertical navigation - compact fixed width */}
-      <div className="hidden lg:block space-y-5">
+      <div className="hidden space-y-5 lg:block">
         {navSections.map((section) => (
           <div key={section.title}>
             <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/60 px-3 mb-2">
@@ -136,7 +146,7 @@ export function SettingsNav() {
                   >
                     {Icon && (
                       <Icon className={cn(
-                        "h-4 w-4 flex-shrink-0",
+                        "h-4 w-4 shrink-0",
                         isActive ? "text-primary" : "text-muted-foreground"
                       )} />
                     )}

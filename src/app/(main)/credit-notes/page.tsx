@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { APP_NAME } from "@/config/constants";
 import { createAdminClient } from "@/lib/supabase/server";
+import { resolveSessionUser } from "@/lib/session-user";
 import { format } from "date-fns";
 import { bg } from "date-fns/locale";
 import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
@@ -52,7 +53,12 @@ interface CreditNote {
 export default async function CreditNotesPage() {
   const session = await getServerSession(authOptions);
   
-  if (!session) {
+  if (!session?.user) {
+    redirect("/signin");
+  }
+
+  const sessionUser = await resolveSessionUser(session.user);
+  if (!sessionUser) {
     redirect("/signin");
   }
 
@@ -74,7 +80,7 @@ export default async function CreditNotesPage() {
       clientId,
       companyId
     `)
-    .eq("userId", session.user.id)
+    .eq("userId", sessionUser.id)
     .order("issueDate", { ascending: false });
 
   if (error) {
@@ -211,7 +217,7 @@ export default async function CreditNotesPage() {
                   className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/50 transition-all duration-200 group"
                 >
                   <div className="flex items-center gap-4 flex-1 min-w-0">
-                    <div className="h-11 w-11 rounded-lg flex items-center justify-center flex-shrink-0 bg-red-500/10 text-red-600 border border-red-500/20">
+                    <div className="h-11 w-11 rounded-lg shrink-0 flex items-center justify-center bg-red-500/10 text-red-600 border border-red-500/20">
                       <Receipt className="h-5 w-5" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -240,7 +246,7 @@ export default async function CreditNotesPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4 flex-shrink-0">
+                  <div className="flex items-center gap-4 shrink-0">
                     <div className="text-right">
                       <p className="font-bold text-sm text-red-600">-{Number(creditNote.total).toFixed(2)} {creditNote.currency}</p>
                       <p className="text-xs text-muted-foreground">

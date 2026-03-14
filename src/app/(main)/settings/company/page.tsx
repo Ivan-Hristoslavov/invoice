@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { APP_NAME } from "@/config/constants";
 import { createAdminClient } from "@/lib/supabase/server";
+import { resolveSessionUser } from "@/lib/session-user";
 import { CompanySettingsTabs } from "./CompanySettingsTabs";
 
 export const metadata: Metadata = {
@@ -14,7 +15,12 @@ export const metadata: Metadata = {
 export default async function CompanySettingsPage() {
   const session = await getServerSession(authOptions);
 
-  if (!session) {
+  if (!session?.user) {
+    redirect("/signin");
+  }
+
+  const sessionUser = await resolveSessionUser(session.user);
+  if (!sessionUser) {
     redirect("/signin");
   }
 
@@ -24,7 +30,7 @@ export default async function CompanySettingsPage() {
     const { data, error } = await supabase
       .from("Company")
       .select("*")
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .single();
 
     if (!error && data) {

@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { checkPermission } from "@/lib/permissions";
+import { resolveSessionUser } from "@/lib/session-user";
 import InvoicesClient from "./InvoicesClient";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -24,12 +25,27 @@ interface Invoice {
 export default async function InvoicesPage() {
   const session = await getServerSession(authOptions);
 
-  if (!session) {
+  if (!session?.user) {
     return (
       <div className="flex items-center justify-center min-h-[80vh]">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">Достъпът е отказан</h2>
           <p className="text-muted-foreground mb-6">Моля, влезте в системата, за да имате достъп до фактурите</p>
+          <Button asChild>
+            <Link href="/signin">Вход</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const sessionUser = await resolveSessionUser(session.user);
+  if (!sessionUser) {
+    return (
+      <div className="flex items-center justify-center min-h-[80vh]">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Сесията е невалидна</h2>
+          <p className="text-muted-foreground mb-6">Моля, влезте отново, за да имате достъп до фактурите</p>
           <Button asChild>
             <Link href="/signin">Вход</Link>
           </Button>
@@ -48,14 +64,14 @@ export default async function InvoicesPage() {
   const { data: userInvoices, error: invoicesError } = await supabase
     .from("Invoice")
     .select("*, client:Client(*)")
-    .eq("userId", session.user.id)
+    .eq("userId", sessionUser.id)
     .order("issueDate", { ascending: false });
   
   // Get invoices where user is the client (need to get client IDs first)
   const { data: userClients } = await supabase
     .from("Client")
     .select("id")
-    .eq("userId", session.user.id);
+    .eq("userId", sessionUser.id);
   
   const clientIds = (userClients || []).map(c => c.id);
   
@@ -81,13 +97,13 @@ export default async function InvoicesPage() {
   const { data: clients } = await supabase
     .from("Client")
     .select("id, name")
-    .eq("userId", session.user.id)
+    .eq("userId", sessionUser.id)
     .order("name", { ascending: true });
 
   const { data: companies } = await supabase
     .from("Company")
     .select("id, name")
-    .eq("userId", session.user.id)
+    .eq("userId", sessionUser.id)
     .order("name", { ascending: true });
 
   return (
@@ -100,7 +116,7 @@ export default async function InvoicesPage() {
       clients={clients || []}
       companies={companies || []}
       canCreateInvoices={canCreateInvoices}
-      currentUserId={session.user.id}
+      currentUserId={sessionUser.id}
     />
   );
 } 

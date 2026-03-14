@@ -20,23 +20,23 @@ export function CardStatsMetric({
 }: CardStatsMetricProps) {
   return (
     <Card className="border border-border/50 shadow-xs bg-linear-to-br from-card/60 to-card/30">
-      <CardContent className="p-3 sm:p-4">
+      <CardContent className="p-2.5 sm:p-4">
         <div className="flex items-center justify-between">
-          <div>
-            <p className="tiny-text text-muted-foreground font-medium">{title}</p>
+          <div className="min-w-0">
+            <p className="tiny-text font-medium text-muted-foreground">{title}</p>
             <div className="flex items-baseline gap-1">
-              <p className={cn("text-lg sm:text-2xl font-bold", valueClassName)}>
+              <p className={cn("text-base font-bold sm:text-2xl", valueClassName)}>
                 {value}
               </p>
               {valueSuffix && (
-                <span className="text-xs sm:text-sm text-muted-foreground">
+                <span className="text-[11px] text-muted-foreground sm:text-sm">
                   {valueSuffix}
                 </span>
               )}
             </div>
           </div>
-          <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center", `bg-linear-to-br ${gradient}`)}>
-            <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+          <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:h-9 sm:w-9", `bg-linear-to-br ${gradient}`)}>
+            <Icon className="h-3.5 w-3.5 text-white sm:h-5 sm:w-5" />
           </div>
         </div>
       </CardContent>

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { APP_NAME } from "@/config/constants";
 import { createAdminClient } from "@/lib/supabase/server";
+import { resolveSessionUser } from "@/lib/session-user";
 import { redirect } from "next/navigation";
 import { PLAN_LIMITS } from "@/middleware/subscription";
 import ClientsClient from "./ClientsClient";
@@ -15,7 +16,12 @@ export const metadata: Metadata = {
 export default async function ClientsPage() {
   const session = await getServerSession(authOptions);
 
-  if (!session) {
+  if (!session?.user) {
+    redirect("/signin");
+  }
+
+  const sessionUser = await resolveSessionUser(session.user);
+  if (!sessionUser) {
     redirect("/signin");
   }
 
@@ -25,7 +31,7 @@ export default async function ClientsPage() {
   const { data: clients, error } = await supabase
     .from("Client")
     .select("*")
-    .eq("userId", session.user.id)
+    .eq("userId", sessionUser.id)
     .order("name", { ascending: true });
   
   if (error) {
@@ -38,7 +44,7 @@ export default async function ClientsPage() {
   const { data: invoiceCounts } = await supabase
     .from("Invoice")
     .select("clientId")
-    .eq("userId", session.user.id);
+    .eq("userId", sessionUser.id);
   
   const clientInvoiceCounts = (invoiceCounts || []).reduce((acc: Record<string, number>, inv: any) => {
     acc[inv.clientId] = (acc[inv.clientId] || 0) + 1;
@@ -49,7 +55,7 @@ export default async function ClientsPage() {
   const { data: subscriptions } = await supabase
     .from("Subscription")
     .select("*")
-    .eq("userId", session.user.id)
+    .eq("userId", sessionUser.id)
     .in("status", ["ACTIVE", "TRIALING", "PAST_DUE"])
     .limit(1);
   

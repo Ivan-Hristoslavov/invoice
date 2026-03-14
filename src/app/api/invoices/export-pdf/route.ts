@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { generateInvoicePdfServer } from "@/lib/pdf-generator";
+import { resolveSessionUser } from "@/lib/session-user";
+import { withDocumentSnapshots } from "@/lib/document-snapshots";
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,11 +13,16 @@ export async function GET(request: NextRequest) {
     if (!session?.user) {
       return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Потребителят не е намерен" }, { status: 404 });
+    }
 
     // Get query parameters
     const { searchParams } = new URL(request.url);
     const invoiceId = searchParams.get("invoiceId");
     const isCopy = searchParams.get("copy") === "true"; // If true, watermark will be "КОПИЕ"
+    const disposition = searchParams.get("disposition") === "inline" ? "inline" : "attachment";
 
     if (!invoiceId) {
       return NextResponse.json(
@@ -29,7 +36,7 @@ export async function GET(request: NextRequest) {
       .from("Invoice")
       .select("*")
       .eq("id", invoiceId)
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .single();
 
     if (invoiceError || !invoice) {
@@ -72,13 +79,24 @@ export async function GET(request: NextRequest) {
       .select("*")
       .eq("invoiceId", invoiceId);
 
-    // Combine all data
-    const fullInvoice = {
-      ...invoice,
+    const snapshotInvoice = withDocumentSnapshots(
+      invoice,
+      company ? { ...company, bankAccount } : null,
       client,
-      company: company ? { ...company, bankAccount } : null,
-      items: items || [],
-      isOriginal: !isCopy, // Original by default, Copy if ?copy=true
+      items || []
+    );
+    const snapshotCompany =
+      snapshotInvoice.company && typeof snapshotInvoice.company === "object"
+        ? {
+            ...snapshotInvoice.company,
+            bankAccount:
+              snapshotInvoice.company.bankAccountDetails || bankAccount || null,
+          }
+        : null;
+    const fullInvoice = {
+      ...snapshotInvoice,
+      company: snapshotCompany,
+      isOriginal: !isCopy,
     };
 
     // Generate PDF
@@ -95,7 +113,7 @@ export async function GET(request: NextRequest) {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${safeFilename}"`,
+        "Content-Disposition": `${disposition}; filename="${safeFilename}"`,
         "Content-Length": pdfBuffer.length.toString(),
       },
     });

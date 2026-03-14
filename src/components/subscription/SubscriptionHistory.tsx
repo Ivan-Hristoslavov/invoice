@@ -124,14 +124,14 @@ export function SubscriptionHistory() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle>История на абонамента</CardTitle>
             <CardDescription>
               Преглед на историята на плащанията и промените в статуса
             </CardDescription>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-start sm:self-auto">
             <span className="text-sm text-muted-foreground">Резултати:</span>
             <Select
               value={pageSize.toString()}
@@ -173,15 +173,16 @@ export function SubscriptionHistory() {
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="payments" className="flex items-center gap-2">
+          <div className="overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <TabsList className="flex min-w-max gap-1 rounded-xl border border-border/60 bg-card/70 p-1">
+            <TabsTrigger value="payments" className="flex min-h-10 items-center gap-2 whitespace-nowrap rounded-lg px-3">
               <CreditCard className="h-4 w-4" />
               <span>Плащания</span>
               {hasPayments && (
                 <Badge variant="secondary" className="ml-1">{payments.length}</Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="status" className="flex items-center gap-2">
+            <TabsTrigger value="status" className="flex min-h-10 items-center gap-2 whitespace-nowrap rounded-lg px-3">
               <ReceiptText className="h-4 w-4" />
               <span>Промени в статуса</span>
               {hasStatusHistory && (
@@ -189,6 +190,7 @@ export function SubscriptionHistory() {
               )}
             </TabsTrigger>
           </TabsList>
+          </div>
           
           <TabsContent value="payments" className="mt-4">
             {hasPayments ? (
@@ -236,7 +238,7 @@ export function SubscriptionHistory() {
           </div>
         )}
       </CardContent>
-      <CardFooter className="flex justify-between text-sm text-muted-foreground pt-0">
+      <CardFooter className="flex flex-col gap-2 pt-0 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
         <div>
           Показани {activeTab === 'payments' ? payments.length : history.length} от{' '}
           {activeTab === 'payments' ? 

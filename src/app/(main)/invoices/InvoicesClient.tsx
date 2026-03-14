@@ -441,7 +441,7 @@ export default function InvoicesClient({
       {!isLoadingUsage && isFree && invoiceUsage.remaining <= 1 && invoiceUsage.remaining > 0 && (
         <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
           <AlertTriangle className="h-4 w-4 text-amber-600" />
-          <AlertDescription className="flex items-center justify-between">
+          <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-amber-800 dark:text-amber-200">
               Остава ви само <strong>{invoiceUsage.remaining}</strong> фактура този месец. 
               Надградете за неограничени фактури.
@@ -459,7 +459,7 @@ export default function InvoicesClient({
       {!isLoadingUsage && isFree && !canCreateInvoice && (
         <Alert className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
           <XCircle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="flex items-center justify-between">
+          <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-red-800 dark:text-red-200">
               Достигнахте лимита от <strong>3 фактури</strong> за този месец. 
               Надградете до PRO за неограничени фактури.
@@ -554,8 +554,8 @@ export default function InvoicesClient({
       {/* Filters */}
       <Card className="border-0 shadow-lg">
         <CardContent className="p-3 sm:p-4">
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center">
-            <div className="relative flex-1">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1.35fr)_180px_220px_auto] xl:items-center">
+            <div className="relative min-w-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
                 type="search"
@@ -566,7 +566,7 @@ export default function InvoicesClient({
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px] h-11">
+              <SelectTrigger className="h-11 w-full">
                 <Filter className="mr-2 h-4 w-4" />
                 <SelectValue placeholder="Филтър по статус" />
               </SelectTrigger>
@@ -603,7 +603,7 @@ export default function InvoicesClient({
               setSortField(field as any);
               setSortDirection(dir as any);
             }}>
-              <SelectTrigger className="w-full sm:w-[200px] h-11">
+              <SelectTrigger className="h-11 w-full">
                 <ArrowUpDown className="mr-2 h-4 w-4" />
                 <SelectValue placeholder="Сортирай" />
               </SelectTrigger>
@@ -617,7 +617,9 @@ export default function InvoicesClient({
               </SelectContent>
             </Select>
             {canCreateInvoices && (
-              <ExportDialogWrapper clients={clients} companies={companies} />
+              <div className="flex w-full xl:w-auto xl:justify-end">
+                <ExportDialogWrapper clients={clients} companies={companies} />
+              </div>
             )}
           </div>
         </CardContent>

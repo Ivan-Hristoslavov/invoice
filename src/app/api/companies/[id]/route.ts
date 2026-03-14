@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
+import { resolveSessionUser } from "@/lib/session-user";
+import {
+  formatValidationIssues,
+  validateBulgarianPartyInput,
+} from "@/lib/bulgarian-party";
 import { z } from "zod";
 
 const companySchema = z.object({
@@ -38,13 +43,17 @@ export async function GET(
     if (!session?.user) {
       return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Сесията ви е невалидна. Моля, влезте отново." }, { status: 401 });
+    }
     const { id } = await context.params;
     const supabase = createAdminClient();
     const { data: company, error } = await supabase
       .from("Company")
       .select("*")
       .eq("id", id)
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .single();
     if (error || !company) {
       return NextResponse.json({ error: "Компанията не е намерена" }, { status: 404 });
@@ -65,10 +74,24 @@ export async function PUT(
     if (!session?.user) {
       return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Сесията ви е невалидна. Моля, влезте отново." }, { status: 401 });
+    }
 
     const { id: companyId } = await context.params;
     const json = await request.json();
     const validated = companySchema.parse(json);
+    const { normalized, issues } = validateBulgarianPartyInput(validated, {
+      requireMol: true,
+    });
+
+    if (issues.length > 0) {
+      return NextResponse.json(
+        { error: "Неуспешна валидация", details: formatValidationIssues(issues) },
+        { status: 400 }
+      );
+    }
 
     const supabase = createAdminClient();
 
@@ -76,14 +99,14 @@ export async function PUT(
       .from("Company")
       .select("id, bulstatNumber")
       .eq("id", companyId)
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .single();
 
     if (fetchError || !existing) {
       return NextResponse.json({ error: "Компанията не е намерена" }, { status: 404 });
     }
 
-    const bulstat = validated.bulstatNumber?.trim() || "";
+    const bulstat = normalized.bulstatNumber || "";
     if (bulstat) {
       const { data: other } = await supabase
         .from("Company")
@@ -101,27 +124,33 @@ export async function PUT(
     }
 
     const updatePayload: Record<string, unknown> = {
-      name: validated.name,
-      email: validated.email || null,
-      phone: validated.phone || null,
-      address: validated.address || null,
-      city: validated.city || null,
-      state: validated.state || null,
-      zipCode: validated.zipCode || null,
-      country: validated.country || null,
-      vatNumber: validated.vatNumber || null,
-      taxIdNumber: validated.taxIdNumber || null,
-      registrationNumber: validated.registrationNumber || null,
+      name: normalized.name,
+      email: normalized.email || null,
+      phone: normalized.phone || null,
+      address: normalized.address || null,
+      city: normalized.city || null,
+      state: normalized.state || null,
+      zipCode: normalized.zipCode || null,
+      country: normalized.country || null,
+      vatNumber: normalized.vatRegistrationNumber || normalized.vatNumber || null,
+      taxIdNumber: normalized.taxIdNumber || null,
+      registrationNumber: normalized.registrationNumber || null,
       bulstatNumber: bulstat || null,
-      vatRegistered: validated.vatRegistered ?? false,
-      vatRegistrationNumber: validated.vatRegistrationNumber || null,
-      mol: validated.mol || null,
-      accountablePerson: validated.accountablePerson || null,
-      uicType: validated.uicType ?? "BULSTAT",
-      bankName: validated.bankName || null,
-      bankAccount: validated.bankAccount || null,
-      bankSwift: validated.bankSwift || null,
-      bankIban: validated.bankIban || null,
+      vatRegistered: normalized.vatRegistered ?? false,
+      vatRegistrationNumber: normalized.vatRegistrationNumber || normalized.vatNumber || null,
+      mol: normalized.mol || null,
+      accountablePerson: normalized.accountablePerson || null,
+      uicType: normalized.uicType ?? "BULSTAT",
+      taxComplianceSystem:
+        normalized.country?.toLowerCase() === "българия" ||
+        normalized.country?.toLowerCase() === "bulgaria" ||
+        bulstat
+          ? "bulgarian"
+          : "general",
+      bankName: normalized.bankName || null,
+      bankAccount: normalized.bankAccount || null,
+      bankSwift: normalized.bankSwift || null,
+      bankIban: normalized.bankIban || null,
       updatedAt: new Date().toISOString(),
     };
 
@@ -129,7 +158,7 @@ export async function PUT(
       .from("Company")
       .update(updatePayload)
       .eq("id", companyId)
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .select()
       .single();
 

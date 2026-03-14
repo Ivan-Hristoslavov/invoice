@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
+import { resolveSessionUser } from "@/lib/session-user";
+import {
+  formatValidationIssues,
+  validateBulgarianPartyInput,
+} from "@/lib/bulgarian-party";
 import { z } from "zod";
 import Stripe from 'stripe';
 import { getStripeInstance } from '@/lib/stripe';
@@ -47,6 +52,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json(
+        { error: "Сесията ви е невалидна. Моля, влезте отново." },
+        { status: 401 }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get("query") || "";
     const page = parseInt(searchParams.get("page") || "0");
@@ -57,7 +70,7 @@ export async function GET(request: NextRequest) {
     let companyQuery = supabase
       .from("Company")
       .select("*", { count: "exact" })
-      .eq("userId", session.user.id);
+      .eq("userId", sessionUser.id);
 
     if (query) {
       companyQuery = companyQuery.or(
@@ -108,15 +121,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json(
+        { error: "Сесията ви е невалидна. Моля, влезте отново." },
+        { status: 401 }
+      );
+    }
+
     const json = await request.json();
     
     // Validate incoming data
     const validatedData = companySchema.parse(json);
+    const { normalized, issues } = validateBulgarianPartyInput(validatedData, {
+      requireMol: true,
+    });
+
+    if (issues.length > 0) {
+      return NextResponse.json(
+        { error: "Неуспешна валидация", details: formatValidationIssues(issues) },
+        { status: 400 }
+      );
+    }
     
     // Check subscription limits - брой фирми
     const { checkSubscriptionLimits } = await import("@/middleware/subscription");
     const companyLimitCheck = await checkSubscriptionLimits(
-      session.user.id as string,
+      sessionUser.id,
       'companies'
     );
     
@@ -128,7 +159,7 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createAdminClient();
-    const bulstat = validatedData.bulstatNumber?.trim() || "";
+    const bulstat = normalized.bulstatNumber || "";
     if (bulstat) {
       const { data: byBulstat } = await supabase
         .from("Company")
@@ -145,8 +176,33 @@ export async function POST(request: NextRequest) {
     }
     const companyId = cuid();
     const payload = {
-      ...validatedData,
-      bulstatNumber: validatedData.bulstatNumber?.trim() || validatedData.bulstatNumber || null,
+      name: normalized.name,
+      email: normalized.email,
+      phone: normalized.phone,
+      address: normalized.address,
+      city: normalized.city,
+      state: normalized.state,
+      zipCode: normalized.zipCode,
+      country: normalized.country,
+      vatNumber: normalized.vatRegistrationNumber || normalized.vatNumber || null,
+      taxIdNumber: normalized.taxIdNumber,
+      registrationNumber: normalized.registrationNumber,
+      bulstatNumber: bulstat || null,
+      vatRegistered: normalized.vatRegistered ?? false,
+      vatRegistrationNumber: normalized.vatRegistrationNumber || normalized.vatNumber || null,
+      mol: normalized.mol,
+      accountablePerson: normalized.accountablePerson,
+      uicType: normalized.uicType ?? "BULSTAT",
+      taxComplianceSystem:
+        normalized.country?.toLowerCase() === "българия" ||
+        normalized.country?.toLowerCase() === "bulgaria" ||
+        bulstat
+          ? "bulgarian"
+          : "general",
+      bankName: normalized.bankName,
+      bankAccount: normalized.bankAccount,
+      bankSwift: normalized.bankSwift,
+      bankIban: normalized.bankIban,
     };
 
     const { data: company, error } = await supabase
@@ -154,7 +210,7 @@ export async function POST(request: NextRequest) {
       .insert({
         id: companyId,
         ...payload,
-        userId: session.user.id,
+        userId: sessionUser.id,
         updatedAt: new Date().toISOString(),
       })
       .select()
@@ -197,12 +253,17 @@ export async function POST_STRIPE_CONNECT_ONBOARDING(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+    }
+
     // Find the user's company (assume one company per user for now)
     const supabase = createAdminClient();
     const { data: companies, error: findError } = await supabase
       .from("Company")
       .select("*")
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .limit(1);
     
     const company = companies?.[0];

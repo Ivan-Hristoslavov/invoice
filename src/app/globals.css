@@ -604,3 +604,40 @@
   background: rgb(23 37 84) !important;
   border-color: rgb(30 64 175) !important;
 }
+
+/* HeroUI toast colors */
+[data-slot="toast"] {
+  color: hsl(var(--foreground)) !important;
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+}
+
+[data-slot="toast-title"] {
+  color: hsl(var(--foreground)) !important;
+}
+
+[data-slot="toast-description"] {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+[data-slot="toast-close"] {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+[data-slot="toast-action-button"] {
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark [data-slot="toast"] {
+  color: hsl(var(--foreground)) !important;
+  background: hsl(var(--card)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+.dark [data-slot="toast-title"] {
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark [data-slot="toast-description"] {
+  color: hsl(var(--muted-foreground)) !important;
+}

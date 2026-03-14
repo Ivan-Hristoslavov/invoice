@@ -28,15 +28,15 @@ export default function AuthLayout({
   children,
 }: React.PropsWithChildren<unknown>) {
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-background">
       {/* Left side - Animated illustration */}
-      <div className="hidden lg:flex relative w-1/2 overflow-hidden bg-linear-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="relative hidden overflow-hidden bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 lg:flex lg:w-[44%] xl:w-[46%]">
         {/* Subtle Grid Pattern */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-size-[48px_48px]" />
         
         {/* Subtle Glow Effects */}
         <motion.div 
-          className="absolute top-1/4 -left-20 w-96 h-96 bg-emerald-500/10 rounded-full blur-[100px]"
+          className="absolute top-1/4 -left-20 h-96 w-96 rounded-full bg-emerald-500/8 blur-[100px]"
           animate={{ 
             scale: [1, 1.2, 1],
             opacity: [0.3, 0.5, 0.3],
@@ -45,7 +45,7 @@ export default function AuthLayout({
           transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div 
-          className="absolute bottom-1/4 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-[100px]"
+          className="absolute bottom-1/4 right-0 h-80 w-80 rounded-full bg-blue-500/8 blur-[100px]"
           animate={{ 
             scale: [1.2, 1, 1.2],
             opacity: [0.2, 0.4, 0.2],
@@ -55,7 +55,7 @@ export default function AuthLayout({
         />
         
         {/* Content */}
-        <div className="relative z-10 flex flex-col justify-between h-full p-12 text-white">
+        <div className="relative z-10 flex h-full flex-col justify-between p-10 text-white xl:p-12">
           {/* Logo */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -79,7 +79,7 @@ export default function AuthLayout({
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
-            className="space-y-8"
+            className="space-y-7"
           >
             <div>
               <motion.div
@@ -96,7 +96,7 @@ export default function AuthLayout({
                 Опростете вашето<br />
                 <span className="text-slate-400">фактуриране</span>
               </h1>
-              <p className="text-lg text-slate-400 max-w-md">
+              <p className="max-w-md text-base text-slate-400 xl:text-lg">
                 {APP_DESCRIPTION}
               </p>
             </div>
@@ -133,7 +133,7 @@ export default function AuthLayout({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 1.2, ease: "easeOut" }}
-            className="flex gap-8"
+            className="flex gap-6"
           >
             {[
               { value: "1000+", label: "Потребители" },
@@ -184,63 +184,23 @@ export default function AuthLayout({
         </motion.div>
       </div>
 
-      {/* Right side - Form with full section animation */}
-      <div className="w-full lg:w-1/2 relative overflow-hidden bg-background">
-        {/* Animated Background - Glassmorphism style */}
+      {/* Right side - Form surface */}
+      <div className="relative w-full overflow-hidden bg-background lg:w-[56%] xl:w-[54%]">
         <div className="absolute inset-0">
-          {/* Base gradient */}
           <div className="absolute inset-0 bg-linear-to-br from-slate-100 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" />
-          
-          {/* Vibrant animated blobs */}
-          <motion.div 
-            className="absolute -top-20 -right-20 w-[600px] h-[600px] rounded-full blur-3xl"
-            style={{ background: 'radial-gradient(circle, rgba(16, 185, 129, 0.4) 0%, rgba(20, 184, 166, 0.2) 40%, transparent 70%)' }}
-            animate={{ 
-              scale: [1, 1.2, 1],
-              x: [0, 40, 0],
-              y: [0, -30, 0]
-            }}
-            transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <motion.div 
-            className="absolute -bottom-20 -left-20 w-[500px] h-[500px] rounded-full blur-3xl"
-            style={{ background: 'radial-gradient(circle, rgba(59, 130, 246, 0.35) 0%, rgba(99, 102, 241, 0.2) 40%, transparent 70%)' }}
-            animate={{ 
-              scale: [1.2, 1, 1.2],
-              x: [0, -40, 0],
-              y: [0, 30, 0]
-            }}
-            transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <motion.div 
-            className="absolute top-1/2 left-1/3 w-[400px] h-[400px] rounded-full blur-3xl"
-            style={{ background: 'radial-gradient(circle, rgba(168, 85, 247, 0.3) 0%, transparent 60%)' }}
-            animate={{ 
-              scale: [1, 1.15, 1],
-              opacity: [0.5, 0.8, 0.5]
-            }}
-            transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <motion.div 
-            className="absolute top-1/4 right-1/4 w-[300px] h-[300px] rounded-full blur-3xl"
-            style={{ background: 'radial-gradient(circle, rgba(236, 72, 153, 0.25) 0%, transparent 60%)' }}
-            animate={{ 
-              scale: [1.1, 1, 1.1],
-              y: [0, 20, 0]
-            }}
-            transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-          />
+          <div className="absolute -right-28 top-0 h-72 w-72 rounded-full bg-emerald-500/12 blur-3xl" />
+          <div className="absolute -left-24 bottom-0 h-72 w-72 rounded-full bg-blue-500/10 blur-3xl" />
+          <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-border/60 to-transparent" />
         </div>
 
-        {/* Form Container – single screen, no scroll */}
-        <div className="relative z-10 flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8 overflow-auto">
-          <div className="w-full max-w-md flex flex-col items-center justify-center py-4">
+        <div className="relative z-10 flex min-h-screen items-center justify-center overflow-y-auto p-4 py-6 sm:p-6 sm:py-8 lg:p-8 lg:py-10">
+          <div className="flex w-full max-w-md flex-col items-center justify-center py-2 sm:max-w-xl lg:max-w-xl">
             {/* Back + Mobile Logo row */}
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="flex items-center justify-between w-full mb-4"
+              className="mb-4 flex w-full items-center justify-between sm:mb-5"
             >
               <Button
                 variant="ghost"
@@ -267,7 +227,7 @@ export default function AuthLayout({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="glass-card rounded-2xl p-5 sm:p-6 shadow-xl w-full"
+              className="glass-card w-full rounded-2xl border border-border/50 p-5 shadow-xl sm:p-6 lg:p-7"
             >
               {children}
             </motion.div>
