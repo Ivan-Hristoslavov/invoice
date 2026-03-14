@@ -10,6 +10,23 @@ import {
   getCompanyRoleForUser,
 } from "@/lib/team";
 import { supabaseAdmin } from "@/lib/supabase";
+import { createMagicLinkToken } from "@/lib/magic-link";
+import { sendTeamInviteEmail } from "@/lib/email";
+
+function getRoleLabel(role: string) {
+  switch (role) {
+    case "ADMIN":
+      return "Администратор";
+    case "MANAGER":
+      return "Мениджър";
+    case "ACCOUNTANT":
+      return "Счетоводител";
+    case "VIEWER":
+      return "Наблюдател";
+    default:
+      return role;
+  }
+}
 
 const UpdateInviteSchema = z.object({
   action: z.enum(["resend"]),
@@ -65,9 +82,32 @@ export async function PATCH(
       throw error || new Error("Неуспешно обновяване на поканата");
     }
 
+    const { data: company } = await supabaseAdmin
+      .from("Company")
+      .select("name")
+      .eq("id", updatedInvite.companyId)
+      .maybeSingle();
+
+    const magicLogin = await createMagicLinkToken(updatedInvite.email);
+    const inviteUrl = `${request.nextUrl.origin}/team/accept?token=${updatedInvite.token}`;
+    const magicLinkUrl =
+      `${request.nextUrl.origin}/signin?email=${encodeURIComponent(updatedInvite.email)}` +
+      `&magicToken=${encodeURIComponent(magicLogin.token)}` +
+      `&callbackUrl=${encodeURIComponent(`/team/accept?token=${updatedInvite.token}`)}`;
+
+    await sendTeamInviteEmail({
+      to: updatedInvite.email,
+      companyName: company?.name || "вашата компания",
+      inviterName: sessionUser.name || sessionUser.email || "Екипът",
+      roleLabel: getRoleLabel(updatedInvite.role),
+      acceptUrl: inviteUrl,
+      magicLinkUrl,
+    });
+
     return NextResponse.json({
       invite: updatedInvite,
-      inviteUrl: `${request.nextUrl.origin}/team/accept?token=${updatedInvite.token}`,
+      inviteUrl,
+      magicLinkUrl,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

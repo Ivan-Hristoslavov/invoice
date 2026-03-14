@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
@@ -53,6 +53,8 @@ export function RegisterForm() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const inviteEmail = searchParams.get("email");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -105,9 +107,10 @@ export function RegisterForm() {
 
       if (result?.error) {
         toast.error("Акаунтът е създаден, но влизането не беше успешно. Моля, влезте ръчно.");
-        router.push("/signin");
+        router.push(`/signin?email=${encodeURIComponent(formData.email)}&callbackUrl=${encodeURIComponent(callbackUrl)}`);
       } else {
-        router.push("/dashboard");
+        router.push(callbackUrl);
+        router.refresh();
       }
     } catch (error) {
       if (error instanceof Error) {
@@ -121,7 +124,7 @@ export function RegisterForm() {
 
   const handleGoogleSignIn = () => {
     setIsGoogleLoading(true);
-    signIn("google", { callbackUrl: "/dashboard" });
+    signIn("google", { callbackUrl });
   };
 
   // Password strength indicator
@@ -139,6 +142,12 @@ export function RegisterForm() {
   const strengthColors = ["bg-red-500", "bg-orange-500", "bg-amber-500", "bg-emerald-500"];
   const selectedPlanKey = searchParams.get("plan") as keyof typeof planContent | null;
   const selectedPlan = selectedPlanKey ? planContent[selectedPlanKey] : null;
+
+  useEffect(() => {
+    if (inviteEmail) {
+      setFormData((prev) => ({ ...prev, email: inviteEmail }));
+    }
+  }, [inviteEmail]);
 
   return (
     <div className="w-full animate-in fade-in duration-300">
