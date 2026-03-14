@@ -137,7 +137,7 @@ function SectionPanel({
   badge,
   helperText,
   isOpen,
-  onOpen,
+  onToggle,
   children,
 }: {
   index: number;
@@ -147,7 +147,7 @@ function SectionPanel({
   badge: ReturnType<typeof getStatusBadge>;
   helperText: string;
   isOpen: boolean;
-  onOpen: () => void;
+  onToggle: () => void;
   children: React.ReactNode;
 }) {
   return (
@@ -155,7 +155,7 @@ function SectionPanel({
       <Card className={cn("overflow-hidden border-border/70 bg-card/85", isOpen && "border-primary/30 shadow-lg shadow-primary/5")}>
         <button
           type="button"
-          onClick={onOpen}
+          onClick={onToggle}
           className="flex w-full items-start gap-4 p-5 text-left sm:p-6"
           aria-expanded={isOpen}
         >
@@ -253,7 +253,7 @@ function getStepForCompanyField(field?: string) {
 export default function NewCompanyPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState<number | null>(0);
   const [confirmed, setConfirmed] = useState(false);
   const [companyCreationMode, setCompanyCreationMode] = useState<CompanyCreationMode | null>(null);
   const [lookupResult, setLookupResult] = useState<Record<string, unknown> | null>(null);
@@ -331,6 +331,10 @@ export default function NewCompanyPage() {
       const section = document.querySelector(`[data-company-section="${stepIndex}"]`);
       section?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
+  }, []);
+
+  const toggleSection = useCallback((stepIndex: number) => {
+    setCurrentStep((prevStep) => (prevStep === stepIndex ? null : stepIndex));
   }, []);
 
   const handleCompanyBookSuccess = useCallback((fields: Record<string, unknown>) => {
@@ -675,7 +679,7 @@ export default function NewCompanyPage() {
                     badge={getStatusBadge(getSectionStatus(sections[0]))}
                     helperText={getSectionHelperText(sections[0])}
                     isOpen={currentStep === 0}
-                    onOpen={() => focusSection(0)}
+                    onToggle={() => toggleSection(0)}
                   >
                     <div className="grid gap-6 lg:grid-cols-2 [&_label]:text-[15px] [&_label]:font-semibold [&_p]:leading-6">
                     <FormField
@@ -705,7 +709,7 @@ export default function NewCompanyPage() {
                           const isValidState = isDirty && !invalid && !isEmpty;
                           const isInvalidState = isDirty && invalid;
                           return (
-                            <FormItem>
+                            <FormItem className="space-y-2">
                               <FormLabel className="flex items-center gap-2">
                                 <Mail className="h-4 w-4" />
                                 Имейл
@@ -735,34 +739,16 @@ export default function NewCompanyPage() {
                                   </div>
                                 </div>
                               </FormControl>
-                              <div
-                                className="overflow-hidden transition-all duration-300"
-                                style={{
-                                  maxHeight: isInvalidState ? "3rem" : "0",
-                                  opacity: isInvalidState ? 1 : 0,
-                                }}
-                              >
-                                <div className="flex items-center gap-1.5 pt-1 text-sm text-destructive">
+                              <FormDescription className="mt-1 text-xs text-muted-foreground">
+                                Имейл за контакт за фактури
+                              </FormDescription>
+                              {isInvalidState ? (
+                                <div className="flex items-center gap-1.5 text-sm text-destructive">
                                   <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                                   <FormMessage />
                                 </div>
-                              </div>
-                              <div
-                                className="overflow-hidden transition-all duration-300"
-                                style={{
-                                  maxHeight: isValidState ? "2rem" : "0",
-                                  opacity: isValidState ? 1 : 0,
-                                }}
-                              >
-                                <p className="flex items-center gap-1.5 pt-1 text-xs text-emerald-600 dark:text-emerald-400">
-                                  <CheckCircle2 className="h-3 w-3" />
-                                  Имейлът изглежда правилен
-                                </p>
-                              </div>
-                              {!isDirty && (
-                                <p className="text-xs text-muted-foreground">
-                                  Имейл за контакт за фактури
-                                </p>
+                              ) : (
+                                <FormMessage />
                               )}
                             </FormItem>
                           );
@@ -797,7 +783,7 @@ export default function NewCompanyPage() {
                     badge={getStatusBadge(getSectionStatus(sections[1]))}
                     helperText={getSectionHelperText(sections[1])}
                     isOpen={currentStep === 1}
-                    onOpen={() => focusSection(1)}
+                    onToggle={() => toggleSection(1)}
                   >
                     <div className="grid gap-6 lg:grid-cols-2 [&_label]:text-[15px] [&_label]:font-semibold [&_p]:leading-6">
                     <FormField
@@ -890,7 +876,7 @@ export default function NewCompanyPage() {
                     badge={getStatusBadge(getSectionStatus(sections[2]))}
                     helperText={getSectionHelperText(sections[2])}
                     isOpen={currentStep === 2}
-                    onOpen={() => focusSection(2)}
+                    onToggle={() => toggleSection(2)}
                   >
                     <div className="grid gap-6 lg:grid-cols-2 [&_label]:text-[15px] [&_label]:font-semibold [&_p]:leading-6">
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -957,21 +943,54 @@ export default function NewCompanyPage() {
 
                     <Separator />
 
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
                       <FormField
                         control={form.control}
                         name="vatRegistered"
                         render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-lg border p-4">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel>Регистрация по ЗДДС</FormLabel>
-                              <FormDescription>Компанията е регистрирана по ЗДДС</FormDescription>
+                          <FormItem
+                            className={cn(
+                              "rounded-[28px] border p-5 transition-colors",
+                              field.value
+                                ? "border-primary/30 bg-primary/6 shadow-sm shadow-primary/10"
+                                : "border-border/70 bg-background/70"
+                            )}
+                          >
+                            <div className="flex items-start gap-4">
+                              <FormControl>
+                                <Checkbox
+                                  className="mt-1"
+                                  checked={field.value}
+                                  onCheckedChange={(checked) => {
+                                    const nextChecked = Boolean(checked);
+                                    field.onChange(nextChecked);
+                                    if (!nextChecked) {
+                                      form.setValue("vatRegistrationNumber", "", {
+                                        shouldDirty: true,
+                                        shouldValidate: true,
+                                      });
+                                    }
+                                  }}
+                                />
+                              </FormControl>
+                              <div className="min-w-0 space-y-2">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <FormLabel className="m-0">Регистрация по ЗДДС</FormLabel>
+                                  <span
+                                    className={cn(
+                                      "inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-medium",
+                                      field.value
+                                        ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                        : "border-border/70 bg-muted/50 text-muted-foreground"
+                                    )}
+                                  >
+                                    {field.value ? "Активна" : "Не е активна"}
+                                  </span>
+                                </div>
+                                <FormDescription className="text-sm leading-6 text-muted-foreground">
+                                  Отбележете само ако фирмата е регистрирана по ЗДДС и ДДС номерът трябва да присъства във фактурите.
+                                </FormDescription>
+                              </div>
                             </div>
                           </FormItem>
                         )}
@@ -981,12 +1000,21 @@ export default function NewCompanyPage() {
                         control={form.control}
                         name="vatRegistrationNumber"
                         render={({ field }) => (
-                          <FormItem>
+                          <FormItem className="rounded-[28px] border border-border/70 bg-background/70 p-5">
                             <FormLabel>ДДС номер</FormLabel>
                             <FormControl>
-                              <Input placeholder="BG123456789" className="h-12" {...field} />
+                              <Input
+                                placeholder="BG123456789"
+                                className="h-12"
+                                disabled={!form.watch("vatRegistered")}
+                                {...field}
+                              />
                             </FormControl>
-                            <FormDescription>№ по ЗДДС</FormDescription>
+                            <FormDescription>
+                              {form.watch("vatRegistered")
+                                ? "Попълнете официалния номер по ЗДДС."
+                                : "Полето се активира, когато фирмата е регистрирана по ЗДДС."}
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -1035,7 +1063,7 @@ export default function NewCompanyPage() {
                     badge={getStatusBadge(getSectionStatus(sections[3]))}
                     helperText={getSectionHelperText(sections[3])}
                     isOpen={currentStep === 3}
-                    onOpen={() => focusSection(3)}
+                    onToggle={() => toggleSection(3)}
                   >
                     <div className="grid gap-6 lg:grid-cols-2 [&_label]:text-[15px] [&_label]:font-semibold [&_p]:leading-6">
                     <FormField

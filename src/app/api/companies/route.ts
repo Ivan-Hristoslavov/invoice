@@ -14,7 +14,7 @@ import cuid from "cuid";
 
 // Define validation schema for company data
 const companySchema = z.object({
-  name: z.string().min(1, "Името на компанията е задължително1"),
+  name: z.string().min(1, "Името на компанията е задължително"),
   email: z.string().email("Моля, въведете валиден имейл").optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   address: z.string().optional().or(z.literal("")),
@@ -40,6 +40,25 @@ const companySchema = z.object({
   bankSwift: z.string().optional().or(z.literal("")),
   bankIban: z.string().optional().or(z.literal("")),
 });
+
+function getDuplicateCompanyResponse(isOwnedByCurrentUser: boolean) {
+  const message = isOwnedByCurrentUser
+    ? "Вече сте добавили компания с този ЕИК/БУЛСТАТ."
+    : "Тази компания вече е регистрирана в платформата и не може да бъде добавена към вашия акаунт.";
+
+  return NextResponse.json(
+    {
+      error: message,
+      details: [
+        {
+          path: ["bulstatNumber"],
+          message,
+        },
+      ],
+    },
+    { status: 409 }
+  );
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -163,15 +182,12 @@ export async function POST(request: NextRequest) {
     if (bulstat) {
       const { data: byBulstat } = await supabase
         .from("Company")
-        .select("id")
-        .ilike("bulstatNumber", bulstat)
+        .select("id, userId")
+        .eq("bulstatNumber", bulstat)
         .limit(1)
         .maybeSingle();
       if (byBulstat) {
-        return NextResponse.json(
-          { error: "Фирма с този ЕИК/БУЛСТАТ вече е регистрирана в платформата. Един ЕИК може да бъде свързан само с един акаунт." },
-          { status: 409 }
-        );
+        return getDuplicateCompanyResponse(byBulstat.userId === sessionUser.id);
       }
     }
     const companyId = cuid();
@@ -218,10 +234,7 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       if (error.code === "23505") {
-        return NextResponse.json(
-          { error: "Фирма с този ЕИК/БУЛСТАТ вече е регистрирана в платформата." },
-          { status: 409 }
-        );
+        return getDuplicateCompanyResponse(false);
       }
       throw error;
     }
