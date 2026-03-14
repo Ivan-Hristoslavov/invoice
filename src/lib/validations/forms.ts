@@ -69,7 +69,7 @@ export const invoiceSchema = z.object({
   issueDate: z.string().refine(str => !isNaN(Date.parse(str)), "Невалидна дата"),
   dueDate: z.string().refine(str => !isNaN(Date.parse(str)), "Невалидна дата"),
   supplyDate: z.string().refine(str => !isNaN(Date.parse(str)), "Невалидна дата").optional(),
-  status: z.enum(['DRAFT', 'UNPAID', 'PAID', 'OVERDUE', 'CANCELLED']).default('DRAFT'),
+  status: z.enum(['DRAFT', 'ISSUED', 'VOIDED', 'CANCELLED']).default('DRAFT'),
   currency: z.string().optional().default('EUR'),
   locale: z.string().optional().default('bg'),
   placeOfIssue: z.string().optional().default('София'),
@@ -93,7 +93,7 @@ export const paymentSchema = z.object({
   invoiceId: z.string().min(1, "Фактурата е задължителна"),
   amount: z.number().min(0.01, "Сумата трябва да бъде положително число"),
   paymentDate: z.string().refine(str => !isNaN(Date.parse(str)), "Невалидна дата"),
-  paymentMethod: z.enum(['BANK_TRANSFER', 'CARD', 'CASH', 'OTHER']),
+  paymentMethod: z.enum(['BANK_TRANSFER', 'CREDIT_CARD', 'CARD', 'CASH', 'OTHER']),
   notes: z.string().optional(),
 });
 

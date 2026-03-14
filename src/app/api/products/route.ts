@@ -11,7 +11,7 @@ const productSchema = z.object({
   description: z.string().optional(),
   price: z.number().nonnegative(),
   unit: z.string().min(1),
-  taxRate: z.number().nonnegative().default(0),
+  taxRate: z.number().nonnegative().default(20),
 });
 
 export async function POST(request: NextRequest) {

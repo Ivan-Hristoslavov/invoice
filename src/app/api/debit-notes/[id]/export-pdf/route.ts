@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { generateDebitNotePdfServer } from "@/lib/debit-note-pdf";
+import { resolveSessionUser } from "@/lib/session-user";
+import { withDocumentSnapshots } from "@/lib/document-snapshots";
 
 export async function GET(
   request: NextRequest,
@@ -15,6 +17,10 @@ export async function GET(
     if (!session?.user) {
       return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Потребителят не е намерен" }, { status: 404 });
+    }
 
     const supabase = createAdminClient();
 
@@ -26,7 +32,7 @@ export async function GET(
         items:DebitNoteItem(*)
       `)
       .eq("id", id)
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .single();
 
     if (debitNoteError || !debitNote) {
@@ -43,10 +49,13 @@ export async function GET(
     ]);
 
     const debitNoteData = {
-      ...debitNote,
+      ...withDocumentSnapshots(
+        debitNote,
+        companyResult.data,
+        clientResult.data,
+        debitNote.items || []
+      ),
       invoice: invoiceResult.data,
-      client: clientResult.data,
-      company: companyResult.data,
     };
 
     // Generate PDF

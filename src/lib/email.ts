@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import { exportInvoicePdfBuffer } from './invoice-export';
 import { createAdminClient } from './supabase/server';
+import { withDocumentSnapshots } from './document-snapshots';
 
 // Lazy initialization helper to avoid build-time errors
 function getSmtpTransporter() {
@@ -124,11 +125,21 @@ export async function sendInvoiceEmail({ to, invoiceNumber, type, paymentLink }:
         bankAccount = bankData;
       }
       
-      // Prepare full invoice data for PDF generation (same format as export-pdf route)
+      const snapshotInvoice = withDocumentSnapshots(
+        invoice,
+        invoice.company ? { ...invoice.company, bankAccount } : null,
+        invoice.client,
+        invoice.items || []
+      );
       const fullInvoice = {
-        ...invoice,
-        company: invoice.company ? { ...invoice.company, bankAccount } : null,
-        items: invoice.items || [],
+        ...snapshotInvoice,
+        company: snapshotInvoice.company
+          ? {
+              ...snapshotInvoice.company,
+              bankAccount:
+                snapshotInvoice.company.bankAccountDetails || bankAccount || null,
+            }
+          : null,
         isOriginal: true,
       };
       

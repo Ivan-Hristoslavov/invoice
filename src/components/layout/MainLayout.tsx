@@ -34,6 +34,10 @@ export function MainLayout({ children }: MainLayoutProps) {
     );
   }
 
+  if (pathname === "/" && status === "loading") {
+    return <main className="min-h-screen relative" />;
+  }
+
   // Standard layout with navigation - fixed sidebar on desktop
   return (
     <KeyboardShortcutsProvider>

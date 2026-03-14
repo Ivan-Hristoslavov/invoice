@@ -3,6 +3,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { resolveSessionUser } from "@/lib/session-user";
+import {
+  formatValidationIssues,
+  validateBulgarianPartyInput,
+} from "@/lib/bulgarian-party";
 import { z } from "zod";
 import Stripe from 'stripe';
 import { getStripeInstance } from '@/lib/stripe';
@@ -129,6 +133,16 @@ export async function POST(request: NextRequest) {
     
     // Validate incoming data
     const validatedData = companySchema.parse(json);
+    const { normalized, issues } = validateBulgarianPartyInput(validatedData, {
+      requireMol: true,
+    });
+
+    if (issues.length > 0) {
+      return NextResponse.json(
+        { error: "Неуспешна валидация", details: formatValidationIssues(issues) },
+        { status: 400 }
+      );
+    }
     
     // Check subscription limits - брой фирми
     const { checkSubscriptionLimits } = await import("@/middleware/subscription");
@@ -145,7 +159,7 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createAdminClient();
-    const bulstat = validatedData.bulstatNumber?.trim() || "";
+    const bulstat = normalized.bulstatNumber || "";
     if (bulstat) {
       const { data: byBulstat } = await supabase
         .from("Company")
@@ -162,8 +176,33 @@ export async function POST(request: NextRequest) {
     }
     const companyId = cuid();
     const payload = {
-      ...validatedData,
-      bulstatNumber: validatedData.bulstatNumber?.trim() || validatedData.bulstatNumber || null,
+      name: normalized.name,
+      email: normalized.email,
+      phone: normalized.phone,
+      address: normalized.address,
+      city: normalized.city,
+      state: normalized.state,
+      zipCode: normalized.zipCode,
+      country: normalized.country,
+      vatNumber: normalized.vatRegistrationNumber || normalized.vatNumber || null,
+      taxIdNumber: normalized.taxIdNumber,
+      registrationNumber: normalized.registrationNumber,
+      bulstatNumber: bulstat || null,
+      vatRegistered: normalized.vatRegistered ?? false,
+      vatRegistrationNumber: normalized.vatRegistrationNumber || normalized.vatNumber || null,
+      mol: normalized.mol,
+      accountablePerson: normalized.accountablePerson,
+      uicType: normalized.uicType ?? "BULSTAT",
+      taxComplianceSystem:
+        normalized.country?.toLowerCase() === "българия" ||
+        normalized.country?.toLowerCase() === "bulgaria" ||
+        bulstat
+          ? "bulgarian"
+          : "general",
+      bankName: normalized.bankName,
+      bankAccount: normalized.bankAccount,
+      bankSwift: normalized.bankSwift,
+      bankIban: normalized.bankIban,
     };
 
     const { data: company, error } = await supabase

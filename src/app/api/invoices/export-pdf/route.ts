@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { generateInvoicePdfServer } from "@/lib/pdf-generator";
 import { resolveSessionUser } from "@/lib/session-user";
+import { withDocumentSnapshots } from "@/lib/document-snapshots";
 
 export async function GET(request: NextRequest) {
   try {
@@ -78,13 +79,24 @@ export async function GET(request: NextRequest) {
       .select("*")
       .eq("invoiceId", invoiceId);
 
-    // Combine all data
-    const fullInvoice = {
-      ...invoice,
+    const snapshotInvoice = withDocumentSnapshots(
+      invoice,
+      company ? { ...company, bankAccount } : null,
       client,
-      company: company ? { ...company, bankAccount } : null,
-      items: items || [],
-      isOriginal: !isCopy, // Original by default, Copy if ?copy=true
+      items || []
+    );
+    const snapshotCompany =
+      snapshotInvoice.company && typeof snapshotInvoice.company === "object"
+        ? {
+            ...snapshotInvoice.company,
+            bankAccount:
+              snapshotInvoice.company.bankAccountDetails || bankAccount || null,
+          }
+        : null;
+    const fullInvoice = {
+      ...snapshotInvoice,
+      company: snapshotCompany,
+      isOriginal: !isCopy,
     };
 
     // Generate PDF

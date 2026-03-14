@@ -42,6 +42,7 @@ model User {
   subscriptions Subscription[]
   creditNotes   CreditNote[]
   debitNotes    DebitNote[]
+  invoiceSequences InvoiceSequence[]
   auditLogs     AuditLog[]
   passwordResetTokens PasswordResetToken[]
 }
@@ -235,6 +236,9 @@ model Invoice {
   supplyDate      DateTime? // Date of supply/service delivery (дата на данъчно събитие)
   isEInvoice      Boolean  @default(false) // Whether this is an electronic invoice
   napStatus       String?  // Status of the invoice in the НАП system
+  sellerSnapshot  Json?
+  buyerSnapshot   Json?
+  itemsSnapshot   Json?
   
   // Immutable: invoices cannot be edited after creation, only cancelled → credit note
   cancelledAt     DateTime? // When invoice was cancelled
@@ -262,6 +266,7 @@ model InvoiceItem {
   description String
   quantity    Decimal  @db.Decimal(10, 2)
   unitPrice   Decimal  @db.Decimal(10, 2)
+  unit        String?  @default("бр.")
   taxRate     Decimal  @default(0) @db.Decimal(5, 2)
   subtotal    Decimal  @db.Decimal(10, 2)
   taxAmount   Decimal  @db.Decimal(10, 2)
@@ -275,12 +280,14 @@ model InvoiceItem {
 model InvoiceSequence {
   id          String   @id @default(cuid())
   companyId   String
+  userId      String
   year        Int      // Calendar year (e.g., 2026)
   sequence    Int      @default(1) // Current sequence number
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
   company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   invoice     Invoice? @relation // The invoice using this sequence
   
   @@unique([companyId, year])
@@ -301,6 +308,9 @@ model CreditNote {
   total            Decimal  @db.Decimal(10, 2)
   currency         String   @default("EUR")
   notes            String?
+  sellerSnapshot   Json?
+  buyerSnapshot    Json?
+  itemsSnapshot    Json?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   
@@ -319,6 +329,7 @@ model CreditNoteItem {
   description   String
   quantity      Decimal  @db.Decimal(10, 2)
   unitPrice     Decimal  @db.Decimal(10, 2)
+  unit          String?  @default("бр.")
   taxRate       Decimal  @default(0) @db.Decimal(5, 2)
   subtotal      Decimal  @db.Decimal(10, 2)
   taxAmount     Decimal  @db.Decimal(10, 2)
@@ -342,6 +353,9 @@ model DebitNote {
   total            Decimal  @db.Decimal(10, 2)
   currency         String   @default("EUR")
   notes            String?
+  sellerSnapshot   Json?
+  buyerSnapshot    Json?
+  itemsSnapshot    Json?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   
@@ -360,6 +374,7 @@ model DebitNoteItem {
   description   String
   quantity      Decimal  @db.Decimal(10, 2)
   unitPrice     Decimal  @db.Decimal(10, 2)
+  unit          String?  @default("бр.")
   taxRate       Decimal  @default(0) @db.Decimal(5, 2)
   subtotal      Decimal  @db.Decimal(10, 2)
   taxAmount     Decimal  @db.Decimal(10, 2)

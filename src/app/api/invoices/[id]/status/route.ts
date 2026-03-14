@@ -5,26 +5,17 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { resolveSessionUser } from "@/lib/session-user";
 
-// Valid status transitions
-// Note: Database enum values might be: DRAFT, UNPAID, PAID, OVERDUE, CANCELLED, VOIDED
-// We map ISSUED -> PAID for backward compatibility until DB enum is updated
+// Valid status transitions for the current invoice lifecycle.
 const VALID_TRANSITIONS: Record<string, string[]> = {
-  DRAFT: ["ISSUED", "PAID", "VOIDED"],  // Draft can be issued or voided
-  ISSUED: ["CANCELLED"],                 // Issued can only be cancelled
-  PAID: ["CANCELLED"],                   // Paid (old name for ISSUED) can only be cancelled
-  VOIDED: [],                            // Voided is final (but can be deleted)
-  CANCELLED: [],                         // Cancelled is final
+  DRAFT: ["ISSUED", "VOIDED"],
+  ISSUED: ["CANCELLED"],
+  PAID: ["CANCELLED"],
+  VOIDED: [],
+  CANCELLED: [],
 };
 
-// Map new status names to database enum values
-const STATUS_TO_DB: Record<string, string> = {
-  ISSUED: "PAID",  // ISSUED maps to PAID in the database enum
-  // All other statuses remain the same
-};
-
-// Map database enum values to application status names
 const DB_TO_STATUS: Record<string, string> = {
-  PAID: "ISSUED",  // PAID in DB means ISSUED in the app
+  PAID: "ISSUED",
 };
 
 export async function PATCH(
@@ -108,14 +99,11 @@ export async function PATCH(
       );
     }
 
-    // Map status to database enum value if needed
-    const dbStatus = STATUS_TO_DB[status] || status;
-    
     // Update invoice status
     const { data: updatedInvoice, error: updateError } = await supabase
       .from("Invoice")
       .update({
-        status: dbStatus,
+        status,
         updatedAt: new Date().toISOString(),
       })
       .eq("id", id)
@@ -137,7 +125,7 @@ export async function PATCH(
       
       // Determine action type based on new status
       const actionType = status === "VOIDED" ? "VOID" : 
-                         status === "ISSUED" || status === "PAID" ? "ISSUE" : "UPDATE";
+                         status === "ISSUED" ? "ISSUE" : "UPDATE";
       
       await logAction({
         userId: sessionUser.id,

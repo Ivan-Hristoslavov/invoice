@@ -265,7 +265,18 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
   // Status badge - text only, no background for black & white printing
   yPos += 8;
   const status = invoice.status || 'DRAFT';
-  const statusText = status === 'DRAFT' ? 'ЧЕРНОВА' : status === 'ISSUED' ? 'ИЗДАДЕНА' : status === 'CANCELLED' ? 'АНУЛИРАНА' : status === 'PAID' ? 'ПЛАТЕНА' : status;
+  const statusText =
+    status === 'DRAFT'
+      ? 'ЧЕРНОВА'
+      : status === 'ISSUED'
+        ? 'ИЗДАДЕНА'
+        : status === 'VOIDED'
+          ? 'АНУЛИРАНА'
+          : status === 'CANCELLED'
+            ? 'СТОРНИРАНА'
+            : status === 'PAID'
+              ? 'ИЗДАДЕНА'
+              : status;
   
   doc.setFontSize(9);
   doc.setTextColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
@@ -606,6 +617,7 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
   doc.setTextColor(COLORS.text.r, COLORS.text.g, COLORS.text.b);
   const paymentMethodLabels: Record<string, string> = {
     'BANK_TRANSFER': 'Банков превод',
+    'CREDIT_CARD': 'Кредитна/дебитна карта',
     'CARD': 'Карта',
     'CASH': 'В брой',
     'OTHER': 'Друго',

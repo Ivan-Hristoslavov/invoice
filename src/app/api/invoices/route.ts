@@ -6,6 +6,12 @@ import { withErrorHandling } from "@/middleware/error-handler";
 import { withRateLimit } from "@/middleware/rate-limiter";
 import { withAuthorization } from "@/middleware/authorization";
 import { formatApiResponse, formatPaginationParams } from "@/lib/api-utils";
+import {
+  createDocumentSnapshots,
+  fetchOwnedCompanyAndClient,
+  fetchProductsByIds,
+  prepareDocumentItems,
+} from "@/lib/invoice-documents";
 import { z } from "zod";
 import { invoiceSchema, invoiceItemSchema } from "@/lib/validations/forms";
 import { ApiStatusCode } from "@/types/api";
@@ -220,50 +226,41 @@ export async function POST(request: NextRequest) {
         
         const supabase = createAdminClient();
         
-        // Get company for EIK (needed for invoice number)
-        const { data: company } = await supabase
-          .from("Company")
-          .select("bulstatNumber")
-          .eq("id", validatedData.companyId)
-          .eq("userId", sessionUser.id)
-          .single();
-        
+        const { company, client } = await fetchOwnedCompanyAndClient(
+          supabase,
+          sessionUser.id,
+          validatedData.companyId,
+          validatedData.clientId
+        );
+
         if (!company) {
           return NextResponse.json(
             { error: "Компанията не е намерена" },
             { status: 404 }
           );
         }
+
+        if (!client) {
+          return NextResponse.json(
+            { error: "Клиентът не е намерен" },
+            { status: 404 }
+          );
+        }
         
-        // Изчисляване на суми
-        let subtotal = 0;
-        let taxAmount = 0;
-        
-        const preparedItems = validatedData.items.map((item: any) => {
-          const itemPrice = Number(item.price);
-          const itemQuantity = Number(item.quantity);
-          const itemTaxRate = item.taxRate !== undefined ? Number(item.taxRate) : 0;
-          
-          const lineSubtotal = itemPrice * itemQuantity;
-          const lineTax = lineSubtotal * (itemTaxRate / 100);
-          
-          subtotal += lineSubtotal;
-          taxAmount += lineTax;
-          
-          return {
-            id: cuid(),
-            description: item.description,
-            quantity: itemQuantity,
-            unitPrice: itemPrice,
-            taxRate: itemTaxRate,
-            subtotal: lineSubtotal,
-            taxAmount: lineTax,
-            total: lineSubtotal + lineTax,
-            productId: item.productId || null,
-          };
-        });
-        
-        const total = subtotal + taxAmount;
+        const productIds = validatedData.items
+          .map((item) => item.productId)
+          .filter((productId): productId is string => Boolean(productId));
+        const productById = await fetchProductsByIds(
+          supabase,
+          sessionUser.id,
+          productIds
+        );
+        const preparedInputItems = validatedData.items.map((item: any) => ({
+          ...item,
+          id: cuid(),
+        }));
+        const { preparedItems, subtotal, taxAmount, total } =
+          prepareDocumentItems(preparedInputItems, productById);
         const invoiceId = cuid();
         
         // Retry logic for invoice creation (handles duplicate invoice numbers)
@@ -275,8 +272,10 @@ export async function POST(request: NextRequest) {
           try {
             // Get next invoice number using InvoiceSequence (per-user numbering, 10-digit format)
             const { getNextInvoiceSequence } = await import("@/lib/invoice-sequence");
-            const { invoiceNumber, sequence } = await getNextInvoiceSequence(
-              sessionUser.id
+            const { invoiceNumber } = await getNextInvoiceSequence(
+              sessionUser.id,
+              validatedData.companyId,
+              company.bulstatNumber
             );
             
             // Check if invoice number already exists for this user (race condition check)
@@ -315,9 +314,19 @@ export async function POST(request: NextRequest) {
               currency: validatedData.currency || "EUR",
               locale: validatedData.locale || "bg",
               placeOfIssue: validatedData.placeOfIssue || "София",
-              paymentMethod: validatedData.paymentMethod || "BANK_TRANSFER",
+              paymentMethod:
+                validatedData.paymentMethod === "CARD"
+                  ? "CREDIT_CARD"
+                  : validatedData.paymentMethod || "BANK_TRANSFER",
               isEInvoice: validatedData.isEInvoice || false,
               isOriginal: validatedData.isOriginal !== false,
+              bulstatNumber: company.bulstatNumber || null,
+              ...createDocumentSnapshots(
+                company,
+                client,
+                preparedItems,
+                productById
+              ),
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             };
@@ -364,6 +373,7 @@ export async function POST(request: NextRequest) {
           description: item.description,
           quantity: item.quantity.toString(),
           unitPrice: item.unitPrice.toString(),
+          unit: item.unit,
           taxRate: item.taxRate.toString(),
           subtotal: item.subtotal.toString(),
           taxAmount: item.taxAmount.toString(),

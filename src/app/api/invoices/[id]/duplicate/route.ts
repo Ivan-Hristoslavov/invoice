@@ -35,7 +35,22 @@ export async function POST(
       return NextResponse.json({ error: "Фактурата не е намерена" }, { status: 404 });
     }
 
-    const invoiceNumber = await generateNextInvoiceNumber(userId);
+    const { data: company } = await supabase
+      .from("Company")
+      .select("id, bulstatNumber")
+      .eq("id", original.companyId)
+      .eq("userId", userId)
+      .maybeSingle();
+
+    if (!company) {
+      return NextResponse.json({ error: "Компанията не е намерена" }, { status: 404 });
+    }
+
+    const invoiceNumber = await generateNextInvoiceNumber(
+      userId,
+      company.id,
+      company.bulstatNumber
+    );
 
     const now = new Date();
     const dueDate = new Date(now);
@@ -61,6 +76,10 @@ export async function POST(
       termsAndConditions: original.termsAndConditions ?? null,
       isOriginal: true,
       isEInvoice: false,
+      bulstatNumber: company.bulstatNumber ?? null,
+      sellerSnapshot: original.sellerSnapshot ?? null,
+      buyerSnapshot: original.buyerSnapshot ?? null,
+      itemsSnapshot: original.itemsSnapshot ?? null,
     };
 
     const { data: newInvoice, error: createError } = await supabase
@@ -83,12 +102,13 @@ export async function POST(
 
     const rawItems = Array.isArray(original.items) ? original.items : [];
     if (rawItems.length > 0) {
-      const items = rawItems.map((item: { productId?: string | null; description: string; quantity: unknown; unitPrice: unknown; taxRate: unknown; subtotal: unknown; taxAmount: unknown; total: unknown }) => ({
+      const items = rawItems.map((item: { productId?: string | null; description: string; quantity: unknown; unitPrice: unknown; unit?: unknown; taxRate: unknown; subtotal: unknown; taxAmount: unknown; total: unknown }) => ({
         invoiceId: newInvoice.id,
         productId: item.productId || null,
         description: String(item.description ?? ""),
         quantity: Number(item.quantity) || 0,
         unitPrice: Number(item.unitPrice) || 0,
+        unit: typeof item.unit === "string" ? item.unit : "бр.",
         taxRate: Number(item.taxRate) ?? 0,
         subtotal: Number(item.subtotal) || 0,
         taxAmount: Number(item.taxAmount) || 0,

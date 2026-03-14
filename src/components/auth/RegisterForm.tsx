@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -20,8 +20,28 @@ import {
 } from "lucide-react";
 import { APP_NAME } from "@/config/constants";
 
+const planContent = {
+  FREE: {
+    name: "Безплатен",
+    description: "3 фактури на месец и 1 фирма за старт.",
+  },
+  STARTER: {
+    name: "Стартер",
+    description: "Подходящ за фрийлансъри и самостоятелни практики.",
+  },
+  PRO: {
+    name: "Про",
+    description: "Най-добрият баланс за малък бизнес с растеж.",
+  },
+  BUSINESS: {
+    name: "Бизнес",
+    description: "За екипи, повече компании и приоритетна поддръжка.",
+  },
+} as const;
+
 export function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -117,6 +137,8 @@ export function RegisterForm() {
   const passwordStrength = getPasswordStrength(formData.password);
   const strengthLabels = ["Слаба", "Средна", "Добра", "Силна"];
   const strengthColors = ["bg-red-500", "bg-orange-500", "bg-amber-500", "bg-emerald-500"];
+  const selectedPlanKey = searchParams.get("plan") as keyof typeof planContent | null;
+  const selectedPlan = selectedPlanKey ? planContent[selectedPlanKey] : null;
 
   return (
     <div className="w-full animate-in fade-in duration-300">
@@ -124,6 +146,28 @@ export function RegisterForm() {
         <h1 className="text-2xl font-bold tracking-tight mb-1">Създайте акаунт</h1>
         <p className="text-muted-foreground text-sm">Започнете безплатно с {APP_NAME}</p>
       </div>
+
+      {selectedPlan && (
+        <div className="mb-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-3.5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-400">
+                Избран план
+              </p>
+              <p className="mt-1 text-sm font-semibold">{selectedPlan.name}</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                {selectedPlan.description}
+              </p>
+            </div>
+            <Link
+              href="/#pricing"
+              className="shrink-0 text-xs font-medium text-primary hover:underline"
+            >
+              Смени
+            </Link>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="space-y-1">
@@ -251,6 +295,13 @@ export function RegisterForm() {
           )}
           Създайте акаунт
         </Button>
+
+        {selectedPlan && (
+          <p className="text-center text-[11px] text-muted-foreground">
+            Ще започнете с план <span className="font-medium text-foreground">{selectedPlan.name}</span>.
+            Планът може да бъде променен по-късно от настройките.
+          </p>
+        )}
 
         <div className="relative py-2">
           <div className="absolute inset-0 flex items-center">

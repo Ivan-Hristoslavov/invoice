@@ -3,6 +3,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { resolveSessionUser } from "@/lib/session-user";
+import {
+  formatValidationIssues,
+  validateBulgarianPartyInput,
+} from "@/lib/bulgarian-party";
 import { z } from "zod";
 import cuid from "cuid";
 
@@ -137,6 +141,14 @@ export async function POST(request: NextRequest) {
     // Parse and validate the data
     const json = await request.json();
     const validatedData = clientSchema.parse(json);
+    const { normalized, issues } = validateBulgarianPartyInput(validatedData);
+
+    if (issues.length > 0) {
+      return NextResponse.json(
+        { error: "Неуспешна валидация", details: formatValidationIssues(issues) },
+        { status: 400 }
+      );
+    }
     
     const supabase = createAdminClient();
     
@@ -146,7 +158,28 @@ export async function POST(request: NextRequest) {
       .from("Client")
       .insert({
         id: clientId,
-        ...validatedData,
+        name: normalized.name,
+        email: normalized.email,
+        phone: normalized.phone,
+        address: normalized.address,
+        city: normalized.city,
+        state: normalized.state,
+        zipCode: normalized.zipCode,
+        country: normalized.country,
+        vatNumber: normalized.vatRegistrationNumber || normalized.vatNumber || null,
+        taxIdNumber: normalized.taxIdNumber,
+        bulstatNumber: normalized.bulstatNumber,
+        vatRegistered: normalized.vatRegistered ?? false,
+        vatRegistrationNumber: normalized.vatRegistrationNumber || normalized.vatNumber || null,
+        mol: normalized.mol,
+        uicType: normalized.uicType ?? "BULSTAT",
+        locale: normalized.locale || "bg",
+        taxComplianceSystem:
+          normalized.country?.toLowerCase() === "българия" ||
+          normalized.country?.toLowerCase() === "bulgaria" ||
+          normalized.bulstatNumber
+            ? "bulgarian"
+            : "general",
         userId: sessionUser.id,
         updatedAt: new Date().toISOString(),
       })

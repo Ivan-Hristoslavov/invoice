@@ -52,7 +52,14 @@ import { Separator } from "@/components/ui/separator";
 // Step indicator component
 function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { title: string; icon: React.ReactNode }[] }) {
   return (
-    <div className="mb-6 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="mb-6 space-y-3">
+      <div className="flex items-center justify-between rounded-xl border bg-card/70 px-3 py-2 text-sm sm:hidden">
+        <span className="font-medium text-foreground">{steps[currentStep]?.title}</span>
+        <span className="text-xs text-muted-foreground">
+          Стъпка {currentStep + 1}/{steps.length}
+        </span>
+      </div>
+      <div className="overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <div className="mx-auto flex min-w-max items-center justify-center gap-2 px-1">
       {steps.map((step, index) => (
         <div key={index} className="flex items-center gap-1.5 sm:gap-2">
@@ -84,6 +91,7 @@ function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { t
           )}
         </div>
       ))}
+      </div>
       </div>
     </div>
   );
@@ -128,6 +136,7 @@ export default function NewClientPage() {
     { title: "Данъчни данни", icon: <Receipt className="h-4 w-4" /> },
     { title: "Преглед", icon: <Check className="h-4 w-4" /> },
   ];
+  const currentStepTitle = steps[currentStep]?.title ?? "";
 
   const form = useForm<ClientFormInputValues, unknown, ClientFormValues>({
     resolver: zodResolver(clientSchema),
@@ -282,19 +291,19 @@ export default function NewClientPage() {
       </div>
 
       {/* Quick EIK Lookup - always visible */}
-      <div className="max-w-2xl mx-auto mb-6">
+      <div className="mx-auto mb-6 max-w-2xl">
         <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="pt-5 pb-5">
-            <div className="flex items-start gap-3 mb-3">
+          <CardContent className="space-y-4 p-4 sm:p-5">
+            <div className="flex items-start gap-3">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                 <Search className="h-4 w-4 text-primary" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h3 className="font-semibold text-sm">Бързо попълване по ЕИК</h3>
                 <p className="text-xs text-muted-foreground">Въведете ЕИК/БУЛСТАТ и данните ще се попълнят автоматично от Търговския регистър</p>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <Input
                 placeholder="Въведете ЕИК (напр. 204676177)"
                 inputMode="numeric"
@@ -305,7 +314,7 @@ export default function NewClientPage() {
               <Button
                 type="button"
                 variant="default"
-                className="h-11 px-4 shrink-0 gap-2"
+                className="h-11 w-full shrink-0 gap-2 px-4 sm:w-auto"
                 disabled={isLookupLoading || !(formValues.bulstatNumber || "").match(/^\d{9,13}$/)}
                 onClick={handleEikLookup}
               >
@@ -317,6 +326,9 @@ export default function NewClientPage() {
                 Зареди данни
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Най-добър резултат ще получите с 9 до 13 цифри, без интервали и символи.
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -577,7 +589,7 @@ export default function NewClientPage() {
                               </span>
                             </FormLabel>
                             <FormControl>
-                              <div className="flex gap-2">
+                              <div className="flex flex-col gap-2 sm:flex-row">
                                 <NumericInput
                                   allowDecimal={false}
                                   inputMode="numeric"
@@ -589,7 +601,7 @@ export default function NewClientPage() {
                                 <Button
                                   type="button"
                                   variant="outline"
-                                  className="h-12 px-3 shrink-0"
+                                  className="h-12 w-full shrink-0 px-3 sm:w-auto"
                                   disabled={isLookupLoading || !field.value || field.value.length < 9}
                                   onClick={handleEikLookup}
                                   title="Зареди данни от Търговски регистър"
@@ -801,28 +813,34 @@ export default function NewClientPage() {
           </div>
 
           {/* Navigation */}
-          <div className="pt-6 border-t">
-            <div className="grid grid-cols-2 items-center gap-3">
-              <div className="flex justify-start">
+          <div className="sticky bottom-[calc(7rem+env(safe-area-inset-bottom))] z-20 -mx-1 rounded-2xl border border-border/70 bg-background/95 px-3 py-3 shadow-lg backdrop-blur sm:static sm:mx-0 sm:rounded-none sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:shadow-none">
+            <div className="mb-3 flex items-center justify-between text-xs text-muted-foreground sm:hidden">
+              <span className="font-medium text-foreground">{currentStepTitle}</span>
+              <span>
+                Стъпка {currentStep + 1} от {steps.length}
+              </span>
+            </div>
+            <div className="flex flex-col-reverse gap-3 sm:border-t sm:pt-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
                   disabled={currentStep === 0}
-                  className="gap-2"
+                  className="w-full gap-2 sm:w-auto"
                 >
                   <ArrowLeft className="h-4 w-4" />
                   Назад
                 </Button>
               </div>
 
-              <div className="flex justify-end gap-3">
+              <div className="flex">
                 {currentStep < 3 ? (
                   <Button
                     type="button"
                     onClick={() => setCurrentStep(currentStep + 1)}
                     disabled={!canProceed()}
-                    className="gap-2"
+                    className="w-full gap-2 sm:ml-auto sm:w-auto"
                   >
                     Напред
                     <ArrowRight className="h-4 w-4" />
@@ -831,7 +849,7 @@ export default function NewClientPage() {
                   <Button
                     type="submit"
                     disabled={isLoading || !confirmed}
-                    className="gap-2 gradient-primary hover:opacity-90 disabled:opacity-50 border-0"
+                    className="w-full gap-2 border-0 gradient-primary hover:opacity-90 disabled:opacity-50 sm:ml-auto sm:w-auto"
                   >
                     {isLoading ? (
                       <>

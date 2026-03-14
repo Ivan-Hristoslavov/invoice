@@ -130,6 +130,7 @@ export async function POST(request: NextRequest) {
             description: item.description,
             quantity: item.quantity.toString(),
             unitPrice: item.unitPrice.toString(),
+            unit: "бр.",
             taxRate: item.taxRate.toString(),
             subtotal: itemSubtotal.toString(),
             taxAmount: itemTaxAmount.toString(),

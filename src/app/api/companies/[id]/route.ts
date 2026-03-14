@@ -3,6 +3,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { resolveSessionUser } from "@/lib/session-user";
+import {
+  formatValidationIssues,
+  validateBulgarianPartyInput,
+} from "@/lib/bulgarian-party";
 import { z } from "zod";
 
 const companySchema = z.object({
@@ -78,6 +82,16 @@ export async function PUT(
     const { id: companyId } = await context.params;
     const json = await request.json();
     const validated = companySchema.parse(json);
+    const { normalized, issues } = validateBulgarianPartyInput(validated, {
+      requireMol: true,
+    });
+
+    if (issues.length > 0) {
+      return NextResponse.json(
+        { error: "Неуспешна валидация", details: formatValidationIssues(issues) },
+        { status: 400 }
+      );
+    }
 
     const supabase = createAdminClient();
 
@@ -92,7 +106,7 @@ export async function PUT(
       return NextResponse.json({ error: "Компанията не е намерена" }, { status: 404 });
     }
 
-    const bulstat = validated.bulstatNumber?.trim() || "";
+    const bulstat = normalized.bulstatNumber || "";
     if (bulstat) {
       const { data: other } = await supabase
         .from("Company")
@@ -110,27 +124,33 @@ export async function PUT(
     }
 
     const updatePayload: Record<string, unknown> = {
-      name: validated.name,
-      email: validated.email || null,
-      phone: validated.phone || null,
-      address: validated.address || null,
-      city: validated.city || null,
-      state: validated.state || null,
-      zipCode: validated.zipCode || null,
-      country: validated.country || null,
-      vatNumber: validated.vatNumber || null,
-      taxIdNumber: validated.taxIdNumber || null,
-      registrationNumber: validated.registrationNumber || null,
+      name: normalized.name,
+      email: normalized.email || null,
+      phone: normalized.phone || null,
+      address: normalized.address || null,
+      city: normalized.city || null,
+      state: normalized.state || null,
+      zipCode: normalized.zipCode || null,
+      country: normalized.country || null,
+      vatNumber: normalized.vatRegistrationNumber || normalized.vatNumber || null,
+      taxIdNumber: normalized.taxIdNumber || null,
+      registrationNumber: normalized.registrationNumber || null,
       bulstatNumber: bulstat || null,
-      vatRegistered: validated.vatRegistered ?? false,
-      vatRegistrationNumber: validated.vatRegistrationNumber || null,
-      mol: validated.mol || null,
-      accountablePerson: validated.accountablePerson || null,
-      uicType: validated.uicType ?? "BULSTAT",
-      bankName: validated.bankName || null,
-      bankAccount: validated.bankAccount || null,
-      bankSwift: validated.bankSwift || null,
-      bankIban: validated.bankIban || null,
+      vatRegistered: normalized.vatRegistered ?? false,
+      vatRegistrationNumber: normalized.vatRegistrationNumber || normalized.vatNumber || null,
+      mol: normalized.mol || null,
+      accountablePerson: normalized.accountablePerson || null,
+      uicType: normalized.uicType ?? "BULSTAT",
+      taxComplianceSystem:
+        normalized.country?.toLowerCase() === "българия" ||
+        normalized.country?.toLowerCase() === "bulgaria" ||
+        bulstat
+          ? "bulgarian"
+          : "general",
+      bankName: normalized.bankName || null,
+      bankAccount: normalized.bankAccount || null,
+      bankSwift: normalized.bankSwift || null,
+      bankIban: normalized.bankIban || null,
       updatedAt: new Date().toISOString(),
     };
 
