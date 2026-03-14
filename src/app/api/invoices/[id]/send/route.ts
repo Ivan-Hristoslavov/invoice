@@ -5,6 +5,12 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { checkSubscriptionLimits } from "@/middleware/subscription";
 import { sendInvoiceEmail } from "@/lib/email";
 import { logAction } from "@/lib/audit-log";
+import { resolveSessionUser } from "@/lib/session-user";
+import {
+  getDatabaseStatusForAppStatus,
+  isIssuedLikeStatus,
+  normalizeInvoiceStatus,
+} from "@/lib/invoice-status";
 
 export async function POST(
   request: NextRequest,
@@ -19,9 +25,17 @@ export async function POST(
         { status: 401 }
       );
     }
+
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json(
+        { error: "Потребителят не е намерен" },
+        { status: 404 }
+      );
+    }
     
     const emailLimitCheck = await checkSubscriptionLimits(
-      session.user.id as string,
+      sessionUser.id,
       'emailSending'
     );
     
@@ -32,7 +46,7 @@ export async function POST(
       );
     }
 
-    const { type } = await request.json();
+    await request.json().catch(() => null);
     const { id } = await params;
 
     const supabase = createAdminClient();
@@ -44,7 +58,7 @@ export async function POST(
         client:Client(*)
       `)
       .eq("id", id)
-      .eq("userId", session.user.id)
+      .eq("userId", sessionUser.id)
       .single();
     
     if (invoiceError || !invoice) {
@@ -60,25 +74,40 @@ export async function POST(
         { status: 400 }
       );
     }
-    
-    await supabase
-      .from("Invoice")
-      .update({ 
-        status: "ISSUED",
-        updatedAt: new Date().toISOString()
-      })
-      .eq("id", id);
-    
+
+    const invoiceStatus = normalizeInvoiceStatus(invoice.status);
+    if (invoiceStatus === "VOIDED" || invoiceStatus === "CANCELLED") {
+      return NextResponse.json(
+        { error: "Не можете да изпращате анулирани или отменени фактури" },
+        { status: 400 }
+      );
+    }
+
     await sendInvoiceEmail({
       to: invoice.client.email,
       invoiceNumber: invoice.invoiceNumber,
       type: 'invoice_only',
-      userId: session.user.id,
+      userId: sessionUser.id,
     });
+
+    if (!isIssuedLikeStatus(invoice.status)) {
+      const { error: updateError } = await supabase
+        .from("Invoice")
+        .update({ 
+          status: getDatabaseStatusForAppStatus("ISSUED", invoice.status),
+          updatedAt: new Date().toISOString()
+        })
+        .eq("id", id)
+        .eq("userId", sessionUser.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+    }
     
     const headers = request.headers;
     await logAction({
-      userId: session.user.id as string,
+      userId: sessionUser.id,
       action: 'SEND',
       entityType: 'INVOICE',
       entityId: id,

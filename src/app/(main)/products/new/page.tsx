@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input, NumericInput } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
@@ -147,6 +148,9 @@ export default function NewProductPage() {
           </Link>
         </Button>
         <div>
+          <Badge variant="info" className="mb-2">
+            Каталог
+          </Badge>
           <h1 className="page-title text-2xl sm:text-3xl">Нов продукт</h1>
           <p className="card-description">Добавете нов продукт или услуга към каталога</p>
         </div>
@@ -162,6 +166,9 @@ export default function NewProductPage() {
                   <Package className="h-4 w-4 text-primary" />
                 </div>
                 <div>
+                  <Badge variant="info" className="mb-2">
+                    Идентичност
+                  </Badge>
                   <CardTitle className="text-base">Основна информация</CardTitle>
                   <CardDescription>Име и описание на продукта</CardDescription>
                 </div>
@@ -237,6 +244,9 @@ export default function NewProductPage() {
                   <DollarSign className="h-4 w-4 text-emerald-500" />
                 </div>
                 <div>
+                  <Badge variant="success" className="mb-2">
+                    Ценообразуване
+                  </Badge>
                   <CardTitle className="text-base">Ценова информация</CardTitle>
                   <CardDescription>Цена, единица и данъчна ставка</CardDescription>
                 </div>

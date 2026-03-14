@@ -85,14 +85,17 @@ export function InvoicePreferencesForm() {
         if (response.ok) {
           const data = await response.json();
           form.reset({
-            defaultVatRate: data.defaultVatRate || DEFAULT_VAT_RATE,
-            resetNumberingYearly: true,
-            defaultCurrency: "EUR",
-            showAmountInWords: true,
-            showCompanyLogo: true,
-            autoArchiveAfterDays: 365,
-            keepDraftDays: 30,
-            startingInvoiceNumber: data.startingInvoiceNumber,
+            defaultVatRate: data.defaultVatRate ?? DEFAULT_VAT_RATE,
+            invoicePrefix: data.invoicePrefix ?? "",
+            resetNumberingYearly: data.resetNumberingYearly ?? true,
+            startingInvoiceNumber: data.startingInvoiceNumber ?? undefined,
+            defaultCurrency: data.defaultCurrency ?? "EUR",
+            showAmountInWords: data.showAmountInWords ?? true,
+            defaultTermsAndConditions: data.defaultTermsAndConditions ?? "",
+            defaultNotes: data.defaultNotes ?? "",
+            showCompanyLogo: data.showCompanyLogo ?? true,
+            autoArchiveAfterDays: data.autoArchiveAfterDays ?? 365,
+            keepDraftDays: data.keepDraftDays ?? 30,
           });
         }
       } catch (error) {
@@ -184,7 +187,7 @@ export function InvoicePreferencesForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Валута по подразбиране</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Изберете валута" />
@@ -222,7 +225,7 @@ export function InvoicePreferencesForm() {
                 <FormItem>
                   <FormLabel>Префикс на фактурите</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Напр. INV-" />
+                    <Input {...field} value={field.value ?? ""} placeholder="Напр. INV-" />
                   </FormControl>
                   <FormDescription>
                     Незадължителен префикс преди номера на фактурата
@@ -298,6 +301,7 @@ export function InvoicePreferencesForm() {
                   <FormControl>
                     <Textarea
                       {...field}
+                      value={field.value ?? ""}
                       placeholder="Въведете стандартни общи условия"
                     />
                   </FormControl>
@@ -314,6 +318,7 @@ export function InvoicePreferencesForm() {
                   <FormControl>
                     <Textarea
                       {...field}
+                      value={field.value ?? ""}
                       placeholder="Въведете стандартни бележки"
                     />
                   </FormControl>

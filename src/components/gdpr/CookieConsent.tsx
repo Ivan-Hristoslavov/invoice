@@ -13,14 +13,23 @@ type ConsentValue = "all" | "essential" | null;
 function readCookieConsent(): ConsentValue {
   if (typeof window === "undefined") return null;
 
-  const savedConsent = localStorage.getItem(COOKIE_CONSENT_KEY);
-  return savedConsent === "all" || savedConsent === "essential"
-    ? savedConsent
-    : null;
+  try {
+    const savedConsent = localStorage.getItem(COOKIE_CONSENT_KEY);
+    return savedConsent === "all" || savedConsent === "essential"
+      ? savedConsent
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 function saveCookieConsent(value: Exclude<ConsentValue, null>) {
-  localStorage.setItem(COOKIE_CONSENT_KEY, value);
+  try {
+    localStorage.setItem(COOKIE_CONSENT_KEY, value);
+  } catch {
+    // Ignore storage failures and still close the modal for this session.
+  }
+
   window.dispatchEvent(new Event(COOKIE_CONSENT_EVENT));
 }
 

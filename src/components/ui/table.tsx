@@ -8,7 +8,7 @@ interface TableProps extends React.ComponentProps<typeof HeroUITable> {
   stickyHeader?: boolean;
 }
 
-const Table = React.forwardRef<HTMLDivElement, TableProps>(
+const TableBase = React.forwardRef<HTMLDivElement, TableProps>(
   ({ className, stickyHeader = false, children, variant = "secondary", ...props }, ref) => (
     <HeroUITable
       ref={ref}
@@ -24,7 +24,18 @@ const Table = React.forwardRef<HTMLDivElement, TableProps>(
     </HeroUITable>
   ),
 );
-Table.displayName = "Table";
+TableBase.displayName = "Table";
+
+const Table = Object.assign(TableBase, {
+  ScrollContainer: HeroUITable.ScrollContainer,
+  Content: HeroUITable.Content,
+  Header: HeroUITable.Header,
+  Body: HeroUITable.Body,
+  Footer: HeroUITable.Footer,
+  Row: HeroUITable.Row,
+  Column: HeroUITable.Column,
+  Cell: HeroUITable.Cell,
+});
 
 interface TableHeaderProps extends React.ComponentProps<typeof HeroUITable.Header> {
   sticky?: boolean;

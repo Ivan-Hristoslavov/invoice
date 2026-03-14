@@ -142,13 +142,16 @@ export function RegisterForm() {
 
   return (
     <div className="w-full animate-in fade-in duration-300">
-      <div className="text-center mb-4">
-        <h1 className="text-2xl font-bold tracking-tight mb-1">Създайте акаунт</h1>
-        <p className="text-muted-foreground text-sm">Започнете безплатно с {APP_NAME}</p>
+      <div className="mb-5 text-center">
+        <div className="mb-3 inline-flex items-center rounded-full border border-cyan-500/20 bg-cyan-500/8 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-600 dark:text-cyan-400">
+          Нов акаунт
+        </div>
+        <h1 className="mb-1.5 text-3xl font-bold tracking-tight">Създайте акаунт</h1>
+        <p className="text-sm text-muted-foreground">Започнете безплатно с {APP_NAME}</p>
       </div>
 
       {selectedPlan && (
-        <div className="mb-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-3.5">
+        <div className="mb-5 rounded-3xl border border-emerald-500/20 bg-linear-to-br from-emerald-500/10 via-emerald-500/5 to-cyan-500/8 p-4 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-400">
@@ -169,8 +172,8 @@ export function RegisterForm() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <div className="space-y-1">
+      <form onSubmit={handleSubmit} className="space-y-3.5">
+        <div className="space-y-2">
           <Label htmlFor="name" className="text-sm font-medium">Име</Label>
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-10">
@@ -183,14 +186,14 @@ export function RegisterForm() {
               placeholder="Иван Иванов"
               value={formData.name}
               onChange={handleChange}
-              className="pl-10 h-10 text-sm"
+              className="h-12 rounded-2xl border-border/60 bg-background/70 pl-10 text-sm shadow-sm transition-[border-color,box-shadow,background-color] focus-visible:border-primary/60 focus-visible:bg-background focus-visible:ring-4 focus-visible:ring-primary/10"
               required
               autoComplete="name"
             />
           </div>
         </div>
 
-        <div className="space-y-1">
+        <div className="space-y-2">
           <Label htmlFor="email" className="text-sm font-medium">Имейл</Label>
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-10">
@@ -203,14 +206,14 @@ export function RegisterForm() {
               placeholder="ime@example.com"
               value={formData.email}
               onChange={handleChange}
-              className="pl-10 h-10 text-sm"
+              className="h-12 rounded-2xl border-border/60 bg-background/70 pl-10 text-sm shadow-sm transition-[border-color,box-shadow,background-color] focus-visible:border-primary/60 focus-visible:bg-background focus-visible:ring-4 focus-visible:ring-primary/10"
               required
               autoComplete="email"
             />
           </div>
         </div>
 
-        <div className="space-y-1">
+        <div className="space-y-2">
           <Label htmlFor="password" className="text-sm font-medium">Парола (мин. 8)</Label>
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-10">
@@ -223,7 +226,7 @@ export function RegisterForm() {
               placeholder="••••••••"
               value={formData.password}
               onChange={handleChange}
-              className="pl-10 pr-10 h-10 text-sm"
+              className="h-12 rounded-2xl border-border/60 bg-background/70 pl-10 pr-10 text-sm shadow-sm transition-[border-color,box-shadow,background-color] focus-visible:border-primary/60 focus-visible:bg-background focus-visible:ring-4 focus-visible:ring-primary/10"
               required
               autoComplete="new-password"
             />
@@ -243,7 +246,7 @@ export function RegisterForm() {
           )}
         </div>
 
-        <div className="space-y-1">
+        <div className="space-y-2">
           <Label htmlFor="confirmPassword" className="text-sm font-medium">Потвърди парола</Label>
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-10">
@@ -256,7 +259,7 @@ export function RegisterForm() {
               placeholder="••••••••"
               value={formData.confirmPassword}
               onChange={handleChange}
-              className="pl-10 pr-10 h-10 text-sm"
+              className="h-12 rounded-2xl border-border/60 bg-background/70 pl-10 pr-10 text-sm shadow-sm transition-[border-color,box-shadow,background-color] focus-visible:border-primary/60 focus-visible:bg-background focus-visible:ring-4 focus-visible:ring-primary/10"
               required
               autoComplete="new-password"
             />
@@ -285,7 +288,7 @@ export function RegisterForm() {
 
         <Button
           type="submit"
-          className="w-full h-10 gradient-primary hover:opacity-90 font-medium"
+          className="h-12 w-full rounded-2xl border-0 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 gradient-primary hover:opacity-90"
           disabled={isLoading}
         >
           {isLoading ? (
@@ -305,17 +308,17 @@ export function RegisterForm() {
 
         <div className="relative py-2">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border" />
+            <div className="w-full border-t border-border/60" />
           </div>
           <div className="relative flex justify-center">
-            <span className="bg-card px-2 text-xs text-muted-foreground">или</span>
+            <span className="rounded-full border border-border/60 bg-card px-3 py-1 text-[11px] text-muted-foreground shadow-sm">или</span>
           </div>
         </div>
 
         <Button
           type="button"
           variant="outline"
-          className="w-full h-10 border-border"
+          className="h-12 w-full rounded-2xl border-border/60 bg-background/55 shadow-sm hover:bg-muted/50"
           onClick={handleGoogleSignIn}
           disabled={isGoogleLoading}
         >
@@ -333,7 +336,7 @@ export function RegisterForm() {
         </Button>
       </form>
 
-      <p className="mt-3 text-center text-xs text-muted-foreground">
+      <p className="mt-5 text-center text-xs text-muted-foreground">
         Вече имате акаунт?{" "}
         <Link href="/signin" className="text-primary font-semibold hover:underline">
           Влезте тук

@@ -14,6 +14,7 @@ import {
   prepareDocumentItems,
 } from "@/lib/invoice-documents";
 import { withDocumentSnapshots } from "@/lib/document-snapshots";
+import { normalizeInvoiceStatus } from "@/lib/invoice-status";
 
 // Helper function removed - no longer needed with Supabase
 
@@ -107,6 +108,8 @@ export async function GET(
         clientResult.data,
         itemsResult.data || []
       ),
+      status: normalizeInvoiceStatus(invoice.status),
+      persistedStatus: invoice.status,
       creditNote: creditNoteResult.data
     };
 
@@ -202,17 +205,32 @@ export async function PUT(
       total: item.total.toString(),
       productId: item.productId || null,
     }));
+    const previousItems = (await supabase
+      .from("InvoiceItem")
+      .select("*")
+      .eq("invoiceId", id)).data || [];
 
     // Delete existing items
-    await supabase
+    const { error: deleteItemsError } = await supabase
       .from("InvoiceItem")
       .delete()
       .eq("invoiceId", id);
 
+    if (deleteItemsError) {
+      throw deleteItemsError;
+    }
+
     // Create new items
-    await supabase
+    const { error: insertItemsError } = await supabase
       .from("InvoiceItem")
       .insert(items);
+
+    if (insertItemsError) {
+      if (previousItems.length > 0) {
+        await supabase.from("InvoiceItem").insert(previousItems);
+      }
+      throw insertItemsError;
+    }
 
     // Update invoice
     const { data: updatedInvoice, error: updateError } = await supabase
@@ -245,6 +263,10 @@ export async function PUT(
       .single();
     
     if (updateError) {
+      await supabase.from("InvoiceItem").delete().eq("invoiceId", id);
+      if (previousItems.length > 0) {
+        await supabase.from("InvoiceItem").insert(previousItems);
+      }
       throw updateError;
     }
     
@@ -265,7 +287,11 @@ export async function PUT(
     revalidatePath("/invoices");
     revalidatePath("/dashboard");
 
-    return Response.json(updatedInvoice);
+    return Response.json({
+      ...updatedInvoice,
+      status: normalizeInvoiceStatus(updatedInvoice.status),
+      persistedStatus: updatedInvoice.status,
+    });
   } catch (error) {
     console.error("Грешка при обновяване на фактура:", error);
     return Response.json(
@@ -321,22 +347,31 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     }
 
     // Delete related invoice items (cascade should handle this, but we do it explicitly)
-    await supabase
+    const { error: deleteInvoiceItemsError } = await supabase
       .from("InvoiceItem")
       .delete()
       .eq("invoiceId", invoiceId);
+    if (deleteInvoiceItemsError) {
+      throw deleteInvoiceItemsError;
+    }
     
     // Delete related documents
-    await supabase
+    const { error: deleteDocumentsError } = await supabase
       .from("Document")
       .delete()
       .eq("invoiceId", invoiceId);
+    if (deleteDocumentsError) {
+      throw deleteDocumentsError;
+    }
     
     // Delete the invoice
-    await supabase
+    const { error: deleteInvoiceError } = await supabase
       .from("Invoice")
       .delete()
       .eq("id", invoiceId);
+    if (deleteInvoiceError) {
+      throw deleteInvoiceError;
+    }
     
     // Log audit action
     const headers = request.headers;

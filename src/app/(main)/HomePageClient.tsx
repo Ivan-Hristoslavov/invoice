@@ -439,7 +439,7 @@ export default function HomePage() {
         />
 
         {/* ── Header ── */}
-        <header className="sticky top-0 z-50 w-full glass-card rounded-none! border-t-0! border-l-0! border-r-0!">
+        <header className="sticky top-0 z-50 w-full rounded-none border-x-0 border-t-0 glass-card">
           <div className="container mx-auto flex h-14 items-center justify-between px-3 sm:h-16 sm:px-4 md:px-6">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -480,35 +480,40 @@ export default function HomePage() {
         {/* ── Hero ── */}
         <section className="px-4 py-5 sm:py-10">
           <div className="container mx-auto max-w-6xl">
-            <motion.div
-              initial={shouldReduceEffects ? false : { opacity: 0, y: 40 }}
-              animate={shouldReduceEffects ? undefined : { opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <HCard className="border border-border/50 bg-card/80 shadow-md sm:shadow-xl">
-                <HCardContent className="p-4 text-center sm:p-8 md:p-10">
-                  <div className="mb-4 flex justify-center sm:mb-5">
-                    <Chip variant="soft" color="accent" className="px-3 py-1 text-[10px] sm:text-sm">
-                      <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                      Ново: Автоматично генериране на НАП номера
+            <div className="text-center">
+              <HCard className="border border-border/50 bg-card shadow-md sm:shadow-xl">
+                <HCardContent className="p-3.5 sm:p-6 md:p-8">
+                  <div className="mb-5 flex justify-center sm:mb-6">
+                    <Chip
+                      variant="soft"
+                      color="accent"
+                      className="tiny-text max-w-full px-3 py-1"
+                    >
+                      <Sparkles className="mr-1.5 h-3.5 w-3.5 shrink-0" />
+                      <span className="max-[359px]:hidden">
+                        Ново: Автоматично генериране на НАП номера
+                      </span>
+                      <span className="hidden max-[359px]:inline">
+                        Ново: НАП номера
+                      </span>
                     </Chip>
                   </div>
 
                   <h1
-                    className="mx-auto mb-3 max-w-[12ch] text-balance text-[clamp(2rem,10vw,3rem)] font-extrabold tracking-tight text-foreground sm:mb-4 sm:max-w-4xl sm:text-5xl lg:text-6xl"
+                    className="hero-title mx-auto mb-3 max-w-[13ch] text-foreground sm:mb-4 sm:max-w-4xl"
                     style={{ textShadow: "0 6px 30px rgba(15, 23, 42, 0.24)" }}
                   >
-                    <span>Фактурирайте </span>
-                    <span className="gradient-primary-text">професионално</span>
-                    <span> за минути</span>
+                    <span className="block sm:inline">Фактурирайте </span>
+                    <span className="gradient-primary-text block sm:inline">професионално</span>
+                    <span className="block sm:inline"> за минути</span>
                   </h1>
 
-                  <p className="mx-auto mb-5 max-w-2xl text-[13px] leading-5 text-muted-foreground sm:mb-6 sm:text-lg sm:leading-7">
+                  <p className="lead-text mx-auto mb-5 max-w-2xl sm:mb-6">
                     Софтуер за издаване на фактури, създаден за български бизнеси.
                     Създавайте професионални фактури, изпращайте ги по имейл и следете статуса им.
                   </p>
 
-                  <div className="mb-5 flex flex-col items-stretch justify-center gap-2 sm:mb-8 sm:flex-row sm:gap-3">
+                  <div className="mx-auto mb-5 flex w-full max-w-md flex-col items-stretch justify-center gap-2 sm:mb-8 sm:max-w-none sm:flex-row sm:gap-3">
                     <Button
                       size="sm"
                       asChild
@@ -531,16 +536,16 @@ export default function HomePage() {
                     </Button>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+                  <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3 sm:gap-4">
                     {heroStats.map((stat) => (
                       <div
                         key={stat.label}
                         className="rounded-2xl border border-border/50 bg-background/60 px-4 py-4 shadow-xs"
                       >
-                        <div className="text-2xl font-bold gradient-primary-text sm:text-3xl">
+                        <div className="metric-value gradient-primary-text">
                           {stat.value}
                         </div>
-                        <div className="mt-1 text-[12px] leading-5 text-muted-foreground sm:text-sm">
+                        <div className="metric-label mt-1">
                           {stat.label}
                         </div>
                       </div>
@@ -548,18 +553,23 @@ export default function HomePage() {
                   </div>
                 </HCardContent>
               </HCard>
-            </motion.div>
+            </div>
           </div>
         </section>
 
         <section className="px-4 py-5 sm:py-9">
           <div className="container mx-auto max-w-6xl">
+            <div className="mb-4 text-center sm:mb-5">
+              <Chip variant="soft" color="default" className="mb-4">
+                Основни акценти
+              </Chip>
+            </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {quickHighlights.map((item) => (
                 <HCard key={item.title} className="border border-border/50 bg-card shadow-xs sm:shadow-sm">
                   <HCardContent className="p-3.5 sm:p-5">
-                    <p className="mb-1.5 text-[13px] font-semibold sm:mb-2 sm:text-base">{item.title}</p>
-                    <p className="text-[11px] leading-5 text-muted-foreground sm:text-sm sm:leading-6">{item.description}</p>
+                    <p className="card-title mb-1.5">{item.title}</p>
+                    <p className="card-description">{item.description}</p>
                   </HCardContent>
                 </HCard>
               ))}
@@ -576,49 +586,60 @@ export default function HomePage() {
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-                <HCard className="border border-amber-400/30 bg-card shadow-md sm:border-2 sm:shadow-xl">
-                  <HCardContent className="p-3.5 sm:p-6 md:p-8">
-                  <div className="flex flex-col items-start gap-4 sm:gap-8 md:flex-row">
-                    <div className="shrink-0">
+              <HCard className="border border-amber-400/30 bg-card shadow-md sm:border-2 sm:shadow-xl">
+                <HCardContent className="relative overflow-hidden p-3.5 sm:p-6 md:p-8">
+                  <div className="absolute left-1/2 top-0 h-28 w-40 -translate-x-1/2 rounded-full bg-amber-500/10 blur-3xl" />
+                  <div className="relative text-center">
+                    <div className="mb-4 flex justify-center">
                       <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-amber-500/95 to-orange-500/95 shadow-sm sm:h-16 sm:w-16 sm:rounded-2xl sm:shadow-lg sm:shadow-amber-500/25">
                         <FileText className="h-6 w-6 text-white sm:h-8 sm:w-8" />
                       </div>
                     </div>
-                    <div className="flex-1">
-                      <h2 className="mb-2 text-lg font-bold sm:mb-3 sm:text-2xl md:text-3xl">
-                        За кого е {APP_NAME}?
-                      </h2>
-                      <p className="mb-4 text-[13px] leading-5 text-muted-foreground sm:mb-5 sm:text-base md:text-lg">
-                        {APP_NAME} е система за{" "}
-                        <strong>издаване на фактури</strong>, а не за обработка
-                        на плащания. Приложението е идеално за:
-                      </p>
-                      <div className="mb-4 grid grid-cols-1 gap-2.5 sm:mb-5 sm:gap-3 md:grid-cols-2">
-                        {[
-                          "Фрийлансъри и самонаети лица",
-                          "Малки и средни предприятия",
-                          "Счетоводители и счетоводни къщи",
-                          "Консултанти и агенции",
-                          "Занаятчии и услуги",
-                          "Търговци и дистрибутори",
-                        ].map((item) => (
-                          <div key={item} className="flex items-center gap-2.5">
-                            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 sm:h-6 sm:w-6">
-                              <Check className="h-3.5 w-3.5 text-emerald-600 sm:h-4 sm:w-4" />
-                            </div>
-                            <span className="text-[13px] leading-5 md:text-base">{item}</span>
+
+                    <Chip variant="soft" color="warning" className="mb-4">
+                      За кого е {APP_NAME}
+                    </Chip>
+
+                    <h2 className="section-title mb-2 sm:mb-3 md:text-3xl">
+                      Създаден за реални бизнеси, не за сложни системи
+                    </h2>
+                    <p className="lead-text mx-auto mb-5 max-w-3xl sm:mb-6">
+                      {APP_NAME} е система за <strong>издаване на фактури</strong>, а не за обработка
+                      на плащания. Приложението е идеално за:
+                    </p>
+
+                    <div className="mb-5 grid grid-cols-1 gap-2.5 text-left sm:mb-6 sm:grid-cols-2 sm:gap-3">
+                      {[
+                        "Фрийлансъри и самонаети лица",
+                        "Малки и средни предприятия",
+                        "Счетоводители и счетоводни къщи",
+                        "Консултанти и агенции",
+                        "Занаятчии и услуги",
+                        "Търговци и дистрибутори",
+                      ].map((item) => (
+                        <div
+                          key={item}
+                          className="flex items-center gap-3 rounded-2xl border border-border/60 bg-background/55 px-4 py-3 shadow-xs transition-colors hover:bg-background/75"
+                        >
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/15">
+                            <Check className="h-4 w-4 text-emerald-600" />
                           </div>
-                        ))}
+                          <span className="small-text font-medium text-foreground">{item}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mx-auto max-w-3xl rounded-2xl border border-amber-400/30 bg-linear-to-br from-amber-500/10 via-amber-500/5 to-orange-500/10 p-4 text-left sm:p-5">
+                      <div className="mb-2 flex justify-center sm:justify-start">
+                        <Chip size="sm" color="warning" variant="outline">
+                          Важно
+                        </Chip>
                       </div>
-                      <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20 sm:p-4">
-                        <p className="text-[13px] leading-5 text-amber-800 dark:text-amber-200 sm:text-sm">
-                          <strong>Важно:</strong> {APP_NAME}{" "}
-                          <strong>не обработва плащания</strong> и не е
-                          платежна система. Ние ви помагаме да създавате
-                          професионални фактури. Плащанията се извършват
-                          директно между вас и вашите клиенти.
-                        </p>
-                      </div>
+                      <p className="small-text text-amber-800 dark:text-amber-200">
+                        {APP_NAME} <strong>не обработва плащания</strong> и не е платежна система.
+                        Ние ви помагаме да създавате професионални фактури. Плащанията се извършват
+                        директно между вас и вашите клиенти.
+                      </p>
                     </div>
                   </div>
                 </HCardContent>
@@ -639,10 +660,10 @@ export default function HomePage() {
               <Chip variant="soft" color="warning" className="mb-4">
                 Как работи
               </Chip>
-              <h2 className="mb-2.5 text-xl font-bold sm:mb-4 sm:text-4xl">
+              <h2 className="marketing-title mb-2.5 sm:mb-4">
                 Подреден процес без излишна сложност
               </h2>
-              <p className="mx-auto max-w-2xl text-[13px] leading-5 text-muted-foreground sm:text-lg sm:leading-7">
+              <p className="lead-text mx-auto max-w-2xl">
                 Влизате, настройвате основните данни и започвате да издавате документи още в първия ден.
               </p>
             </motion.div>
@@ -659,8 +680,8 @@ export default function HomePage() {
                         Стъпка {index + 1}
                       </Chip>
                     </div>
-                    <h3 className="mb-1.5 text-[15px] font-semibold sm:text-lg">{step.title}</h3>
-                    <p className="text-[13px] leading-5 text-muted-foreground sm:text-sm sm:leading-6">{step.description}</p>
+                    <h3 className="card-title mb-1.5">{step.title}</h3>
+                    <p className="card-description">{step.description}</p>
                   </HCardContent>
                 </HCard>
               ))}
@@ -681,10 +702,10 @@ export default function HomePage() {
               <Chip variant="soft" color="accent" className="mb-4">
                 Функции
               </Chip>
-              <h2 className="mt-3 mb-2.5 text-xl font-bold sm:mb-4 sm:text-4xl">
+              <h2 className="marketing-title mt-3 mb-2.5 sm:mb-4">
                 Всичко необходимо за вашия бизнес
               </h2>
-              <p className="mx-auto max-w-2xl text-[13px] leading-5 text-muted-foreground sm:text-lg sm:leading-7">
+              <p className="lead-text mx-auto max-w-2xl">
                 Пълен набор от инструменти за професионално фактуриране и
                 управление на финансите
               </p>
@@ -708,10 +729,10 @@ export default function HomePage() {
                       >
                         <feature.icon className="h-4.5 w-4.5 text-white sm:h-5 sm:w-5" />
                       </div>
-                      <h3 className="mb-1.5 text-[15px] font-semibold sm:text-lg">
+                      <h3 className="card-title mb-1.5">
                         {feature.title}
                       </h3>
-                      <p className="text-[13px] leading-5 text-muted-foreground sm:text-sm sm:leading-6">
+                      <p className="card-description">
                         {feature.description}
                       </p>
                     </HCardContent>
@@ -743,8 +764,8 @@ export default function HomePage() {
                       >
                         <feature.icon className="h-5 w-5 text-white" />
                       </div>
-                      <h3 className="mb-2 text-lg font-semibold">{feature.title}</h3>
-                      <p className="text-sm leading-6 text-muted-foreground">
+                      <h3 className="card-title mb-2">{feature.title}</h3>
+                      <p className="marketing-copy">
                         {feature.description}
                       </p>
                     </HCardContent>
@@ -768,10 +789,10 @@ export default function HomePage() {
               <Chip variant="soft" color="success" className="mb-4">
                 Ценообразуване
               </Chip>
-              <h2 className="mt-3 mb-2.5 text-xl font-bold sm:mb-4 sm:text-4xl">
+              <h2 className="marketing-title mt-3 mb-2.5 sm:mb-4">
                 Прозрачни цени без изненади
               </h2>
-              <p className="mx-auto mb-5 max-w-2xl text-[13px] leading-5 text-muted-foreground sm:mb-8 sm:text-lg sm:leading-7">
+              <p className="lead-text mx-auto mb-5 max-w-2xl sm:mb-8">
                 Изберете плана, който отговаря на нуждите на вашия бизнес
               </p>
 
@@ -812,7 +833,7 @@ export default function HomePage() {
                     size="sm"
                     color="success"
                     variant="soft"
-                    className="h-5 text-[10px]"
+                    className="tiny-text h-5"
                   >
                     -17%
                   </Chip>
@@ -868,16 +889,16 @@ export default function HomePage() {
                               <PlanIcon className="h-4 w-4 text-white sm:h-4.5 sm:w-4.5" />
                             </div>
                             <div>
-                              <p className="text-[13px] font-bold leading-tight sm:text-base">
+                              <p className="card-title">
                                 {plan.name}
                               </p>
-                              <p className="text-xs text-muted-foreground">
+                              <p className="card-description">
                                 {plan.description}
                               </p>
                             </div>
                           </div>
                           {plan.popular && (
-                            <Chip size="sm" color="success" variant="soft" className="text-[10px] shrink-0">
+                            <Chip size="sm" color="success" variant="soft" className="tiny-text shrink-0">
                               Популярен
                             </Chip>
                           )}
@@ -887,23 +908,23 @@ export default function HomePage() {
                         <div className="mb-5">
                           {plan.key === "FREE" ? (
                             <div className="flex items-baseline gap-1">
-                              <span className="text-lg font-bold sm:text-2xl">0 €</span>
-                              <span className="text-xs text-muted-foreground sm:text-sm">
+                              <span className="metric-value">0 €</span>
+                              <span className="small-text text-muted-foreground">
                                 /завинаги
                               </span>
                             </div>
                           ) : (
                             <div>
                               <div className="flex items-baseline gap-1">
-                                <span className="text-lg font-bold sm:text-2xl">
+                                <span className="metric-value">
                                   {monthlyPrice.toFixed(2)} €
                                 </span>
-                                <span className="text-xs text-muted-foreground sm:text-sm">
+                                <span className="small-text text-muted-foreground">
                                   /месец
                                 </span>
                               </div>
                               {isYearly && (
-                                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">
+                                <p className="tiny-text mt-0.5 font-medium text-emerald-600 dark:text-emerald-400">
                                   {plan.price.yearly} €/год. · 2 месеца
                                   безплатно
                                 </p>
@@ -934,7 +955,7 @@ export default function HomePage() {
                               )}
                               <span
                                 className={cn(
-                                  "text-[13px] leading-5 sm:text-sm sm:leading-6",
+                                  "card-description",
                                   !feat.included && "text-muted-foreground"
                                 )}
                               >
@@ -949,7 +970,7 @@ export default function HomePage() {
                         <Button
                           asChild
                           className={cn(
-                            "h-9 w-full text-[13px] sm:h-10 sm:text-sm",
+                            "btn-text h-9 w-full sm:h-10",
                             plan.popular &&
                               "gradient-primary hover:opacity-90 text-white border-0"
                           )}
@@ -973,7 +994,7 @@ export default function HomePage() {
               transition={{ duration: 0.6, delay: 0.4 }}
               className="mt-8 text-center sm:mt-10"
             >
-              <p className="mx-auto max-w-2xl text-[13px] leading-5 text-muted-foreground sm:text-sm">
+              <p className="card-description mx-auto max-w-2xl">
                 Всички планове включват софтуер за издаване на фактури. Не
                 предлагаме обработка на плащания — вашите клиенти плащат
                 директно на вас.
@@ -995,10 +1016,10 @@ export default function HomePage() {
               <Chip variant="soft" color="warning" className="mb-4">
                 Отзиви
               </Chip>
-              <h2 className="mt-3 mb-2.5 text-xl font-bold sm:mb-4 sm:text-4xl">
+              <h2 className="marketing-title mt-3 mb-2.5 sm:mb-4">
                 Доволни клиенти
               </h2>
-              <p className="mx-auto max-w-2xl text-[13px] leading-5 text-muted-foreground sm:text-lg sm:leading-7">
+              <p className="lead-text mx-auto max-w-2xl">
                 Вижте какво казват нашите потребители за {APP_NAME}
               </p>
             </motion.div>
@@ -1036,7 +1057,7 @@ export default function HomePage() {
                           />
                         ))}
                       </div>
-                      <p className="mb-4 text-[13px] leading-5 text-foreground/90 sm:mb-6 sm:text-sm sm:leading-7">
+                      <p className="marketing-copy mb-4 text-foreground/90 sm:mb-6">
                         &ldquo;{testimonial.content}&rdquo;
                       </p>
                       <div className="flex items-center gap-3 border-t border-border/50 pt-4">
@@ -1049,10 +1070,10 @@ export default function HomePage() {
                           {testimonial.initials}
                         </div>
                         <div>
-                          <div className="text-[13px] font-semibold text-foreground sm:text-base">
+                          <div className="card-title text-foreground">
                             {testimonial.name}
                           </div>
-                          <div className="text-xs text-muted-foreground sm:text-sm">
+                          <div className="card-description">
                             {testimonial.role}
                           </div>
                         </div>
@@ -1101,7 +1122,7 @@ export default function HomePage() {
                           />
                         ))}
                       </div>
-                      <p className="mb-6 text-sm leading-7 text-foreground/90">
+                      <p className="marketing-copy mb-6 text-foreground/90">
                         &ldquo;{testimonial.content}&rdquo;
                       </p>
                       <div className="flex items-center gap-3 border-t border-border/50 pt-4">
@@ -1114,10 +1135,10 @@ export default function HomePage() {
                           {testimonial.initials}
                         </div>
                         <div>
-                          <div className="text-base font-semibold text-foreground">
+                          <div className="card-title text-foreground">
                             {testimonial.name}
                           </div>
-                          <div className="text-sm text-muted-foreground">
+                          <div className="card-description">
                             {testimonial.role}
                           </div>
                         </div>
@@ -1143,7 +1164,7 @@ export default function HomePage() {
               <Chip variant="soft" color="default" className="mb-4">
                 Въпроси
               </Chip>
-              <h2 className="mt-3 mb-2.5 text-xl font-bold sm:mb-4 sm:text-4xl">
+              <h2 className="marketing-title mt-3 mb-2.5 sm:mb-4">
                 Често задавани въпроси
               </h2>
             </motion.div>
@@ -1165,13 +1186,13 @@ export default function HomePage() {
                 >
                   <HCard className="border border-border/50 bg-card shadow-xs transition-shadow hover:shadow-sm sm:shadow-sm sm:hover:shadow-md">
                     <HCardContent className="p-3.5 sm:p-5">
-                      <h3 className="mb-1.5 flex items-center gap-2 text-[13px] font-semibold sm:text-base">
+                      <h3 className="card-title mb-1.5 flex items-center gap-2">
                         <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
                           {index + 1}
                         </span>
                         {faq.q}
                       </h3>
-                      <p className="pl-7 text-[13px] leading-5 text-muted-foreground sm:text-sm sm:leading-6">
+                      <p className="card-description pl-7">
                         {faq.a}
                       </p>
                     </HCardContent>
@@ -1196,10 +1217,10 @@ export default function HomePage() {
                 <div className="pointer-events-none absolute inset-0 bg-linear-to-br from-emerald-500/3 via-teal-500/3 to-cyan-500/3 sm:from-emerald-500/5 sm:via-teal-500/5 sm:to-cyan-500/5" />
                 <div className="absolute top-0 left-0 right-0 h-[3px] bg-linear-to-r from-emerald-500 via-teal-500 to-cyan-500 sm:h-1" />
                 <HCardContent className="relative z-10 p-4 text-center sm:p-8 md:p-10">
-                  <h2 className="mb-2 text-[1.95rem] font-bold leading-[1.15] sm:mb-4 sm:text-4xl">
+                  <h2 className="marketing-title mb-2 sm:mb-4">
                     Готови ли сте да започнете?
                   </h2>
-                  <p className="mx-auto mb-5 max-w-md text-sm leading-6 text-muted-foreground sm:mb-8 sm:max-w-xl sm:text-lg">
+                  <p className="lead-text mx-auto mb-5 max-w-md sm:mb-8 sm:max-w-xl">
                     Присъединете се към хилядите бизнеси, които вече използват{" "}
                     {APP_NAME} за професионално фактуриране.
                   </p>
@@ -1238,7 +1259,7 @@ export default function HomePage() {
         </section>
 
         {/* ── Footer ── */}
-        <footer className="mt-auto border-t px-4 py-6 glass-card rounded-none! border-l-0! border-r-0! border-b-0! sm:py-10">
+        <footer className="mt-auto border-t border-x-0 border-b-0 px-4 py-6 rounded-none glass-card sm:py-10">
           <div className="container mx-auto max-w-6xl">
             <div className="mb-6 grid grid-cols-1 gap-6 md:mb-10 md:grid-cols-4 md:gap-10">
               <div>
@@ -1246,16 +1267,16 @@ export default function HomePage() {
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg gradient-primary sm:h-8 sm:w-8">
                     <FileText className="h-3.5 w-3.5 text-white sm:h-4 sm:w-4" />
                   </div>
-                  <span className="text-lg font-bold sm:text-xl">{APP_NAME}</span>
+                  <span className="section-title">{APP_NAME}</span>
                 </div>
-                <p className="text-muted-foreground text-sm">
+                <p className="card-description">
                   Софтуер за издаване на фактури за български бизнеси. Не
                   обработваме плащания.
                 </p>
               </div>
               <div>
-                <h4 className="mb-3 text-sm font-semibold sm:mb-4 sm:text-base">Продукт</h4>
-                <ul className="space-y-2.5 text-sm sm:space-y-3">
+                <h4 className="marketing-kicker mb-3 sm:mb-4">Продукт</h4>
+                <ul className="space-y-2.5 small-text sm:space-y-3">
                   <li>
                     <Link
                       href="/features"
@@ -1291,8 +1312,8 @@ export default function HomePage() {
                 </ul>
               </div>
               <div>
-                <h4 className="mb-3 text-sm font-semibold sm:mb-4 sm:text-base">Компания</h4>
-                <ul className="space-y-2.5 text-sm sm:space-y-3">
+                <h4 className="marketing-kicker mb-3 sm:mb-4">Компания</h4>
+                <ul className="space-y-2.5 small-text sm:space-y-3">
                   <li>
                     <Link
                       href="/about"
@@ -1320,8 +1341,8 @@ export default function HomePage() {
                 </ul>
               </div>
               <div>
-                <h4 className="mb-3 text-sm font-semibold sm:mb-4 sm:text-base">Правна информация</h4>
-                <ul className="space-y-2.5 text-sm sm:space-y-3">
+                <h4 className="marketing-kicker mb-3 sm:mb-4">Правна информация</h4>
+                <ul className="space-y-2.5 small-text sm:space-y-3">
                   <li>
                     <Link
                       href="/terms"

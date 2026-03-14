@@ -18,6 +18,7 @@ import { ApiStatusCode } from "@/types/api";
 import { checkSubscriptionLimits } from "@/middleware/subscription";
 import cuid from "cuid";
 import { resolveSessionUser } from "@/lib/session-user";
+import { getDatabaseStatusesForAppStatus } from "@/lib/invoice-status";
 
 // Schema для валидация на заявката
 const InvoiceQuerySchema = z.object({
@@ -131,7 +132,11 @@ export async function GET(request: NextRequest) {
         
         // Apply filters
         if (params.status) {
-          query = query.eq("status", params.status);
+          const matchingStatuses = getDatabaseStatusesForAppStatus(params.status);
+          query =
+            matchingStatuses.length > 1
+              ? query.in("status", matchingStatuses)
+              : query.eq("status", matchingStatuses[0]);
         }
         
         if (params.clientId) {
@@ -385,6 +390,7 @@ export async function POST(request: NextRequest) {
           .insert(itemsData);
         
         if (itemsError) {
+          await supabase.from("Invoice").delete().eq("id", invoiceId).eq("userId", sessionUser.id);
           throw itemsError;
         }
         

@@ -32,12 +32,12 @@ export function FullPageLoader({
         <div className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-border/60 bg-background/90 p-8 text-center shadow-2xl">
           <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-cyan-500 via-emerald-500 to-blue-500" />
 
-          <div className="relative mx-auto mb-6 flex h-24 w-24 items-center justify-center">
-            <div className="absolute h-24 w-24 animate-ping rounded-full bg-primary/10 animation-duration-[2.4s]" />
-            <div className="absolute h-20 w-20 rounded-full border border-primary/15" />
-            <div className="absolute h-16 w-16 animate-spin rounded-full border-2 border-primary/15 border-t-primary animation-duration-[1.4s]" />
-            <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl gradient-primary shadow-lg shadow-primary/20">
-              <FileText className="h-7 w-7 text-white" />
+          <div className="relative mx-auto mb-6 flex h-28 w-28 items-center justify-center">
+            <div className="absolute h-28 w-28 animate-ping rounded-full bg-primary/10 animation-duration-[2.4s]" />
+            <div className="absolute h-24 w-24 rounded-full border border-primary/15" />
+            <div className="absolute h-20 w-20 animate-spin rounded-full border-[3px] border-primary/15 border-t-primary animation-duration-[1.4s]" />
+            <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl gradient-primary shadow-lg shadow-primary/20">
+              <FileText className="h-6 w-6 text-white" />
             </div>
           </div>
 

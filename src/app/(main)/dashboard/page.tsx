@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { APP_NAME } from "@/config/constants";
 import { createAdminClient } from "@/lib/supabase/server";
 import { resolveSessionUser } from "@/lib/session-user";
@@ -28,8 +29,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import { bg } from "date-fns/locale";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
-
-type InvoiceStatus = "DRAFT" | "ISSUED" | "CANCELLED";
+import { isIssuedLikeStatus, normalizeInvoiceStatus, type AppInvoiceStatus } from "@/lib/invoice-status";
 
 export const metadata: Metadata = {
   title: `Табло | ${APP_NAME}`,
@@ -42,7 +42,7 @@ interface InvoiceWithClient {
   issueDate: Date;
   dueDate: Date;
   total: number;
-  status: InvoiceStatus;
+  status: AppInvoiceStatus;
   client: {
     id: string;
     name: string;
@@ -129,7 +129,7 @@ export default async function DashboardPage() {
       issueDate: new Date(inv.issueDate),
       dueDate: new Date(inv.dueDate),
       total: Number(inv.total),
-      status: inv.status as InvoiceStatus,
+      status: normalizeInvoiceStatus(inv.status),
       client: {
         id: client?.id || inv.clientId,
         name: client?.name || 'Неизвестен клиент'
@@ -149,10 +149,10 @@ export default async function DashboardPage() {
   
   // Calculate invoice counts
   const invoiceCounts = (allInvoices || []).reduce((acc: Record<string, number>, invoice: InvoiceRow) => {
-    const status = invoice.status as InvoiceStatus;
+    const status = normalizeInvoiceStatus(invoice.status);
     acc[status] = (acc[status] || 0) + 1;
     return acc;
-  }, {} as Record<string, number>);
+  }, {} as Record<AppInvoiceStatus, number>);
   
   const counts = {
     total: allInvoices?.length || 0,
@@ -162,7 +162,7 @@ export default async function DashboardPage() {
   };
   
   // Get total from issued invoices
-  const issuedInvoices = (allInvoices || []).filter((inv: InvoiceRow) => inv.status === 'ISSUED');
+  const issuedInvoices = (allInvoices || []).filter((inv: InvoiceRow) => isIssuedLikeStatus(inv.status));
   const totalIssued = issuedInvoices.reduce((sum: number, inv: InvoiceRow) => sum + Number(inv.total || 0), 0);
   
   // Current month boundaries
@@ -174,7 +174,7 @@ export default async function DashboardPage() {
     (inv: InvoiceRow) => new Date(inv.createdAt!) >= startOfMonth
   );
   const thisMonthTotal = thisMonthInvoices
-    .filter((inv: InvoiceRow) => inv.status === 'ISSUED')
+    .filter((inv: InvoiceRow) => isIssuedLikeStatus(inv.status))
     .reduce((sum: number, inv: InvoiceRow) => sum + Number(inv.total || 0), 0);
 
   // Previous month invoices for trend calculation
@@ -185,15 +185,15 @@ export default async function DashboardPage() {
     }
   );
   const prevMonthTotal = prevMonthInvoices
-    .filter((inv: InvoiceRow) => inv.status === 'ISSUED')
+    .filter((inv: InvoiceRow) => isIssuedLikeStatus(inv.status))
     .reduce((sum: number, inv: InvoiceRow) => sum + Number(inv.total || 0), 0);
   const prevMonthIssuedTotal = prevMonthInvoices
-    .filter((inv: InvoiceRow) => inv.status === 'ISSUED')
+    .filter((inv: InvoiceRow) => isIssuedLikeStatus(inv.status))
     .reduce((sum: number, inv: InvoiceRow) => sum + Number(inv.total || 0), 0);
 
   // Overall issued total trend (current month issued vs prev month issued)
   const currentMonthIssuedTotal = thisMonthInvoices
-    .filter((inv: InvoiceRow) => inv.status === 'ISSUED')
+    .filter((inv: InvoiceRow) => isIssuedLikeStatus(inv.status))
     .reduce((sum: number, inv: InvoiceRow) => sum + Number(inv.total || 0), 0);
   const totalTrend = calcTrend(currentMonthIssuedTotal, prevMonthIssuedTotal);
 
@@ -352,6 +352,9 @@ export default async function DashboardPage() {
       {/* Header */}
       <div className="page-header">
         <div className="flex-1 min-w-0">
+          <Badge variant="info" className="mb-2">
+            Начален преглед
+          </Badge>
           <h1 className="page-title">Табло</h1>
           <p className="card-description mt-1">
             Добре дошли, {session.user.name || 'потребител'}!
@@ -401,6 +404,9 @@ export default async function DashboardPage() {
         <Card className="lg:col-span-2 border border-border/50 shadow-md">
           <CardHeader className="flex flex-row items-center justify-between pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
             <div className="min-w-0 flex-1">
+              <Badge variant="info" className="mb-2">
+                Последни записи
+              </Badge>
               <CardTitle className="card-title">Последни фактури</CardTitle>
               <CardDescription className="card-description">Най-новите фактури</CardDescription>
             </div>
@@ -434,9 +440,9 @@ export default async function DashboardPage() {
                   <Link
                     key={invoice.id}
                     href={`/invoices/${invoice.id}`}
-                    className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/50 transition-all duration-200 group"
+                    className="group flex flex-col gap-3 rounded-xl border border-border/50 bg-muted/30 p-4 transition-all duration-200 hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between"
                   >
-                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className="flex min-w-0 flex-1 items-center gap-4">
                       <div className={`h-11 w-11 rounded-lg shrink-0 flex items-center justify-center ${
                         invoice.status === 'ISSUED' 
                           ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
@@ -457,8 +463,8 @@ export default async function DashboardPage() {
                         <p className="text-xs text-muted-foreground truncate">{invoice.client.name}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 shrink-0">
-                      <div className="text-right">
+                    <div className="flex items-center justify-between gap-3 sm:justify-end sm:gap-4">
+                      <div className="min-w-0">
                         <p className="font-bold text-sm">{invoice.total.toFixed(2)} €</p>
                         <p className="text-xs text-muted-foreground">
                           {format(invoice.issueDate, 'd MMM yyyy', { locale: bg })}
@@ -473,7 +479,7 @@ export default async function DashboardPage() {
                       }`}>
                         {invoice.status === 'ISSUED' ? 'Издадена' : invoice.status === 'DRAFT' ? 'Чернова' : 'Отказана'}
                       </div>
-                      <Eye className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <Eye className="hidden h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 sm:block" />
                     </div>
                   </Link>
                 ))}
@@ -488,6 +494,9 @@ export default async function DashboardPage() {
         {/* Credit & Debit Note Summary */}
         <Card className="lg:col-span-1 border border-border/50 shadow-md">
           <CardHeader className="pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
+            <Badge variant="warning" className="mb-2">
+              Финансови документи
+            </Badge>
             <CardTitle className="card-title">Известия</CardTitle>
             <CardDescription className="card-description">Кредитни и дебитни известия</CardDescription>
           </CardHeader>
@@ -529,6 +538,9 @@ export default async function DashboardPage() {
         <Card className="lg:col-span-2 border border-border/50 shadow-md">
           <CardHeader className="flex flex-row items-center justify-between pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
             <div className="min-w-0 flex-1">
+              <Badge variant="secondary" className="mb-2">
+                Проследяване
+              </Badge>
               <CardTitle className="card-title">Последна активност</CardTitle>
               <CardDescription className="card-description">Скорошни действия в системата</CardDescription>
             </div>
@@ -591,7 +603,7 @@ export default async function DashboardPage() {
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-start justify-between gap-3">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                             <div className="min-w-0">
                               <p className="text-sm leading-5">
                                 <span className="font-medium">{actionLabel}</span>{" "}

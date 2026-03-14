@@ -42,7 +42,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   return (
     <KeyboardShortcutsProvider>
       <CommandPaletteProvider>
-        <div className="relative h-dvh overflow-hidden pt-14 sm:pt-16">
+        <div className="relative flex min-h-screen flex-col overflow-x-hidden pt-14 sm:pt-16">
           <a href="#main-content" className="skip-to-content">
             Преминете към съдържанието
           </a>
@@ -50,10 +50,14 @@ export function MainLayout({ children }: MainLayoutProps) {
           {/* Navbar at top - full width */}
           <Navbar />
           {/* Content area with sidebar */}
-          <div className="flex h-[calc(100dvh-3.5rem)] overflow-hidden sm:h-[calc(100dvh-4rem)]">
+          <div className="flex flex-1 lg:pl-72">
             <Sidebar />
-            <main className="flex-1 animate-in overflow-x-hidden overflow-y-auto overscroll-contain p-3 pt-4 fade-in duration-150 sm:p-4 lg:ml-72 lg:p-5 xl:p-6">
-              <div id="main-content" className="mx-auto w-full max-w-7xl pb-5 sm:pb-6">
+            <main
+              id="main-content"
+              tabIndex={-1}
+              className="min-w-0 flex-1 animate-in overflow-x-hidden p-3 pt-4 fade-in duration-150 focus:outline-none sm:p-4 lg:p-5 xl:p-6"
+            >
+              <div className="mx-auto w-full max-w-7xl pb-5 sm:pb-6">
                 {children}
               </div>
             </main>

@@ -861,21 +861,21 @@ export default function NewClientPage() {
           </div>
 
           {/* Navigation */}
-          <div className="sticky bottom-[calc(7rem+env(safe-area-inset-bottom))] z-20 -mx-1 rounded-2xl border border-border/70 bg-background/95 px-3 py-3 shadow-lg backdrop-blur sm:static sm:mx-0 sm:rounded-none sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:shadow-none">
+          <div className="sticky bottom-0 z-20 -mx-1 rounded-2xl border border-border/70 bg-background/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 shadow-lg backdrop-blur supports-backdrop-filter:bg-background/85 sm:static sm:mx-0 sm:rounded-none sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:shadow-none sm:backdrop-blur-0">
             <div className="mb-3 flex items-center justify-between text-xs text-muted-foreground sm:hidden">
               <span className="font-medium text-foreground">{currentStepTitle}</span>
               <span>
                 Стъпка {currentStep + 1} от {steps.length}
               </span>
             </div>
-            <div className="flex flex-col-reverse gap-3 sm:border-t sm:pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="grid grid-cols-2 gap-3 sm:border-t sm:pt-6">
               <div className="flex">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
                   disabled={currentStep === 0}
-                  className="w-full gap-2 sm:w-auto"
+                  className="h-11 w-full gap-2 justify-center"
                 >
                   <ArrowLeft className="h-4 w-4" />
                   Назад
@@ -888,7 +888,7 @@ export default function NewClientPage() {
                     type="button"
                     onClick={() => setCurrentStep(currentStep + 1)}
                     disabled={!canProceed()}
-                    className="w-full gap-2 sm:ml-auto sm:w-auto"
+                    className="h-11 w-full gap-2 justify-center"
                   >
                     Напред
                     <ArrowRight className="h-4 w-4" />
@@ -897,7 +897,7 @@ export default function NewClientPage() {
                   <Button
                     type="submit"
                     disabled={isLoading || !confirmed}
-                    className="w-full gap-2 border-0 gradient-primary hover:opacity-90 disabled:opacity-50 sm:ml-auto sm:w-auto"
+                    className="h-11 w-full gap-2 justify-center border-0 gradient-primary hover:opacity-90 disabled:opacity-50"
                   >
                     {isLoading ? (
                       <>

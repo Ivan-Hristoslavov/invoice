@@ -141,10 +141,13 @@ export function ForgotPasswordForm() {
       {/* Header */}
       <motion.div 
         variants={itemVariants} 
-        className="text-center mb-10"
+        className="mb-7 text-center"
       >
+        <div className="mb-3 inline-flex items-center rounded-full border border-violet-500/20 bg-violet-500/8 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-violet-600 dark:text-violet-400">
+          Възстановяване
+        </div>
         <motion.h1 
-          className="text-3xl font-bold tracking-tight mb-3"
+          className="mb-3 text-3xl font-bold tracking-tight"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
@@ -161,7 +164,7 @@ export function ForgotPasswordForm() {
         </motion.p>
       </motion.div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {/* Email Field */}
         <motion.div 
           variants={itemVariants} 
@@ -182,7 +185,7 @@ export function ForgotPasswordForm() {
               placeholder="ime@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="pl-12 h-12 text-base bg-slate-50/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-300"
+              className="h-12 rounded-2xl border-border/60 bg-background/70 pl-12 text-base shadow-sm transition-[border-color,box-shadow,background-color] duration-300 focus-visible:border-primary/60 focus-visible:bg-background focus-visible:ring-4 focus-visible:ring-primary/10"
               required
               autoComplete="email"
             />
@@ -213,11 +216,11 @@ export function ForgotPasswordForm() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             transition={{ duration: 0.2 }}
-            className="w-full flex justify-center"
+            className="flex w-full justify-center"
           >
             <Button 
               type="submit" 
-              className="w-full max-w-sm h-12 text-base font-semibold gradient-primary hover:opacity-90 text-white border-0 shadow-lg transition-all duration-300"
+              className="h-12 w-full max-w-sm rounded-2xl border-0 text-base font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all duration-300 gradient-primary hover:opacity-90"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -239,7 +242,7 @@ export function ForgotPasswordForm() {
       {/* Back to Sign In Link */}
       <motion.div 
         variants={itemVariants} 
-        className="mt-10 text-center"
+        className="mt-8 text-center"
       >
         <p className="text-sm text-muted-foreground">
           Спомняте си паролата?{" "}

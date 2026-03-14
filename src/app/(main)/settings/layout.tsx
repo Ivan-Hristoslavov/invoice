@@ -17,7 +17,7 @@ export default async function SettingsLayout({ children }: SettingsLayoutProps) 
   
   return (
     <div className="flex min-h-full flex-col gap-4 lg:grid lg:grid-cols-[18rem_minmax(0,1fr)] lg:gap-6">
-      <aside className="w-full shrink-0 lg:sticky lg:top-0 lg:self-start">
+      <aside className="w-full shrink-0 lg:self-start">
         <SettingsNav />
       </aside>
       

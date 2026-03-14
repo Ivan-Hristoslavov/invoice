@@ -293,42 +293,77 @@
      ============================================ */
 
   /* Page titles - largest headers */
-  @apply text-xl sm:text-2xl md:text-3xl font-bold tracking-tight;
+  @apply text-xl sm:text-2xl md:text-3xl font-bold tracking-tight leading-tight text-balance;
 }
 
 @utility section-title {
   /* Section titles - card headers, section headers */
-  @apply text-lg sm:text-xl font-semibold tracking-tight;
+  @apply text-lg sm:text-xl font-semibold tracking-tight leading-tight text-balance;
 }
 
 @utility subsection-title {
   /* Subsection titles */
-  @apply text-base sm:text-lg font-medium;
+  @apply text-base sm:text-lg font-medium leading-snug;
 }
 
 @utility card-title {
   /* Card titles */
-  @apply text-base sm:text-lg font-semibold;
+  @apply text-base sm:text-lg font-semibold tracking-tight leading-snug;
 }
 
 @utility card-description {
   /* Card descriptions */
-  @apply text-xs sm:text-sm text-muted-foreground;
+  @apply text-xs sm:text-sm leading-5 sm:leading-6 text-muted-foreground;
 }
 
 @utility body-text {
   /* Body text */
-  @apply text-sm sm:text-base;
+  @apply text-sm sm:text-base leading-6;
 }
 
 @utility small-text {
   /* Small text - labels, hints */
-  @apply text-xs sm:text-sm;
+  @apply text-xs sm:text-sm leading-5;
 }
 
 @utility tiny-text {
   /* Tiny text - badges, tags */
-  @apply text-[10px] sm:text-xs;
+  @apply text-[10px] sm:text-xs leading-4 sm:leading-5;
+}
+
+@utility hero-title {
+  /* Marketing hero display titles */
+  @apply text-[clamp(1.7rem,8vw,3rem)] sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.02] sm:leading-[1.05] text-balance;
+}
+
+@utility lead-text {
+  /* Intro and supporting copy under major headings */
+  @apply text-sm sm:text-lg leading-6 sm:leading-7 text-muted-foreground;
+}
+
+@utility metric-value {
+  /* Large stat values */
+  @apply text-xl sm:text-3xl font-bold tracking-tight;
+}
+
+@utility metric-label {
+  /* Small labels below stat values */
+  @apply text-xs sm:text-sm leading-5 text-muted-foreground;
+}
+
+@utility marketing-title {
+  /* Main marketing section titles on landing pages */
+  @apply text-2xl sm:text-4xl font-bold tracking-tight leading-tight text-balance;
+}
+
+@utility marketing-copy {
+  /* Supporting copy for landing cards and sections */
+  @apply text-sm sm:text-base leading-6 sm:leading-7 text-muted-foreground;
+}
+
+@utility marketing-kicker {
+  /* Small uppercase helper labels above copy blocks */
+  @apply text-xs sm:text-sm font-semibold tracking-tight leading-5 text-foreground;
 }
 
 /* Green–blue gradient design system – primary CTAs and highlights */
@@ -546,12 +581,6 @@
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-  }
-  
-  /* Hardware acceleration for smooth animations */
-  html, body {
-    -webkit-transform: translateZ(0);
-    transform: translateZ(0);
   }
   
   body {

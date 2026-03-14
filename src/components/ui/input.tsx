@@ -18,7 +18,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         ref={ref}
         fullWidth
         className={cn(
-          "text-base md:text-sm",
+          "text-base font-medium placeholder:font-normal md:text-sm",
           ariaInvalid && "data-[invalid=true]:border-destructive data-[invalid=true]:focus-visible:ring-destructive",
           className
         )}

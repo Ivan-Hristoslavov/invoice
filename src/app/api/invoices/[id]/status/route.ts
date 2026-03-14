@@ -4,18 +4,18 @@ import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { resolveSessionUser } from "@/lib/session-user";
+import {
+  getDatabaseStatusForAppStatus,
+  normalizeInvoiceStatus,
+  type AppInvoiceStatus,
+} from "@/lib/invoice-status";
 
 // Valid status transitions for the current invoice lifecycle.
-const VALID_TRANSITIONS: Record<string, string[]> = {
+const VALID_TRANSITIONS: Record<AppInvoiceStatus, AppInvoiceStatus[]> = {
   DRAFT: ["ISSUED", "VOIDED"],
   ISSUED: ["CANCELLED"],
-  PAID: ["CANCELLED"],
   VOIDED: [],
   CANCELLED: [],
-};
-
-const DB_TO_STATUS: Record<string, string> = {
-  PAID: "ISSUED",
 };
 
 export async function PATCH(
@@ -44,9 +44,9 @@ export async function PATCH(
       );
     }
     
-    const { status } = body;
+    const requestedStatus = normalizeInvoiceStatus(body.status);
 
-    if (!status) {
+    if (!body.status) {
       return NextResponse.json(
         { error: "Статусът е задължителен" },
         { status: 400 }
@@ -86,24 +86,29 @@ export async function PATCH(
     }
 
     // Map current status from DB to app status for validation
-    const currentAppStatus = DB_TO_STATUS[invoice.status] || invoice.status;
+    const currentAppStatus = normalizeInvoiceStatus(invoice.status);
     
     // Validate status transition
-    const allowedTransitions = VALID_TRANSITIONS[currentAppStatus] || VALID_TRANSITIONS[invoice.status] || [];
-    if (!allowedTransitions.includes(status)) {
+    const allowedTransitions = VALID_TRANSITIONS[currentAppStatus] || [];
+    if (!allowedTransitions.includes(requestedStatus)) {
       return NextResponse.json(
         { 
-          error: `Не може да се промени статуса от ${currentAppStatus} към ${status}. Позволени преходи: ${allowedTransitions.join(", ") || "няма"}` 
+          error: `Не може да се промени статуса от ${currentAppStatus} към ${requestedStatus}. Позволени преходи: ${allowedTransitions.join(", ") || "няма"}` 
         },
         { status: 400 }
       );
     }
 
+    const nextDatabaseStatus = getDatabaseStatusForAppStatus(
+      requestedStatus,
+      invoice.status
+    );
+
     // Update invoice status
     const { data: updatedInvoice, error: updateError } = await supabase
       .from("Invoice")
       .update({
-        status,
+        status: nextDatabaseStatus,
         updatedAt: new Date().toISOString(),
       })
       .eq("id", id)
@@ -124,8 +129,8 @@ export async function PATCH(
       const headers = request.headers;
       
       // Determine action type based on new status
-      const actionType = status === "VOIDED" ? "VOID" : 
-                         status === "ISSUED" ? "ISSUE" : "UPDATE";
+      const actionType = requestedStatus === "VOIDED" ? "VOID" : 
+                         requestedStatus === "ISSUED" ? "ISSUE" : "UPDATE";
       
       await logAction({
         userId: sessionUser.id,
@@ -135,7 +140,8 @@ export async function PATCH(
         invoiceId: id,
         changes: { 
           previousStatus: invoice.status,
-          newStatus: status,
+          newStatus: requestedStatus,
+          persistedStatus: nextDatabaseStatus,
           reason: body.reason || undefined
         },
         ipAddress: headers.get("x-forwarded-for") || headers.get("x-real-ip") || undefined,
@@ -150,7 +156,11 @@ export async function PATCH(
     revalidatePath("/invoices");
     revalidatePath("/dashboard");
 
-    return NextResponse.json(updatedInvoice);
+    return NextResponse.json({
+      ...updatedInvoice,
+      status: normalizeInvoiceStatus(updatedInvoice?.status),
+      persistedStatus: updatedInvoice?.status,
+    });
   } catch (error) {
     console.error("Грешка при промяна на статуса на фактура:", error);
     return NextResponse.json(

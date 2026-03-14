@@ -8,6 +8,7 @@ import cuid from "cuid";
 import { resolveSessionUser } from "@/lib/session-user";
 import { withDocumentSnapshots } from "@/lib/document-snapshots";
 import { getNextDocumentNumber } from "@/lib/document-numbering";
+import { isIssuedLikeStatus, normalizeInvoiceStatus } from "@/lib/invoice-status";
 
 /**
  * POST /api/invoices/[id]/cancel
@@ -46,8 +47,8 @@ export async function POST(
       return NextResponse.json({ error: "Фактурата не е намерена" }, { status: 404 });
     }
 
-    // Only ISSUED invoices can be cancelled (PAID is the old DB enum value for ISSUED)
-    if (invoice.status !== "ISSUED" && invoice.status !== "PAID") {
+    // Only issued invoices can be cancelled. Older environments still persist legacy statuses.
+    if (!isIssuedLikeStatus(invoice.status)) {
       return NextResponse.json(
         { error: "Само издадени фактури могат да бъдат отменени. За чернови използвайте изтриване или анулиране." },
         { status: 400 }
@@ -156,9 +157,17 @@ export async function POST(
         total: item.total,
       }));
 
-      await supabaseAdmin
+      const { error: itemsError } = await supabaseAdmin
         .from("CreditNoteItem")
         .insert(creditNoteItems);
+
+      if (itemsError) {
+        await supabaseAdmin.from("CreditNote").delete().eq("id", creditNoteId);
+        return NextResponse.json(
+          { error: "Неуспешно създаване на артикули за кредитното известие" },
+          { status: 500 }
+        );
+      }
     }
 
     // Update the original invoice
@@ -210,6 +219,7 @@ export async function POST(
         creditNoteNumber,
         total: invoice.total,
       },
+      invoiceStatus: normalizeInvoiceStatus("CANCELLED"),
     });
   } catch (error) {
     console.error("Грешка при отмяна на фактура:", error);

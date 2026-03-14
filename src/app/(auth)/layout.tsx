@@ -193,43 +193,50 @@ export default function AuthLayout({
           <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-border/60 to-transparent" />
         </div>
 
-        <div className="relative z-10 flex min-h-svh items-center justify-center overflow-y-auto px-4 pb-5 pt-[max(1rem,env(safe-area-inset-top))] sm:min-h-screen sm:p-6 sm:py-8 lg:p-8 lg:py-10">
+        <div className="relative z-10 flex min-h-screen items-center justify-center overflow-y-auto px-4 pb-5 pt-[calc(env(safe-area-inset-top)+5.5rem)] supports-[min-height:100dvh]:min-h-dvh sm:px-6 sm:pb-8 sm:pt-[calc(env(safe-area-inset-top)+6rem)] lg:p-8 lg:py-10">
           <div className="flex w-full max-w-md flex-col items-center justify-center py-2 sm:max-w-xl lg:max-w-xl">
-            {/* Back + Mobile Logo row */}
+            {/* Back + Mobile Logo */}
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="absolute inset-x-4 top-[max(0.75rem,env(safe-area-inset-top))] z-10 flex items-center justify-between sm:relative sm:inset-auto sm:top-auto sm:mb-5"
+              className="fixed inset-x-4 top-[max(0.75rem,env(safe-area-inset-top))] z-20 flex h-14 items-center lg:hidden"
             >
-              <Button
-                variant="ghost"
-                size="sm"
-                asChild
-                className="text-muted-foreground hover:text-foreground text-xs sm:text-sm"
-              >
-                <Link href="/" className="flex items-center whitespace-nowrap">
-                  <ArrowLeft className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  Назад
+              <div className="relative flex w-full items-center justify-between rounded-full border border-border/60 bg-background/50 px-2 py-2 shadow-lg shadow-slate-950/10 backdrop-blur-xl">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  asChild
+                  className="h-9 rounded-full px-3 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground sm:text-sm"
+                >
+                  <Link href="/" className="flex items-center whitespace-nowrap">
+                    <ArrowLeft className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    Назад
+                  </Link>
+                </Button>
+                <Link href="/" className="absolute left-1/2 inline-flex -translate-x-1/2 items-center gap-2.5 whitespace-nowrap rounded-full px-2 py-1.5">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary shadow-md shadow-primary/20">
+                    <FileText className="h-5 w-5 text-white" />
+                  </div>
+                  <span className="text-xl font-bold tracking-tight">{APP_NAME}</span>
                 </Link>
-              </Button>
-              <Link href="/" className="flex items-center gap-2 lg:hidden">
-                <div className="h-8 w-8 rounded-lg gradient-primary flex items-center justify-center">
-                  <FileText className="h-4 w-4 text-white" />
-                </div>
-                <span className="font-bold text-lg">{APP_NAME}</span>
-              </Link>
-              <div className="w-14 sm:w-20" />
+                <div className="w-[84px] shrink-0" aria-hidden="true" />
+              </div>
             </motion.div>
 
             {/* Form Card – compact */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="mt-14 glass-card w-full rounded-2xl border border-border/50 p-5 shadow-xl sm:mt-0 sm:p-6 lg:p-7"
+              className="relative w-full overflow-hidden rounded-[28px] border border-border/60 bg-card/85 p-5 shadow-2xl shadow-slate-950/15 backdrop-blur-xl sm:p-6 lg:p-7"
             >
-              {children}
+              <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-emerald-400/60 to-transparent" />
+              <div className="absolute inset-x-6 top-0 h-24 rounded-b-full bg-linear-to-b from-emerald-500/8 to-transparent blur-2xl" />
+              <div className="absolute -bottom-10 right-0 h-24 w-24 rounded-full bg-cyan-500/8 blur-3xl" />
+              <div className="relative z-10">
+                {children}
+              </div>
             </motion.div>
 
             <p className="mt-4 text-center text-[11px] text-muted-foreground sm:text-xs">

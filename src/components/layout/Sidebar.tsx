@@ -105,12 +105,39 @@ export function Sidebar() {
     return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
 
+  useEffect(() => {
+    if (!isMobile || !isOpen) return;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [isMobile, isOpen]);
+
   // Close sidebar on route change (mobile only)
   useEffect(() => {
     if (isMobile) {
       setIsOpen(false);
     }
   }, [pathname, isMobile]);
+
+  useEffect(() => {
+    if (!isMobile || !isOpen) return;
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [isMobile, isOpen]);
 
   // Skip rendering sidebar on auth pages or home page when not authenticated
   if (pathname.includes("/signin") || pathname.includes("/signup")) {
@@ -142,6 +169,8 @@ export function Sidebar() {
           className="fixed left-3 top-[calc(env(safe-area-inset-top)+0.625rem)] z-60 h-9 w-9 border border-border bg-background/95 shadow-lg backdrop-blur-md hover:bg-muted sm:left-4 sm:top-3 sm:h-10 sm:w-10"
           onClick={() => setIsOpen(!isOpen)}
           aria-label={isOpen ? "Затвори менюто" : "Отвори менюто"}
+          aria-controls="main-sidebar"
+          aria-expanded={isOpen}
         >
           {isOpen ? <X className="w-5 h-5" aria-hidden="true" /> : <Menu className="w-5 h-5" aria-hidden="true" />}
         </Button>
@@ -154,16 +183,18 @@ export function Sidebar() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 lg:hidden"
+            className="fixed inset-0 z-40 bg-black/55 lg:hidden"
             onClick={() => setIsOpen(false)}
+            aria-hidden="true"
           />
         )}
       </AnimatePresence>
 
       {/* Sidebar - Fixed and always visible on desktop (lg+), collapsible on mobile only */}
       <motion.aside 
+        id="main-sidebar"
         className={cn(
-          "fixed left-0 top-14 z-40 flex h-[calc(100dvh-3.5rem)] w-68 shrink-0 flex-col glass-card rounded-none! border-l-0! border-t-0! border-b-0! border-r border-border sm:top-16 sm:h-[calc(100dvh-4rem)] sm:w-72",
+          "fixed left-0 top-14 z-40 flex h-[calc(100dvh-3.5rem)] w-72 shrink-0 flex-col overflow-hidden rounded-none border-l-0 border-t-0 border-b-0 border-r border-border glass-card sm:top-16 sm:h-[calc(100dvh-4rem)]",
           "lg:translate-x-0",
           isMobile && !isOpen && "-translate-x-full"
         )}
@@ -172,7 +203,7 @@ export function Sidebar() {
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
         {/* Main Navigation */}
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 pt-2 pb-3 lg:overflow-visible lg:pb-2" role="navigation" aria-label="Основна навигация">
+        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 pt-2 pb-3 lg:pb-2" role="navigation" aria-label="Основна навигация">
           <p className="mb-1.5 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground sm:px-3 sm:text-xs">
             Меню
           </p>

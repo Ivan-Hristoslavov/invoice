@@ -202,6 +202,9 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
         <div className="space-y-4">
           <Card className="border-border/60 shadow-sm">
             <CardHeader className="space-y-1 pb-3">
+              <Badge variant="info" className="mb-2 w-fit">
+                Профил
+              </Badge>
               <CardTitle>Информация за клиента</CardTitle>
               <CardDescription>Контакти, адрес и данъчни детайли в по-подреден вид.</CardDescription>
             </CardHeader>
@@ -257,6 +260,9 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
 
           <Card className="border-border/60 shadow-sm">
             <CardHeader className="space-y-1 pb-3">
+              <Badge variant="secondary" className="mb-2 w-fit">
+                История
+              </Badge>
               <CardTitle>Последни фактури</CardTitle>
               <CardDescription>Най-новите документи за този клиент.</CardDescription>
             </CardHeader>
@@ -320,6 +326,9 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
         <div className="space-y-4">
           <Card className="border-border/60 shadow-sm">
             <CardHeader className="space-y-1 pb-3">
+              <Badge variant="success" className="mb-2 w-fit">
+                Обобщение
+              </Badge>
               <CardTitle>Обобщение</CardTitle>
               <CardDescription>Кратък поглед върху работата с този клиент.</CardDescription>
             </CardHeader>

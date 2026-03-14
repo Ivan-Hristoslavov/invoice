@@ -1,5 +1,10 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { cache } from 'react';
+import {
+  getDatabaseStatusesForAppStatus,
+  isIssuedLikeStatus,
+  normalizeInvoiceStatus,
+} from '@/lib/invoice-status';
 
 // Кеширане на заявката за един invoice с всички related данни
 export const getInvoiceWithDetails = cache(async (invoiceId: string, userId: string) => {
@@ -32,7 +37,11 @@ export const getInvoiceWithDetails = cache(async (invoiceId: string, userId: str
       });
     }
 
-    return invoice;
+    return {
+      ...invoice,
+      status: normalizeInvoiceStatus(invoice.status),
+      persistedStatus: invoice.status,
+    };
   } catch (error) {
     console.error('Error fetching invoice with details:', error);
     // Return null if database is unavailable
@@ -65,7 +74,11 @@ export const getInvoicesList = cache(async (
 
     // Apply filters
     if (status) {
-      query = query.eq("status", status);
+      const matchingStatuses = getDatabaseStatusesForAppStatus(status);
+      query =
+        matchingStatuses.length > 1
+          ? query.in("status", matchingStatuses)
+          : query.eq("status", matchingStatuses[0]);
     }
 
     if (searchTerm) {
@@ -86,7 +99,14 @@ export const getInvoicesList = cache(async (
       throw error;
     }
 
-    return { invoices: invoices || [], total: count || 0 };
+    return {
+      invoices: (invoices || []).map((invoice: any) => ({
+        ...invoice,
+        status: normalizeInvoiceStatus(invoice.status),
+        persistedStatus: invoice.status,
+      })),
+      total: count || 0,
+    };
   } catch (error) {
     console.error('Error fetching invoices list:', error);
     // Return empty list if database is unavailable
@@ -103,14 +123,16 @@ export const getInvoiceStats = cache(async (userId: string) => {
 
     const supabase = createAdminClient();
 
-    // Общо неплатени фактури
+    // Outstanding issued invoices. Older environments still persist legacy statuses.
     const { data: unpaidInvoices, count: unpaidCount } = await supabase
       .from("Invoice")
       .select("*", { count: 'exact', head: false })
       .eq("userId", userId)
-      .eq("status", "UNPAID");
+      .in("status", getDatabaseStatusesForAppStatus("ISSUED"));
 
-    const unpaidTotal = (unpaidInvoices || []).reduce((sum, inv) => sum + Number(inv.total || 0), 0);
+    const unpaidTotal = (unpaidInvoices || [])
+      .filter((inv: any) => isIssuedLikeStatus(inv.status))
+      .reduce((sum, inv) => sum + Number(inv.total || 0), 0);
 
     // Фактури за текущия месец
     const { data: monthInvoices, count: monthCount } = await supabase

@@ -35,17 +35,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { 
   ArrowLeft, 
   ArrowRight,
-  Save, 
   Plus, 
   Trash2, 
   Search, 
-  X, 
   Check, 
   Edit, 
   User, 
   Calendar, 
   Building2, 
-  DollarSign, 
   FileText, 
   CheckCircle2,
   Package,
@@ -57,14 +54,13 @@ import {
   Phone,
   MapPin,
   Hash,
-  Clock,
-  AlertCircle,
   Crown,
   Lock,
   AlertTriangle,
   Banknote,
   Coins,
-  MoreHorizontal
+  MoreHorizontal,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -90,9 +86,18 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { DEFAULT_VAT_RATE } from "@/config/constants";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
+import { useCompanyBookLookup } from "@/hooks/useCompanyBookLookup";
 import { UsageCounter } from "@/components/ui/pro-feature-lock";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FormDatePicker } from "@/components/ui/date-picker";
+import {
+  defaultInvoiceClientDraft,
+  mapInvoiceClientApiErrors,
+  parseInvoiceClientDraft,
+  validateInvoiceClientDraft,
+  type InvoiceClientDraftErrors,
+  type InvoiceClientDraftInput,
+} from "@/lib/invoice-client-draft";
 
 // Step indicator component
 function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { title: string; icon: React.ReactNode }[] }) {
@@ -182,69 +187,55 @@ function ProductCard({
   );
 }
 
-// Client card component
-function ClientCard({ 
-  client, 
-  onSelect, 
-  isSelected 
-}: { 
-  client: any; 
+type ClientCreationMode = "eik" | "manual";
+
+function ClientCreationMethodCard({
+  title,
+  description,
+  icon,
+  isSelected,
+  onSelect,
+}: {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  isSelected: boolean;
   onSelect: () => void;
-  isSelected?: boolean;
 }) {
   return (
-    <div
+    <button
+      type="button"
       onClick={onSelect}
       className={`
-        group relative overflow-hidden rounded-xl border-2 p-5 cursor-pointer transition-all duration-300
+        group relative flex w-full flex-col overflow-hidden rounded-2xl border-2 p-5 text-left transition-all duration-300
         ${isSelected 
           ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10' 
-          : 'border-border hover:border-primary/50 hover:shadow-lg hover:-translate-y-1 bg-card'}
+          : 'border-border bg-card hover:-translate-y-1 hover:border-primary/50 hover:shadow-lg'}
       `}
+      aria-pressed={isSelected}
     >
       <div className="flex items-start gap-4">
-        {/* Avatar */}
         <div className={`
-          w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold transition-colors
+          flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-lg font-semibold transition-colors
           ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground'}
         `}>
-          {client.name.charAt(0).toUpperCase()}
+          {icon}
         </div>
-        
-        <div className="flex-1 min-w-0">
-          <h4 className="font-semibold text-base truncate">{client.name}</h4>
-          
-          <div className="mt-2 space-y-1">
-            {client.email && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Mail className="h-3.5 w-3.5" />
-                <span className="truncate">{client.email}</span>
-              </div>
-            )}
-            {client.phone && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Phone className="h-3.5 w-3.5" />
-                <span>{client.phone}</span>
-              </div>
-            )}
-            {(client.city || client.country) && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <MapPin className="h-3.5 w-3.5" />
-                <span className="truncate">{[client.city, client.country].filter(Boolean).join(", ")}</span>
-              </div>
-            )}
-          </div>
+
+        <div className="min-w-0 flex-1">
+          <h4 className="text-base font-semibold">{title}</h4>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
         </div>
-        
+
         {isSelected && (
-          <div className="absolute top-3 right-3">
-            <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+          <div className="absolute right-3 top-3">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary">
               <Check className="h-4 w-4 text-primary-foreground" />
             </div>
           </div>
         )}
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -365,9 +356,10 @@ function NewInvoiceContent() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedClient, setSelectedClient] = useState<any>(null);
-  const [clients, setClients] = useState<any[]>([]);
+  const [clientCreationMode, setClientCreationMode] = useState<ClientCreationMode | null>(null);
+  const [clientDraft, setClientDraft] = useState<InvoiceClientDraftInput>(defaultInvoiceClientDraft);
+  const [clientErrors, setClientErrors] = useState<InvoiceClientDraftErrors>({});
   const [companies, setCompanies] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [productSearchQuery, setProductSearchQuery] = useState("");
@@ -418,26 +410,12 @@ function NewInvoiceContent() {
       try {
         setIsLoadingData(true);
         
-        // Fetch all data in parallel
-        const [clientsRes, companiesRes, productsRes] = await Promise.allSettled([
-          fetch('/api/clients'),
+        // Fetch required data in parallel
+        const [companiesRes, productsRes, clientsRes] = await Promise.allSettled([
           fetch('/api/companies'),
-          fetch('/api/products')
+          fetch('/api/products'),
+          preselectedClientId ? fetch('/api/clients') : Promise.resolve(null)
         ]);
-        
-        // Process clients
-        if (clientsRes.status === 'fulfilled' && clientsRes.value.ok) {
-          const clientsData = await clientsRes.value.json();
-          setClients(clientsData);
-          
-          if (preselectedClientId) {
-            const foundClient = clientsData.find((c: any) => c.id === preselectedClientId);
-            if (foundClient) {
-              setSelectedClient(foundClient);
-              setCurrentStep(1);
-            }
-          }
-        }
         
         // Process companies
         if (companiesRes.status === 'fulfilled' && companiesRes.value.ok) {
@@ -452,6 +430,21 @@ function NewInvoiceContent() {
         if (productsRes.status === 'fulfilled' && productsRes.value.ok) {
           const productsData = await productsRes.value.json();
           setProducts(productsData);
+        }
+
+        if (
+          preselectedClientId &&
+          clientsRes.status === "fulfilled" &&
+          clientsRes.value &&
+          "ok" in clientsRes.value &&
+          clientsRes.value.ok
+        ) {
+          const clientsData = await clientsRes.value.json();
+          const foundClient = clientsData.find((client: any) => client.id === preselectedClientId);
+          if (foundClient) {
+            setSelectedClient(foundClient);
+            setCurrentStep(1);
+          }
         }
         
       } catch (error) {
@@ -486,16 +479,6 @@ function NewInvoiceContent() {
   }, [invoiceData.companyId]);
 
   // Filtered data
-  const filteredClients = useMemo(() => {
-    if (!searchQuery.trim()) return clients;
-    const query = searchQuery.toLowerCase();
-    return clients.filter(client =>
-      client.name.toLowerCase().includes(query) ||
-      client.email?.toLowerCase().includes(query) ||
-      client.city?.toLowerCase().includes(query)
-    );
-  }, [clients, searchQuery]);
-
   const filteredProducts = useMemo(() => {
     if (!productSearchQuery.trim()) return products;
     const query = productSearchQuery.toLowerCase();
@@ -531,12 +514,102 @@ function NewInvoiceContent() {
   }, [invoiceData.paymentMethod]);
 
   const currentStepDetails = steps[currentStep];
+  const recipientPreview = selectedClient ?? (clientCreationMode ? clientDraft : null);
+  const clientMethodLabel =
+    selectedClient && !clientCreationMode
+      ? "Избран клиент"
+      : clientCreationMode === "eik"
+        ? "По ЕИК"
+        : clientCreationMode === "manual"
+          ? "Ръчно"
+          : null;
 
   // Handlers
-  const selectClient = useCallback((client: any) => {
-    setSelectedClient(client);
-    setCurrentStep(1);
+  const updateClientDraft = useCallback((field: keyof InvoiceClientDraftInput, value: string | boolean) => {
+    setSelectedClient(null);
+    setClientDraft((prev) => ({ ...prev, [field]: value }));
+    setClientErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
   }, []);
+
+  const handleClientModeSelect = useCallback((mode: ClientCreationMode) => {
+    setSelectedClient(null);
+    setClientCreationMode(mode);
+    setClientErrors({});
+  }, []);
+
+  const handleCompanyBookSuccess = useCallback((fields: Record<string, unknown>) => {
+    let filledCount = 0;
+
+    setSelectedClient(null);
+    setClientDraft((prev) => {
+      const next = { ...prev };
+
+      for (const [key, value] of Object.entries(fields)) {
+        if (value === undefined || value === "") continue;
+        next[key as keyof InvoiceClientDraftInput] = value as never;
+        filledCount++;
+      }
+
+      return next;
+    });
+
+    setClientErrors((prev) => {
+      const next = { ...prev };
+      for (const key of Object.keys(fields)) {
+        delete next[key as keyof InvoiceClientDraftInput];
+      }
+      return next;
+    });
+
+    toast.success("Данните са заредени", {
+      description: `${filledCount} полета бяха попълнени автоматично.`,
+    });
+  }, []);
+
+  const { lookup: lookupCompany, isLoading: isLookupLoading } = useCompanyBookLookup({
+    onSuccess: handleCompanyBookSuccess,
+    onError: (message) => toast.error("Грешка при търсене", { description: message }),
+  });
+
+  const handleEikLookup = useCallback(async () => {
+    const eik = clientDraft.bulstatNumber.replace(/\D/g, "");
+
+    if (!eik || eik.length < 9) {
+      const message = "Въведете поне 9 цифри в полето ЕИК.";
+      setClientErrors((prev) => ({ ...prev, bulstatNumber: message }));
+      toast.error("Невалиден ЕИК", { description: message });
+      return;
+    }
+
+    await lookupCompany(eik);
+  }, [clientDraft.bulstatNumber, lookupCompany]);
+
+  const validateClientStep = useCallback(() => {
+    if (selectedClient) {
+      setClientErrors({});
+      return true;
+    }
+
+    if (!clientCreationMode) {
+      toast.error("Изберете как да въведете клиента");
+      return false;
+    }
+
+    const nextErrors = validateInvoiceClientDraft(clientDraft);
+    setClientErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length > 0) {
+      toast.error("Попълнете задължителните данни за клиента");
+      return false;
+    }
+
+    return true;
+  }, [clientCreationMode, clientDraft, selectedClient]);
 
   const handleInputChange = useCallback((field: string, value: string | boolean) => {
     setInvoiceData(prev => {
@@ -589,15 +662,59 @@ function NewInvoiceContent() {
     });
   }, [items, invoiceData.currency]);
 
+  const createInlineClient = useCallback(async () => {
+    const payload = parseInvoiceClientDraft(clientDraft);
+    const response = await fetch("/api/clients", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorPayload = (await response.json().catch(() => null)) as {
+        error?: string;
+        details?: Array<{ path?: string[]; message?: string }>;
+      } | null;
+
+      const apiErrors = mapInvoiceClientApiErrors(errorPayload?.details);
+      if (Object.keys(apiErrors).length > 0) {
+        setClientErrors(apiErrors);
+        setCurrentStep(0);
+      }
+
+      throw new Error(errorPayload?.error || "Неуспешно създаване на клиент");
+    }
+
+    const createdClient = await response.json();
+    setSelectedClient(createdClient);
+    return createdClient;
+  }, [clientDraft]);
+
+  const handleNextStep = useCallback(() => {
+    if (currentStep === 0) {
+      if (!validateClientStep()) return;
+      setCurrentStep(1);
+      return;
+    }
+
+    if (currentStep === 1 && !invoiceData.companyId) {
+      toast.error("Моля, изберете фирма");
+      return;
+    }
+
+    setCurrentStep((prev) => Math.min(steps.length - 1, prev + 1));
+  }, [currentStep, invoiceData.companyId, steps.length, validateClientStep]);
+
   const handleSubmit = async () => {
     setIsLoading(true);
     
     try {
-      if (!selectedClient) {
-        toast.error("Моля, изберете клиент");
+      if (!validateClientStep()) {
         setCurrentStep(0);
         return;
       }
+
+      const ensuredClient = selectedClient ?? await createInlineClient();
       
       if (!invoiceData.companyId) {
         toast.error("Моля, изберете фирма");
@@ -616,7 +733,7 @@ function NewInvoiceContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          clientId: selectedClient.id,
+          clientId: ensuredClient.id,
           companyId: invoiceData.companyId,
           issueDate: invoiceData.issueDate,
           dueDate: invoiceData.dueDate,
@@ -678,61 +795,427 @@ function NewInvoiceContent() {
       // Step 0: Client Selection
       case 0:
         return (
-          <div className="space-y-5">
-            <div className="text-center mb-8">
-              <h2 className="mb-1.5 text-xl font-bold sm:text-2xl">Изберете клиент</h2>
-              <p className="text-muted-foreground">Изберете съществуващ клиент или създайте нов</p>
+          <div className="space-y-6">
+            <div className="mx-auto max-w-3xl text-center">
+              <h2 className="mb-2 text-xl font-bold sm:text-2xl">Как искате да въведете клиента?</h2>
+              <p className="text-sm text-muted-foreground sm:text-base">
+                Изберете удобния за вас вариант. След това ще продължите със стандартните стъпки за фактурата.
+              </p>
             </div>
-            
-            {/* Search */}
-            <div className="relative max-w-md mx-auto">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
-              <Input
-                type="search"
-                placeholder="Търсене по име, имейл или град..."
-                className="pl-12 pr-10 h-12 text-base rounded-xl"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <ClientCreationMethodCard
+                title="Търси по ЕИК и автоматично попълни данните"
+                description="Потърсете фирмата по ЕИК и редактирайте заредените данни при нужда."
+                icon={<Search className="h-5 w-5" />}
+                isSelected={clientCreationMode === "eik"}
+                onSelect={() => handleClientModeSelect("eik")}
               />
-              {searchQuery && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 z-10"
-                  onClick={() => setSearchQuery("")}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
+              <ClientCreationMethodCard
+                title="Ръчно попълване на данни"
+                description="Въведете данните на българския клиент ръчно, включително ЕИК, адрес и ДДС статус."
+                icon={<Edit className="h-5 w-5" />}
+                isSelected={clientCreationMode === "manual"}
+                onSelect={() => handleClientModeSelect("manual")}
+              />
             </div>
-            
-            {/* Client grid */}
-            {isLoadingData ? (
-              <div className="text-center py-12">
-                <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4" />
-                <p className="text-muted-foreground">Зареждане на клиенти...</p>
-              </div>
-            ) : filteredClients.length === 0 ? (
-              <div className="text-center py-12">
-                <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground mb-4">Няма намерени клиенти</p>
-                <Button asChild>
-                  <Link href="/clients/new">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Създаване на нов клиент
-                  </Link>
-                </Button>
-              </div>
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {filteredClients.map((client) => (
-                  <ClientCard
-                    key={client.id}
-                    client={client}
-                    onSelect={() => selectClient(client)}
-                    isSelected={selectedClient?.id === client.id}
-                  />
-                ))}
+
+            {selectedClient && !clientCreationMode && (
+              <Card className="border-primary/20 bg-primary/5">
+                <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                      Предварително избран клиент
+                    </p>
+                    <p className="pt-1 text-lg font-semibold">{selectedClient.name}</p>
+                    <p className="pt-1 text-sm text-muted-foreground">
+                      Може да продължите с него или да изберете един от двата варианта по-горе.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="shrink-0"
+                    onClick={() => {
+                      setSelectedClient(null);
+                      setClientCreationMode("manual");
+                    }}
+                  >
+                    Нов клиент
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {clientCreationMode && (
+              <div className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_340px]">
+                <div className="space-y-5">
+                  {clientCreationMode === "eik" && (
+                    <Card className="border-primary/20 bg-primary/5">
+                      <CardContent className="space-y-4 p-4 sm:p-5">
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                            <Search className="h-4 w-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="font-semibold">Бързо зареждане по ЕИК</h3>
+                            <p className="text-sm text-muted-foreground">
+                              Въведете ЕИК и ще попълним наличните данни от Търговския регистър.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                          <div className="space-y-2">
+                            <Label htmlFor="invoice-client-eik">ЕИК</Label>
+                            <Input
+                              id="invoice-client-eik"
+                              inputMode="numeric"
+                              placeholder="напр. 204676177"
+                              value={clientDraft.bulstatNumber}
+                              onChange={(event) => updateClientDraft("bulstatNumber", event.target.value.replace(/\D/g, ""))}
+                              aria-invalid={Boolean(clientErrors.bulstatNumber)}
+                              aria-describedby={clientErrors.bulstatNumber ? "invoice-client-eik-error" : undefined}
+                              className={clientErrors.bulstatNumber ? "border-destructive focus-visible:ring-destructive/20" : undefined}
+                            />
+                            {clientErrors.bulstatNumber ? (
+                              <p id="invoice-client-eik-error" className="text-sm text-destructive">
+                                {clientErrors.bulstatNumber}
+                              </p>
+                            ) : (
+                              <p className="text-xs text-muted-foreground">Използвайте 9 до 13 цифри, без интервали.</p>
+                            )}
+                          </div>
+                          <Button
+                            type="button"
+                            onClick={handleEikLookup}
+                            disabled={isLookupLoading || clientDraft.bulstatNumber.replace(/\D/g, "").length < 9}
+                            className="h-11 gap-2 self-end"
+                          >
+                            {isLookupLoading ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Search className="h-4 w-4" />
+                            )}
+                            Зареди данни
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  <Card className="border-border/70">
+                    <CardHeader className="pb-4">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <CardTitle>Данни на клиента</CardTitle>
+                          <CardDescription>
+                            {clientCreationMode === "eik"
+                              ? "Проверете заредените данни и допълнете липсващите полета."
+                              : "Попълнете данните на клиента, които ще се използват и за създаване на запис в клиентите."}
+                          </CardDescription>
+                        </div>
+                        <Badge variant="secondary" className="w-fit">
+                          {clientCreationMode === "eik" ? "Автопопълване" : "Ръчно"}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="space-y-4">
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="invoice-client-name">Име на клиента</Label>
+                            <Input
+                              id="invoice-client-name"
+                              value={clientDraft.name}
+                              onChange={(event) => updateClientDraft("name", event.target.value)}
+                              aria-invalid={Boolean(clientErrors.name)}
+                              aria-describedby={clientErrors.name ? "invoice-client-name-error" : undefined}
+                              className={clientErrors.name ? "border-destructive focus-visible:ring-destructive/20" : undefined}
+                              placeholder="напр. Пример ООД"
+                            />
+                            {clientErrors.name ? (
+                              <p id="invoice-client-name-error" className="text-sm text-destructive">
+                                {clientErrors.name}
+                              </p>
+                            ) : null}
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="invoice-client-email">Имейл</Label>
+                            <Input
+                              id="invoice-client-email"
+                              type="email"
+                              value={clientDraft.email}
+                              onChange={(event) => updateClientDraft("email", event.target.value)}
+                              aria-invalid={Boolean(clientErrors.email)}
+                              aria-describedby={clientErrors.email ? "invoice-client-email-error" : undefined}
+                              className={clientErrors.email ? "border-destructive focus-visible:ring-destructive/20" : undefined}
+                              placeholder="client@example.com"
+                            />
+                            {clientErrors.email ? (
+                              <p id="invoice-client-email-error" className="text-sm text-destructive">
+                                {clientErrors.email}
+                              </p>
+                            ) : (
+                              <p className="text-xs text-muted-foreground">Незадължително, но удобно за изпращане.</p>
+                            )}
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="invoice-client-phone">Телефон</Label>
+                            <Input
+                              id="invoice-client-phone"
+                              inputMode="numeric"
+                              value={clientDraft.phone}
+                              onChange={(event) => updateClientDraft("phone", event.target.value.replace(/\D/g, ""))}
+                              placeholder="0888123456"
+                            />
+                            <p className="text-xs text-muted-foreground">Само цифри.</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-primary" />
+                          <h3 className="text-sm font-semibold">Адрес</h3>
+                        </div>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="invoice-client-address">Адрес</Label>
+                            <Input
+                              id="invoice-client-address"
+                              value={clientDraft.address}
+                              onChange={(event) => updateClientDraft("address", event.target.value)}
+                              aria-invalid={Boolean(clientErrors.address)}
+                              aria-describedby={clientErrors.address ? "invoice-client-address-error" : undefined}
+                              className={clientErrors.address ? "border-destructive focus-visible:ring-destructive/20" : undefined}
+                              placeholder="ул. Пример 1"
+                            />
+                            {clientErrors.address ? (
+                              <p id="invoice-client-address-error" className="text-sm text-destructive">
+                                {clientErrors.address}
+                              </p>
+                            ) : null}
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="invoice-client-city">Град</Label>
+                            <Input
+                              id="invoice-client-city"
+                              value={clientDraft.city}
+                              onChange={(event) => updateClientDraft("city", event.target.value)}
+                              aria-invalid={Boolean(clientErrors.city)}
+                              aria-describedby={clientErrors.city ? "invoice-client-city-error" : undefined}
+                              className={clientErrors.city ? "border-destructive focus-visible:ring-destructive/20" : undefined}
+                              placeholder="София"
+                            />
+                            {clientErrors.city ? (
+                              <p id="invoice-client-city-error" className="text-sm text-destructive">
+                                {clientErrors.city}
+                              </p>
+                            ) : null}
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="invoice-client-state">Област</Label>
+                            <Input
+                              id="invoice-client-state"
+                              value={clientDraft.state}
+                              onChange={(event) => updateClientDraft("state", event.target.value)}
+                              placeholder="София-град"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="invoice-client-zip">Пощенски код</Label>
+                            <Input
+                              id="invoice-client-zip"
+                              inputMode="numeric"
+                              value={clientDraft.zipCode}
+                              onChange={(event) => updateClientDraft("zipCode", event.target.value.replace(/\D/g, ""))}
+                              placeholder="1000"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="invoice-client-country">Държава</Label>
+                            <Input
+                              id="invoice-client-country"
+                              value={clientDraft.country}
+                              onChange={(event) => updateClientDraft("country", event.target.value)}
+                              aria-invalid={Boolean(clientErrors.country)}
+                              aria-describedby={clientErrors.country ? "invoice-client-country-error" : undefined}
+                              className={clientErrors.country ? "border-destructive focus-visible:ring-destructive/20" : undefined}
+                              placeholder="България"
+                            />
+                            {clientErrors.country ? (
+                              <p id="invoice-client-country-error" className="text-sm text-destructive">
+                                {clientErrors.country}
+                              </p>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <Receipt className="h-4 w-4 text-primary" />
+                          <h3 className="text-sm font-semibold">Данъчни данни</h3>
+                        </div>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div className="space-y-2">
+                            <Label htmlFor="invoice-client-bulstat">БУЛСТАТ/ЕИК</Label>
+                            <Input
+                              id="invoice-client-bulstat"
+                              inputMode="numeric"
+                              value={clientDraft.bulstatNumber}
+                              onChange={(event) => updateClientDraft("bulstatNumber", event.target.value.replace(/\D/g, ""))}
+                              aria-invalid={Boolean(clientErrors.bulstatNumber)}
+                              aria-describedby={clientErrors.bulstatNumber ? "invoice-client-bulstat-error" : undefined}
+                              className={clientErrors.bulstatNumber ? "border-destructive focus-visible:ring-destructive/20" : undefined}
+                              placeholder="123456789"
+                            />
+                            {clientErrors.bulstatNumber ? (
+                              <p id="invoice-client-bulstat-error" className="text-sm text-destructive">
+                                {clientErrors.bulstatNumber}
+                              </p>
+                            ) : null}
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">Тип идентификатор</Label>
+                            <Select
+                              value={clientDraft.uicType}
+                              onValueChange={(value) => updateClientDraft("uicType", value)}
+                            >
+                              <SelectTrigger aria-label="Тип идентификатор">
+                                <SelectValue placeholder="Изберете тип" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="BULSTAT">БУЛСТАТ</SelectItem>
+                                <SelectItem value="EGN">ЕГН</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2 md:col-span-2">
+                            <div className={`flex items-start gap-3 rounded-xl border p-4 transition-colors ${clientDraft.vatRegistered ? "border-primary/40 bg-primary/5" : "border-border bg-card"}`}>
+                              <Checkbox
+                                id="invoice-client-vat-registered"
+                                checked={clientDraft.vatRegistered}
+                                onCheckedChange={(checked) => updateClientDraft("vatRegistered", checked === true)}
+                                aria-describedby={clientErrors.vatRegistered ? "invoice-client-vat-registered-error" : undefined}
+                              />
+                              <div className="space-y-1">
+                                <Label htmlFor="invoice-client-vat-registered" className="cursor-pointer">
+                                  Регистрация по ЗДДС
+                                </Label>
+                                <p className="text-sm text-muted-foreground">
+                                  Отбележете, ако клиентът има валиден български ДДС номер.
+                                </p>
+                                {clientErrors.vatRegistered ? (
+                                  <p id="invoice-client-vat-registered-error" className="text-sm text-destructive">
+                                    {clientErrors.vatRegistered}
+                                  </p>
+                                ) : null}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="invoice-client-vat-number">ДДС номер</Label>
+                            <Input
+                              id="invoice-client-vat-number"
+                              value={clientDraft.vatRegistrationNumber}
+                              onChange={(event) => updateClientDraft("vatRegistrationNumber", event.target.value.toUpperCase())}
+                              aria-invalid={Boolean(clientErrors.vatRegistrationNumber)}
+                              aria-describedby={clientErrors.vatRegistrationNumber ? "invoice-client-vat-number-error" : undefined}
+                              className={clientErrors.vatRegistrationNumber ? "border-destructive focus-visible:ring-destructive/20" : undefined}
+                              placeholder="BG123456789"
+                            />
+                            {clientErrors.vatRegistrationNumber ? (
+                              <p id="invoice-client-vat-number-error" className="text-sm text-destructive">
+                                {clientErrors.vatRegistrationNumber}
+                              </p>
+                            ) : null}
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="invoice-client-mol">МОЛ</Label>
+                            <Input
+                              id="invoice-client-mol"
+                              value={clientDraft.mol}
+                              onChange={(event) => updateClientDraft("mol", event.target.value)}
+                              aria-invalid={Boolean(clientErrors.mol)}
+                              aria-describedby={clientErrors.mol ? "invoice-client-mol-error" : undefined}
+                              className={clientErrors.mol ? "border-destructive focus-visible:ring-destructive/20" : undefined}
+                              placeholder="Име на представляващия"
+                            />
+                            {clientErrors.mol ? (
+                              <p id="invoice-client-mol-error" className="text-sm text-destructive">
+                                {clientErrors.mol}
+                              </p>
+                            ) : (
+                              <p className="text-xs text-muted-foreground">Незадължително за клиент, но полезно за документа.</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="space-y-4 xl:sticky xl:top-20 xl:self-start">
+                  <Card className="border-border/70">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <User className="h-4 w-4 text-primary" />
+                        Преглед на клиента
+                      </CardTitle>
+                      <CardDescription>Тези данни ще се използват за фактурата и ще се запишат като клиент.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground">Име</p>
+                        <p className="mt-1 font-semibold">{clientDraft.name || "—"}</p>
+                      </div>
+                      <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground">ЕИК</p>
+                        <p className="mt-1 font-semibold">{clientDraft.bulstatNumber || "—"}</p>
+                      </div>
+                      <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground">Адрес</p>
+                        <p className="mt-1 text-sm font-medium">
+                          {[clientDraft.address, clientDraft.city, clientDraft.country].filter(Boolean).join(", ") || "—"}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground">ДДС статус</p>
+                        <p className="mt-1 text-sm font-medium">
+                          {clientDraft.vatRegistered
+                            ? clientDraft.vatRegistrationNumber || "Регистриран"
+                            : "Няма регистрация"}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-primary/15 bg-primary/5">
+                    <CardContent className="space-y-3 p-4">
+                      <p className="text-sm font-semibold">Какво става при създаване?</p>
+                      <ul className="space-y-2 text-sm text-muted-foreground">
+                        <li>Клиентът се създава автоматично през последната стъпка.</li>
+                        <li>След това фактурата се изпраща със същия `clientId` към текущия API.</li>
+                        <li>Артикулите, сумите и фирмата издател остават по текущия flow.</li>
+                      </ul>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
             )}
           </div>
@@ -774,7 +1257,7 @@ function NewInvoiceContent() {
                       </div>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {selectedClient ? `За ${selectedClient.name}` : "Изберете детайлите по документа"}
+                    {recipientPreview ? `За ${recipientPreview.name}` : "Изберете детайлите по документа"}
                     </p>
                   </div>
                 </div>
@@ -863,7 +1346,7 @@ function NewInvoiceContent() {
               {/* Right: Client, Company, Currency (2/5 on lg) */}
               <div className="lg:col-span-2 space-y-5">
                 {/* Client summary */}
-                {selectedClient && (
+                {recipientPreview && (
                   <Card className="bg-linear-to-br from-primary/5 to-primary/10 border-primary/20">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-base flex items-center gap-2">
@@ -874,12 +1357,12 @@ function NewInvoiceContent() {
                     <CardContent>
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-primary shrink-0 flex items-center justify-center text-primary-foreground font-semibold text-sm">
-                          {selectedClient.name.charAt(0).toUpperCase()}
+                          {recipientPreview.name?.charAt(0)?.toUpperCase() || "?"}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold truncate">{selectedClient.name}</p>
-                          {selectedClient.email && (
-                            <p className="text-xs text-muted-foreground truncate">{selectedClient.email}</p>
+                          <p className="font-semibold truncate">{recipientPreview.name}</p>
+                          {recipientPreview.email && (
+                            <p className="text-xs text-muted-foreground truncate">{recipientPreview.email}</p>
                           )}
                         </div>
                         <Button variant="ghost" size="sm" onClick={() => setCurrentStep(0)} className="shrink-0 h-8 px-2">
@@ -1117,16 +1600,16 @@ function NewInvoiceContent() {
                         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">До</p>
                       </div>
                       <div className="space-y-1.5">
-                        <p className="text-sm font-semibold sm:text-base">{selectedClient?.name || "-"}</p>
-                        {selectedClient?.email && (
-                          <p className="text-xs text-muted-foreground sm:text-sm">{selectedClient.email}</p>
+                        <p className="text-sm font-semibold sm:text-base">{recipientPreview?.name || "-"}</p>
+                        {recipientPreview?.email && (
+                          <p className="text-xs text-muted-foreground sm:text-sm">{recipientPreview.email}</p>
                         )}
-                        {selectedClient?.phone && (
-                          <p className="text-xs text-muted-foreground sm:text-sm">{selectedClient.phone}</p>
+                        {recipientPreview?.phone && (
+                          <p className="text-xs text-muted-foreground sm:text-sm">{recipientPreview.phone}</p>
                         )}
-                        {(selectedClient?.city || selectedClient?.country) && (
+                        {(recipientPreview?.city || recipientPreview?.country) && (
                           <p className="text-xs text-muted-foreground sm:text-sm">
-                            {[selectedClient?.city, selectedClient?.country].filter(Boolean).join(", ")}
+                            {[recipientPreview?.city, recipientPreview?.country].filter(Boolean).join(", ")}
                           </p>
                         )}
                       </div>
@@ -1421,7 +1904,7 @@ function NewInvoiceContent() {
                   </p>
                   <h2 className="pt-1 text-lg font-semibold sm:text-xl">{currentStepDetails.title}</h2>
                   <p className="pt-1 text-sm text-muted-foreground">
-                    {currentStep === 0 && "Изберете клиента, за когото ще издадете фактурата."}
+                    {currentStep === 0 && "Изберете как да въведете клиента и подгответе неговите данни."}
                     {currentStep === 1 && "Попълнете основните данни и фирмата издател."}
                     {currentStep === 2 && "Добавете редовете по фактурата и проверете сумите."}
                     {currentStep === 3 && "Прегледайте документа преди окончателното създаване."}
@@ -1433,8 +1916,11 @@ function NewInvoiceContent() {
                 <div className="rounded-xl border border-border/60 bg-background/80 p-3">
                   <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Клиент</p>
                   <p className="mt-1 truncate text-sm font-semibold">
-                    {selectedClient?.name || "Не е избран"}
+                    {recipientPreview?.name || "Не е избран"}
                   </p>
+                  {clientMethodLabel ? (
+                    <p className="mt-1 text-xs text-muted-foreground">{clientMethodLabel}</p>
+                  ) : null}
                 </div>
                 <div className="rounded-xl border border-border/60 bg-background/80 p-3">
                   <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Артикули</p>
@@ -1470,12 +1956,12 @@ function NewInvoiceContent() {
                 </div>
               </div>
 
-              <div className="grid w-full gap-3 sm:flex sm:items-center sm:justify-between">
+              <div className="grid w-full grid-cols-2 gap-3 sm:flex sm:items-center sm:justify-between">
               <Button
                 variant="outline"
                 onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
                 disabled={currentStep === 0}
-                className="h-11 w-full gap-2 sm:w-auto"
+                className="h-11 w-full gap-2 justify-center sm:w-auto"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Назад
@@ -1484,12 +1970,9 @@ function NewInvoiceContent() {
               <div className="flex w-full justify-end sm:w-auto">
                 {currentStep < 3 ? (
                   <Button
-                    onClick={() => setCurrentStep(currentStep + 1)}
-                    disabled={
-                      (currentStep === 0 && !selectedClient) ||
-                      (currentStep === 1 && !invoiceData.companyId)
-                    }
-                    className="h-11 w-full gap-2 sm:w-auto"
+                    onClick={handleNextStep}
+                    disabled={currentStep === 0 ? !selectedClient && !clientCreationMode : currentStep === 1 && !invoiceData.companyId}
+                    className="h-11 w-full gap-2 justify-center sm:w-auto"
                   >
                     Напред
                     <ArrowRight className="h-4 w-4" />
@@ -1497,7 +1980,7 @@ function NewInvoiceContent() {
                 ) : !isLoadingUsage && !canCreateInvoice && isFree ? (
                   <Link href="/settings/subscription" className="w-full sm:w-auto">
                     <Button
-                      className="h-11 w-full gap-2 border-dashed border-amber-300 dark:border-amber-700 hover:border-amber-400"
+                      className="h-11 w-full gap-2 justify-center border-dashed border-amber-300 dark:border-amber-700 hover:border-amber-400"
                       variant="outline"
                     >
                       <Lock className="h-4 w-4 text-amber-500" />
@@ -1511,7 +1994,7 @@ function NewInvoiceContent() {
                   <Button
                     onClick={handleSubmit}
                     disabled={isLoading}
-                    className="h-11 w-full gap-2 bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 sm:w-auto"
+                    className="h-11 w-full gap-2 justify-center bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 sm:w-auto"
                   >
                     {isLoading ? (
                       <>
