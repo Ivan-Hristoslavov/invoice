@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { InvoiceForm } from '@/components/invoice/InvoiceForm';
 import { api } from '@/lib/api-utils';
@@ -13,24 +13,32 @@ vi.mock('@/lib/api-utils', () => ({
 }));
 
 // Mock Next.js router
+const mockPush = vi.fn();
+const mockRefresh = vi.fn();
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
-    push: vi.fn(),
-    refresh: vi.fn(),
+    push: mockPush,
+    refresh: mockRefresh,
+    back: vi.fn(),
   }),
 }));
 
 describe('InvoiceForm', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('should validate required fields', async () => {
     // Setup
     const user = userEvent.setup();
     render(<InvoiceForm />);
     
     // Find form elements
-    const submitButton = screen.getByRole('button', { name: /запази|създай/i });
+    const formElement = document.querySelector('form')!;
     
     // Act - Submit with empty form
-    await user.click(submitButton);
+    fireEvent.submit(formElement);
     
     // Assert - Check for validation errors
     await waitFor(() => {
@@ -39,7 +47,7 @@ describe('InvoiceForm', () => {
     });
   });
   
-  it.skip('should successfully submit valid form data (TODO: update after form redesign)', async () => {
+  it('should successfully submit valid form data', async () => {
     // Mock API response
     (api.post as any).mockResolvedValue({
       success: true,
@@ -51,38 +59,37 @@ describe('InvoiceForm', () => {
     
     // Setup
     const user = userEvent.setup();
-    render(<InvoiceForm />);
+    render(
+      <InvoiceForm
+        defaultValues={{
+          clientId: '',
+          companyId: '',
+          issueDate: '2023-06-15',
+          dueDate: '2023-06-30',
+          status: 'DRAFT',
+          items: [
+            {
+              description: 'Test Item',
+              quantity: 1,
+              price: 100,
+              taxRate: 20,
+            },
+          ],
+        }}
+      />
+    );
     
     // Find form elements
     const clientSelect = screen.getByLabelText(/клиент/i);
     const companySelect = screen.getByLabelText(/компания/i);
-    const issueDateInput = screen.getByLabelText(/дата на издаване/i);
-    const dueDateInput = screen.getByLabelText(/падеж/i);
-    const addItemButton = screen.getByRole('button', { name: /добави артикул/i });
-    const submitButton = screen.getByRole('button', { name: /запази|създай/i });
+    const formElement = document.querySelector('form')!;
     
     // Fill the form
     await user.selectOptions(clientSelect, '1');
     await user.selectOptions(companySelect, '1');
-    await user.clear(issueDateInput);
-    await user.type(issueDateInput, '2023-06-15');
-    await user.clear(dueDateInput);
-    await user.type(dueDateInput, '2023-06-30');
-    
-    // Add an item
-    await user.click(addItemButton);
-    const descriptionInput = screen.getByLabelText(/описание/i);
-    const quantityInput = screen.getByLabelText(/количество/i);
-    const priceInput = screen.getByLabelText(/цена/i);
-    
-    await user.type(descriptionInput, 'Test Item');
-    await user.clear(quantityInput);
-    await user.type(quantityInput, '1');
-    await user.clear(priceInput);
-    await user.type(priceInput, '100');
     
     // Submit the form
-    await user.click(submitButton);
+    fireEvent.submit(formElement);
     
     // Assert - Check if API was called with correct data
     await waitFor(() => {
@@ -99,49 +106,47 @@ describe('InvoiceForm', () => {
           }),
         ]),
       }));
+      expect(mockPush).toHaveBeenCalledWith('/invoices/1');
+      expect(mockRefresh).toHaveBeenCalled();
     });
   });
   
-  it.skip('should handle API errors (TODO: update after form redesign)', async () => {
+  it('should handle API errors', async () => {
     // Mock API error response
     (api.post as any).mockResolvedValue({
       success: false,
       error: {
-        code: 'VALIDATION_ERROR',
         message: 'Невалидни данни',
       },
     });
     
     // Setup
     const user = userEvent.setup();
-    render(<InvoiceForm />);
+    render(
+      <InvoiceForm
+        defaultValues={{
+          clientId: '1',
+          companyId: '1',
+          issueDate: '2023-06-15',
+          dueDate: '2023-06-30',
+          status: 'DRAFT',
+          items: [
+            {
+              description: 'Test Item',
+              quantity: 1,
+              price: 100,
+              taxRate: 20,
+            },
+          ],
+        }}
+      />
+    );
     
     // Find form elements and fill with minimal valid data
-    const clientSelect = screen.getByLabelText(/клиент/i);
-    const companySelect = screen.getByLabelText(/компания/i);
-    const issueDateInput = screen.getByLabelText(/дата на издаване/i);
-    const dueDateInput = screen.getByLabelText(/падеж/i);
-    const addItemButton = screen.getByRole('button', { name: /добави артикул/i });
-    const submitButton = screen.getByRole('button', { name: /запази|създай/i });
-    
-    // Fill the form
-    await user.selectOptions(clientSelect, '1');
-    await user.selectOptions(companySelect, '1');
-    await user.type(issueDateInput, '2023-06-15');
-    await user.type(dueDateInput, '2023-06-30');
-    
-    // Add an item
-    await user.click(addItemButton);
-    const descriptionInput = screen.getByLabelText(/описание/i);
-    const quantityInput = screen.getByLabelText(/количество/i);
-    const priceInput = screen.getByLabelText(/цена/i);
-    
-    await user.type(descriptionInput, 'Test Item');
-    await user.type(quantityInput, '1');
-    await user.type(priceInput, '100');
+    const formElement = document.querySelector('form')!;
     
     // Submit the form
-    await user.click(submitButton);
+    fireEvent.submit(formElement);
     
     // Assert - Check if error message is displayed
     await waitFor(() => {

@@ -24,39 +24,83 @@ import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { BackgroundShapes } from "@/components/ui/background-shapes";
 import { shouldReduceBrowserEffects } from "@/lib/browser-effects";
 import { cn } from "@/lib/utils";
-import {
-  Card as HCard,
-  CardContent as HCardContent,
-  CardFooter as HCardFooter,
-  Chip,
-  Separator,
-} from "@heroui/react";
 import { Pagination } from "@/components/ui/pagination";
 
-const fadeInUp = {
-  initial: { opacity: 0, y: 60 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.6, ease: "easeOut" },
-};
+function HCard({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn(
+        "rounded-[1.75rem] border border-border/60 bg-card/95 text-card-foreground",
+        className
+      )}
+      {...props}
+    />
+  );
+}
 
-const staggerContainer = {
-  animate: {
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
+function HCardContent({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
+  return <div className={className} {...props} />;
+}
 
-const floatingAnimation = {
-  animate: {
-    y: [0, -20, 0],
-    transition: {
-      duration: 6,
-      repeat: Infinity,
-      ease: "easeInOut",
-    },
-  },
-};
+function HCardFooter({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn("flex items-center", className)} {...props} />;
+}
+
+function Chip({
+  className,
+  color = "default",
+  variant = "soft",
+  size = "md",
+  ...props
+}: React.HTMLAttributes<HTMLSpanElement> & {
+  color?: "default" | "accent" | "warning" | "success";
+  variant?: "soft" | "solid" | "outline";
+  size?: "sm" | "md";
+}) {
+  const palette = {
+    default:
+      variant === "outline"
+        ? "border-border/70 text-foreground"
+        : "bg-muted text-muted-foreground",
+    accent:
+      variant === "outline"
+        ? "border-cyan-400/40 text-cyan-600 dark:text-cyan-300"
+        : "bg-cyan-500/10 text-cyan-700 dark:text-cyan-300",
+    warning:
+      variant === "outline"
+        ? "border-amber-400/40 text-amber-700 dark:text-amber-300"
+        : "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+    success:
+      variant === "outline"
+        ? "border-emerald-400/40 text-emerald-700 dark:text-emerald-300"
+        : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  } as const;
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full border px-2.5 py-1 font-medium",
+        size === "sm" ? "text-[10px]" : "text-xs sm:text-sm",
+        palette[color],
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
+function Separator({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn("h-px w-full bg-border/60", className)} {...props} />;
+}
 
 type PlanKey = "FREE" | "STARTER" | "PRO" | "BUSINESS";
 
@@ -327,7 +371,9 @@ export default function HomePage() {
   const [shouldReduceEffects, setShouldReduceEffects] = useState(false);
 
   useEffect(() => {
-    const updateEffects = () => setShouldReduceEffects(shouldReduceBrowserEffects());
+    const updateEffects = () => {
+      setShouldReduceEffects(shouldReduceBrowserEffects());
+    };
 
     updateEffects();
     window.addEventListener("resize", updateEffects);
@@ -432,109 +478,81 @@ export default function HomePage() {
         </header>
 
         {/* ── Hero ── */}
-        <section className="relative px-4 pb-12 pt-9 sm:pb-20 sm:pt-16">
+        <section className="px-4 py-5 sm:py-10">
           <div className="container mx-auto max-w-6xl">
             <motion.div
-              initial="initial"
-              animate="animate"
-              variants={shouldReduceEffects ? undefined : staggerContainer}
-              className="flex flex-col items-center text-center"
+              initial={shouldReduceEffects ? false : { opacity: 0, y: 40 }}
+              animate={shouldReduceEffects ? undefined : { opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
             >
-              <motion.div variants={shouldReduceEffects ? undefined : fadeInUp} className="mb-3 sm:mb-6">
-                <Chip variant="soft" color="accent" className="px-2 py-0.5 text-[10px] sm:px-3 sm:py-1 sm:text-sm">
-                  <Sparkles className="h-3.5 w-3.5 inline-block mr-1.5" />
-                  Ново: Автоматично генериране на НАП номера
-                </Chip>
-              </motion.div>
-
-              <motion.h1
-                variants={shouldReduceEffects ? undefined : fadeInUp}
-                className="mb-3 text-[1.7rem] font-bold tracking-tight sm:mb-5 sm:text-4xl md:text-5xl lg:text-6xl"
-              >
-                Фактурирайте{" "}
-                <span className="gradient-primary-text">професионално</span>
-                <br />
-                за минути
-              </motion.h1>
-
-              <motion.p
-                variants={shouldReduceEffects ? undefined : fadeInUp}
-                className="mb-5 max-w-3xl px-2 text-[13px] leading-5 text-muted-foreground sm:mb-8 sm:px-0 sm:text-lg sm:leading-7"
-              >
-                Софтуер за издаване на фактури, създаден за български бизнеси.
-                Създавайте професионални фактури, изпращайте ги по имейл и следете статуса им.
-              </motion.p>
-
-              <motion.div
-                variants={shouldReduceEffects ? undefined : fadeInUp}
-                className="mb-7 flex w-full flex-col items-center gap-2.5 sm:mb-12 sm:flex-row sm:justify-center sm:gap-3"
-              >
-                <Button
-                  size="sm"
-                  asChild
-                  className="h-8 w-full px-3 text-xs gradient-primary text-white border-0 shadow-md hover:opacity-90 sm:h-10 sm:w-auto sm:px-5 sm:text-sm sm:shadow-lg"
-                >
-                  <Link href="/signup" className="flex items-center justify-center whitespace-nowrap">
-                    Започнете безплатно
-                    <ChevronRight className="ml-1.5 h-3.5 w-3.5 sm:ml-2 sm:h-4 sm:w-4" />
-                  </Link>
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  asChild
-                  className="h-8 w-full px-3 text-xs border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 sm:h-10 sm:w-auto sm:px-5 sm:text-sm"
-                >
-                  <Link href="/signin" className="flex items-center justify-center whitespace-nowrap">
-                    Вече имам акаунт
-                  </Link>
-                </Button>
-              </motion.div>
-
-              <motion.div
-                variants={shouldReduceEffects ? undefined : fadeInUp}
-                className="grid w-full grid-cols-3 gap-1.5 sm:gap-4 md:gap-8"
-              >
-                {heroStats.map((stat) => (
-                  <div key={stat.label} className="text-center">
-                    <div className="text-base font-bold gradient-primary-text sm:text-2xl md:text-3xl">
-                      {stat.value}
-                    </div>
-                    <div className="mt-1 text-[9px] leading-4 text-muted-foreground sm:text-sm">
-                      {stat.label}
-                    </div>
+              <HCard className="border border-border/50 bg-card/80 shadow-md sm:shadow-xl">
+                <HCardContent className="p-4 text-center sm:p-8 md:p-10">
+                  <div className="mb-4 flex justify-center sm:mb-5">
+                    <Chip variant="soft" color="accent" className="px-3 py-1 text-[10px] sm:text-sm">
+                      <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                      Ново: Автоматично генериране на НАП номера
+                    </Chip>
                   </div>
-                ))}
-              </motion.div>
+
+                  <h1
+                    className="mx-auto mb-3 max-w-[12ch] text-balance text-[clamp(2rem,10vw,3rem)] font-extrabold tracking-tight text-foreground sm:mb-4 sm:max-w-4xl sm:text-5xl lg:text-6xl"
+                    style={{ textShadow: "0 6px 30px rgba(15, 23, 42, 0.24)" }}
+                  >
+                    <span>Фактурирайте </span>
+                    <span className="gradient-primary-text">професионално</span>
+                    <span> за минути</span>
+                  </h1>
+
+                  <p className="mx-auto mb-5 max-w-2xl text-[13px] leading-5 text-muted-foreground sm:mb-6 sm:text-lg sm:leading-7">
+                    Софтуер за издаване на фактури, създаден за български бизнеси.
+                    Създавайте професионални фактури, изпращайте ги по имейл и следете статуса им.
+                  </p>
+
+                  <div className="mb-5 flex flex-col items-stretch justify-center gap-2 sm:mb-8 sm:flex-row sm:gap-3">
+                    <Button
+                      size="sm"
+                      asChild
+                      className="h-11 w-full border-0 px-4 text-sm text-white shadow-md gradient-primary hover:opacity-90 sm:h-10 sm:w-auto sm:px-5 sm:shadow-lg"
+                    >
+                      <Link href="/signup" className="flex items-center justify-center whitespace-nowrap">
+                        Започнете безплатно
+                        <ChevronRight className="ml-1.5 h-3.5 w-3.5 sm:ml-2 sm:h-4 sm:w-4" />
+                      </Link>
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      asChild
+                      className="h-11 w-full border-slate-300 px-4 text-sm dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 sm:h-10 sm:w-auto sm:px-5"
+                    >
+                      <Link href="/signin" className="flex items-center justify-center whitespace-nowrap">
+                        Вече имам акаунт
+                      </Link>
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+                    {heroStats.map((stat) => (
+                      <div
+                        key={stat.label}
+                        className="rounded-2xl border border-border/50 bg-background/60 px-4 py-4 shadow-xs"
+                      >
+                        <div className="text-2xl font-bold gradient-primary-text sm:text-3xl">
+                          {stat.value}
+                        </div>
+                        <div className="mt-1 text-[12px] leading-5 text-muted-foreground sm:text-sm">
+                          {stat.label}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </HCardContent>
+              </HCard>
             </motion.div>
-
-            {!shouldReduceEffects && (
-              <>
-                <motion.div
-                  variants={floatingAnimation}
-                  animate="animate"
-                  className="absolute top-32 left-10 hidden lg:block"
-                >
-                  <div className="rounded-2xl border bg-card p-3 shadow-lg">
-                    <FileText className="h-6 w-6 text-primary" />
-                  </div>
-                </motion.div>
-                <motion.div
-                  variants={floatingAnimation}
-                  animate="animate"
-                  style={{ animationDelay: "2s" }}
-                  className="absolute top-48 right-16 hidden lg:block"
-                >
-                  <div className="rounded-2xl border bg-card p-3 shadow-lg">
-                    <BarChart3 className="h-6 w-6 text-emerald-500" />
-                  </div>
-                </motion.div>
-              </>
-            )}
           </div>
         </section>
 
-        <section className="px-4 py-7 sm:py-12">
+        <section className="px-4 py-5 sm:py-9">
           <div className="container mx-auto max-w-6xl">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {quickHighlights.map((item) => (
@@ -550,7 +568,7 @@ export default function HomePage() {
         </section>
 
         {/* ── Who Is It For ── */}
-        <section className="px-4 py-7 sm:py-14">
+        <section className="px-4 py-5 sm:py-10">
           <div className="container mx-auto max-w-6xl">
             <motion.div
               initial={{ opacity: 0, y: 40 }}
@@ -609,14 +627,14 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="px-4 py-7 sm:py-14">
+        <section className="px-4 py-5 sm:py-10">
           <div className="container mx-auto max-w-6xl">
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="mb-7 text-center sm:mb-10"
+              className="mb-5 text-center sm:mb-8"
             >
               <Chip variant="soft" color="warning" className="mb-4">
                 Как работи
@@ -651,14 +669,14 @@ export default function HomePage() {
         </section>
 
         {/* ── Features ── */}
-        <section className="px-4 py-7 sm:py-14">
+        <section className="px-4 py-5 sm:py-10">
           <div className="container mx-auto max-w-6xl">
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="mb-7 text-center sm:mb-10"
+              className="mb-5 text-center sm:mb-8"
             >
               <Chip variant="soft" color="accent" className="mb-4">
                 Функции
@@ -738,14 +756,14 @@ export default function HomePage() {
         </section>
 
         {/* ── Pricing ── */}
-        <section id="pricing" className="px-4 py-7 sm:py-14">
+        <section id="pricing" className="px-4 py-5 sm:py-10">
           <div className="container mx-auto max-w-7xl">
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="mb-7 text-center sm:mb-10"
+              className="mb-5 text-center sm:mb-8"
             >
               <Chip variant="soft" color="success" className="mb-4">
                 Ценообразуване
@@ -965,14 +983,14 @@ export default function HomePage() {
         </section>
 
         {/* ── Testimonials ── */}
-        <section className="px-4 py-7 sm:py-14">
+        <section className="px-4 py-5 sm:py-10">
           <div className="container mx-auto max-w-6xl">
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="mb-7 text-center sm:mb-10"
+              className="mb-5 text-center sm:mb-8"
             >
               <Chip variant="soft" color="warning" className="mb-4">
                 Отзиви
@@ -1113,14 +1131,14 @@ export default function HomePage() {
         </section>
 
         {/* ── FAQ ── */}
-        <section className="px-4 py-7 sm:py-14">
+        <section className="px-4 py-5 sm:py-10">
           <div className="container mx-auto max-w-4xl">
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="mb-7 text-center sm:mb-10"
+              className="mb-5 text-center sm:mb-8"
             >
               <Chip variant="soft" color="default" className="mb-4">
                 Въпроси
@@ -1165,7 +1183,7 @@ export default function HomePage() {
         </section>
 
         {/* ── CTA ── */}
-        <section className="px-4 py-8 sm:py-14">
+        <section className="px-4 py-6 sm:py-10">
           <div className="container mx-auto max-w-4xl">
             <motion.div
               initial={{ opacity: 0, y: 40 }}
@@ -1173,27 +1191,27 @@ export default function HomePage() {
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              <HCard className="relative overflow-hidden border border-emerald-500/20 bg-card shadow-lg sm:border-2 sm:shadow-2xl">
+              <HCard className="relative overflow-hidden border border-emerald-500/20 bg-card shadow-md sm:border-2 sm:shadow-2xl">
                 {/* Decorative gradient background */}
-                <div className="pointer-events-none absolute inset-0 bg-linear-to-br from-emerald-500/4 via-teal-500/4 to-cyan-500/4 sm:from-emerald-500/5 sm:via-teal-500/5 sm:to-cyan-500/5" />
+                <div className="pointer-events-none absolute inset-0 bg-linear-to-br from-emerald-500/3 via-teal-500/3 to-cyan-500/3 sm:from-emerald-500/5 sm:via-teal-500/5 sm:to-cyan-500/5" />
                 <div className="absolute top-0 left-0 right-0 h-[3px] bg-linear-to-r from-emerald-500 via-teal-500 to-cyan-500 sm:h-1" />
-                <HCardContent className="relative z-10 p-5 text-center sm:p-8 md:p-10">
-                  <h2 className="mb-3 text-2xl font-bold sm:mb-4 sm:text-4xl">
+                <HCardContent className="relative z-10 p-4 text-center sm:p-8 md:p-10">
+                  <h2 className="mb-2 text-[1.95rem] font-bold leading-[1.15] sm:mb-4 sm:text-4xl">
                     Готови ли сте да започнете?
                   </h2>
-                  <p className="mx-auto mb-6 max-w-xl text-sm leading-6 text-muted-foreground sm:mb-8 sm:text-lg">
+                  <p className="mx-auto mb-5 max-w-md text-sm leading-6 text-muted-foreground sm:mb-8 sm:max-w-xl sm:text-lg">
                     Присъединете се към хилядите бизнеси, които вече използват{" "}
                     {APP_NAME} за професионално фактуриране.
                   </p>
-                  <div className="flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
+                  <div className="mx-auto flex w-full max-w-xs flex-col justify-center gap-3 sm:max-w-none sm:flex-row sm:gap-4">
                     <Button
                       size="default"
                       asChild
-                      className="h-10 px-4 text-sm gradient-primary hover:opacity-90 text-white border-0 shadow-md sm:h-11 sm:px-6 sm:shadow-lg"
+                      className="h-11 w-full px-4 text-sm gradient-primary text-white border-0 shadow-md hover:opacity-90 sm:h-11 sm:w-auto sm:px-6 sm:shadow-lg"
                     >
                       <Link
                         href="/signup"
-                        className="flex items-center whitespace-nowrap"
+                        className="flex items-center justify-center whitespace-nowrap"
                       >
                         Започнете безплатно
                         <ArrowRight className="ml-1.5 h-4 w-4 sm:ml-2 sm:h-5 sm:w-5" />
@@ -1203,11 +1221,11 @@ export default function HomePage() {
                       size="default"
                       variant="outline"
                       asChild
-                      className="h-10 px-4 text-sm sm:h-11 sm:px-6"
+                      className="h-11 w-full px-4 text-sm sm:h-11 sm:w-auto sm:px-6"
                     >
                       <Link
                         href="/signin"
-                        className="flex items-center whitespace-nowrap"
+                        className="flex items-center justify-center whitespace-nowrap"
                       >
                         Вход в системата
                       </Link>
@@ -1220,9 +1238,9 @@ export default function HomePage() {
         </section>
 
         {/* ── Footer ── */}
-        <footer className="mt-auto border-t px-4 py-8 glass-card rounded-none! border-l-0! border-r-0! border-b-0! sm:py-12">
+        <footer className="mt-auto border-t px-4 py-6 glass-card rounded-none! border-l-0! border-r-0! border-b-0! sm:py-10">
           <div className="container mx-auto max-w-6xl">
-            <div className="mb-8 grid grid-cols-1 gap-8 md:mb-12 md:grid-cols-4 md:gap-12">
+            <div className="mb-6 grid grid-cols-1 gap-6 md:mb-10 md:grid-cols-4 md:gap-10">
               <div>
                 <div className="mb-3 flex items-center gap-2 sm:mb-4">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg gradient-primary sm:h-8 sm:w-8">

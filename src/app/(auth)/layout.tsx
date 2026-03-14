@@ -193,14 +193,14 @@ export default function AuthLayout({
           <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-border/60 to-transparent" />
         </div>
 
-        <div className="relative z-10 flex min-h-screen items-center justify-center overflow-y-auto p-4 py-6 sm:p-6 sm:py-8 lg:p-8 lg:py-10">
+        <div className="relative z-10 flex min-h-svh items-center justify-center overflow-y-auto px-4 pb-5 pt-[max(1rem,env(safe-area-inset-top))] sm:min-h-screen sm:p-6 sm:py-8 lg:p-8 lg:py-10">
           <div className="flex w-full max-w-md flex-col items-center justify-center py-2 sm:max-w-xl lg:max-w-xl">
             {/* Back + Mobile Logo row */}
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="mb-4 flex w-full items-center justify-between sm:mb-5"
+              className="absolute inset-x-4 top-[max(0.75rem,env(safe-area-inset-top))] z-10 flex items-center justify-between sm:relative sm:inset-auto sm:top-auto sm:mb-5"
             >
               <Button
                 variant="ghost"
@@ -227,12 +227,12 @@ export default function AuthLayout({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="glass-card w-full rounded-2xl border border-border/50 p-5 shadow-xl sm:p-6 lg:p-7"
+              className="mt-14 glass-card w-full rounded-2xl border border-border/50 p-5 shadow-xl sm:mt-0 sm:p-6 lg:p-7"
             >
               {children}
             </motion.div>
 
-            <p className="mt-4 text-center text-xs text-muted-foreground">
+            <p className="mt-4 text-center text-[11px] text-muted-foreground sm:text-xs">
               {APP_COPYRIGHT}
             </p>
           </div>

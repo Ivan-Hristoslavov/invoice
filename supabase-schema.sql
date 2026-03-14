@@ -2,7 +2,7 @@
 DO $$ 
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'InvoiceStatus') THEN
-        CREATE TYPE "InvoiceStatus" AS ENUM ('DRAFT', 'UNPAID', 'PAID', 'OVERDUE', 'CANCELLED');
+        CREATE TYPE "InvoiceStatus" AS ENUM ('DRAFT', 'ISSUED', 'VOIDED', 'CANCELLED');
     END IF;
 END $$;
 
@@ -207,7 +207,7 @@ CREATE TABLE IF NOT EXISTS "Invoice" (
     "total" DECIMAL(10,2) NOT NULL,
     "notes" TEXT,
     "termsAndConditions" TEXT,
-    "currency" TEXT NOT NULL DEFAULT 'USD',
+    "currency" TEXT NOT NULL DEFAULT 'EUR',
     "locale" TEXT NOT NULL DEFAULT 'en',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -235,6 +235,7 @@ CREATE TABLE IF NOT EXISTS "InvoiceItem" (
     "description" TEXT NOT NULL,
     "quantity" DECIMAL(10,2) NOT NULL,
     "unitPrice" DECIMAL(10,2) NOT NULL,
+    "unit" TEXT DEFAULT 'бр.',
     "taxRate" DECIMAL(5,2) NOT NULL DEFAULT 0,
     "subtotal" DECIMAL(10,2) NOT NULL,
     "taxAmount" DECIMAL(10,2) NOT NULL,
@@ -386,7 +387,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS "VerificationToken_identifier_token_key" ON "V
 CREATE UNIQUE INDEX IF NOT EXISTS "ProductTranslation_productId_locale_key" ON "ProductTranslation"("productId", "locale");
 
 -- CreateIndex
-CREATE UNIQUE INDEX IF NOT EXISTS "Invoice_invoiceNumber_companyId_key" ON "Invoice"("invoiceNumber", "companyId");
+CREATE UNIQUE INDEX IF NOT EXISTS "Invoice_invoiceNumber_userId_key" ON "Invoice"("invoiceNumber", "userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX IF NOT EXISTS "Permission_name_key" ON "Permission"("name");

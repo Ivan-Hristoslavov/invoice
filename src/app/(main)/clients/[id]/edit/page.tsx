@@ -35,6 +35,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { validateBulgarianPartyInput } from "@/lib/bulgarian-party";
+import { applyApiValidationDetails } from "@/lib/form-errors";
 
 const clientSchema = z.object({
   name: z.string().min(1, "Името на клиента е задължително"),
@@ -54,6 +56,16 @@ const clientSchema = z.object({
   mol: z.string().optional().or(z.literal("")),
   uicType: z.enum(["BULSTAT", "EGN"]).default("BULSTAT"),
   locale: z.string().default("bg"),
+}).superRefine((value, ctx) => {
+  const { issues } = validateBulgarianPartyInput(value);
+
+  for (const issue of issues) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: issue.path,
+      message: issue.message,
+    });
+  }
 });
 
 type ClientFormValues = z.infer<typeof clientSchema>;
@@ -197,7 +209,11 @@ export default function EditClientPage() {
       });
 
       if (!response.ok) {
-        const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
+        const errorPayload = (await response.json().catch(() => null)) as {
+          error?: string;
+          details?: Array<{ path?: string[]; message?: string }>;
+        } | null;
+        applyApiValidationDetails(form, errorPayload?.details);
         throw new Error(errorPayload?.error || "Неуспешно обновяване на клиент");
       }
 
@@ -240,7 +256,7 @@ export default function EditClientPage() {
             <p className="text-sm text-muted-foreground">По-компактна форма за контактни, адресни и данъчни данни.</p>
           </div>
         </div>
-        <Button type="submit" form="edit-client-form" disabled={isLoading} className="rounded-full px-5">
+        <Button type="submit" form="edit-client-form" disabled={isLoading} className="hidden rounded-full px-5 sm:inline-flex">
           <Save className="mr-2 h-4 w-4" />
           {isLoading ? "Запазване..." : "Запази"}
         </Button>

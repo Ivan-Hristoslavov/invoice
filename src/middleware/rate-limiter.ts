@@ -112,22 +112,12 @@ export function withRateLimit(
   }
   
   // Изпълняваме заявката и добавяме хедърите към отговора
-  return handler().then(response => {
-    const newResponse = NextResponse.json(
-      response.json(),
-      {
-        status: response.status,
-        statusText: response.statusText,
-        headers: response.headers
-      }
-    );
-    
-    // Добавяме хедърите за ограничение
+  return handler().then((response) => {
     responseHeaders.forEach((value, key) => {
-      newResponse.headers.set(key, value);
+      response.headers.set(key, value);
     });
-    
-    return newResponse;
+
+    return response;
   });
 }
 

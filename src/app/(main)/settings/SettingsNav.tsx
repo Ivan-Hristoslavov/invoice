@@ -76,7 +76,7 @@ export function SettingsNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex flex-col rounded-2xl border border-border/60 bg-card/70 p-3 shadow-sm backdrop-blur sm:p-4">
+    <nav className="sticky top-[calc(env(safe-area-inset-top)+4rem)] flex flex-col rounded-2xl border border-border/60 bg-card/85 p-3 shadow-sm backdrop-blur sm:top-[calc(env(safe-area-inset-top)+4.5rem)] sm:p-4">
       {/* Header */}
       <div className="mb-3 flex items-center justify-between gap-3 px-1 py-1">
         <div className="flex items-center gap-2">

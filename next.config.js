@@ -10,7 +10,7 @@ const nextConfig = {
   },
   experimental: {
     optimizeCss: true, // Enables CSS optimization
-    optimizePackageImports: ['@radix-ui/react-icons', 'lucide-react'],
+    optimizePackageImports: ['@radix-ui/react-icons', 'lucide-react', '@heroui/react', 'framer-motion'],
   },
   typescript: {
     // !! WARN !!

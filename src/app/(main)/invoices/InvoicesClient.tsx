@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { formatPrice } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { 
   Card, 
@@ -103,6 +103,7 @@ export default function InvoicesClient({
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<"date" | "amount" | "number">("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const ITEMS_PER_PAGE = 15;
   
   // Subscription limit hook
@@ -491,9 +492,9 @@ export default function InvoicesClient({
             Управлявайте и проследявайте вашите фактури
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
           {canCreateInvoices && (
-            <Button variant="outline" asChild size="lg">
+            <Button variant="outline" asChild size="lg" className="hidden sm:inline-flex">
               <Link href="/invoices/import">
                 <Upload className="mr-2 h-4 w-4" />
                 Импорт
@@ -506,7 +507,7 @@ export default function InvoicesClient({
               size="3" 
               variant="solid" 
               color="green"
-              className="shadow-lg"
+              className="w-full shadow-lg sm:w-auto"
             >
               <Link href="/invoices/new" className="flex items-center whitespace-nowrap">
                 <Plus className="mr-2 h-5 w-5" />
@@ -523,7 +524,7 @@ export default function InvoicesClient({
       
       {/* Fast Action Button - Floating */}
       {canCreateInvoices && !isLoadingUsage && canCreateInvoice && (
-        <div className="fixed bottom-8 right-8 z-50">
+        <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] right-4 z-40 md:hidden">
           <Button
             asChild
             size="lg"
@@ -538,23 +539,85 @@ export default function InvoicesClient({
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {statsCards.map((stat) => (
-          <CardStatsMetric
-            key={stat.title}
-            title={stat.title}
-            value={stat.value}
-            valueSuffix={stat.valueSuffix}
-            valueClassName={stat.valueClassName}
-            icon={stat.icon}
-            gradient={stat.gradient}
-          />
+        {statsCards.map((stat, index) => (
+          <div key={stat.title} className={cn(index > 1 && "hidden sm:block")}>
+            <CardStatsMetric
+              title={stat.title}
+              value={stat.value}
+              valueSuffix={stat.valueSuffix}
+              valueClassName={stat.valueClassName}
+              icon={stat.icon}
+              gradient={stat.gradient}
+            />
+          </div>
         ))}
       </div>
 
       {/* Filters */}
       <Card className="border-0 shadow-lg">
         <CardContent className="p-3 sm:p-4">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1.35fr)_180px_220px_auto] xl:items-center">
+          <div className="space-y-3 md:hidden">
+            <div className="relative min-w-0">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Търсене по номер, клиент или дата..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-11 border-border pl-10"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 justify-center"
+                onClick={() => setShowMobileFilters((prev) => !prev)}
+              >
+                <Filter className="mr-2 h-4 w-4" />
+                {showMobileFilters ? "Скрий" : "Филтри"}
+              </Button>
+              {canCreateInvoices && (
+                <ExportDialogWrapper clients={clients} companies={companies} />
+              )}
+            </div>
+            {showMobileFilters && (
+              <div className="grid gap-3">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="h-11 w-full">
+                    <Filter className="mr-2 h-4 w-4" />
+                    <SelectValue placeholder="Филтър по статус" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Всички статуси</SelectItem>
+                    <SelectItem value="DRAFT">Чернови</SelectItem>
+                    <SelectItem value="ISSUED">Издадени</SelectItem>
+                    <SelectItem value="VOIDED">Анулирани</SelectItem>
+                    <SelectItem value="CANCELLED">Отказани</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={`${sortField}-${sortDirection}`} onValueChange={(val) => {
+                  const [field, dir] = val.split("-");
+                  setSortField(field as any);
+                  setSortDirection(dir as any);
+                }}>
+                  <SelectTrigger className="h-11 w-full">
+                    <ArrowUpDown className="mr-2 h-4 w-4" />
+                    <SelectValue placeholder="Сортирай" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="date-desc">Дата (нови първо)</SelectItem>
+                    <SelectItem value="date-asc">Дата (стари първо)</SelectItem>
+                    <SelectItem value="amount-desc">Сума (намаляваща)</SelectItem>
+                    <SelectItem value="amount-asc">Сума (нарастваща)</SelectItem>
+                    <SelectItem value="number-desc">Номер (намаляващ)</SelectItem>
+                    <SelectItem value="number-asc">Номер (нарастващ)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+          <div className="hidden gap-3 md:grid md:grid-cols-2 xl:grid-cols-[minmax(0,1.35fr)_180px_220px_auto] xl:items-center">
             <div className="relative min-w-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
@@ -572,30 +635,10 @@ export default function InvoicesClient({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Всички статуси</SelectItem>
-                <SelectItem value="DRAFT">
-                  <span className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-amber-500" />
-                    Чернови
-                  </span>
-                </SelectItem>
-                <SelectItem value="ISSUED">
-                  <span className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-emerald-500" />
-                    Издадени
-                  </span>
-                </SelectItem>
-                <SelectItem value="VOIDED">
-                  <span className="flex items-center gap-2">
-                    <XCircle className="h-4 w-4 text-purple-500" />
-                    Анулирани
-                  </span>
-                </SelectItem>
-                <SelectItem value="CANCELLED">
-                  <span className="flex items-center gap-2">
-                    <XCircle className="h-4 w-4 text-red-500" />
-                    Отказани
-                  </span>
-                </SelectItem>
+                <SelectItem value="DRAFT">Чернови</SelectItem>
+                <SelectItem value="ISSUED">Издадени</SelectItem>
+                <SelectItem value="VOIDED">Анулирани</SelectItem>
+                <SelectItem value="CANCELLED">Отказани</SelectItem>
               </SelectContent>
             </Select>
             <Select value={`${sortField}-${sortDirection}`} onValueChange={(val) => {
@@ -727,41 +770,129 @@ export default function InvoicesClient({
                           </span>
                         </div>
                       </div>
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        <Button size="sm" variant="outline" asChild>
+                      <div className="mt-4 grid grid-cols-2 gap-2">
+                        <Button size="sm" variant="outline" asChild className="h-10 justify-center">
                           <Link href={`/invoices/${invoice.id}`}>
                             <Eye className="mr-2 h-4 w-4" />
                             Преглед
                           </Link>
                         </Button>
                         {invoice.userId === currentUserId && invoice.status === "DRAFT" && (
-                          <Button size="sm" variant="outline" asChild>
+                          <Button size="sm" className="h-10 justify-center gradient-primary border-0 text-white hover:opacity-90" onClick={() => openStatusModal(invoice, "ISSUED")}>
+                            <FileCheck className="mr-2 h-4 w-4" />
+                            Издай
+                          </Button>
+                        )}
+                        {invoice.userId === currentUserId && invoice.status === "DRAFT" ? (
+                          <Button size="sm" variant="outline" asChild className="h-10 justify-center">
                             <Link href={`/invoices/${invoice.id}/edit`}>
                               <Edit className="mr-2 h-4 w-4" />
                               Редакция
                             </Link>
                           </Button>
-                        )}
-                        {invoice.status === "DRAFT" && (
+                        ) : (
                           <Button
                             size="sm"
-                            onClick={() => openStatusModal(invoice, "ISSUED")}
-                            className="gradient-primary hover:opacity-90 text-white border-0"
+                            variant="outline"
+                            className="h-10 justify-center"
+                            onClick={async () => {
+                              try {
+                                const response = await fetch(`/api/invoices/${invoice.id}/duplicate`, { method: "POST" });
+                                if (!response.ok) {
+                                  const error = await response.json();
+                                  throw new Error(error.error || "Грешка при дублиране");
+                                }
+                                const data = await response.json();
+                                toast.success("Фактурата е дублирана", {
+                                  description: `Нова чернова ${data.invoiceNumber} е създадена`,
+                                });
+                                router.push(`/invoices/${data.id}`);
+                              } catch (error: any) {
+                                toast.error(error.message || "Грешка при дублиране на фактурата");
+                              }
+                            }}
                           >
-                            <FileCheck className="mr-2 h-4 w-4" />
-                            Издай
+                            <Copy className="mr-2 h-4 w-4" />
+                            Дублирай
                           </Button>
                         )}
-                        {invoice.userId === currentUserId && (
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => openDeleteModal(invoice)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Изтрий
-                          </Button>
-                        )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="col-span-2 h-10 justify-center">
+                              <MoreHorizontal className="mr-2 h-4 w-4" />
+                              Още действия
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-56">
+                            {invoice.userId === currentUserId && invoice.status === "DRAFT" && (
+                              <DropdownMenuItem asChild>
+                                <Link href={`/invoices/${invoice.id}/edit`}>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Редактиране
+                                </Link>
+                              </DropdownMenuItem>
+                            )}
+                            {invoice.status === "DRAFT" && (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() => openStatusModal(invoice, "ISSUED")}
+                                  className="text-emerald-600 focus:text-emerald-600"
+                                >
+                                  <FileCheck className="mr-2 h-4 w-4" />
+                                  Издай фактура
+                                </DropdownMenuItem>
+                                {invoice.userId === currentUserId && (
+                                  <DropdownMenuItem
+                                    onClick={() => openVoidModal(invoice)}
+                                    className="text-purple-600 focus:text-purple-600"
+                                  >
+                                    <Ban className="mr-2 h-4 w-4" />
+                                    Анулирай
+                                  </DropdownMenuItem>
+                                )}
+                              </>
+                            )}
+                            {(invoice.status === "ISSUED" || invoice.status === "PAID") && invoice.userId === currentUserId && (
+                              <DropdownMenuItem
+                                onClick={() => openCancelModal(invoice)}
+                                className="text-red-600 focus:text-red-600"
+                              >
+                                <XCircle className="mr-2 h-4 w-4" />
+                                Отмени фактура
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem
+                              onClick={async () => {
+                                try {
+                                  const response = await fetch(`/api/invoices/${invoice.id}/duplicate`, { method: "POST" });
+                                  if (!response.ok) {
+                                    const error = await response.json();
+                                    throw new Error(error.error || "Грешка при дублиране");
+                                  }
+                                  const data = await response.json();
+                                  toast.success("Фактурата е дублирана", {
+                                    description: `Нова чернова ${data.invoiceNumber} е създадена`,
+                                  });
+                                  router.push(`/invoices/${data.id}`);
+                                } catch (error: any) {
+                                  toast.error(error.message || "Грешка при дублиране на фактурата");
+                                }
+                              }}
+                            >
+                              <Copy className="mr-2 h-4 w-4" />
+                              Дублирай
+                            </DropdownMenuItem>
+                            {invoice.userId === currentUserId && (
+                              <DropdownMenuItem
+                                onClick={() => openDeleteModal(invoice)}
+                                className="text-red-600 focus:text-red-600"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Изтрий фактура
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   );

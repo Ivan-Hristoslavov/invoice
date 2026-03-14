@@ -158,11 +158,14 @@ export default function RootLayout({
         >
           <AuthProvider>
             <SubscriptionUsageProvider>
-              <div className="min-h-screen flex flex-col bg-background text-foreground">
+              <div
+                id="app-shell"
+                className="min-h-screen flex flex-col bg-background text-foreground"
+              >
                 <div className="flex-1">{children}</div>
                 <Toaster />
-                <CookieConsent />
               </div>
+              <CookieConsent />
             </SubscriptionUsageProvider>
           </AuthProvider>
         </ThemeProvider>

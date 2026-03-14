@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { generateBulgarianInvoiceNumber } from "@/lib/bulgarian-invoice";
+import cuid from "cuid";
 
 export async function getNextInvoiceSequence(
   userId: string,
@@ -45,6 +46,7 @@ export async function getNextInvoiceSequence(
         const { error: insertError } = await supabase
           .from("InvoiceSequence")
           .insert({
+            id: cuid(),
             companyId,
             userId,
             year,

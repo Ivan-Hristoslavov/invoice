@@ -48,6 +48,8 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
+import { validateBulgarianPartyInput } from "@/lib/bulgarian-party";
+import { applyApiValidationDetails } from "@/lib/form-errors";
 
 // Step indicator component
 function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { title: string; icon: React.ReactNode }[] }) {
@@ -115,6 +117,16 @@ const clientSchema = z.object({
   mol: z.string().optional().or(z.literal("")),
   uicType: z.enum(["BULSTAT", "EGN"]).default("BULSTAT"),
   locale: z.string().default("bg"),
+}).superRefine((value, ctx) => {
+  const { issues } = validateBulgarianPartyInput(value);
+
+  for (const issue of issues) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: issue.path,
+      message: issue.message,
+    });
+  }
 });
 
 type ClientFormInputValues = z.input<typeof clientSchema>;
@@ -122,6 +134,29 @@ type ClientFormValues = z.output<typeof clientSchema>;
 
 function getDigitsOnly(value: string) {
   return value.replace(/\D/g, "");
+}
+
+function getStepForClientField(field?: string) {
+  switch (field) {
+    case "name":
+    case "email":
+    case "phone":
+      return 0;
+    case "address":
+    case "city":
+    case "state":
+    case "zipCode":
+    case "country":
+      return 1;
+    case "bulstatNumber":
+    case "vatRegistered":
+    case "vatRegistrationNumber":
+    case "mol":
+    case "uicType":
+      return 2;
+    default:
+      return 0;
+  }
 }
 
 export default function NewClientPage() {
@@ -222,7 +257,14 @@ export default function NewClientPage() {
       });
 
       if (!response.ok) {
-        const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
+        const errorPayload = (await response.json().catch(() => null)) as {
+          error?: string;
+          details?: Array<{ path?: string[]; message?: string }>;
+        } | null;
+        const invalidFields = applyApiValidationDetails(form, errorPayload?.details);
+        if (invalidFields.length > 0) {
+          setCurrentStep(getStepForClientField(invalidFields[0] as string));
+        }
         throw new Error(errorPayload?.error || "Неуспешно създаване на клиент");
       }
 
@@ -271,6 +313,12 @@ export default function NewClientPage() {
       default:
         return true;
     }
+  };
+
+  const handleInvalidSubmit = (errors: typeof form.formState.errors) => {
+    const firstField = Object.keys(errors)[0];
+    setCurrentStep(getStepForClientField(firstField));
+    toast.error("Моля, коригирайте отбелязаните полета.");
   };
 
   return (
@@ -338,7 +386,7 @@ export default function NewClientPage() {
 
       {/* Form */}
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form onSubmit={form.handleSubmit(onSubmit, handleInvalidSubmit)}>
           {/* Step content - all steps rendered but hidden with CSS */}
           <div className="mb-8">
             {/* Step 0: Basic Info */}
