@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -17,7 +16,6 @@ import {
 } from '@/components/ui/table';
 import { CreditCard, ReceiptText, Info, ChevronDown, Loader2 } from 'lucide-react';
 import { useSubscriptionHistory } from '@/hooks/useSubscriptionHistory';
-import { SUBSCRIPTION_PLANS, type SubscriptionPlanKey } from '@/lib/subscription-plans';
 
 interface SubscriptionHistoryProps {
   /** When set, refetch history (e.g. after returning from Stripe so payments appear) */
@@ -83,300 +81,258 @@ export function SubscriptionHistory({ refreshTrigger }: SubscriptionHistoryProps
   
   if (error) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>История на абонамента</CardTitle>
-          <CardDescription>
-            Възникна грешка при зареждането на данните
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center space-x-2 text-destructive">
-            <Info className="h-4 w-4" />
-            <span>{error}</span>
-          </div>
-          <Button onClick={refresh} className="mt-4" variant="outline">
-            Опитайте отново
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col gap-3 py-4">
+        <div className="flex items-center gap-2 text-sm text-destructive">
+          <Info className="h-4 w-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+        <Button onClick={refresh} variant="outline" size="sm">
+          Опитайте отново
+        </Button>
+      </div>
     );
   }
-  
+
   if (!subscription) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>История на абонамента</CardTitle>
-          <CardDescription>
-            Нямате активен абонамент.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <p className="text-sm text-muted-foreground py-4">
+        Нямате активен абонамент.
+      </p>
     );
   }
-  
+
   const hasPayments = payments.length > 0;
   const hasStatusHistory = history.length > 0;
-  
+
   if (!hasPayments && !hasStatusHistory) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>История на абонамента</CardTitle>
-          <CardDescription>
-            Все още няма история на абонамента.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <p className="text-sm text-muted-foreground py-4">
+        Все още няма история на плащанията или статуса.
+      </p>
     );
   }
-  
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <CardTitle>История на абонамента</CardTitle>
-            <CardDescription>
-              Преглед на историята на плащанията и промените в статуса
-            </CardDescription>
-          </div>
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            <span className="text-sm text-muted-foreground">Резултати:</span>
-            <Select
-              value={pageSize.toString()}
-              onValueChange={handlePageSizeChange}
-            >
-              <SelectTrigger className="w-20">
-                <SelectValue placeholder="10" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="5">5</SelectItem>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="20">20</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 min-w-0">
+          <label htmlFor="history-page-size" className="shrink-0 text-sm text-muted-foreground whitespace-nowrap">
+            Показани на страница:
+          </label>
+          <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+            <SelectTrigger id="history-page-size" className="w-20 h-9 text-center font-medium tabular-nums">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="5">5</SelectItem>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="20">20</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        
-        {subscription && (
-          <div className="mt-2 p-3 bg-secondary/20 rounded-md">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-              <div>
-                <span className="text-muted-foreground">План:</span>
-                <Badge className="ml-2">
-                  {subscription.plan && subscription.plan in SUBSCRIPTION_PLANS
-                    ? SUBSCRIPTION_PLANS[subscription.plan as SubscriptionPlanKey].displayName
-                    : subscription.plan}
-                </Badge>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Статус:</span>
-                <SubscriptionStatusBadge status={subscription.status} />
-              </div>
-              <div>
-                <span className="text-muted-foreground">Активен до:</span>
-                <span className="ml-2">
-                  {new Date(subscription.currentPeriodEnd).toLocaleDateString('bg-BG')}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-      </CardHeader>
-      <CardContent>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <TabsList className="flex min-w-max gap-1 rounded-xl border border-border/60 bg-card/70 p-1">
-            <TabsTrigger value="payments" className="flex min-h-10 items-center gap-2 whitespace-nowrap rounded-lg px-3">
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <div className="overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <TabsList className="inline-flex min-w-max gap-1 rounded-xl border border-border/60 bg-muted/30 p-1">
+            <TabsTrigger value="payments" className="flex min-h-9 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-sm">
               <CreditCard className="h-4 w-4" />
               <span>Плащания</span>
-              {hasPayments && (
-                <Badge variant="secondary" className="ml-1">{payments.length}</Badge>
-              )}
+              {hasPayments && <Badge variant="secondary" className="ml-1 text-xs">{payments.length}</Badge>}
             </TabsTrigger>
-            <TabsTrigger value="status" className="flex min-h-10 items-center gap-2 whitespace-nowrap rounded-lg px-3">
+            <TabsTrigger value="status" className="flex min-h-9 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-sm">
               <ReceiptText className="h-4 w-4" />
-              <span>Промени в статуса</span>
-              {hasStatusHistory && (
-                <Badge variant="secondary" className="ml-1">{history.length}</Badge>
-              )}
+              <span>История на статуса</span>
+              {hasStatusHistory && <Badge variant="secondary" className="ml-1 text-xs">{history.length}</Badge>}
             </TabsTrigger>
           </TabsList>
-          </div>
-          
-          <TabsContent value="payments" className="mt-4">
-            {hasPayments ? (
-              <PaymentsTable payments={payments} />
-            ) : (
-              <div className="text-center py-6 text-muted-foreground">
-                Все още няма история на плащанията
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="status" className="mt-4">
-            {hasStatusHistory ? (
-              <StatusHistoryTable history={history} />
-            ) : (
-              <div className="text-center py-6 text-muted-foreground">
-                Все още няма промени в статуса
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-        
-        {/* Lazy loading observer element */}
-        {pagination.hasMore && (
-          <div 
-            ref={loadMoreRef} 
-            className="py-4 flex justify-center"
-          >
-            {loadingMore ? (
-              <div className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" /> 
-                <span>Зареждане...</span>
-              </div>
-            ) : (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="flex items-center gap-1"
-                onClick={loadMore}
-              >
-                <ChevronDown className="h-4 w-4" />
-                <span>Зареди още</span>
-              </Button>
-            )}
-          </div>
-        )}
-      </CardContent>
-      <CardFooter className="flex flex-col gap-2 pt-0 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          Показани {activeTab === 'payments' ? payments.length : history.length} от{' '}
-          {activeTab === 'payments' ? 
-            pagination.totalItems : 
-            pagination.totalItems} записа
         </div>
-        <div>
-          Страница {pagination.page} от {pagination.totalPages || 1}
+
+        <TabsContent value="payments" className="mt-4 focus-visible:outline-none">
+          {hasPayments ? (
+            <PaymentsTable payments={payments} />
+          ) : (
+            <p className="text-sm text-muted-foreground py-6 text-center">
+              Все още няма записани плащания. Плащанията се записват след успешен разплащане.
+            </p>
+          )}
+        </TabsContent>
+
+        <TabsContent value="status" className="mt-4 focus-visible:outline-none">
+          {hasStatusHistory ? (
+            <StatusHistoryTable history={history} />
+          ) : (
+            <p className="text-sm text-muted-foreground py-6 text-center">
+              Няма промени в статуса.
+            </p>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {pagination.hasMore && (
+        <div ref={loadMoreRef} className="py-3 flex justify-center">
+          {loadingMore ? (
+            <span className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Зареждане...
+            </span>
+          ) : (
+            <Button variant="ghost" size="sm" className="gap-1" onClick={loadMore}>
+              <ChevronDown className="h-4 w-4" />
+              Зареди още
+            </Button>
+          )}
         </div>
-      </CardFooter>
-    </Card>
+      )}
+
+      <div className="flex flex-col gap-1 pt-2 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <span className="tabular-nums">
+          Показани {activeTab === "payments" ? payments.length : history.length} от {pagination.totalItems} записа
+        </span>
+        <span className="tabular-nums">
+          Страница {pagination.page} от {Math.max(pagination.totalPages, 1)}
+        </span>
+      </div>
+    </div>
   );
 }
 
 function PaymentsTable({ payments }: { payments: any[] }) {
+  const formatDate = (d: string) =>
+    new Date(d).toLocaleDateString('bg-BG', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const formatMoney = (payment: any) =>
+    new Intl.NumberFormat('bg-BG', { style: 'currency', currency: payment.currency || 'EUR' }).format(parseFloat(payment.amount));
+
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Дата</TableHead>
-            <TableHead>Сума</TableHead>
-            <TableHead className="text-right">Статус</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {payments.map((payment) => (
-            <TableRow key={payment.id}>
-              <TableCell>
-                {new Date(payment.createdAt).toLocaleDateString('bg-BG', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric'
-                })}
-              </TableCell>
-              <TableCell>
-                {new Intl.NumberFormat('bg-BG', {
-                  style: 'currency',
-                  currency: payment.currency || 'EUR',
-                }).format(parseFloat(payment.amount))}
-              </TableCell>
-              <TableCell className="text-right">
-                <PaymentStatusBadge status={payment.status} />
-              </TableCell>
+    <>
+      <div className="hidden sm:block overflow-x-auto -mx-1">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-border/60 hover:bg-transparent">
+              <TableHead className="w-[160px] font-medium">Дата</TableHead>
+              <TableHead className="font-medium">Сума</TableHead>
+              <TableHead className="text-right w-[100px] font-medium">Статус</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHeader>
+          <TableBody>
+            {payments.map((payment) => (
+              <TableRow key={payment.id} className="border-border/50">
+                <TableCell className="text-muted-foreground tabular-nums whitespace-nowrap">{formatDate(payment.createdAt)}</TableCell>
+                <TableCell className="font-medium tabular-nums">{formatMoney(payment)}</TableCell>
+                <TableCell className="text-right">
+                  <PaymentStatusBadge status={payment.status} />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="sm:hidden space-y-3">
+        {payments.map((payment) => (
+          <div key={payment.id} className="rounded-lg border border-border/60 bg-card p-3 shadow-sm">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-sm font-semibold tabular-nums">{formatMoney(payment)}</p>
+              <PaymentStatusBadge status={payment.status} />
+            </div>
+            <p className="mt-1.5 text-xs text-muted-foreground tabular-nums">{formatDate(payment.createdAt)}</p>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
-function StatusHistoryTable({ history }: { history: any[] }) {
-  const eventTranslations: Record<string, string> = {
-    'SUBSCRIPTION_CREATED': 'Създаден абонамент',
-    'SUBSCRIPTION_UPDATED': 'Обновен абонамент',
-    'SUBSCRIPTION_CANCELED': 'Отменен абонамент',
-    'SUBSCRIPTION_RENEWED': 'Подновен абонамент',
-    'PAYMENT_FAILED': 'Неуспешно плащане',
-    'PAYMENT_SUCCEEDED': 'Успешно плащане',
-    'New subscription created with plan': 'Създаден нов абонамент с план',
-    'Subscription updated to plan': 'Абонаментът е обновен до план',
-    'Subscription status changed to': 'Статусът на абонамента е променен на',
-    'Subscription updated': 'Абонаментът е обновен',
-    'Subscription canceled': 'Абонаментът е отменен',
-    'Subscription payment succeeded': 'Плащането за абонамента е успешно',
-    'Payment failed for subscription': 'Неуспешно плащане за абонамента'
-  };
-  
-  // Process the event text to match with translations or display original
-  const getEventText = (event: string) => {
-    // Check for direct match in translations
-    if (eventTranslations[event]) {
-      return eventTranslations[event];
-    }
-    
-    // Check for partial matches
-    for (const [key, value] of Object.entries(eventTranslations)) {
-      if (event.includes(key)) {
-        // Get the part after the known key phrase
-        const extraInfo = event.replace(key, '').trim();
-        if (extraInfo) {
-          return `${value} ${extraInfo}`;
-        }
-        return value;
-      }
-    }
-    
-    // Return original if no match
-    return event;
-  };
+const STATUS_EVENT_TRANSLATIONS: Record<string, string> = {
+  'Stripe subscription created': 'Абонаментът е създаден',
+  'Stripe subscription updated': 'Абонаментът е обновен',
+  'Stripe subscription deleted': 'Абонаментът е прекратен',
+  'SUBSCRIPTION_CREATED': 'Създаден абонамент',
+  'SUBSCRIPTION_UPDATED': 'Обновен абонамент',
+  'SUBSCRIPTION_CANCELED': 'Отменен абонамент',
+  'SUBSCRIPTION_RENEWED': 'Подновен абонамент',
+  'PAYMENT_FAILED': 'Неуспешно плащане',
+  'PAYMENT_SUCCEEDED': 'Успешно плащане',
+  'New subscription created with plan': 'Създаден нов абонамент',
+  'Subscription updated to plan': 'Планът е обновен',
+  'Subscription status changed to': 'Промяна на статус',
+  'Subscription updated': 'Абонаментът е обновен',
+  'Subscription canceled': 'Абонаментът е отменен',
+  'Subscription payment succeeded': 'Плащането е успешно',
+  'Платежът по абонамента е успешен': 'Плащането е успешно',
+  'Платежът по абонамента е неуспешен': 'Неуспешно плащане',
+  'Payment failed for subscription': 'Неуспешно плащане за абонамента',
+};
 
+function getStatusEventLabel(event: string): string {
+  const exact = STATUS_EVENT_TRANSLATIONS[event];
+  if (exact) return exact;
+  for (const [key, value] of Object.entries(STATUS_EVENT_TRANSLATIONS)) {
+    if (event.includes(key)) return value;
+  }
+  return event;
+}
+
+function StatusHistoryTable({ history }: { history: any[] }) {
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Дата</TableHead>
-            <TableHead>Събитие</TableHead>
-            <TableHead className="text-right">Статус</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {history.map((item) => (
-            <TableRow key={item.id}>
-              <TableCell>
-                {new Date(item.createdAt).toLocaleDateString('bg-BG', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric'
-                })}
-              </TableCell>
-              <TableCell>
-                {getEventText(item.event)}
-              </TableCell>
-              <TableCell className="text-right">
-                <SubscriptionStatusBadge status={item.status} />
-              </TableCell>
+    <>
+      <div className="hidden sm:block overflow-x-auto -mx-1">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-border/60 hover:bg-transparent">
+              <TableHead className="w-[140px] font-medium">Дата</TableHead>
+              <TableHead className="font-medium">Събитие</TableHead>
+              <TableHead className="text-right w-[100px] font-medium">Статус</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHeader>
+          <TableBody>
+            {history.map((item) => (
+              <TableRow key={item.id} className="border-border/50">
+                <TableCell className="text-muted-foreground tabular-nums whitespace-nowrap">
+                  {new Date(item.createdAt).toLocaleDateString('bg-BG', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </TableCell>
+                <TableCell className="font-medium">
+                  {getStatusEventLabel(item.event)}
+                </TableCell>
+                <TableCell className="text-right">
+                  <SubscriptionStatusBadge status={item.status} />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="sm:hidden space-y-3">
+        {history.map((item) => (
+          <div
+            key={item.id}
+            className="rounded-lg border border-border/60 bg-card p-3 shadow-sm"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-sm font-medium leading-tight">
+                {getStatusEventLabel(item.event)}
+              </p>
+              <SubscriptionStatusBadge status={item.status} />
+            </div>
+            <p className="mt-1.5 text-xs text-muted-foreground tabular-nums">
+              {new Date(item.createdAt).toLocaleDateString('bg-BG', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </p>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -460,7 +416,7 @@ function SubscriptionStatusBadge({ status }: { status: string }) {
   }
   
   return (
-    <Badge variant={variant ?? undefined} className="ml-2">
+    <Badge variant={variant ?? undefined} className="shrink-0">
       {statusTranslations[status] || status.charAt(0) + status.slice(1).toLowerCase()}
     </Badge>
   );
@@ -468,25 +424,17 @@ function SubscriptionStatusBadge({ status }: { status: string }) {
 
 function SubscriptionHistorySkeleton() {
   return (
-    <Card>
-      <CardHeader>
-        <Skeleton className="h-5 w-[200px] mb-2" />
-        <Skeleton className="h-4 w-[300px]" />
-        <div className="mt-2">
-          <Skeleton className="h-20 w-full" />
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Skeleton className="h-10 w-full mb-6" />
-        <div className="space-y-2">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-        </div>
-      </CardContent>
-      <CardFooter>
-        <Skeleton className="h-4 w-full" />
-      </CardFooter>
-    </Card>
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        <Skeleton className="h-9 w-20" />
+      </div>
+      <Skeleton className="h-10 w-full max-w-[280px]" />
+      <div className="space-y-2">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+      <Skeleton className="h-4 w-48" />
+    </div>
   );
 } 

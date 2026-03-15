@@ -103,6 +103,15 @@ export function Sidebar() {
     ? SUBSCRIPTION_PLANS[plan as SubscriptionPlanKey].displayName
     : plan ?? "Безплатен";
 
+  const planBadgeClass =
+    plan === "STARTER"
+      ? "border-blue-500/50 bg-blue-500/10 text-blue-600 dark:text-blue-400"
+      : plan === "PRO"
+        ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+        : plan === "BUSINESS"
+          ? "border-violet-500/50 bg-violet-500/10 text-violet-600 dark:text-violet-400"
+          : "border-border/60 bg-muted/80 text-muted-foreground";
+
   useEffect(() => {
     const checkIsMobile = () => {
       const mobile = window.innerWidth < 1024;
@@ -310,7 +319,10 @@ export function Sidebar() {
             <span>{APP_NAME} v1.0.0</span>
             {!isLoadingUsage && (
               <span
-                className="rounded border border-border/60 bg-muted/80 px-1.5 py-0.5 text-[10px] font-medium"
+                className={cn(
+                  "rounded border px-1.5 py-0.5 text-[10px] font-medium",
+                  planBadgeClass
+                )}
                 title="Текущ план"
               >
                 {planDisplayName}

@@ -18,6 +18,7 @@ import { useCommandPalette } from "@/components/ui/command-palette";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { APP_NAME } from "@/config/constants";
 import { SUBSCRIPTION_PLANS, type SubscriptionPlanKey } from "@/lib/subscription-plans";
+import { cn } from "@/lib/utils";
 
 export function Navbar() {
   const { data: session, status } = useSession();
@@ -30,6 +31,15 @@ export function Navbar() {
   const planDisplayName = plan && plan in SUBSCRIPTION_PLANS
     ? SUBSCRIPTION_PLANS[plan as SubscriptionPlanKey].displayName
     : plan ?? "Безплатен";
+
+  const planBadgeClass =
+    plan === "STARTER"
+      ? "border-blue-500/50 bg-blue-500/10 text-blue-600 dark:text-blue-400"
+      : plan === "PRO"
+        ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+        : plan === "BUSINESS"
+          ? "border-violet-500/50 bg-violet-500/10 text-violet-600 dark:text-violet-400"
+          : "border-border/60 bg-muted/80 text-muted-foreground";
 
   useEffect(() => {
     setMounted(true);
@@ -63,7 +73,7 @@ export function Navbar() {
         <Link
           href="/dashboard"
           aria-label="Начална страница"
-          className="flex h-full min-w-0 shrink-0 items-center justify-start gap-2 border-r border-border/50 pl-14 pr-2 sm:w-72 sm:justify-center sm:gap-3 sm:px-0"
+          className="flex h-full min-w-0 shrink-0 items-center justify-start gap-2 border-r border-border/50 pl-16 pr-2 sm:w-72 sm:justify-center sm:gap-3 lg:px-0"
         >
           <div className="hidden h-8 w-8 items-center justify-center rounded-lg gradient-primary shadow-lg sm:flex sm:h-10 sm:w-10 sm:rounded-xl">
             <FileText className="h-4 w-4 text-white sm:h-5 sm:w-5" />
@@ -73,7 +83,10 @@ export function Navbar() {
           </span>
           {!isLoadingUsage && (
             <span
-              className="shrink-0 rounded-md border border-border/60 bg-muted/80 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground sm:text-xs"
+              className={cn(
+                "shrink-0 rounded-md border px-1.5 py-0.5 text-[10px] font-medium sm:text-xs",
+                planBadgeClass
+              )}
               title="Текущ план"
             >
               {planDisplayName}

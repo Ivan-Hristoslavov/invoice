@@ -89,37 +89,44 @@ const PLANS = {
 
 type PlanKey = keyof typeof PLANS;
 
-export function SubscriptionPlans() {
+interface SubscriptionPlansProps {
+  /** Извиква се след първия refetch при ?success=true – за да скрие страницата loading overlay-а */
+  onSuccessRefetchDone?: () => void;
+}
+
+export function SubscriptionPlans({ onSuccessRefetchDone }: SubscriptionPlansProps = {}) {
   const searchParams = useSearchParams();
-  const { subscription, isLoading, error, createCheckoutSession, cancelSubscription, refetchSubscription } = useSubscription();
+  const { subscription, isLoading, error, createCheckoutSession, cancelSubscription, refetchSubscription, refetchSubscriptionSilent } = useSubscription();
   const { refreshUsage } = useSubscriptionLimit();
   const [cancelingSubscription, setCancelingSubscription] = useState(false);
   const [editingSubscription, setEditingSubscription] = useState(false);
   const [showCancellationSurvey, setShowCancellationSurvey] = useState(false);
   const [isYearly, setIsYearly] = useState(true);
 
-  // След успешен checkout обновяваме абонамента и лимитите веднага (и с повторен опит след 2s/5s ако webhook-ът закъснее)
+  // При връщане след плащане (?success=true): един път refetch с loading, после callback; след 4s тих retry
+  const successParam = searchParams.get('success');
   const didRefreshOnSuccess = useRef(false);
   useEffect(() => {
-    const success = searchParams.get('success');
-    if (success !== 'true') return;
+    if (successParam !== 'true') return;
+    if (didRefreshOnSuccess.current) return;
+    didRefreshOnSuccess.current = true;
 
-    const refresh = async () => {
-      await refetchSubscription();
-      await refreshUsage();
+    const run = async () => {
+      try {
+        await refetchSubscription();
+        await refreshUsage();
+      } finally {
+        onSuccessRefetchDone?.();
+      }
     };
+    run();
 
-    if (!didRefreshOnSuccess.current) {
-      didRefreshOnSuccess.current = true;
-      refresh();
-    }
-    const t2 = window.setTimeout(refresh, 2000);
-    const t5 = window.setTimeout(refresh, 5000);
-    return () => {
-      clearTimeout(t2);
-      clearTimeout(t5);
-    };
-  }, [searchParams, refetchSubscription, refreshUsage]);
+    const t = window.setTimeout(() => {
+      refetchSubscriptionSilent();
+      refreshUsage();
+    }, 4000);
+    return () => clearTimeout(t);
+  }, [successParam, refetchSubscription, refetchSubscriptionSilent, refreshUsage, onSuccessRefetchDone]);
 
   const handleSubscribe = async (plan: string) => {
     try {

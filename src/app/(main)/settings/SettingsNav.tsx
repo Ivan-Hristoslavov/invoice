@@ -14,6 +14,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useSettingsNav } from "./SettingsNavProvider";
 
 const navItems = [
   { id: "profile", title: "Профил", href: "/settings/profile", icon: User },
@@ -33,11 +34,14 @@ function pathnameToTabId(pathname: string): string {
 export function SettingsNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const { isPending, startTransition } = useSettingsNav();
   const selectedKey = pathnameToTabId(pathname);
 
   const handleTabChange = (key: string) => {
     const item = navItems.find((i) => i.id === key);
-    if (item) router.push(item.href);
+    if (item && item.href !== pathname) {
+      startTransition(() => router.push(item.href));
+    }
   };
 
   return (
@@ -77,10 +81,12 @@ export function SettingsNav() {
                 key={item.id}
                 id={item.id}
                 value={item.id}
+                disabled={isPending}
                 className={cn(
                   "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   "data-[selected=true]:bg-primary data-[selected=true]:text-primary-foreground",
-                  "data-[selected=false]:text-muted-foreground hover:text-foreground"
+                  "data-[selected=false]:text-muted-foreground hover:text-foreground",
+                  "disabled:opacity-70 disabled:pointer-events-none"
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" />
