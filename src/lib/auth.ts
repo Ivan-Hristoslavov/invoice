@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import cuid from "cuid";
 import { createAdminClient } from "@/lib/supabase/server";
 import { consumeMagicLinkToken, findOrCreateMagicLinkUser } from "@/lib/magic-link";
+import { consumeOneTimeLoginToken } from "@/lib/email-verification";
 
 const oneDayInSeconds = 60 * 60 * 24;
 const isProduction = process.env.NODE_ENV === "production";
@@ -46,6 +47,7 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
         magicToken: { label: "Magic token", type: "text" },
+        oneTimeLoginToken: { label: "One-time login token", type: "text" },
       },
       async authorize(credentials) {
         if (!credentials?.email) {
@@ -54,6 +56,29 @@ export const authOptions: NextAuthOptions = {
 
         const normalizedEmail = credentials.email.trim().toLowerCase();
         const magicToken = credentials.magicToken?.trim();
+        const oneTimeLoginToken = credentials.oneTimeLoginToken?.trim();
+
+        if (oneTimeLoginToken) {
+          const email = await consumeOneTimeLoginToken(oneTimeLoginToken);
+          if (!email || email !== normalizedEmail) {
+            return null;
+          }
+          const supabase = createAdminClient();
+          const { data: user, error } = await supabase
+            .from("User")
+            .select("id, email, name, image, emailVerified")
+            .eq("email", normalizedEmail)
+            .single();
+          if (error || !user || !user.emailVerified) {
+            return null;
+          }
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            image: user.image,
+          };
+        }
 
         if (magicToken) {
           const consumedToken = await consumeMagicLinkToken(normalizedEmail, magicToken);

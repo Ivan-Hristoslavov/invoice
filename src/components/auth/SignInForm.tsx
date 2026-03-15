@@ -244,21 +244,26 @@ export function SignInForm() {
           <div className="space-y-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
             <p className="text-xs text-red-600 dark:text-red-400 font-medium">{error}</p>
             {isEmailNotVerified && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-9 w-full border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30"
-                onClick={handleResendVerification}
-                disabled={resendLoading}
-              >
-                {resendLoading ? (
-                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <MailPlus className="mr-2 h-3.5 w-3.5" />
-                )}
-                Изпрати отново линк за потвърждение
-              </Button>
+              <div className="space-y-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-9 w-full border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30"
+                  onClick={handleResendVerification}
+                  disabled={resendLoading}
+                >
+                  {resendLoading ? (
+                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <MailPlus className="mr-2 h-3.5 w-3.5" />
+                  )}
+                  Изпрати отново линк за потвърждение
+                </Button>
+                <p className="text-[11px] text-muted-foreground">
+                  При iCloud/Apple Mail проверете папка „Спам“ и след това изпратете отново.
+                </p>
+              </div>
             )}
           </div>
         )}

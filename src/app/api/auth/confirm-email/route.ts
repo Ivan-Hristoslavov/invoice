@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { consumeEmailVerificationToken } from "@/lib/email-verification";
+import { consumeEmailVerificationToken, createOneTimeLoginToken } from "@/lib/email-verification";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
@@ -41,10 +41,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    let oneTimeLoginToken: string | null = null;
+    try {
+      oneTimeLoginToken = await createOneTimeLoginToken(email);
+    } catch {
+      // Continue without auto-login; user can still sign in with email/password
+    }
+
     return NextResponse.json(
       {
-        message: "Имейлът е потвърден успешно. Сега можете да влезете.",
+        message: "Имейлът е потвърден. Влизате в акаунта си.",
         email,
+        oneTimeLoginToken,
       },
       { status: 200 }
     );
