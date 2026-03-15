@@ -4,13 +4,17 @@ import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { resolveSessionUser } from "@/lib/session-user";
 import { z } from "zod";
+import { FIELD_LIMITS } from "@/lib/validations/field-limits";
 
 const productSchema = z.object({
-  name: z.string().min(1, "Името на продукта е задължително"),
-  description: z.string().optional().or(z.literal("")),
-  price: z.number().nonnegative("Цената трябва да бъде положително число"),
-  unit: z.string().min(1, "Единицата е задължителна"),
-  taxRate: z.number().nonnegative("Данъчната ставка трябва да бъде положително число").default(0),
+  name: z
+    .string()
+    .min(2, "Името на продукта е задължително (минимум 2 символа)")
+    .max(FIELD_LIMITS.name, "Името на продукта е твърде дълго"),
+  description: z.string().max(FIELD_LIMITS.description, "Описанието е твърде дълго").optional().or(z.literal("")),
+  price: z.number().min(0, "Цената не може да бъде отрицателна"),
+  unit: z.string().min(1, "Единицата е задължителна").max(50, "Единицата е твърде дълга"),
+  taxRate: z.number().min(0, "ДДС ставката не може да бъде отрицателна").max(100, "ДДС не може да надвишава 100%").default(20),
 });
 
 // GET - Взима един продукт по ID
@@ -140,15 +144,19 @@ export async function PUT(
     return NextResponse.json(updatedProduct);
   } catch (error) {
     if (error instanceof z.ZodError) {
+      const details = error.errors.map((e) => ({
+        path: e.path.map(String),
+        message: e.message,
+      }));
       return NextResponse.json(
-        { error: "Невалидни данни за продукта", details: error.errors },
+        { error: "Невалидни данни за продукта. Моля, проверете полетата.", details },
         { status: 400 }
       );
     }
 
     console.error("Грешка при обновяване на продукт:", error);
     return NextResponse.json(
-      { error: "Неуспешно обновяване на продукт" },
+      { error: "Неуспешно обновяване на продукт. Моля, опитайте отново." },
       { status: 500 }
     );
   }

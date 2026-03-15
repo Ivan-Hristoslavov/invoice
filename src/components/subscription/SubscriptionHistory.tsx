@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/table';
 import { CreditCard, ReceiptText, Info, ChevronDown, Loader2 } from 'lucide-react';
 import { useSubscriptionHistory } from '@/hooks/useSubscriptionHistory';
+import { SUBSCRIPTION_PLANS, type SubscriptionPlanKey } from '@/lib/subscription-plans';
 
 export function SubscriptionHistory() {
   const [activeTab, setActiveTab] = useState('payments');
@@ -155,7 +156,11 @@ export function SubscriptionHistory() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <div>
                 <span className="text-muted-foreground">План:</span>
-                <Badge className="ml-2">{subscription.plan}</Badge>
+                <Badge className="ml-2">
+                  {subscription.plan && subscription.plan in SUBSCRIPTION_PLANS
+                    ? SUBSCRIPTION_PLANS[subscription.plan as SubscriptionPlanKey].displayName
+                    : subscription.plan}
+                </Badge>
               </div>
               <div>
                 <span className="text-muted-foreground">Статус:</span>

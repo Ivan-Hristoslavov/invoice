@@ -27,7 +27,7 @@ export async function GET(req: Request) {
     }
     
     // Validate feature parameter
-    const validFeatures = ['invoices', 'companies', 'customBranding', 'export', 'creditNotes', 'emailSending', 'apiAccess', 'users'];
+    const validFeatures = ['invoices', 'companies', 'clients', 'products', 'customBranding', 'export', 'creditNotes', 'emailSending', 'apiAccess', 'users', 'eikSearch'];
     if (!validFeatures.includes(feature)) {
       return new NextResponse('Invalid feature parameter', { status: 400 });
     }
@@ -35,7 +35,7 @@ export async function GET(req: Request) {
     // Check subscription limits
     const checkResult = await checkSubscriptionLimits(
       sessionUser.id,
-      feature as 'invoices' | 'companies' | 'customBranding' | 'export' | 'creditNotes' | 'emailSending' | 'apiAccess' | 'users'
+      feature as 'invoices' | 'companies' | 'clients' | 'products' | 'customBranding' | 'export' | 'creditNotes' | 'emailSending' | 'apiAccess' | 'users' | 'eikSearch'
     );
 
     return NextResponse.json(checkResult);

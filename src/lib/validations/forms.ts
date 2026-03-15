@@ -1,8 +1,10 @@
 import { z } from "zod";
+import { FIELD_LIMITS } from "./field-limits";
 
 // Common validation schemas
 export const emailSchema = z
   .string()
+  .max(FIELD_LIMITS.email, "Имейлът е твърде дълъг")
   .email("Невалиден имейл адрес");
 
 export const passwordSchema = z
@@ -14,53 +16,86 @@ export const passwordSchema = z
 
 // User related schemas
 export const userProfileSchema = z.object({
-  name: z.string().min(2, "Името е задължително"),
+  name: z
+    .string()
+    .min(2, "Името трябва да е поне 2 символа")
+    .max(FIELD_LIMITS.name, "Името е твърде дълго"),
   email: emailSchema,
-  phone: z.string().optional(),
+  phone: z.string().max(FIELD_LIMITS.phone, "Телефонът е твърде дълъг").optional(),
   language: z.string().default("bg"),
 });
 
 // Company related schemas
 export const companySchema = z.object({
-  name: z.string().min(2, "Името на фирмата е задължително"),
-  vat: z.string().min(9, "ДДС номерът трябва да бъде валиден").optional(),
+  name: z
+    .string()
+    .min(2, "Името на фирмата е задължително (минимум 2 символа)")
+    .max(FIELD_LIMITS.name, "Името на фирмата е твърде дълго"),
+  vat: z.string().min(9, "ДДС номерът трябва да бъде валиден").max(FIELD_LIMITS.phone).optional(),
   email: emailSchema.optional(),
-  phone: z.string().optional(),
-  address: z.string().min(5, "Адресът е задължителен"),
-  city: z.string().min(2, "Градът е задължителен"),
-  country: z.string().min(2, "Страната е задължителна"),
-  postalCode: z.string().optional(),
-  logoUrl: z.string().url().optional(),
+  phone: z.string().max(FIELD_LIMITS.phone, "Телефонът е твърде дълъг").optional(),
+  address: z
+    .string()
+    .min(5, "Адресът е задължителен (минимум 5 символа)")
+    .max(FIELD_LIMITS.address, "Адресът е твърде дълъг"),
+  city: z
+    .string()
+    .min(2, "Градът е задължителен")
+    .max(FIELD_LIMITS.city, "Градът е твърде дълъг"),
+  country: z
+    .string()
+    .min(2, "Страната е задължителна")
+    .max(FIELD_LIMITS.country, "Страната е твърде дълга"),
+  postalCode: z.string().max(FIELD_LIMITS.postalCode).optional(),
+  logoUrl: z.string().url("Невалиден URL за лого").max(2000).optional(),
 });
 
 // Client related schemas
 export const clientSchema = z.object({
-  name: z.string().min(2, "Името на клиента е задължително"),
+  name: z
+    .string()
+    .min(2, "Името на клиента е задължително (минимум 2 символа)")
+    .max(FIELD_LIMITS.name, "Името е твърде дълго"),
   email: emailSchema.optional(),
-  phone: z.string().optional(),
-  vat: z.string().optional(),
-  address: z.string().min(5, "Адресът е задължителен"),
-  city: z.string().min(2, "Градът е задължителен"),
-  country: z.string().min(2, "Страната е задължителна"),
-  postalCode: z.string().optional(),
-  notes: z.string().optional(),
+  phone: z.string().max(FIELD_LIMITS.phone, "Телефонът е твърде дълъг").optional(),
+  vat: z.string().max(FIELD_LIMITS.phone).optional(),
+  address: z
+    .string()
+    .min(5, "Адресът е задължителен (минимум 5 символа)")
+    .max(FIELD_LIMITS.address, "Адресът е твърде дълъг"),
+  city: z
+    .string()
+    .min(2, "Градът е задължителен")
+    .max(FIELD_LIMITS.city, "Градът е твърде дълъг"),
+  country: z
+    .string()
+    .min(2, "Страната е задължителна")
+    .max(FIELD_LIMITS.country, "Страната е твърде дълга"),
+  postalCode: z.string().max(FIELD_LIMITS.postalCode).optional(),
+  notes: z.string().max(FIELD_LIMITS.notes, "Бележките са твърде дълги").optional(),
 });
 
 // Product related schemas
 export const productSchema = z.object({
-  name: z.string().min(2, "Името на продукта е задължително"),
-  description: z.string().optional(),
+  name: z
+    .string()
+    .min(2, "Името на продукта е задължително (минимум 2 символа)")
+    .max(FIELD_LIMITS.name, "Името е твърде дълго"),
+  description: z.string().max(FIELD_LIMITS.description, "Описанието е твърде дълго").optional(),
   price: z.number().min(0, "Цената не може да бъде отрицателна"),
-  taxRate: z.number().min(0, "ДДС ставката не може да бъде отрицателна").default(20),
+  taxRate: z.number().min(0, "ДДС ставката не може да бъде отрицателна").max(100, "ДДС ставката не може да надвишава 100%").default(20),
 });
 
 // Invoice related schemas
 export const invoiceItemSchema = z.object({
   productId: z.string().optional(),
-  description: z.string().min(1, "Описанието е задължително"),
+  description: z
+    .string()
+    .min(1, "Описанието/името на артикула е задължително")
+    .max(FIELD_LIMITS.description, "Описанието на артикула е твърде дълго"),
   quantity: z.number().min(0.01, "Количеството трябва да бъде положително число"),
-  price: z.number().min(0, "Цената не може да бъде отрицателна"),
-  taxRate: z.number().min(0, "ДДС ставката не може да бъде отрицателна").default(20),
+  price: z.number().min(0.01, "Цената е задължителна и трябва да е положителна"),
+  taxRate: z.number().min(0, "ДДС ставката не може да бъде отрицателна").max(100, "ДДС не може да надвишава 100%").default(20),
 });
 
 export const invoiceSchema = z.object({
@@ -77,8 +112,8 @@ export const invoiceSchema = z.object({
   isEInvoice: z.boolean().optional().default(false),
   isOriginal: z.boolean().optional().default(true),
   items: z.array(invoiceItemSchema).min(1, "Фактурата трябва да има поне един артикул"),
-  notes: z.string().optional(),
-  termsAndConditions: z.string().optional(),
+  notes: z.string().max(FIELD_LIMITS.notes, "Бележките са твърде дълги").optional(),
+  termsAndConditions: z.string().max(FIELD_LIMITS.termsAndConditions, "Условията са твърде дълги").optional(),
 }).refine(data => {
   const issueDate = new Date(data.issueDate);
   const dueDate = new Date(data.dueDate);
@@ -92,15 +127,15 @@ export const invoiceSchema = z.object({
 export const paymentSchema = z.object({
   invoiceId: z.string().min(1, "Фактурата е задължителна"),
   amount: z.number().min(0.01, "Сумата трябва да бъде положително число"),
-  paymentDate: z.string().refine(str => !isNaN(Date.parse(str)), "Невалидна дата"),
+  paymentDate: z.string().refine(str => !isNaN(Date.parse(str)), "Невалидна дата на плащане"),
   paymentMethod: z.enum(['BANK_TRANSFER', 'CREDIT_CARD', 'CARD', 'CASH', 'OTHER']),
-  notes: z.string().optional(),
+  notes: z.string().max(FIELD_LIMITS.notes, "Бележките са твърде дълги").optional(),
 });
 
 // Settings related schemas
 export const emailTemplateSchema = z.object({
-  subject: z.string().min(1, "Заглавието е задължително"),
-  body: z.string().min(1, "Съдържанието е задължително"),
+  subject: z.string().min(1, "Заглавието е задължително").max(FIELD_LIMITS.subject, "Заглавието е твърде дълго"),
+  body: z.string().min(1, "Съдържанието е задължително").max(FIELD_LIMITS.body, "Съдържанието е твърде дълго"),
 });
 
 export const userSettingsSchema = z.object({

@@ -16,7 +16,10 @@ export async function GET() {
   }
 
   checks.smtp = process.env.SMTP_SERVER ? "configured" : "not_configured";
-  checks.stripe = process.env.STRIPE_SECRET_KEY ? "configured" : "not_configured";
+  checks.stripe =
+    process.env.STRIPE_SECRET_KEY_FIXED || process.env.STRIPE_SECRET_KEY
+      ? "configured"
+      : "not_configured";
 
   const isHealthy = checks.database === "ok";
 

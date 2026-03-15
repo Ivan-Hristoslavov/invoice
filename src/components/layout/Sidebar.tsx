@@ -23,6 +23,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { APP_NAME } from "@/config/constants";
 import { useSession, signOut } from "next-auth/react";
+import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
+import { SUBSCRIPTION_PLANS, type SubscriptionPlanKey } from "@/lib/subscription-plans";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -96,6 +98,10 @@ export function Sidebar() {
   const [isMobile, setIsMobile] = useState(false);
   const { data: session, status } = useSession();
   const isAuthenticated = status === "authenticated";
+  const { plan, isLoadingUsage } = useSubscriptionLimit();
+  const planDisplayName = plan && plan in SUBSCRIPTION_PLANS
+    ? SUBSCRIPTION_PLANS[plan as SubscriptionPlanKey].displayName
+    : plan ?? "Безплатен";
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -299,9 +305,17 @@ export function Sidebar() {
               <LogOut className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
-          {/* Version */}
-          <div className="mt-3 text-center text-xs text-muted-foreground">
-            {APP_NAME} v1.0.0
+          {/* Version & plan */}
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5 text-xs text-muted-foreground">
+            <span>{APP_NAME} v1.0.0</span>
+            {!isLoadingUsage && (
+              <span
+                className="rounded border border-border/60 bg-muted/80 px-1.5 py-0.5 text-[10px] font-medium"
+                title="Текущ план"
+              >
+                {planDisplayName}
+              </span>
+            )}
           </div>
         </div>
       </motion.aside>

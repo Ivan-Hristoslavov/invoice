@@ -43,6 +43,7 @@ const PLANS = {
       { text: '1 фирма', included: true },
       { text: '25 клиенти', included: true },
       { text: '50 продукти', included: true },
+      { text: 'Търсене по ЕИК', included: true },
       { text: 'CSV експорт', included: true },
       { text: 'Без имейл', included: false },
     ],

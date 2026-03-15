@@ -12,7 +12,7 @@ type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'CANCELLED';
 const invoiceItemSchema = z.object({
   description: z.string().min(1, "Описанието е задължително"),
   quantity: z.coerce.number().min(0.01, "Количеството трябва да е по-голямо от 0"),
-  unitPrice: z.coerce.number().min(0, "Единичната цена не може да е отрицателна"),
+  unitPrice: z.coerce.number().min(0.01, "Цената е задължителна и трябва да е положителна"),
   taxRate: z.coerce.number().min(0, "ДДС не може да е отрицателно").default(0),
   productId: z.string().optional(),
 });

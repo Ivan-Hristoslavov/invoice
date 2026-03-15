@@ -41,6 +41,7 @@ export async function POST(req: Request) {
 
     const interval: BillingInterval = billingInterval === 'monthly' ? 'monthly' : 'yearly';
 
+    // Price is always resolved server-side from env. Never accept price_id or amount from client to prevent manipulation.
     const priceId = getCanonicalPriceId(selectedPlan, interval);
     if (!priceId) {
       return new NextResponse(`Price ID not configured for ${selectedPlan} ${interval}`, { status: 500 });

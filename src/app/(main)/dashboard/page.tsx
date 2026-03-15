@@ -142,60 +142,63 @@ export default async function DashboardPage() {
     };
   });
   
-  // Get all invoices for stats
+  // Get all invoices for stats (minimal fields)
+  interface InvoiceStatsRow { id: string; status: string; total: number; createdAt: string; }
   const { data: allInvoices } = await supabase
     .from("Invoice")
     .select("id, status, total, createdAt")
     .eq("userId", sessionUser.id);
   
+  const statsRows: InvoiceStatsRow[] = allInvoices || [];
+
   // Calculate invoice counts
-  const invoiceCounts = (allInvoices || []).reduce((acc: Record<string, number>, invoice: InvoiceRow) => {
+  const invoiceCounts = statsRows.reduce((acc: Record<string, number>, invoice: InvoiceStatsRow) => {
     const status = normalizeInvoiceStatus(invoice.status);
     acc[status] = (acc[status] || 0) + 1;
     return acc;
   }, {} as Record<AppInvoiceStatus, number>);
   
   const counts = {
-    total: allInvoices?.length || 0,
+    total: statsRows.length,
     issued: invoiceCounts.ISSUED || 0,
     draft: invoiceCounts.DRAFT || 0,
     cancelled: invoiceCounts.CANCELLED || 0,
   };
   
   // Get total from issued invoices
-  const issuedInvoices = (allInvoices || []).filter((inv: InvoiceRow) => isIssuedLikeStatus(inv.status));
-  const totalIssued = issuedInvoices.reduce((sum: number, inv: InvoiceRow) => sum + Number(inv.total || 0), 0);
+  const issuedInvoices = statsRows.filter((inv: InvoiceStatsRow) => isIssuedLikeStatus(inv.status));
+  const totalIssued = issuedInvoices.reduce((sum: number, inv: InvoiceStatsRow) => sum + Number(inv.total || 0), 0);
   
   // Current month boundaries
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   
-  const thisMonthInvoices = (allInvoices || []).filter(
-    (inv: InvoiceRow) => new Date(inv.createdAt!) >= startOfMonth
+  const thisMonthInvoices = statsRows.filter(
+    (inv: InvoiceStatsRow) => new Date(inv.createdAt) >= startOfMonth
   );
   const thisMonthTotal = thisMonthInvoices
-    .filter((inv: InvoiceRow) => isIssuedLikeStatus(inv.status))
-    .reduce((sum: number, inv: InvoiceRow) => sum + Number(inv.total || 0), 0);
+    .filter((inv: InvoiceStatsRow) => isIssuedLikeStatus(inv.status))
+    .reduce((sum: number, inv: InvoiceStatsRow) => sum + Number(inv.total || 0), 0);
 
   // Previous month invoices for trend calculation
-  const prevMonthInvoices = (allInvoices || []).filter(
-    (inv: InvoiceRow) => {
-      const d = new Date(inv.createdAt!);
+  const prevMonthInvoices = statsRows.filter(
+    (inv: InvoiceStatsRow) => {
+      const d = new Date(inv.createdAt);
       return d >= startOfPrevMonth && d < startOfMonth;
     }
   );
   const prevMonthTotal = prevMonthInvoices
-    .filter((inv: InvoiceRow) => isIssuedLikeStatus(inv.status))
-    .reduce((sum: number, inv: InvoiceRow) => sum + Number(inv.total || 0), 0);
+    .filter((inv: InvoiceStatsRow) => isIssuedLikeStatus(inv.status))
+    .reduce((sum: number, inv: InvoiceStatsRow) => sum + Number(inv.total || 0), 0);
   const prevMonthIssuedTotal = prevMonthInvoices
-    .filter((inv: InvoiceRow) => isIssuedLikeStatus(inv.status))
-    .reduce((sum: number, inv: InvoiceRow) => sum + Number(inv.total || 0), 0);
+    .filter((inv: InvoiceStatsRow) => isIssuedLikeStatus(inv.status))
+    .reduce((sum: number, inv: InvoiceStatsRow) => sum + Number(inv.total || 0), 0);
 
   // Overall issued total trend (current month issued vs prev month issued)
   const currentMonthIssuedTotal = thisMonthInvoices
-    .filter((inv: InvoiceRow) => isIssuedLikeStatus(inv.status))
-    .reduce((sum: number, inv: InvoiceRow) => sum + Number(inv.total || 0), 0);
+    .filter((inv: InvoiceStatsRow) => isIssuedLikeStatus(inv.status))
+    .reduce((sum: number, inv: InvoiceStatsRow) => sum + Number(inv.total || 0), 0);
   const totalTrend = calcTrend(currentMonthIssuedTotal, prevMonthIssuedTotal);
 
   // This month total trend

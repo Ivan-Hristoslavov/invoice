@@ -36,6 +36,7 @@ export interface UsageData {
     creditNotes: boolean;
     emailSending: boolean;
     apiAccess: boolean;
+    eikSearch: boolean;
   };
 }
 
@@ -154,6 +155,7 @@ export async function GET(request: NextRequest) {
         creditNotes: limits.allowCreditNotes,
         emailSending: limits.allowEmailSending,
         apiAccess: limits.allowApiAccess,
+        eikSearch: limits.allowEikSearch,
       },
     };
 

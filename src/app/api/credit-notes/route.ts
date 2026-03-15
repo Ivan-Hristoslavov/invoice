@@ -13,21 +13,22 @@ import {
 import { normalizeInvoiceStatus } from "@/lib/invoice-status";
 import cuid from "cuid";
 import { z } from "zod";
+import { FIELD_LIMITS } from "@/lib/validations/field-limits";
 
 const creditNoteSchema = z.object({
-  companyId: z.string().min(1, "ID на компанията е задължително"),
-  clientId: z.string().min(1, "ID на клиента е задължително"),
+  companyId: z.string().min(1, "Компанията е задължителна"),
+  clientId: z.string().min(1, "Клиентът е задължителен"),
   invoiceId: z.string().optional(),
-  issueDate: z.string(),
-  reason: z.string().trim().min(1, "Причината е задължителна"),
+  issueDate: z.string().refine((s) => !isNaN(Date.parse(s)), "Невалидна дата"),
+  reason: z.string().trim().min(1, "Причината за кредитното известие е задължителна").max(FIELD_LIMITS.reason, "Причината е твърде дълга"),
   currency: z.string().default("EUR"),
-  notes: z.string().optional(),
+  notes: z.string().max(FIELD_LIMITS.notes, "Бележките са твърде дълги").optional(),
   items: z.array(z.object({
     productId: z.string().optional(),
-    description: z.string().min(1, "Описанието е задължително"),
-    quantity: z.number().positive("Количеството трябва да е положително"),
-    unitPrice: z.number().nonnegative("Единичната цена не може да е отрицателна"),
-    taxRate: z.number().min(0).max(100).default(0),
+    description: z.string().min(1, "Описанието на артикула е задължително"),
+    quantity: z.number().min(0.01, "Количеството трябва да е положително"),
+    unitPrice: z.number().min(0.01, "Цената е задължителна и трябва да е положителна"),
+    taxRate: z.number().min(0, "ДДС не може да е отрицателно").max(100, "ДДС не може да надвишава 100%").default(0),
   })).min(1, "Трябва да има поне един артикул"),
 });
 

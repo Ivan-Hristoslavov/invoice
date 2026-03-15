@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { resolveSessionUser } from "@/lib/session-user";
+import { checkSubscriptionLimits } from "@/middleware/subscription";
 
 const API_BASE = process.env.COMPANYBOOK_API_BASE || process.env.COMPANY_BOOK_API_BASE_URL || "https://api.companybook.bg/api/companies";
 const API_KEY = process.env.COMPANYBOOK_API_KEY || process.env.COMPANY_BOOK_API_KEY || "";
@@ -10,8 +12,25 @@ export async function GET(
   { params }: { params: Promise<{ uic: string }> }
 ) {
   const session = await getServerSession(authOptions);
-  if (!session) {
+  if (!session?.user) {
     return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
+  }
+
+  const sessionUser = await resolveSessionUser(session.user);
+  if (!sessionUser) {
+    return NextResponse.json({ error: "Потребителят не е намерен" }, { status: 401 });
+  }
+
+  const eikCheck = await checkSubscriptionLimits(sessionUser.id, "eikSearch");
+  if (!eikCheck.allowed) {
+    return NextResponse.json(
+      {
+        error: eikCheck.message || "Търсенето по ЕИК е налично в плана Стартер. Надградете за да попълвате данни автоматично от Регистъра.",
+        upgradeRequired: true,
+        requiredPlan: "STARTER",
+      },
+      { status: 403 }
+    );
   }
 
   const { uic } = await params;

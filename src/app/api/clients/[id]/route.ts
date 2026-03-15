@@ -10,24 +10,25 @@ import {
 import { hasPermission } from "@/lib/permissions";
 import { getAccessibleOwnerUserIdsForUser } from "@/lib/team";
 import { z } from "zod";
+import { FIELD_LIMITS } from "@/lib/validations/field-limits";
 
 const clientSchema = z.object({
-  name: z.string().min(1, "Името на клиента е задължително"),
-  email: z.string().email("Моля, въведете валиден имейл").optional().or(z.literal("")),
-  phone: z.string().optional().or(z.literal("")),
-  address: z.string().optional().or(z.literal("")),
-  city: z.string().optional().or(z.literal("")),
-  state: z.string().optional().or(z.literal("")),
-  zipCode: z.string().optional().or(z.literal("")),
-  country: z.string().optional().or(z.literal("")),
-  vatNumber: z.string().optional().or(z.literal("")),
-  taxIdNumber: z.string().optional().or(z.literal("")),
+  name: z.string().min(2, "Името на клиента е задължително").max(FIELD_LIMITS.name, "Името е твърде дълго"),
+  email: z.string().email("Моля, въведете валиден имейл").max(FIELD_LIMITS.email).optional().or(z.literal("")),
+  phone: z.string().max(FIELD_LIMITS.phone).optional().or(z.literal("")),
+  address: z.string().max(FIELD_LIMITS.address).optional().or(z.literal("")),
+  city: z.string().max(FIELD_LIMITS.city).optional().or(z.literal("")),
+  state: z.string().max(100).optional().or(z.literal("")),
+  zipCode: z.string().max(FIELD_LIMITS.postalCode).optional().or(z.literal("")),
+  country: z.string().max(FIELD_LIMITS.country).optional().or(z.literal("")),
+  vatNumber: z.string().max(FIELD_LIMITS.phone).optional().or(z.literal("")),
+  taxIdNumber: z.string().max(100).optional().or(z.literal("")),
   bulstatNumber: z.string().optional().or(z.literal("")),
   vatRegistered: z.boolean().optional().default(false),
-  vatRegistrationNumber: z.string().optional().or(z.literal("")),
-  mol: z.string().optional().or(z.literal("")),
+  vatRegistrationNumber: z.string().max(FIELD_LIMITS.phone).optional().or(z.literal("")),
+  mol: z.string().max(FIELD_LIMITS.mol).optional().or(z.literal("")),
   uicType: z.enum(["BULSTAT", "EGN"]).optional().default("BULSTAT"),
-  locale: z.string().default("bg"),
+  locale: z.string().max(10).default("bg"),
 });
 
 export async function GET(
@@ -157,15 +158,19 @@ export async function PUT(
     return NextResponse.json(client);
   } catch (error) {
     if (error instanceof z.ZodError) {
+      const details = error.errors.map((e) => ({
+        path: e.path.map(String),
+        message: e.message,
+      }));
       return NextResponse.json(
-        { error: "Неуспешна валидация", details: error.errors },
+        { error: "Невалидни данни за клиента. Моля, проверете полетата.", details },
         { status: 400 }
       );
     }
 
     console.error("Грешка при обновяване на клиент:", error);
     return NextResponse.json(
-      { error: "Неуспешно обновяване на клиент" },
+      { error: "Неуспешно обновяване на клиент. Моля, опитайте отново." },
       { status: 500 }
     );
   }

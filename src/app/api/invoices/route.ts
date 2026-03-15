@@ -444,7 +444,7 @@ export async function POST(request: NextRequest) {
           formatApiResponse(fullInvoice), 
           { status: ApiStatusCode.CREATED }
         );
-      }, { requiredPermissions: ['invoice:create'] })
+      })
     )
   );
 }

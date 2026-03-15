@@ -80,6 +80,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Price is always resolved server-side from env (getCanonicalPriceId). Never accept price_id or amount from client to prevent manipulation.
     const redirectBase = validateRedirectUrl(returnUrl);
     const priceId = getCanonicalPriceId(selectedPlan, interval);
 

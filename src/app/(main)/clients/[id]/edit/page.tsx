@@ -38,6 +38,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { validateBulgarianPartyInput } from "@/lib/bulgarian-party";
 import { applyApiValidationDetails } from "@/lib/form-errors";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
+import { useSubscription } from "@/hooks/useSubscription";
+import { ProFeatureLock } from "@/components/ui/pro-feature-lock";
 
 const clientSchema = z.object({
   name: z.string().min(1, "Името на клиента е задължително"),
@@ -103,6 +106,10 @@ export default function EditClientPage() {
 
   const previewName = form.watch("name");
   const previewBulstat = form.watch("bulstatNumber");
+  const { plan, canUseFeature } = useSubscriptionLimit();
+  const canUseEikSearch = canUseFeature("eikSearch");
+  const { createCheckoutSession } = useSubscription();
+  const [eikCheckoutLoading, setEikCheckoutLoading] = useState(false);
   const previewVat = form.watch("vatRegistrationNumber");
   const previewCity = form.watch("city");
   const previewCountry = form.watch("country");
@@ -266,40 +273,58 @@ export default function EditClientPage() {
       </div>
 
       {/* Quick EIK Lookup */}
-      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
-        <div className="mb-3 flex items-start gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-            <Search className="h-4 w-4 text-primary" />
+      <ProFeatureLock
+        requiredPlan="STARTER"
+        currentPlan={plan}
+        featureName="Търсенето по ЕИК"
+        message="Търсенето по ЕИК/БУЛСТАТ и автоматичното попълване от Регистъра е налично от план Стартер. Надградете за да зареждате данни с един клик."
+        variant="overlay"
+        showUpgradeLink
+        isUpgradeLoading={eikCheckoutLoading}
+        onUpgradeClick={async () => {
+          setEikCheckoutLoading(true);
+          try {
+            await createCheckoutSession("STARTER", "yearly");
+          } finally {
+            setEikCheckoutLoading(false);
+          }
+        }}
+      >
+        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+          <div className="mb-3 flex items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+              <Search className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm">Бързо попълване по ЕИК</h3>
+              <p className="text-xs text-muted-foreground">Въведете ЕИК/БУЛСТАТ и данните ще се попълнят автоматично от Търговския регистър</p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-semibold text-sm">Бързо попълване по ЕИК</h3>
-            <p className="text-xs text-muted-foreground">Въведете ЕИК/БУЛСТАТ и данните ще се попълнят автоматично от Търговския регистър</p>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              placeholder="Въведете ЕИК (напр. 204676177)"
+              inputMode="numeric"
+              className="flex-1"
+              value={form.watch("bulstatNumber") || ""}
+              onChange={(e) => form.setValue("bulstatNumber", e.target.value.replace(/\D/g, ""), { shouldValidate: true })}
+            />
+            <Button
+              type="button"
+              variant="default"
+              className="shrink-0 gap-2"
+              disabled={!canUseEikSearch || isLookupLoading || !(form.watch("bulstatNumber") || "").match(/^\d{9,13}$/)}
+              onClick={handleEikLookup}
+            >
+              {isLookupLoading ? (
+                <LoadingSpinner size="small" />
+              ) : (
+                <Search className="h-4 w-4" />
+              )}
+              Зареди данни
+            </Button>
           </div>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Input
-            placeholder="Въведете ЕИК (напр. 204676177)"
-            inputMode="numeric"
-            className="flex-1"
-            value={form.watch("bulstatNumber") || ""}
-            onChange={(e) => form.setValue("bulstatNumber", e.target.value.replace(/\D/g, ""), { shouldValidate: true })}
-          />
-          <Button
-            type="button"
-            variant="default"
-            className="shrink-0 gap-2"
-            disabled={isLookupLoading || !(form.watch("bulstatNumber") || "").match(/^\d{9,13}$/)}
-            onClick={handleEikLookup}
-          >
-            {isLookupLoading ? (
-              <LoadingSpinner size="small" />
-            ) : (
-              <Search className="h-4 w-4" />
-            )}
-            Зареди данни
-          </Button>
-        </div>
-      </div>
+      </ProFeatureLock>
 
       <Form {...form}>
         <form id="edit-client-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

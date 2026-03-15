@@ -51,6 +51,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { validateBulgarianPartyInput } from "@/lib/bulgarian-party";
 import { applyApiValidationDetails } from "@/lib/form-errors";
+import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
+import { useSubscription } from "@/hooks/useSubscription";
+import { ProFeatureLock } from "@/components/ui/pro-feature-lock";
 
 type ClientCreationMode = "eik" | "manual";
 
@@ -243,6 +246,10 @@ export default function NewClientPage() {
   });
 
   const formValues = form.watch();
+  const { plan, canUseFeature } = useSubscriptionLimit();
+  const canUseEikSearch = canUseFeature("eikSearch");
+  const { createCheckoutSession } = useSubscription();
+  const [eikCheckoutLoading, setEikCheckoutLoading] = useState(false);
   const bulstatFieldError = form.formState.errors.bulstatNumber;
 
   const clearDuplicateBulstatError = useCallback(() => {
@@ -493,13 +500,52 @@ export default function NewClientPage() {
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <ModeOptionCard
-              title="Автоматично попълване с ЕИК"
-              description="Въвеждате ЕИК/БУЛСТАТ, проверяваме фирмата и попълваме наличните данни вместо вас."
-              caption="Подходящо за български фирми, когато искате да спестите ръчно попълване."
-              onClick={() => handleCreationModeSelect("eik")}
-              icon={<Search className="h-5 w-5" />}
-            />
+            {canUseEikSearch ? (
+              <ModeOptionCard
+                title="Автоматично попълване с ЕИК"
+                description="Въвеждате ЕИК/БУЛСТАТ, проверяваме фирмата и попълваме наличните данни вместо вас."
+                caption="Подходящо за български фирми, когато искате да спестите ръчно попълване."
+                onClick={() => handleCreationModeSelect("eik")}
+                icon={<Search className="h-5 w-5" />}
+              />
+            ) : (
+              <ProFeatureLock
+                requiredPlan="STARTER"
+                currentPlan={plan}
+                featureName="Търсенето по ЕИК"
+                message="Автоматичното попълване по ЕИК/БУЛСТАТ е налично от план Стартер. Надградете за да търсите клиенти и да попълвате данни с един клик."
+                variant="overlay"
+                showUpgradeLink
+                isUpgradeLoading={eikCheckoutLoading}
+                onUpgradeClick={async () => {
+                  setEikCheckoutLoading(true);
+                  try {
+                    await createCheckoutSession("STARTER", "yearly");
+                  } finally {
+                    setEikCheckoutLoading(false);
+                  }
+                }}
+              >
+                <div className="rounded-[28px] border border-border/70 bg-card text-left">
+                  <div className="relative space-y-5 p-6 sm:p-7">
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/12 text-primary ring-1 ring-primary/15">
+                        <Search className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-lg font-semibold tracking-tight text-foreground">Автоматично попълване с ЕИК</h3>
+                        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                          Въвеждате ЕИК/БУЛСТАТ, проверяваме фирмата и попълваме наличните данни вместо вас.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-3 text-sm text-muted-foreground">
+                      Подходящо за български фирми, когато искате да спестите ръчно попълване.
+                    </div>
+                  </div>
+                </div>
+              </ProFeatureLock>
+            )}
             <ModeOptionCard
               title="Ръчно попълване"
               description="Въвеждате данните на клиента сами и контролирате всяко поле."
@@ -538,45 +584,63 @@ export default function NewClientPage() {
 
       {clientCreationMode === "eik" && (
         <div className="mx-auto mb-6 max-w-2xl">
-          <Card className="border-primary/20 bg-primary/5">
-            <CardContent className="space-y-4 p-4 sm:p-5">
-              <div className="flex items-start gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                  <Search className="h-4 w-4 text-primary" />
+          <ProFeatureLock
+            requiredPlan="STARTER"
+            currentPlan={plan}
+            featureName="Търсенето по ЕИК"
+            message="Търсенето по ЕИК/БУЛСТАТ и автоматичното попълване от Регистъра е налично от план Стартер. Надградете за да зареждате данни с един клик."
+            variant="overlay"
+            showUpgradeLink
+            isUpgradeLoading={eikCheckoutLoading}
+            onUpgradeClick={async () => {
+              setEikCheckoutLoading(true);
+              try {
+                await createCheckoutSession("STARTER", "yearly");
+              } finally {
+                setEikCheckoutLoading(false);
+              }
+            }}
+          >
+            <Card className="border-primary/20 bg-primary/5">
+              <CardContent className="space-y-4 p-4 sm:p-5">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                    <Search className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-sm">Бързо попълване по ЕИК</h3>
+                    <p className="text-xs text-muted-foreground">Въведете ЕИК/БУЛСТАТ и данните ще се попълнят автоматично от Търговския регистър.</p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <h3 className="font-semibold text-sm">Бързо попълване по ЕИК</h3>
-                  <p className="text-xs text-muted-foreground">Въведете ЕИК/БУЛСТАТ и данните ще се попълнят автоматично от Търговския регистър.</p>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    placeholder="Въведете ЕИК (напр. 204676177)"
+                    inputMode="numeric"
+                    className="h-11 flex-1"
+                    value={formValues.bulstatNumber || ""}
+                    onChange={(e) => form.setValue("bulstatNumber", e.target.value.replace(/\D/g, ""), { shouldValidate: true })}
+                  />
+                  <Button
+                    type="button"
+                    variant="default"
+                    className="h-11 w-full shrink-0 gap-2 px-4 sm:w-auto"
+                    disabled={!canUseEikSearch || isLookupLoading || !(formValues.bulstatNumber || "").match(/^\d{9,13}$/)}
+                    onClick={handleEikLookup}
+                  >
+                    {isLookupLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Search className="h-4 w-4" />
+                    )}
+                    Зареди данни
+                  </Button>
                 </div>
-              </div>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Input
-                  placeholder="Въведете ЕИК (напр. 204676177)"
-                  inputMode="numeric"
-                  className="h-11 flex-1"
-                  value={formValues.bulstatNumber || ""}
-                  onChange={(e) => form.setValue("bulstatNumber", e.target.value.replace(/\D/g, ""), { shouldValidate: true })}
-                />
-                <Button
-                  type="button"
-                  variant="default"
-                  className="h-11 w-full shrink-0 gap-2 px-4 sm:w-auto"
-                  disabled={isLookupLoading || !(formValues.bulstatNumber || "").match(/^\d{9,13}$/)}
-                  onClick={handleEikLookup}
-                >
-                  {isLookupLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Search className="h-4 w-4" />
-                  )}
-                  Зареди данни
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Най-добър резултат ще получите с 9 до 13 цифри, без интервали и символи.
-              </p>
-            </CardContent>
-          </Card>
+                <p className="text-xs text-muted-foreground">
+                  Най-добър резултат ще получите с 9 до 13 цифри, без интервали и символи.
+                </p>
+              </CardContent>
+            </Card>
+          </ProFeatureLock>
         </div>
       )}
 
