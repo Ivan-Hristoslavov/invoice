@@ -65,7 +65,11 @@ export async function POST(req: Request) {
     // Prefer NEXT_PUBLIC_APP_URL; on Vercel fall back to VERCEL_URL (set automatically, no protocol)
     const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() ?? "";
     const vercelUrl = process.env.VERCEL_URL?.trim() ?? "";
-    const originInput = rawAppUrl || (vercelUrl ? `https://${vercelUrl}` : "");
+    let originInput = rawAppUrl || (vercelUrl ? `https://${vercelUrl}` : "");
+    // If no protocol (e.g. user set "invoice-ten-sigma.vercel.app"), Stripe will reject; force https
+    if (originInput && !/^https?:\/\//i.test(originInput)) {
+      originInput = `https://${originInput}`;
+    }
 
     if (!originInput) {
       return NextResponse.json(
