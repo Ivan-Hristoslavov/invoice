@@ -97,21 +97,13 @@ export function RegisterForm() {
         throw new Error(data.message || "Нещо се обърка");
       }
 
-      toast.success("Акаунтът е създаден успешно!");
-      
-      const result = await signIn("credentials", {
-        redirect: false,
-        email: formData.email,
-        password: formData.password,
-      });
-
-      if (result?.error) {
-        toast.error("Акаунтът е създаден, но влизането не беше успешно. Моля, влезте ръчно.");
-        router.push(`/signin?email=${encodeURIComponent(formData.email)}&callbackUrl=${encodeURIComponent(callbackUrl)}`);
-      } else {
-        router.push(callbackUrl);
-        router.refresh();
-      }
+      setIsLoading(false);
+      toast.success(
+        "Акаунтът е създаден. Проверете имейла си за линк за потвърждение преди първи вход."
+      );
+      router.push(
+        `/signin?email=${encodeURIComponent(formData.email)}&callbackUrl=${encodeURIComponent(callbackUrl)}&verified=pending`
+      );
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message);

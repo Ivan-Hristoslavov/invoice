@@ -79,7 +79,7 @@ export const authOptions: NextAuthOptions = {
 
         const { data: user, error } = await supabase
           .from("User")
-          .select("id, email, name, password, image")
+          .select("id, email, name, password, image, emailVerified")
           .eq("email", normalizedEmail)
           .single();
 
@@ -94,6 +94,11 @@ export const authOptions: NextAuthOptions = {
 
         if (!passwordMatch) {
           return null;
+        }
+
+        // Require email verification before first sign-in (credentials only)
+        if (!user.emailVerified) {
+          throw new Error("EmailNotVerified");
         }
 
         return {
@@ -127,24 +132,19 @@ export const authOptions: NextAuthOptions = {
           const nextProfile = {
             name: existingUser.name || user.name || email.split("@")[0],
             image: existingUser.image || user.image || null,
+            emailVerified: new Date().toISOString(), // Google verified this email
             updatedAt: new Date().toISOString(),
           };
 
-          if (
-            nextProfile.name !== existingUser.name ||
-            nextProfile.image !== existingUser.image
-          ) {
-            await supabase
-              .from("User")
-              .update(nextProfile)
-              .eq("id", existingUser.id);
-          }
+          await supabase
+            .from("User")
+            .update(nextProfile)
+            .eq("id", existingUser.id);
 
-          // User exists, allow sign in
           return true;
         }
         
-        // Create new user
+        // Create new user (Google-verified email, so set emailVerified)
         const { error } = await supabase
           .from("User")
           .insert({
@@ -152,6 +152,7 @@ export const authOptions: NextAuthOptions = {
             email,
             name: user.name || email.split("@")[0],
             image: user.image || null,
+            emailVerified: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           })
         
