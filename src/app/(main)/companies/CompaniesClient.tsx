@@ -89,16 +89,16 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
           <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-red-800 dark:text-red-200">
               {isFree && (
-                <>Достигнахте лимита от <strong>1 компания</strong> за FREE плана. Надградете до PRO за до 3 компании.</>
+                <>Достигнахте лимита от <strong>1 фирма</strong> за безплатния план. С Про управлявате до 3 фирми от един акаунт.</>
               )}
               {isPro && (
-                <>Достигнахте лимита от <strong>3 компании</strong> за PRO плана. Надградете до BUSINESS за до 10 компании.</>
+                <>Достигнахте лимита от <strong>3 фирми</strong> за Про. С Бизнес до 10 фирми от един акаунт.</>
               )}
             </span>
             <Link href="/settings/subscription" className="flex items-center whitespace-nowrap">
               <Button size="sm" className="bg-linear-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 sm:ml-4">
                 <Crown className="h-4 w-4 mr-2" />
-                Надградете
+                Вижте плановете →
               </Button>
             </Link>
           </AlertDescription>
@@ -122,7 +122,7 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
             )}
           </div>
           <p className="text-muted-foreground mt-1">
-            Управлявайте вашите фирми и компании
+            Добавете фирмите веднъж — данните се ползват при всяка фактура
           </p>
         </div>
         {!isLoadingUsage && canCreateCompany && (

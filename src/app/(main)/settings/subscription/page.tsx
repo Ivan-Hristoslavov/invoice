@@ -20,7 +20,7 @@ export default function SubscriptionPage() {
         <div>
           <h1 className="page-title">Абонамент</h1>
           <p className="card-description mt-1">
-            Управлявайте плана си, лимитите и историята на плащанията от едно място.
+            Изберете план и вижте какво ви предлага — лимити, функции и история на плащанията.
           </p>
         </div>
       </div>
@@ -31,7 +31,7 @@ export default function SubscriptionPage() {
           <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
           <AlertTitle className="text-sm">Успех!</AlertTitle>
           <AlertDescription className="text-xs">
-            Абонаментът беше успешно обновен.
+            Готово! Вашият план е активен. Можете да ползвате всички включени функции.
           </AlertDescription>
         </Alert>
       )}
@@ -41,7 +41,7 @@ export default function SubscriptionPage() {
           <XCircle className="h-4 w-4" />
           <AlertTitle className="text-sm">Отказано</AlertTitle>
           <AlertDescription className="text-xs">
-            Плащането беше отказано.
+            Плащането беше отменено. Можете да опитате отново когато искате.
           </AlertDescription>
         </Alert>
       )}
@@ -50,7 +50,7 @@ export default function SubscriptionPage() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle>Планове и лимити</CardTitle>
-          <CardDescription>Сравнете наличните планове и надградете, когато имате нужда.</CardDescription>
+          <CardDescription>Сравнете плановете и надградете, когато искате повече фактури, фирми или изпращане по имейл.</CardDescription>
         </CardHeader>
         <CardContent>
           <Suspense fallback={<SubscriptionSkeleton />}>

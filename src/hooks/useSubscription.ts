@@ -30,6 +30,7 @@ interface UseSubscriptionReturn {
   error: string | null;
   createCheckoutSession: (plan: string, billingInterval?: 'monthly' | 'yearly') => Promise<void>;
   cancelSubscription: () => Promise<void>;
+  refetchSubscription: () => Promise<void>;
 }
 
 export function useSubscription(): UseSubscriptionReturn {
@@ -39,30 +40,31 @@ export function useSubscription(): UseSubscriptionReturn {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  useEffect(() => {
-    async function fetchSubscription() {
-      if (status === 'loading') return;
-      if (status === 'unauthenticated') {
-        setIsLoading(false);
-        return;
+  const fetchSubscription = async () => {
+    if (status === 'unauthenticated') return;
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await fetch('/api/subscription');
+      if (!response.ok) {
+        throw new Error(`Failed to fetch subscription: ${response.status} ${response.statusText}`);
       }
-
-      try {
-        setIsLoading(true);
-        const response = await fetch('/api/subscription');
-        if (!response.ok) {
-          throw new Error(`Failed to fetch subscription: ${response.status} ${response.statusText}`);
-        }
-        const data = await response.json();
-        setSubscription(data.subscription);
-      } catch (err: any) {
-        console.error('Error fetching subscription:', err);
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
+      const data = await response.json();
+      setSubscription(data.subscription ?? null);
+    } catch (err: any) {
+      console.error('Error fetching subscription:', err);
+      setError(err?.message ?? 'Failed to fetch');
+    } finally {
+      setIsLoading(false);
     }
+  };
 
+  useEffect(() => {
+    if (status === 'loading') return;
+    if (status === 'unauthenticated') {
+      setIsLoading(false);
+      return;
+    }
     fetchSubscription();
   }, [status]);
 
@@ -132,10 +134,7 @@ export function useSubscription(): UseSubscriptionReturn {
       });
 
       if (response.ok) {
-        // Refresh subscription data
-        const subscriptionResponse = await fetch('/api/subscription');
-        const data = await subscriptionResponse.json();
-        setSubscription(data.subscription);
+        await fetchSubscription();
       } else {
         const error = await response.text();
         throw new Error(error);
@@ -153,5 +152,6 @@ export function useSubscription(): UseSubscriptionReturn {
     error,
     createCheckoutSession,
     cancelSubscription,
+    refetchSubscription: fetchSubscription,
   };
 } 

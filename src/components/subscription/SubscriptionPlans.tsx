@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Check, X, CreditCard, Sparkles, Star, Zap, Crown, FileText, Shield, TrendingUp, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useSubscriptionLimit } from '@/hooks/useSubscriptionLimit';
 import { AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CancellationSurvey } from './CancellationSurvey';
@@ -88,11 +90,36 @@ const PLANS = {
 type PlanKey = keyof typeof PLANS;
 
 export function SubscriptionPlans() {
-  const { subscription, isLoading, error, createCheckoutSession, cancelSubscription } = useSubscription();
+  const searchParams = useSearchParams();
+  const { subscription, isLoading, error, createCheckoutSession, cancelSubscription, refetchSubscription } = useSubscription();
+  const { refreshUsage } = useSubscriptionLimit();
   const [cancelingSubscription, setCancelingSubscription] = useState(false);
   const [editingSubscription, setEditingSubscription] = useState(false);
   const [showCancellationSurvey, setShowCancellationSurvey] = useState(false);
   const [isYearly, setIsYearly] = useState(true);
+
+  // След успешен checkout обновяваме абонамента и лимитите веднага (и с повторен опит след 2s/5s ако webhook-ът закъснее)
+  const didRefreshOnSuccess = useRef(false);
+  useEffect(() => {
+    const success = searchParams.get('success');
+    if (success !== 'true') return;
+
+    const refresh = async () => {
+      await refetchSubscription();
+      await refreshUsage();
+    };
+
+    if (!didRefreshOnSuccess.current) {
+      didRefreshOnSuccess.current = true;
+      refresh();
+    }
+    const t2 = window.setTimeout(refresh, 2000);
+    const t5 = window.setTimeout(refresh, 5000);
+    return () => {
+      clearTimeout(t2);
+      clearTimeout(t5);
+    };
+  }, [searchParams, refetchSubscription, refreshUsage]);
 
   const handleSubscribe = async (plan: string) => {
     try {
@@ -179,6 +206,12 @@ export function SubscriptionPlans() {
     return (plan.monthlyPrice * 12) - plan.yearlyPrice;
   };
 
+  const getYearlySavingsPercent = (plan: typeof PLANS[PlanKey]) => {
+    if (plan.monthlyPrice === 0) return 0;
+    const fullYear = plan.monthlyPrice * 12;
+    return Math.round((getYearlySavings(plan) / fullYear) * 100);
+  };
+
   return (
     <div className="space-y-6">
       {error && (
@@ -254,11 +287,17 @@ export function SubscriptionPlans() {
               "rounded-full px-1.5 py-0.5 text-[9px] font-bold sm:text-[10px]",
               isYearly ? "bg-white/20" : "bg-emerald-500/20 text-emerald-600"
             )}>
-              -17%
+              2 мес. безплатно
             </span>
           </button>
         </div>
       </div>
+
+      {isYearly && (
+        <p className="text-center text-sm text-muted-foreground">
+          При годишен план плащате за 10 месеца и получавате <strong className="text-foreground">12</strong> — най-добра стойност.
+        </p>
+      )}
 
       {/* Plans Grid */}
       <div id="subscription-plans" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -268,6 +307,7 @@ export function SubscriptionPlans() {
           const isPopular = 'popular' in plan && (plan as { popular?: boolean }).popular;
           const price = isYearly ? plan.yearlyPrice / 12 : plan.monthlyPrice;
           const savings = getYearlySavings(plan);
+          const savingsPercent = getYearlySavingsPercent(plan);
           const Icon = plan.icon;
 
           // Per-plan color themes
@@ -332,15 +372,27 @@ export function SubscriptionPlans() {
                     </span>
                     <span className="text-sm text-muted-foreground font-normal">€/мес</span>
                   </div>
-                  <div className="h-5 mt-0.5">
-                    {isYearly && savings > 0 ? (
-                      <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                        Спестявате {savings.toFixed(0)}€ годишно
-                      </p>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">
-                        {planKey === 'FREE' ? 'Завинаги безплатен' : 'Таксува се месечно'}
-                      </p>
+                  {isYearly && plan.yearlyPrice > 0 && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {plan.yearlyPrice.toFixed(2)} € общо за 12 месеца
+                    </p>
+                  )}
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    {isYearly && savings > 0 && (
+                      <>
+                        <span className="inline-flex items-center rounded-md bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                          2 месеца безплатно
+                        </span>
+                        <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                          Спестявате {savings.toFixed(0)} € ({savingsPercent}%)
+                        </span>
+                      </>
+                    )}
+                    {!isYearly && planKey !== 'FREE' && (
+                      <p className="text-xs text-muted-foreground">Таксува се месечно</p>
+                    )}
+                    {planKey === 'FREE' && (
+                      <p className="text-xs text-muted-foreground">Завинаги безплатен</p>
                     )}
                   </div>
                 </div>

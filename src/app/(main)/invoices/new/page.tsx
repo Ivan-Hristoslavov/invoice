@@ -961,8 +961,8 @@ function NewInvoiceContent() {
       console.error("Error creating invoice:", error);
       toast.error(error.message || "Грешка при създаване на фактура", {
         duration: 5000,
-        description: error.message?.includes("план") 
-          ? "Надградете плана си за повече фактури." 
+description: error.message?.includes("план")
+          ? "С план Про създавате неограничено и изпращате по имейл."
           : undefined,
       });
     } finally {
@@ -1742,13 +1742,12 @@ function NewInvoiceContent() {
           <AlertTriangle className="h-4 w-4 text-red-600" />
           <AlertDescription className="flex items-center justify-between">
             <span className="text-red-800 dark:text-red-200">
-              Достигнахте лимита от <strong>3 фактури</strong> за този месец. 
-              Надградете до PRO за неограничени фактури.
+              Издадохте <strong>3 фактури</strong> този месец — лимитът на безплатния план. С Про създавате неограничено и изпращате по имейл за по-бързи плащания.
             </span>
             <Link href="/settings/subscription">
               <Button size="sm" className="ml-4 bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
                 <Crown className="h-4 w-4 mr-2" />
-                Надградете до PRO
+                Отключете неограничени фактури →
               </Button>
             </Link>
           </AlertDescription>
@@ -1760,13 +1759,12 @@ function NewInvoiceContent() {
           <AlertTriangle className="h-4 w-4 text-amber-600" />
           <AlertDescription className="flex items-center justify-between">
             <span className="text-amber-800 dark:text-amber-200">
-              Остава ви само <strong>1 фактура</strong> за този месец. 
-              Надградете за неограничени фактури.
+              Остава ви <strong>1 фактура</strong> този месец. С план Про не спирате и изпращате фактури по имейл.
             </span>
             <Link href="/settings/subscription">
               <Button size="sm" variant="outline" className="ml-4 border-amber-300 text-amber-700 hover:bg-amber-100">
                 <Crown className="h-4 w-4 mr-2" />
-                Надградете
+                Вижте плановете →
               </Button>
             </Link>
           </AlertDescription>

@@ -135,7 +135,7 @@ export function ProFeatureLock({
                   ) : (
                     <Sparkles className="h-4 w-4" />
                   )}
-                  {isUpgradeLoading ? "Подготвяме плащането..." : `Надградете до ${requiredPlan}`}
+                  {isUpgradeLoading ? "Подготвяме плащането..." : `Отключете с ${requiredPlan} →`}
                   {!isUpgradeLoading && <ArrowRight className="h-4 w-4" />}
                 </Button>
               ) : (
@@ -146,7 +146,7 @@ export function ProFeatureLock({
                 >
                   <Link href="/settings/subscription">
                     <Sparkles className="h-4 w-4" />
-                    Надградете до {requiredPlan}
+                    Отключете с {requiredPlan} →
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
@@ -187,13 +187,13 @@ export function ProFeatureLock({
                   ) : (
                     <Crown className="h-4 w-4 text-amber-500" />
                   )}
-                  {isUpgradeLoading ? "Подготвяме плащането..." : "Надградете до Стартер"}
+                  {isUpgradeLoading ? "Подготвяме плащането..." : "Попълване с един клик със Стартер →"}
                 </Button>
               ) : (
                 <Button asChild size="sm" variant="outline" className="gap-2">
                   <Link href="/settings/subscription">
                     <Crown className="h-4 w-4 text-amber-500" />
-                    Надградете
+                    Вижте плановете →
                   </Link>
                 </Button>
               ))}
@@ -228,7 +228,7 @@ export function ProFeatureLock({
                 href="/settings/subscription"
                 className="text-xs text-primary hover:underline mt-1 inline-block"
               >
-                Надградете сега →
+                Отключете тази функция →
               </Link>
             )}
           </TooltipContent>
@@ -270,7 +270,7 @@ export function ProFeatureLock({
               className="text-xs text-primary hover:underline"
               onClick={onUpgradeClick}
             >
-              Надградете сега →
+              Отключете тази функция →
             </Link>
           )}
         </TooltipContent>
@@ -373,7 +373,7 @@ export function LockedButton({
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          <p>Надградете до {requiredPlan} за тази функция</p>
+          <p>С план {requiredPlan} отключвате тази функция. Вижте плановете и цените.</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

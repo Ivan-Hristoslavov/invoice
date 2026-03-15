@@ -44,7 +44,13 @@ export async function POST(req: Request) {
     // Price is always resolved server-side from env. Never accept price_id or amount from client to prevent manipulation.
     const priceId = getCanonicalPriceId(selectedPlan, interval);
     if (!priceId) {
-      return new NextResponse(`Price ID not configured for ${selectedPlan} ${interval}`, { status: 500 });
+      return new NextResponse(`Липсва Stripe цена за ${selectedPlan} (${interval}). Задайте в .env (напр. STRIPE_STARTER_YEARLY_PRICE_ID).`, { status: 500 });
+    }
+    if (priceId.startsWith("prod_")) {
+      return new NextResponse(
+        "В .env е зададен Product ID (prod_...). Нужен е Price ID (price_...). В Stripe: отвори продукта → под него са цените → копирай Price ID.",
+        { status: 400 }
+      );
     }
 
     const stripe = await getStripe();
@@ -85,8 +91,15 @@ export async function POST(req: Request) {
       url: checkoutSession.url,
       sessionId: checkoutSession.id,
     });
-  } catch (error) {
-    console.error('Error creating checkout session:', error);
-    return new NextResponse('Internal Server Error', { status: 500 });
+  } catch (error: any) {
+    console.error("Error creating checkout session:", error);
+    const isNoSuchPrice =
+      error?.type === "StripeInvalidRequestError" &&
+      error?.code === "resource_missing" &&
+      String(error?.param || "").includes("price");
+    const message = isNoSuchPrice
+      ? "Stripe не намира тази цена. Провери: (1) В .env само Price ID (price_...). (2) Същия режим Test/Live като ключа. (3) Същия Stripe акаунт."
+      : "Internal Server Error";
+    return new NextResponse(message, { status: 500 });
   }
 }

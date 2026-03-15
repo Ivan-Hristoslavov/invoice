@@ -223,10 +223,10 @@ export default function TeamSettingsClient({
           <ShieldCheck className="h-4 w-4 text-amber-600" />
           <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-amber-800 dark:text-amber-200">
-              Достигнахте лимита за членове във вашия план. Надградете за да каните още хора.
+              Достигнахте лимита за членове. С Бизнес до 5 потребителя в екипа — каняйте съдружници и счетоводители.
             </span>
             <Button asChild size="sm">
-              <Link href="/settings/subscription">Виж плановете</Link>
+              <Link href="/settings/subscription">Вижте плановете →</Link>
             </Button>
           </AlertDescription>
         </Alert>
@@ -357,10 +357,10 @@ export default function TeamSettingsClient({
                 ) : isBusiness ? (
                   <div className="space-y-2">
                     <Button disabled className="btn-responsive">
-                      Достигнат е лимитът за екипа
+                      Достигнат е лимитът за членове ({userUsage.limit})
                     </Button>
                     <p className="text-sm text-muted-foreground">
-                      Планът BUSINESS позволява до {userUsage.limit} потребители. Освободете място или обновете абонамента, ако лимитът е стар.
+                      Премахнете член от екипа или се свържете с нас за повече потребители.
                     </p>
                   </div>
                 ) : (

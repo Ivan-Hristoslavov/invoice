@@ -199,7 +199,8 @@ export function getCanonicalPriceId(
   interval: BillingInterval
 ): string | null {
   if (plan === "FREE") return null;
-  return SUBSCRIPTION_PLANS[plan].stripe[interval];
+  const raw = SUBSCRIPTION_PLANS[plan].stripe[interval];
+  return typeof raw === "string" && raw.trim() ? raw.trim() : null;
 }
 
 export function getDirectCheckoutUrl(

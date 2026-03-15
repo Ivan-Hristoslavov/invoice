@@ -80,14 +80,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Price is always resolved server-side from env (getCanonicalPriceId). Never accept price_id or amount from client to prevent manipulation.
+    // Price is always resolved server-side from env. Never accept price_id or amount from client to prevent manipulation.
     const redirectBase = validateRedirectUrl(returnUrl);
     const priceId = getCanonicalPriceId(selectedPlan, interval);
 
     if (!priceId) {
       return NextResponse.json(
-        { error: `Липсва Stripe цена за ${selectedPlan} (${interval})` },
+        { error: `Липсва Stripe цена за ${selectedPlan} (${interval}). Задайте в .env (напр. STRIPE_STARTER_YEARLY_PRICE_ID).` },
         { status: 500 }
+      );
+    }
+
+    if (priceId.startsWith("prod_")) {
+      return NextResponse.json(
+        {
+          error:
+            "В .env е зададен Product ID (prod_...). Нужен е Price ID (price_...). В Stripe Dashboard: отвори продукта → под него са цените → копирай Price ID за съответната цена.",
+        },
+        { status: 400 }
       );
     }
 
@@ -133,9 +143,13 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("Грешка при checkout сесия:", error);
-    return NextResponse.json(
-      { error: error.message || "Неуспешно създаване на checkout сесия" },
-      { status: 500 }
-    );
+    const isNoSuchPrice =
+      error?.type === "StripeInvalidRequestError" &&
+      error?.code === "resource_missing" &&
+      String(error?.param || "").includes("price");
+    const message = isNoSuchPrice
+      ? "Stripe не намира тази цена. Провери: (1) В .env да е само Price ID (price_...), не Product ID. (2) Stripe Dashboard да е в същия режим като ключа (Test/Live). (3) Цената да е създадена в същия акаунт като STRIPE_SECRET_KEY."
+      : error?.message || "Неуспешно създаване на checkout сесия";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
