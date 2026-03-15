@@ -113,18 +113,8 @@ export function useSubscription(): UseSubscriptionReturn {
         throw new Error('Invalid checkout link. Please try again or contact support.');
       }
 
-      // Open Stripe Checkout in a new tab
-      const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
-      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-        console.warn("Popup blocked by browser, using alternative method");
-        const link = document.createElement('a');
-        link.href = url;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
+      // Same tab: go to Stripe; after payment Stripe redirects back to /settings/subscription?success=true
+      window.location.href = url;
     } catch (err: any) {
       console.error('Checkout error:', err);
       setError(err.message || 'Failed to start checkout process');

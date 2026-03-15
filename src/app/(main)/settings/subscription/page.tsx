@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SubscriptionPlans } from '@/components/subscription/SubscriptionPlans';
 import { SubscriptionHistory } from '@/components/subscription/SubscriptionHistory';
@@ -13,6 +13,19 @@ export default function SubscriptionPage() {
   const searchParams = useSearchParams();
   const success = searchParams.get('success');
   const canceled = searchParams.get('canceled');
+  const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState<number | null>(null);
+
+  // After returning from Stripe success, refetch history at 0s, 2s, 5s so payment appears once webhook runs
+  useEffect(() => {
+    if (success !== 'true') return;
+    setHistoryRefreshTrigger(Date.now());
+    const t2 = window.setTimeout(() => setHistoryRefreshTrigger(Date.now()), 2000);
+    const t5 = window.setTimeout(() => setHistoryRefreshTrigger(Date.now()), 5000);
+    return () => {
+      clearTimeout(t2);
+      clearTimeout(t5);
+    };
+  }, [success]);
   
   return (
     <div className="app-page-shell">
@@ -70,7 +83,7 @@ export default function SubscriptionPage() {
             </summary>
             <div className="pt-4">
               <Suspense fallback={<SubscriptionSkeleton />}>
-                <SubscriptionHistory />
+                <SubscriptionHistory refreshTrigger={historyRefreshTrigger ?? undefined} />
               </Suspense>
             </div>
           </details>

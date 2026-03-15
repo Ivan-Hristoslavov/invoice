@@ -19,7 +19,12 @@ import { CreditCard, ReceiptText, Info, ChevronDown, Loader2 } from 'lucide-reac
 import { useSubscriptionHistory } from '@/hooks/useSubscriptionHistory';
 import { SUBSCRIPTION_PLANS, type SubscriptionPlanKey } from '@/lib/subscription-plans';
 
-export function SubscriptionHistory() {
+interface SubscriptionHistoryProps {
+  /** When set, refetch history (e.g. after returning from Stripe so payments appear) */
+  refreshTrigger?: number;
+}
+
+export function SubscriptionHistory({ refreshTrigger }: SubscriptionHistoryProps = {}) {
   const [activeTab, setActiveTab] = useState('payments');
   const [pageSize, setPageSize] = useState(10);
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -36,6 +41,11 @@ export function SubscriptionHistory() {
     refresh,
     changePageSize 
   } = useSubscriptionHistory(1, pageSize);
+  
+  // Refetch when parent signals (e.g. after payment success so webhook data appears)
+  useEffect(() => {
+    if (refreshTrigger != null) refresh();
+  }, [refreshTrigger, refresh]);
   
   // Setup intersection observer for lazy loading
   useEffect(() => {

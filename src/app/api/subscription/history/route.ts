@@ -2,30 +2,31 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from '@/lib/auth';
 import { supabaseAdmin } from "@/lib/supabase";
+import { resolveSessionUser } from "@/lib/session-user";
 
 /**
  * API endpoint to fetch subscription history with pagination
  */
 export async function GET(req: Request) {
   try {
-    // Verify authentication
     const session = await getServerSession(authOptions);
-    
     if (!session?.user) {
       return new NextResponse('Неоторизиран достъп', { status: 401 });
     }
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return new NextResponse('Неоторизиран достъп', { status: 401 });
+    }
     
-    // Get pagination parameters from query string
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const skipItems = (page - 1) * limit;
     
-    // Find the user's active subscription
     const { data: subscription, error: subError } = await supabaseAdmin
       .from('Subscription')
       .select('*')
-      .eq('userId', session.user.id)
+      .eq('userId', sessionUser.id)
       .order('createdAt', { ascending: false })
       .limit(1)
       .single();
