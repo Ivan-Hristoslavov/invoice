@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EyeIcon, EyeOffIcon, LockIcon, MailIcon, Loader2, ArrowRight, MailPlus } from "lucide-react";
 import { toast } from "sonner";
+import { getEmailValidationError } from "@/lib/validation";
 
 export function SignInForm() {
   const router = useRouter();
@@ -21,6 +22,8 @@ export function SignInForm() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [emailFieldError, setEmailFieldError] = useState<string | null>(null);
   const hasAttemptedMagicLinkRef = useRef(false);
 
   const isEmailNotVerified = error && error.includes("потвърдете имейла");
@@ -182,12 +185,26 @@ export function SignInForm() {
               type="email"
               placeholder="ime@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="h-12 rounded-2xl border-border/60 bg-background/70 pl-10 text-base shadow-sm transition-[border-color,box-shadow,background-color] focus-visible:border-primary/60 focus-visible:bg-background focus-visible:ring-4 focus-visible:ring-primary/10 md:text-sm"
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (emailTouched) setEmailFieldError(getEmailValidationError(e.target.value) ?? null);
+              }}
+              onBlur={() => {
+                setEmailTouched(true);
+                setEmailFieldError(getEmailValidationError(email) ?? null);
+              }}
+              className={`h-12 rounded-2xl border-border/60 bg-background/70 pl-10 text-base shadow-sm transition-[border-color,box-shadow,background-color] focus-visible:border-primary/60 focus-visible:bg-background focus-visible:ring-4 focus-visible:ring-primary/10 md:text-sm ${emailFieldError ? "border-red-500 focus-visible:border-red-500" : ""}`}
               required
               autoComplete="email"
+              aria-invalid={!!emailFieldError}
+              aria-describedby={emailFieldError ? "signin-email-error" : undefined}
             />
           </div>
+          {emailFieldError && (
+            <p id="signin-email-error" className="text-xs text-red-600 dark:text-red-400" role="alert">
+              {emailFieldError}
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">

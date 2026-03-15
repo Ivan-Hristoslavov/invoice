@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       const baseUrl =
         process.env.NEXTAUTH_URL ||
         process.env.NEXT_PUBLIC_APP_URL ||
-        "http://localhost:3000";
+        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
       const confirmUrl = `${baseUrl}/confirm-email?token=${token}`;
       await sendVerificationEmail({
         to: email,
