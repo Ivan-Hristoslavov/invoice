@@ -19,6 +19,11 @@ import {
   Check
 } from "lucide-react";
 import { APP_NAME } from "@/config/constants";
+import {
+  getEmailValidationError,
+  getPasswordStrength,
+  getPasswordValidationError,
+} from "@/lib/validation";
 
 const planContent = {
   FREE: {
@@ -53,12 +58,35 @@ export function RegisterForm() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [emailFieldError, setEmailFieldError] = useState<string | null>(null);
+  const [confirmTouched, setConfirmTouched] = useState(false);
+  const [confirmFieldError, setConfirmFieldError] = useState<string | null>(null);
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const inviteEmail = searchParams.get("email");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === "email") {
+      if (emailTouched) setEmailFieldError(getEmailValidationError(value) ?? null);
+    }
+    if (name === "confirmPassword") {
+      if (confirmTouched) setConfirmFieldError(value !== formData.password ? "Паролите не съвпадат" : null);
+    }
+    if (name === "password" && confirmTouched) {
+      setConfirmFieldError(formData.confirmPassword !== value ? "Паролите не съвпадат" : null);
+    }
+  };
+
+  const handleEmailBlur = () => {
+    setEmailTouched(true);
+    setEmailFieldError(getEmailValidationError(formData.email) ?? null);
+  };
+
+  const handleConfirmBlur = () => {
+    setConfirmTouched(true);
+    setConfirmFieldError(formData.confirmPassword !== formData.password ? "Паролите не съвпадат" : null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,14 +94,22 @@ export function RegisterForm() {
     setIsLoading(true);
     setError("");
 
+    const emailError = getEmailValidationError(formData.email);
+    if (emailError) {
+      setError(emailError);
+      setIsLoading(false);
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setError("Паролите не съвпадат");
       setIsLoading(false);
       return;
     }
 
-    if (formData.password.length < 8) {
-      setError("Паролата трябва да бъде поне 8 символа");
+    const passwordError = getPasswordValidationError(formData.password);
+    if (passwordError) {
+      setError(passwordError);
       setIsLoading(false);
       return;
     }
@@ -119,18 +155,7 @@ export function RegisterForm() {
     signIn("google", { callbackUrl });
   };
 
-  // Password strength indicator
-  const getPasswordStrength = (password: string) => {
-    let strength = 0;
-    if (password.length >= 8) strength++;
-    if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
-    if (password.match(/[0-9]/)) strength++;
-    if (password.match(/[^a-zA-Z0-9]/)) strength++;
-    return strength;
-  };
-
-  const passwordStrength = getPasswordStrength(formData.password);
-  const strengthLabels = ["Слаба", "Средна", "Добра", "Силна"];
+  const passwordStrengthResult = getPasswordStrength(formData.password);
   const strengthColors = ["bg-red-500", "bg-orange-500", "bg-amber-500", "bg-emerald-500"];
   const selectedPlanKey = searchParams.get("plan") as keyof typeof planContent | null;
   const selectedPlan = selectedPlanKey ? planContent[selectedPlanKey] : null;
@@ -143,16 +168,16 @@ export function RegisterForm() {
 
   return (
     <div className="w-full animate-in fade-in duration-300">
-      <div className="mb-5 text-center">
-        <div className="mb-3 inline-flex items-center rounded-full border border-cyan-500/20 bg-cyan-500/8 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-600 dark:text-cyan-400">
+      <div className="mb-3 text-center">
+        <div className="mb-2 inline-flex items-center rounded-full border border-cyan-500/20 bg-cyan-500/8 px-3 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-600 dark:text-cyan-400">
           Нов акаунт
         </div>
-        <h1 className="mb-1.5 text-3xl font-bold tracking-tight">Създайте акаунт</h1>
-        <p className="text-sm text-muted-foreground">Започнете безплатно с {APP_NAME}</p>
+        <h1 className="mb-1 text-2xl font-bold tracking-tight sm:text-3xl">Създайте акаунт</h1>
+        <p className="text-xs text-muted-foreground sm:text-sm">Започнете безплатно с {APP_NAME}</p>
       </div>
 
       {selectedPlan && (
-        <div className="mb-5 rounded-3xl border border-emerald-500/20 bg-linear-to-br from-emerald-500/10 via-emerald-500/5 to-cyan-500/8 p-4 shadow-sm">
+        <div className="mb-3 rounded-2xl border border-emerald-500/20 bg-linear-to-br from-emerald-500/10 via-emerald-500/5 to-cyan-500/8 p-3 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-400">
@@ -173,8 +198,8 @@ export function RegisterForm() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-3.5">
-        <div className="space-y-2">
+      <form onSubmit={handleSubmit} className="space-y-2.5">
+        <div className="space-y-1">
           <Label htmlFor="name" className="text-sm font-medium">Име</Label>
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-10">
@@ -187,14 +212,14 @@ export function RegisterForm() {
               placeholder="Иван Иванов"
               value={formData.name}
               onChange={handleChange}
-              className="h-12 rounded-2xl border-border/60 bg-background/70 pl-10 text-sm shadow-sm transition-[border-color,box-shadow,background-color] focus-visible:border-primary/60 focus-visible:bg-background focus-visible:ring-4 focus-visible:ring-primary/10"
+              className="h-10 rounded-xl border-border/60 bg-background/70 pl-10 text-sm shadow-sm transition-[border-color,box-shadow,background-color] focus-visible:border-primary/60 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-primary/10"
               required
               autoComplete="name"
             />
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-1">
           <Label htmlFor="email" className="text-sm font-medium">Имейл</Label>
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-10">
@@ -207,15 +232,26 @@ export function RegisterForm() {
               placeholder="ime@example.com"
               value={formData.email}
               onChange={handleChange}
-              className="h-12 rounded-2xl border-border/60 bg-background/70 pl-10 text-sm shadow-sm transition-[border-color,box-shadow,background-color] focus-visible:border-primary/60 focus-visible:bg-background focus-visible:ring-4 focus-visible:ring-primary/10"
+              onBlur={handleEmailBlur}
+              className={`h-10 rounded-xl border-border/60 bg-background/70 pl-10 text-sm shadow-sm transition-[border-color,box-shadow,background-color] focus-visible:border-primary/60 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-primary/10 ${emailFieldError ? "border-red-500 focus-visible:border-red-500" : ""}`}
               required
               autoComplete="email"
+              aria-invalid={!!emailFieldError}
+              aria-describedby={emailFieldError ? "email-error" : undefined}
             />
           </div>
+          {emailFieldError && (
+            <p id="email-error" className="text-xs text-red-600 dark:text-red-400" role="alert">
+              {emailFieldError}
+            </p>
+          )}
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="password" className="text-sm font-medium">Парола (мин. 8)</Label>
+        <div className="space-y-1">
+          <div className="flex items-baseline justify-between gap-2">
+            <Label htmlFor="password" className="text-sm font-medium">Парола</Label>
+            <span className="text-[10px] text-muted-foreground">мин. 8 символа</span>
+          </div>
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-10">
               <LockIcon className="h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
@@ -227,7 +263,7 @@ export function RegisterForm() {
               placeholder="••••••••"
               value={formData.password}
               onChange={handleChange}
-              className="h-12 rounded-2xl border-border/60 bg-background/70 pl-10 pr-10 text-sm shadow-sm transition-[border-color,box-shadow,background-color] focus-visible:border-primary/60 focus-visible:bg-background focus-visible:ring-4 focus-visible:ring-primary/10"
+              className="h-10 rounded-xl border-border/60 bg-background/70 pl-10 pr-10 text-sm shadow-sm transition-[border-color,box-shadow,background-color] focus-visible:border-primary/60 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-primary/10"
               required
               autoComplete="new-password"
             />
@@ -238,16 +274,22 @@ export function RegisterForm() {
           {formData.password && (
             <div className="flex items-center gap-2">
               <div className="flex gap-0.5 flex-1">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className={`h-1 flex-1 rounded-full ${i < passwordStrength ? strengthColors[passwordStrength - 1] : "bg-muted"}`} />
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className={`h-0.5 flex-1 rounded-full ${i <= passwordStrengthResult.level + 1 ? strengthColors[passwordStrengthResult.level] : "bg-muted"}`}
+                  />
                 ))}
               </div>
-              <span className="text-[10px] text-muted-foreground">{strengthLabels[passwordStrength - 1] || "—"}</span>
+              <span className="text-[10px] text-muted-foreground shrink-0">{passwordStrengthResult.label}</span>
             </div>
+          )}
+          {passwordStrengthResult.hints.length > 0 && (
+            <p className="text-[10px] text-amber-600 dark:text-amber-400">{passwordStrengthResult.hints[0]}</p>
           )}
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-1">
           <Label htmlFor="confirmPassword" className="text-sm font-medium">Потвърди парола</Label>
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-10">
@@ -260,9 +302,12 @@ export function RegisterForm() {
               placeholder="••••••••"
               value={formData.confirmPassword}
               onChange={handleChange}
-              className="h-12 rounded-2xl border-border/60 bg-background/70 pl-10 pr-10 text-sm shadow-sm transition-[border-color,box-shadow,background-color] focus-visible:border-primary/60 focus-visible:bg-background focus-visible:ring-4 focus-visible:ring-primary/10"
+              onBlur={handleConfirmBlur}
+              className={`h-10 rounded-xl border-border/60 bg-background/70 pl-10 pr-10 text-sm shadow-sm transition-[border-color,box-shadow,background-color] focus-visible:border-primary/60 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-primary/10 ${confirmFieldError ? "border-red-500 focus-visible:border-red-500" : ""}`}
               required
               autoComplete="new-password"
+              aria-invalid={!!confirmFieldError}
+              aria-describedby={confirmFieldError ? "confirm-error" : undefined}
             />
             <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground z-10">
               {showConfirmPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
@@ -273,15 +318,20 @@ export function RegisterForm() {
               </div>
             )}
           </div>
+          {confirmFieldError && (
+            <p id="confirm-error" className="text-xs text-red-600 dark:text-red-400" role="alert">
+              {confirmFieldError}
+            </p>
+          )}
         </div>
 
         {error && (
-          <div className="p-2.5 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+          <div className="p-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
             <p className="text-xs text-red-600 dark:text-red-400 font-medium">{error}</p>
           </div>
         )}
 
-        <p className="text-[10px] text-muted-foreground text-center">
+        <p className="text-[10px] text-muted-foreground text-center leading-tight">
           С регистрацията приемате{" "}
           <Link href="/terms" className="text-primary hover:underline">Условия</Link> и{" "}
           <Link href="/privacy" className="text-primary hover:underline">Поверителност</Link>.
@@ -289,7 +339,7 @@ export function RegisterForm() {
 
         <Button
           type="submit"
-          className="h-12 w-full rounded-2xl border-0 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 gradient-primary hover:opacity-90"
+          className="h-10 w-full rounded-xl border-0 text-sm font-semibold text-white shadow-md shadow-emerald-500/20 gradient-primary hover:opacity-90"
           disabled={isLoading}
         >
           {isLoading ? (
@@ -307,19 +357,19 @@ export function RegisterForm() {
           </p>
         )}
 
-        <div className="relative py-2">
+        <div className="relative py-1.5">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-border/60" />
           </div>
           <div className="relative flex justify-center">
-            <span className="rounded-full border border-border/60 bg-card px-3 py-1 text-[11px] text-muted-foreground shadow-sm">или</span>
+            <span className="rounded-full border border-border/60 bg-card px-2.5 py-0.5 text-[10px] text-muted-foreground shadow-sm">или</span>
           </div>
         </div>
 
         <Button
           type="button"
           variant="outline"
-          className="h-12 w-full rounded-2xl border-border/60 bg-background/55 shadow-sm hover:bg-muted/50"
+          className="h-10 w-full rounded-xl border-border/60 bg-background/55 shadow-sm hover:bg-muted/50"
           onClick={handleGoogleSignIn}
           disabled={isGoogleLoading}
         >

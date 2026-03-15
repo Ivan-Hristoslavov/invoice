@@ -7,17 +7,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { MailIcon, Loader2, ArrowRight, ArrowLeft } from "lucide-react";
+import { getEmailValidationError } from "@/lib/validation";
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState("");
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [emailFieldError, setEmailFieldError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError("");
+    const emailError = getEmailValidationError(email);
+    if (emailError) {
+      setError(emailError);
+      return;
+    }
+    setIsLoading(true);
 
     try {
       const response = await fetch("/api/auth/forgot-password", {
@@ -184,12 +192,26 @@ export function ForgotPasswordForm() {
               type="email"
               placeholder="ime@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="h-12 rounded-2xl border-border/60 bg-background/70 pl-12 text-base shadow-sm transition-[border-color,box-shadow,background-color] duration-300 focus-visible:border-primary/60 focus-visible:bg-background focus-visible:ring-4 focus-visible:ring-primary/10"
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (emailTouched) setEmailFieldError(getEmailValidationError(e.target.value) ?? null);
+              }}
+              onBlur={() => {
+                setEmailTouched(true);
+                setEmailFieldError(getEmailValidationError(email) ?? null);
+              }}
+              className={`h-12 rounded-2xl border-border/60 bg-background/70 pl-12 text-base shadow-sm transition-[border-color,box-shadow,background-color] duration-300 focus-visible:border-primary/60 focus-visible:bg-background focus-visible:ring-4 focus-visible:ring-primary/10 ${emailFieldError ? "border-red-500 focus-visible:border-red-500" : ""}`}
               required
               autoComplete="email"
+              aria-invalid={!!emailFieldError}
+              aria-describedby={emailFieldError ? "forgot-email-error" : undefined}
             />
           </div>
+          {emailFieldError && (
+            <p id="forgot-email-error" className="text-xs text-red-600 dark:text-red-400 mt-1" role="alert">
+              {emailFieldError}
+            </p>
+          )}
         </motion.div>
 
         {/* Error Message */}

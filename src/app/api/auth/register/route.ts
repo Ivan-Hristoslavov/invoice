@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import cuid from "cuid";
+import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/server";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { createEmailVerificationToken } from "@/lib/email-verification";
 import { sendVerificationEmail } from "@/lib/email";
+import { isValidEmail, getPasswordStrength } from "@/lib/validation";
+
+const registerSchema = z.object({
+  name: z.string().min(1, "Името е задължително").max(200),
+  email: z.string().min(1, "Имейлът е задължителен").refine(isValidEmail, "Моля, въведете валиден имейл адрес"),
+  password: z
+    .string()
+    .min(8, "Паролата трябва да е поне 8 символа")
+    .refine((p) => getPasswordStrength(p).isTooWeak === false, "Изберете по-силна парола (малки и главни букви, цифри, препоръчително и специален символ)"),
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,15 +28,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, email, password } = await req.json();
+    const body = await req.json();
+    const parsed = registerSchema.safeParse(body);
 
-    if (!name || !email || !password) {
-      return NextResponse.json(
-        { message: "Липсват задължителни полета" },
-        { status: 400 }
-      );
+    if (!parsed.success) {
+      const msg = parsed.error.flatten().fieldErrors?.password?.[0]
+        ?? parsed.error.flatten().fieldErrors?.email?.[0]
+        ?? parsed.error.flatten().fieldErrors?.name?.[0]
+        ?? "Невалидни данни";
+      return NextResponse.json({ message: msg }, { status: 400 });
     }
 
+    const { name, email, password } = parsed.data;
     const supabase = createAdminClient();
 
     // Check if user already exists
@@ -75,7 +89,7 @@ export async function POST(req: NextRequest) {
       const baseUrl =
         process.env.NEXTAUTH_URL ||
         process.env.NEXT_PUBLIC_APP_URL ||
-        "http://localhost:3000";
+        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
       const confirmUrl = `${baseUrl}/confirm-email?token=${token}`;
       await sendVerificationEmail({
         to: email,

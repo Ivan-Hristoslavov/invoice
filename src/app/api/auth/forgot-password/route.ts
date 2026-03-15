@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { isValidEmail } from "@/lib/validation";
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,8 +25,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createAdminClient();
     const normalizedEmail = email.toLowerCase().trim();
+    if (!isValidEmail(normalizedEmail)) {
+      return NextResponse.json(
+        { message: "Моля, въведете валиден имейл адрес" },
+        { status: 400 }
+      );
+    }
+
+    const supabase = createAdminClient();
 
     const { data: user } = await supabase
       .from("User")

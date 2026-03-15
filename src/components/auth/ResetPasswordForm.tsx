@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { LockIcon, Loader2, ArrowRight, ArrowLeft, CheckCircle } from "lucide-react";
+import { getPasswordValidationError } from "@/lib/validation";
 
 export function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -28,11 +29,11 @@ export function ResetPasswordForm() {
       return;
     }
 
-    if (password.length < 6) {
-      setError("Паролата трябва да е поне 6 символа");
+    const passwordError = getPasswordValidationError(password);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
-
     if (password !== confirmPassword) {
       setError("Паролите не съвпадат");
       return;
@@ -150,12 +151,12 @@ export function ResetPasswordForm() {
             <Input
               id="password"
               type="password"
-              placeholder="Минимум 6 символа"
+              placeholder="Минимум 8 символа"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="pl-12 h-12 text-base bg-slate-50/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-300"
               required
-              minLength={6}
+              minLength={8}
             />
           </div>
         </motion.div>
@@ -174,7 +175,7 @@ export function ResetPasswordForm() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="pl-12 h-12 text-base bg-slate-50/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-300"
               required
-              minLength={6}
+              minLength={8}
             />
           </div>
         </motion.div>

@@ -193,8 +193,8 @@ export default function AuthLayout({
           <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-border/60 to-transparent" />
         </div>
 
-        <div className="relative z-10 flex min-h-screen items-center justify-center overflow-y-auto px-4 pb-5 pt-[calc(env(safe-area-inset-top)+5.5rem)] supports-[min-height:100dvh]:min-h-dvh sm:px-6 sm:pb-8 sm:pt-[calc(env(safe-area-inset-top)+6rem)] lg:p-8 lg:py-10">
-          <div className="flex w-full max-w-md flex-col items-center justify-center py-2 sm:max-w-xl lg:max-w-xl">
+        <div className="relative z-10 flex min-h-screen items-center justify-center overflow-y-auto overflow-x-hidden px-4 py-4 pt-[calc(env(safe-area-inset-top)+5rem)] supports-[min-height:100dvh]:min-h-dvh sm:px-6 sm:py-6 sm:pt-[calc(env(safe-area-inset-top)+5.5rem)] lg:p-6 lg:py-8">
+          <div className="flex w-full max-w-md flex-col items-center justify-center py-1 sm:max-w-xl lg:max-w-xl">
             {/* Back + Mobile Logo */}
             <motion.div
               initial={{ opacity: 0, y: -10 }}
@@ -229,7 +229,7 @@ export default function AuthLayout({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="relative w-full overflow-hidden rounded-[28px] border border-border/60 bg-card/85 p-5 shadow-2xl shadow-slate-950/15 backdrop-blur-xl sm:p-6 lg:p-7"
+              className="relative w-full overflow-hidden rounded-2xl border border-border/60 bg-card/85 p-4 shadow-2xl shadow-slate-950/15 backdrop-blur-xl sm:p-5 lg:p-6"
             >
               <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-emerald-400/60 to-transparent" />
               <div className="absolute inset-x-6 top-0 h-24 rounded-b-full bg-linear-to-b from-emerald-500/8 to-transparent blur-2xl" />

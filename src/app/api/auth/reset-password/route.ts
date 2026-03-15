@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import bcrypt from "bcryptjs";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { getPasswordValidationError } from "@/lib/validation";
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,9 +24,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (password.length < 6) {
+    const passwordError = getPasswordValidationError(password);
+    if (passwordError) {
       return NextResponse.json(
-        { message: "Паролата трябва да е поне 6 символа" },
+        { message: passwordError },
         { status: 400 }
       );
     }
