@@ -9,6 +9,12 @@ import {
   type SubscriptionPlanKey,
 } from "@/lib/subscription-plans";
 import { resolveSessionUser } from "@/lib/session-user";
+
+/** GET is not supported; redirect to subscription page so user can start checkout from there. */
+export async function GET() {
+  return NextResponse.redirect("/settings/subscription", 302);
+}
+
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
