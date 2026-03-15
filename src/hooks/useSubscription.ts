@@ -91,23 +91,28 @@ export function useSubscription(): UseSubscriptionReturn {
       }
       const data = await response.json();
 
-      if (data.url) {
-        // Always try to open in a new tab
-        const newWindow = window.open(data.url, '_blank', 'noopener,noreferrer');
-        
-        // Check if popup was blocked
-        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-          console.warn("Popup blocked by browser, using alternative method");
-          // Try alternative: create an anchor and click it programmatically
-          const link = document.createElement('a');
-          link.href = data.url;
-          link.target = '_blank';
-          link.rel = 'noopener noreferrer';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        }
-      } else throw new Error('No checkout URL returned');
+      const url = typeof data?.url === 'string' ? data.url.trim() : '';
+      if (!url) throw new Error('No checkout URL returned');
+
+      // Only open Stripe Checkout URLs; never open our own API or other origins (e.g. after misredirect)
+      const isStripeCheckout = url.startsWith('https://checkout.stripe.com/');
+      if (!isStripeCheckout) {
+        console.error('Checkout URL is not Stripe:', url);
+        throw new Error('Invalid checkout link. Please try again or contact support.');
+      }
+
+      // Open Stripe Checkout in a new tab
+      const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+        console.warn("Popup blocked by browser, using alternative method");
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     } catch (err: any) {
       console.error('Checkout error:', err);
       setError(err.message || 'Failed to start checkout process');
