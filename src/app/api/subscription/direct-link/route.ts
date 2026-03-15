@@ -62,16 +62,20 @@ export async function POST(req: Request) {
       );
     }
 
+    // Prefer NEXT_PUBLIC_APP_URL; on Vercel fall back to VERCEL_URL (set automatically, no protocol)
     const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() ?? "";
-    if (!rawAppUrl) {
+    const vercelUrl = process.env.VERCEL_URL?.trim() ?? "";
+    const originInput = rawAppUrl || (vercelUrl ? `https://${vercelUrl}` : "");
+
+    if (!originInput) {
       return NextResponse.json(
-        { error: "NEXT_PUBLIC_APP_URL не е зададен. Задайте го в Vercel Environment Variables (напр. https://invoice-ten-sigma.vercel.app)." },
+        { error: "NEXT_PUBLIC_APP_URL (or VERCEL_URL) не е зададен. Задайте NEXT_PUBLIC_APP_URL в Vercel (напр. https://invoice-ten-sigma.vercel.app)." },
         { status: 500 }
       );
     }
     let baseOrigin: string;
     try {
-      const parsed = new URL(rawAppUrl);
+      const parsed = new URL(originInput);
       if (!parsed.host) throw new Error("Missing host");
       baseOrigin = `https://${parsed.host}`;
     } catch {
