@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { createEmailVerificationToken } from "@/lib/email-verification";
 import { sendVerificationEmail } from "@/lib/email";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { getAppBaseUrl } from "@/lib/app-url";
 
 /**
  * Resend verification email. Only sends if user exists and email is not yet verified.
@@ -51,12 +52,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: successMessage }, { status: 200 });
     }
 
-    try {
+      try {
       const { token } = await createEmailVerificationToken(email);
-      const baseUrl =
-        process.env.NEXTAUTH_URL ||
-        process.env.NEXT_PUBLIC_APP_URL ||
-        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+      const baseUrl = getAppBaseUrl();
       const confirmUrl = `${baseUrl}/confirm-email?token=${token}`;
       await sendVerificationEmail({
         to: email,

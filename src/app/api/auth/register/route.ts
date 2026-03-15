@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { createEmailVerificationToken } from "@/lib/email-verification";
 import { sendVerificationEmail } from "@/lib/email";
+import { getAppBaseUrl } from "@/lib/app-url";
 import { isValidEmail, getPasswordStrength } from "@/lib/validation";
 
 const registerSchema = z.object({
@@ -86,10 +87,7 @@ export async function POST(req: NextRequest) {
     // Send email verification (non-blocking: do not fail register if email fails)
     try {
       const { token } = await createEmailVerificationToken(email);
-      const baseUrl =
-        process.env.NEXTAUTH_URL ||
-        process.env.NEXT_PUBLIC_APP_URL ||
-        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+      const baseUrl = getAppBaseUrl();
       const confirmUrl = `${baseUrl}/confirm-email?token=${token}`;
       await sendVerificationEmail({
         to: email,

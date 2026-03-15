@@ -1,12 +1,11 @@
+import { getAppBaseUrl } from "@/lib/app-url";
+
 /**
  * Allowed redirect base URL for payment/subscription flows.
  * Only our app origin is allowed to prevent open redirect / phishing.
  */
 function getAppOrigin(): string {
-  const url =
-    process.env.NEXTAUTH_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    "http://localhost:3000";
+  const url = getAppBaseUrl();
   try {
     const parsed = new URL(url);
     return `${parsed.protocol}//${parsed.host}`;
