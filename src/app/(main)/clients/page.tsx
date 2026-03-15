@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { APP_NAME } from "@/config/constants";
 import { createAdminClient } from "@/lib/supabase/server";
 import { resolveSessionUser } from "@/lib/session-user";
+import { getAccessibleOwnerUserIdsForUser } from "@/lib/team";
 import { redirect } from "next/navigation";
 import { PLAN_LIMITS } from "@/middleware/subscription";
 import ClientsClient from "./ClientsClient";
@@ -26,25 +27,39 @@ export default async function ClientsPage() {
   }
 
   const supabase = createAdminClient();
-  
-  // Fetch clients
+  const accessibleOwnerIds = await getAccessibleOwnerUserIdsForUser(sessionUser.id);
+
+  // Fetch clients for all companies the user can access
   const { data: clients, error } = await supabase
     .from("Client")
     .select("*")
-    .eq("userId", sessionUser.id)
+    .in("userId", accessibleOwnerIds)
     .order("name", { ascending: true });
-  
+
   if (error) {
     console.error("Error fetching clients:", error);
   }
-  
+
   const clientsList = clients || [];
 
-  // Get invoice counts per client
+  // Resolve creator names for "Created by" column
+  const createdByIds = [...new Set((clientsList as { createdById?: string }[]).map((c) => c.createdById).filter(Boolean))] as string[];
+  const createdByMap: Record<string, { name: string | null; email?: string | null }> = {};
+  if (createdByIds.length > 0) {
+    const { data: creators } = await supabase
+      .from("User")
+      .select("id, name, email")
+      .in("id", createdByIds);
+    for (const u of creators || []) {
+      createdByMap[u.id] = { name: u.name ?? null, email: u.email ?? null };
+    }
+  }
+
+  // Get invoice counts per client (invoices from accessible companies)
   const { data: invoiceCounts } = await supabase
     .from("Invoice")
     .select("clientId")
-    .eq("userId", sessionUser.id);
+    .in("userId", accessibleOwnerIds);
   
   const clientInvoiceCounts = (invoiceCounts || []).reduce((acc: Record<string, number>, inv: any) => {
     acc[inv.clientId] = (acc[inv.clientId] || 0) + 1;
@@ -70,7 +85,7 @@ export default async function ClientsPage() {
   const isAtLimit = clientLimit !== -1 && clientsRemaining <= 0;
 
   return (
-    <ClientsClient 
+    <ClientsClient
       clients={clientsList}
       invoiceCounts={clientInvoiceCounts}
       plan={plan}
@@ -79,6 +94,7 @@ export default async function ClientsPage() {
       clientsRemaining={clientsRemaining === Infinity ? -1 : clientsRemaining}
       isApproachingLimit={isApproachingLimit}
       isAtLimit={isAtLimit}
+      createdByMap={createdByMap}
     />
   );
 }

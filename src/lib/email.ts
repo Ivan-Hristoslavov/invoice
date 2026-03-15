@@ -65,13 +65,32 @@ type SendInvoiceEmailOptions = {
   paymentLink?: string;
 };
 
-export async function sendInvoiceEmail({ to, invoiceNumber, type, paymentLink }: SendInvoiceEmailOptions & { userId?: string }) {
+export async function sendInvoiceEmail({ to, invoiceNumber, type, paymentLink, userId }: SendInvoiceEmailOptions & { userId?: string }) {
   try {
     let subject = `Фактура #${invoiceNumber}`;
-    let content = '';
+    const supabase = createAdminClient();
 
+    let query = supabase
+      .from('Invoice')
+      .select('*, client:Client(*), company:Company(*), items:InvoiceItem(*)')
+      .eq('invoiceNumber', invoiceNumber);
+    if (userId) {
+      query = query.eq('userId', userId);
+    }
+    const { data: invoice, error } = await query.single();
+    if (error || !invoice) {
+      throw new Error('Invoice not found or access denied');
+    }
+
+    const company = Array.isArray(invoice.company) ? invoice.company[0] : invoice.company;
+    const companyLogoHtml = company?.logo
+      ? `<div style="margin-bottom: 20px;"><img src="${company.logo}" alt="${company.name || 'Logo'}" style="max-width: 180px; max-height: 60px; object-fit: contain;" /></div>`
+      : '';
+
+    let content = '';
     if (type === 'invoice_only') {
       content = `
+        ${companyLogoHtml}
         <h1>Здравейте!</h1>
         <p>Изпращаме Ви фактура #${invoiceNumber}.</p>
         <p>Можете да намерите PDF файла на фактурата в прикачените файлове.</p>
@@ -81,6 +100,7 @@ export async function sendInvoiceEmail({ to, invoiceNumber, type, paymentLink }:
       `;
     } else if (type === 'invoice_with_payment') {
       content = `
+        ${companyLogoHtml}
         <h1>Здравейте!</h1>
         <p>Изпращаме Ви фактура #${invoiceNumber}.</p>
         <p>Можете да намерите PDF файла на фактурата в прикачените файлове.</p>
@@ -94,41 +114,24 @@ export async function sendInvoiceEmail({ to, invoiceNumber, type, paymentLink }:
       `;
     }
 
-    let attachments = [];
+    let attachments: { filename: string; content: Buffer }[] = [];
     try {
-      const supabase = createAdminClient();
-      const userId = typeof arguments[0].userId === 'string' ? arguments[0].userId : undefined;
-      
-      let query = supabase
-        .from('Invoice')
-        .select('*, client:Client(*), company:Company(*), items:InvoiceItem(*)')
-        .eq('invoiceNumber', invoiceNumber);
-      
-      if (userId) {
-        query = query.eq('userId', userId);
-      }
-      
-      const { data: invoice, error } = await query.single();
-      
-      if (error || !invoice) {
-        throw new Error('Invoice not found or access denied');
-      }
-      
-      // Fetch bank account if company exists
       let bankAccount = null;
       if (invoice.company) {
-        const { data: bankData } = await supabase
-          .from('BankAccount')
-          .select('*')
-          .eq('companyId', invoice.company.id)
-          .limit(1)
-          .single();
-        bankAccount = bankData;
+        const companyId = Array.isArray(invoice.company) ? invoice.company[0]?.id : invoice.company?.id;
+        if (companyId) {
+          const { data: bankData } = await supabase
+            .from('BankAccount')
+            .select('*')
+            .eq('companyId', companyId)
+            .limit(1)
+            .single();
+          bankAccount = bankData;
+        }
       }
-      
       const snapshotInvoice = withDocumentSnapshots(
         invoice,
-        invoice.company ? { ...invoice.company, bankAccount } : null,
+        invoice.company ? { ...(Array.isArray(invoice.company) ? invoice.company[0] : invoice.company), bankAccount } : null,
         invoice.client,
         invoice.items || []
       );
@@ -143,13 +146,8 @@ export async function sendInvoiceEmail({ to, invoiceNumber, type, paymentLink }:
           : null,
         isOriginal: true,
       };
-      
-      // Pass invoice data directly to avoid HTTP request (server-side)
       const pdf = await exportInvoicePdfBuffer(invoice.id, fullInvoice);
-      attachments.push({
-        filename: pdf.filename,
-        content: pdf.buffer,
-      });
+      attachments.push({ filename: pdf.filename, content: pdf.buffer });
     } catch (err) {
       console.error('PDF not attached:', err);
     }

@@ -3,6 +3,27 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { resolveSessionUser } from "@/lib/session-user";
+import cuid from "cuid";
+import {
+  STORAGE_BUCKET_IMAGES,
+  ALLOWED_ATTACHMENT_MIME_TYPES,
+  MAX_ATTACHMENT_SIZE_BYTES,
+  MAX_ATTACHMENTS_PER_INVOICE,
+} from "@/config/constants";
+
+function sanitizeFileName(name: string): string {
+  return name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120) || "file";
+}
+
+function getStoragePathFromPublicUrl(publicUrl: string, bucket: string): string | null {
+  try {
+    const u = new URL(publicUrl);
+    const match = u.pathname.match(new RegExp(`/storage/v1/object/public/${bucket}/(.+)`));
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
@@ -58,7 +79,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   try {
     const { id: invoiceId } = await context.params;
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user) {
       return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
@@ -70,7 +91,6 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
     const supabase = createAdminClient();
 
-    // Check if invoice belongs to user
     const { data: invoice } = await supabase
       .from("Invoice")
       .select("id")
@@ -82,14 +102,80 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       return NextResponse.json({ error: "Фактурата не е намерена" }, { status: 404 });
     }
 
-    const { name, size, type, url } = await request.json();
+    const formData = await request.formData();
+    const file = formData.get("file") as File | null;
+    if (!file || !(file instanceof File)) {
+      return NextResponse.json(
+        { error: "Липсва прикачен файл. Използвайте полето 'file'." },
+        { status: 400 }
+      );
+    }
+
+    const allowedTypes = [...ALLOWED_ATTACHMENT_MIME_TYPES];
+    if (!allowedTypes.includes(file.type as (typeof allowedTypes)[number])) {
+      return NextResponse.json(
+        {
+          error:
+            "Невалиден тип файл. Позволени: PDF, JPG, PNG, WebP, GIF.",
+        },
+        { status: 400 }
+      );
+    }
+    if (file.size > MAX_ATTACHMENT_SIZE_BYTES) {
+      return NextResponse.json(
+        {
+          error: `Размерът надвишава ${MAX_ATTACHMENT_SIZE_BYTES / (1024 * 1024)}MB.`,
+        },
+        { status: 400 }
+      );
+    }
+
+    const { count } = await supabase
+      .from("Document")
+      .select("id", { count: "exact", head: true })
+      .eq("invoiceId", invoiceId);
+    if ((count ?? 0) >= MAX_ATTACHMENTS_PER_INVOICE) {
+      return NextResponse.json(
+        { error: `Максимум ${MAX_ATTACHMENTS_PER_INVOICE} прикачени файла на фактура.` },
+        { status: 400 }
+      );
+    }
+
+    const docId = cuid();
+    const safeName = sanitizeFileName(file.name);
+    const ext = safeName.includes(".") ? safeName.slice(safeName.lastIndexOf(".")) : "";
+    const storagePath = `attachments/${invoiceId}/${docId}${ext}`;
+
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    const { error: uploadError } = await supabase.storage
+      .from(STORAGE_BUCKET_IMAGES)
+      .upload(storagePath, buffer, {
+        contentType: file.type,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error("Document upload error:", uploadError);
+      return NextResponse.json(
+        { error: "Неуспешно качване на файла в хранилището" },
+        { status: 500 }
+      );
+    }
+
+    const { data: urlData } = supabase.storage
+      .from(STORAGE_BUCKET_IMAGES)
+      .getPublicUrl(storagePath);
+    const url = urlData.publicUrl;
 
     const { data: document, error: insertError } = await supabase
       .from("Document")
       .insert({
-        name,
-        size,
-        type,
+        id: docId,
+        name: file.name,
+        size: file.size,
+        type: file.type,
         url,
         invoiceId,
         userId: sessionUser.id,
@@ -98,6 +184,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       .single();
 
     if (insertError) {
+      await supabase.storage.from(STORAGE_BUCKET_IMAGES).remove([storagePath]);
       throw insertError;
     }
 
@@ -138,10 +225,9 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
       );
     }
 
-    // Check if document belongs to user and invoice
     const { data: document } = await supabase
       .from("Document")
-      .select("id")
+      .select("id, url")
       .eq("id", documentId)
       .eq("invoiceId", invoiceId)
       .eq("userId", sessionUser.id)
@@ -154,7 +240,13 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
       );
     }
 
-    // Delete document
+    const pathToRemove = document.url
+      ? getStoragePathFromPublicUrl(document.url, STORAGE_BUCKET_IMAGES)
+      : null;
+    if (pathToRemove) {
+      await supabase.storage.from(STORAGE_BUCKET_IMAGES).remove([pathToRemove]);
+    }
+
     const { error: deleteError } = await supabase
       .from("Document")
       .delete()

@@ -27,6 +27,7 @@ interface Client {
   city?: string;
   country?: string;
   bulstatNumber?: string;
+  createdById?: string | null;
 }
 
 interface ClientsClientProps {
@@ -38,6 +39,7 @@ interface ClientsClientProps {
   clientsRemaining: number;
   isApproachingLimit: boolean;
   isAtLimit: boolean;
+  createdByMap?: Record<string, { name: string | null; email?: string | null }>;
 }
 
 const ITEMS_PER_PAGE = 12;
@@ -51,6 +53,7 @@ export default function ClientsClient({
   clientsRemaining,
   isApproachingLimit,
   isAtLimit,
+  createdByMap = {},
 }: ClientsClientProps) {
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   const [searchQuery, setSearchQuery] = useState("");
@@ -286,6 +289,12 @@ export default function ClientsClient({
                     )}
                   </div>
                   
+                  {/* Created by */}
+                  {client.createdById && createdByMap[client.createdById] && (
+                    <p className="text-xs text-muted-foreground w-full">
+                      Създадена от: {createdByMap[client.createdById].name ?? "—"}
+                    </p>
+                  )}
                   {/* Invoice Count */}
                   <div className="mt-auto pt-3 w-full border-t">
                     <span className="text-xs font-medium text-muted-foreground">
@@ -301,12 +310,13 @@ export default function ClientsClient({
         /* Table View */
         <Card className="hidden overflow-hidden border-0 shadow-lg sm:block">
           <Table>
-            <TableHeader>
+                <TableHeader>
               <TableRow className="border-b border-border/50">
                 <TableHead className="font-medium text-muted-foreground">Име</TableHead>
                 <TableHead className="font-medium text-muted-foreground">Имейл</TableHead>
                 <TableHead className="font-medium text-muted-foreground">Телефон</TableHead>
                 <TableHead className="font-medium text-muted-foreground">Локация</TableHead>
+                <TableHead className="font-medium text-muted-foreground">Създадена от</TableHead>
                 <TableHead className="font-medium text-muted-foreground text-center">Фактури</TableHead>
                 <TableHead className="w-[120px] text-right font-medium text-muted-foreground">Действия</TableHead>
               </TableRow>
@@ -334,6 +344,11 @@ export default function ClientsClient({
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {[client.city, client.country].filter(Boolean).join(", ") || "-"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {client.createdById && createdByMap[client.createdById]
+                      ? createdByMap[client.createdById].name ?? "—"
+                      : "—"}
                   </TableCell>
                   <TableCell className="text-center">
                     <span className="inline-flex items-center justify-center min-w-8 px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">

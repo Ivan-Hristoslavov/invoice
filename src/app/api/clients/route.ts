@@ -9,6 +9,7 @@ import {
   validateBulgarianPartyInput,
 } from "@/lib/bulgarian-party";
 import { getAccessibleOwnerUserIdsForUser } from "@/lib/team";
+import { hasPermission } from "@/lib/permissions";
 import { z } from "zod";
 import cuid from "cuid";
 
@@ -173,6 +174,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const canCreate = await hasPermission(sessionUser.id, "client:create");
+    if (!canCreate) {
+      return NextResponse.json(
+        { error: "Нямате право да създавате клиенти" },
+        { status: 403 }
+      );
+    }
+
     // Parse and validate the data
     const json = await request.json();
     const entryMode = json?.entryMode === "manual" ? "manual" : "eik";
@@ -219,6 +228,7 @@ export async function POST(request: NextRequest) {
             ? "bulgarian"
             : "general",
         userId: sessionUser.id,
+        createdById: sessionUser.id,
         updatedAt: new Date().toISOString(),
       })
       .select()

@@ -21,6 +21,7 @@ import { toast } from "sonner";
 const profileSchema = z.object({
   name: z.string().min(2, "Името трябва да е поне 2 символа"),
   email: z.string().email().optional(), // Display only, not submitted
+  phone: z.string().optional().or(z.literal("")),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -47,7 +48,7 @@ export function ProfileForm({ defaultValues }: ProfileFormProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name: data.name }),
+        body: JSON.stringify({ name: data.name, phone: data.phone ?? "" }),
       });
 
       if (!response.ok) {
@@ -89,6 +90,22 @@ export function ProfileForm({ defaultValues }: ProfileFormProps) {
           )}
         />
         
+        <FormField
+          control={form.control}
+          name="phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Телефон</FormLabel>
+              <FormControl>
+                <Input type="tel" placeholder="+359 888 123 456" {...field} />
+              </FormControl>
+              <FormDescription>
+                По избор; полезно за контакт след покана в екип
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="email"

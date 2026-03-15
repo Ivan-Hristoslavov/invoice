@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { checkSubscriptionLimits } from "@/middleware/subscription";
+import { MAX_LOGO_SIZE_BYTES, STORAGE_BUCKET_IMAGES } from "@/config/constants";
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,10 +55,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > MAX_LOGO_SIZE_BYTES) {
       return NextResponse.json(
-        { error: "Размерът на файла надвишава 5MB" },
+        { error: `Размерът на файла надвишава ${MAX_LOGO_SIZE_BYTES / (1024 * 1024)}MB` },
         { status: 400 }
       );
     }
@@ -88,9 +88,8 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Upload to Supabase storage bucket "images"
     const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('images')
+      .from(STORAGE_BUCKET_IMAGES)
       .upload(filePath, buffer, {
         contentType: file.type,
         upsert: false,
@@ -104,9 +103,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get public URL
     const { data: urlData } = supabase.storage
-      .from('images')
+      .from(STORAGE_BUCKET_IMAGES)
       .getPublicUrl(filePath);
 
     const logoUrl = urlData.publicUrl;
@@ -119,7 +117,7 @@ export async function POST(request: NextRequest) {
         const oldPath = oldUrl.pathname.split('/').slice(-2).join('/'); // Get 'logos/filename'
         
         await supabase.storage
-          .from('images')
+          .from(STORAGE_BUCKET_IMAGES)
           .remove([oldPath]);
       } catch (error) {
         // Ignore errors when deleting old logo
@@ -136,7 +134,7 @@ export async function POST(request: NextRequest) {
     if (updateError) {
       // If update fails, try to delete the uploaded file
       await supabase.storage
-        .from('images')
+        .from(STORAGE_BUCKET_IMAGES)
         .remove([filePath]);
 
       return NextResponse.json(

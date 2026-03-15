@@ -23,8 +23,13 @@ export default function AcceptInviteClient({ token }: { token: string }) {
         throw new Error(payload.error || "Неуспешно приемане на поканата");
       }
 
-      toast.success("Поканата е приета");
-      router.push("/settings/team");
+      if (payload.requiresProfileSetup) {
+        toast.success("Поканата е приета. Моля, попълнете име и телефон в профила си.");
+        router.push("/settings/profile?setup=1");
+      } else {
+        toast.success("Поканата е приета");
+        router.push("/settings/team");
+      }
       router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Неуспешно приемане на поканата");

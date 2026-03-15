@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createAdminClient } from "@/lib/supabase/server";
 import { resolveSessionUser } from "@/lib/session-user";
+import { getAccessibleOwnerUserIdsForUser } from "@/lib/team";
 import { format } from "date-fns";
 import { Metadata } from "next";
 import { APP_NAME } from "@/config/constants";
@@ -69,11 +70,12 @@ async function getClient(id: string) {
   }
   
   const supabase = createAdminClient();
+  const accessibleOwnerIds = await getAccessibleOwnerUserIdsForUser(sessionUser.id);
   const { data: client, error } = await supabase
     .from("Client")
     .select("*")
     .eq("id", id)
-    .eq("userId", sessionUser.id)
+    .in("userId", accessibleOwnerIds)
     .single();
   
   if (error || !client) {
@@ -117,19 +119,32 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
   }
   
   const client = await getClient(params.id);
-  
+
   if (!client) {
     notFound();
   }
-  
+
   const supabase = createAdminClient();
+  const accessibleOwnerIds = await getAccessibleOwnerUserIdsForUser(sessionUser.id);
+
+  // Resolve creator name for "Created by"
+  let createdByName: string | null = null;
+  const createdById = (client as { createdById?: string }).createdById;
+  if (createdById) {
+    const { data: creator } = await supabase
+      .from("User")
+      .select("name")
+      .eq("id", createdById)
+      .single();
+    createdByName = creator?.name ?? null;
+  }
   
-  // Get client's invoices
+  // Get client's invoices (from accessible companies)
   const { data: invoices } = await supabase
     .from("Invoice")
     .select("*")
     .eq("clientId", client.id)
-    .eq("userId", sessionUser.id)
+    .in("userId", accessibleOwnerIds)
     .order("issueDate", { ascending: false })
     .limit(5);
   
@@ -253,6 +268,9 @@ export default async function ClientDetailPage(props: { params: Promise<{ id: st
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Предпочитания</p>
                 <div className="space-y-2 text-sm">
                   <p><span className="text-muted-foreground">Език:</span> {localeLabel}</p>
+                  {createdByName && (
+                    <p><span className="text-muted-foreground">Създадена от:</span> {createdByName}</p>
+                  )}
                   <p><span className="text-muted-foreground">Статус:</span> Активен клиент</p>
                 </div>
               </div>

@@ -6,7 +6,6 @@ import {
   User, 
   Building, 
   ShieldCheck, 
-  Users, 
   CreditCard,
   FileText,
   Settings,
@@ -28,11 +27,6 @@ const navSections = [
         title: "Сигурност",
         href: "/settings/security",
         iconName: "ShieldCheck",
-      },
-      {
-        title: "Екип",
-        href: "/settings/team",
-        iconName: "Users",
       },
     ],
   },
@@ -67,7 +61,6 @@ const iconMap = {
   User,
   Building,
   ShieldCheck,
-  Users,
   CreditCard,
   FileText
 };

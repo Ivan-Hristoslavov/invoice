@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getInvoiceWithDetails } from "@/lib/services/invoice-service";
 import { resolveSessionUser } from "@/lib/session-user";
+import { createAdminClient } from "@/lib/supabase/server";
 import InvoiceDetailClient from "./InvoiceDetailClient";
 import { Decimal } from "@prisma/client/runtime/library";
 
@@ -77,10 +78,23 @@ export default async function InvoicePage({ params }: PageProps) {
       return notFound();
     }
 
+    // Resolve creator name for "Created by"
+    let createdByName: string | null = null;
+    const createdById = (invoice as { createdById?: string }).createdById;
+    if (createdById) {
+      const supabase = createAdminClient();
+      const { data: creator } = await supabase
+        .from("User")
+        .select("name")
+        .eq("id", createdById)
+        .single();
+      createdByName = creator?.name ?? null;
+    }
+
     // Serialize Decimal objects before passing to client component
     const serializedInvoice = serializeDecimal(invoice);
 
-    return <InvoiceDetailClient initialInvoice={serializedInvoice} />;
+    return <InvoiceDetailClient initialInvoice={serializedInvoice} createdByName={createdByName} />;
   } catch (error) {
     console.error('Error loading invoice:', error);
     // Return 404 if database is unavailable or invoice not found

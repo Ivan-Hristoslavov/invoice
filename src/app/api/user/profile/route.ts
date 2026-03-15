@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth";
 
 const profileSchema = z.object({
   name: z.string().min(2),
+  phone: z.string().optional().or(z.literal("")),
 });
 
 export async function PUT(request: NextRequest) {
@@ -23,27 +24,32 @@ export async function PUT(request: NextRequest) {
     const validated = profileSchema.parse(json);
 
     const supabase = createAdminClient();
+    const now = new Date().toISOString();
+    const nameSet = Boolean(validated.name?.trim());
+    const profileCompletedAt = nameSet ? now : null;
 
-    // Update only name; email is not changeable from profile
     const { data: updatedUser, error: updateError } = await supabase
       .from("User")
       .update({
-        name: validated.name,
-        updatedAt: new Date().toISOString(),
+        name: validated.name?.trim() || null,
+        phone: validated.phone?.trim() || null,
+        profileCompletedAt,
+        updatedAt: now,
       })
       .eq("id", session.user.id)
-      .select("id, name, email")
+      .select("id, name, email, phone, profileCompletedAt")
       .single();
-    
+
     if (updateError || !updatedUser) {
       throw updateError;
     }
 
-    // Return sanitized user data
     return NextResponse.json({
       id: updatedUser.id,
       name: updatedUser.name,
       email: updatedUser.email,
+      phone: updatedUser.phone ?? undefined,
+      profileCompletedAt: updatedUser.profileCompletedAt ?? undefined,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -75,7 +81,7 @@ export async function GET(request: NextRequest) {
     const supabase = createAdminClient();
     const { data: user, error } = await supabase
       .from("User")
-      .select("id, name, email, image, defaultLocale")
+      .select("id, name, email, image, defaultLocale, phone, profileCompletedAt")
       .eq("id", session.user.id)
       .single();
 

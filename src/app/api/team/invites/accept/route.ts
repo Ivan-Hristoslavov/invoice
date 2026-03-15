@@ -73,7 +73,15 @@ export async function POST(request: NextRequest) {
         })
         .eq("id", invite.id);
 
-      return NextResponse.json({ success: true });
+      const { data: user } = await supabaseAdmin
+        .from("User")
+        .select("name, profileCompletedAt")
+        .eq("id", sessionUser.id)
+        .single();
+      const nameSet = Boolean(user?.name?.trim());
+      const profileComplete = Boolean(user?.profileCompletedAt);
+      const requiresProfileSetup = !nameSet || !profileComplete;
+      return NextResponse.json({ success: true, requiresProfileSetup });
     }
 
     const membershipId = crypto.randomUUID();
@@ -103,7 +111,17 @@ export async function POST(request: NextRequest) {
 
     if (inviteError) throw inviteError;
 
-    return NextResponse.json({ success: true });
+    const { data: user } = await supabaseAdmin
+      .from("User")
+      .select("name, profileCompletedAt")
+      .eq("id", sessionUser.id)
+      .single();
+
+    const nameSet = Boolean(user?.name?.trim());
+    const profileComplete = Boolean(user?.profileCompletedAt);
+    const requiresProfileSetup = !nameSet || !profileComplete;
+
+    return NextResponse.json({ success: true, requiresProfileSetup });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Невалидна покана" }, { status: 400 });
