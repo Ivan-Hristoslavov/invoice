@@ -87,8 +87,8 @@ function SetupRequirementCard({
 export function InvoiceWorkspaceSetup({
   hasCompanies,
   hasClients,
-  title = "Завършете настройката за фактуриране",
-  description = "За да използвате раздела Фактури пълноценно, първо добавете поне една компания и поне един клиент.",
+  title = "Стъпки за първа фактура",
+  description = "Добавете фирма и клиент веднъж — след това всяка нова фактура е с няколко клика.",
 }: InvoiceWorkspaceSetupProps) {
   const isReady = hasCompanies && hasClients;
 

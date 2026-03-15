@@ -14,8 +14,8 @@ interface SubscriptionRequiredProps {
 }
 
 export function SubscriptionRequired({
-  title = 'Изисква се абонамент',
-  description = 'Тази функция изисква по-висок абонаментен план.',
+  title = 'Тази функция е част от платения план',
+  description = 'С по-висок план отключвате още възможности: повече фактури, изпращане по имейл, лого и др.',
   message,
   feature,
 }: SubscriptionRequiredProps) {
@@ -42,7 +42,7 @@ export function SubscriptionRequired({
             <p className="text-sm font-medium">Вашият текущ абонамент: <span className="font-bold">{currentPlan}</span></p>
             {feature && (
               <p className="text-xs text-muted-foreground mt-1">
-                Трябва да надстроите абонамента си, за да имате достъп до {feature}.
+                За да ползвате {feature}, изберете подходящ план по-долу.
               </p>
             )}
           </div>
@@ -50,12 +50,12 @@ export function SubscriptionRequired({
           <div className="space-y-2">
             <h4 className="text-sm font-medium flex items-center gap-1">
               <CheckCheck className="w-4 h-4 text-green-500" />
-              Надстройте, за да отключите:
+              Какво получавате с надграждане:
             </h4>
             <ul className="text-sm space-y-1 ml-6 list-disc">
-              <li>Повече клиенти и фактури</li>
-              <li>Персонализирани опции за брандинг</li>
-              <li>Разширени функции</li>
+              <li>Повече фактури и клиенти</li>
+              <li>Ваше лого на фактурите — изглеждайте по-професионално</li>
+              <li>Изпращане по имейл — получавайте плащания по-бързо</li>
               <li>Приоритетна поддръжка</li>
             </ul>
           </div>
@@ -64,13 +64,13 @@ export function SubscriptionRequired({
       <CardFooter className="flex gap-2 flex-col sm:flex-row">
         <Button asChild className="w-full sm:w-auto">
           <Link href="/settings/subscription">
-            Преглед на абонаментните планове
+            Вижте плановете и цените
           </Link>
         </Button>
         
         <Button variant="outline" asChild className="w-full sm:w-auto">
           <Link href="/">
-            Назад
+            Към началото
           </Link>
         </Button>
       </CardFooter>

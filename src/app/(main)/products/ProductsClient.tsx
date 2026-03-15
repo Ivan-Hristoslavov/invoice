@@ -85,16 +85,16 @@ export default function ProductsClient({
           <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-amber-800 dark:text-amber-200">
               {productsRemaining === 1 ? (
-                <>Остава ви само <strong>1 продукт</strong> в {plan} плана.</>
+                <>Остава ви <strong>1 продукт</strong> в този план.</>
               ) : (
-                <>Остават ви само <strong>{productsRemaining} продукта</strong> в {plan} плана.</>
+                <>Остават ви <strong>{productsRemaining} продукта</strong> в този план.</>
               )}
-              {' '}Надградете за повече продукти.
+              {' '}Надградете за неограничени артикули.
             </span>
             <Link href="/settings/subscription" className="flex items-center whitespace-nowrap">
               <Button size="sm" variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-100 sm:ml-4">
                 <Crown className="h-4 w-4 mr-2" />
-                Надградете
+                Вижте плановете →
               </Button>
             </Link>
           </AlertDescription>
@@ -106,15 +106,12 @@ export default function ProductsClient({
           <XCircle className="h-4 w-4 text-red-600" />
           <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-red-800 dark:text-red-200">
-              Достигнахте лимита от <strong>{productLimit} продукта</strong> за {plan} плана.
-              {plan === 'FREE' && ' Надградете до STARTER за до 50 продукта или до PRO за до 200.'}
-              {plan === 'STARTER' && ' Надградете до PRO за до 200 продукта или до BUSINESS за неограничени.'}
-              {plan === 'PRO' && ' Надградете до BUSINESS за неограничени продукти.'}
+              Лимитът за продукти е достигнат. Надградете, за да добавяте още артикули без ограничения.
             </span>
             <Link href="/settings/subscription" className="flex items-center whitespace-nowrap">
               <Button size="sm" className="bg-linear-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 sm:ml-4">
                 <Crown className="h-4 w-4 mr-2" />
-                Надградете
+                Вижте плановете →
               </Button>
             </Link>
           </AlertDescription>

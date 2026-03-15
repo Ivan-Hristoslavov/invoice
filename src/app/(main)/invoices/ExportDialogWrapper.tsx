@@ -70,10 +70,10 @@ export default function ExportDialogWrapper({
           </TooltipTrigger>
           <TooltipContent>
             <p className="text-sm mb-1">
-              CSV експортът е наличен в STARTER, а JSON/PDF експортът е наличен в PRO и BUSINESS.
+              Експортът е в платените планове: CSV от Стартер, PDF и пълна експорт от Про и Бизнес.
             </p>
             <Link href="/settings/subscription" className="text-xs text-primary hover:underline">
-              Надградете сега →
+              Отключете експорт (CSV/PDF) →
             </Link>
           </TooltipContent>
         </Tooltip>

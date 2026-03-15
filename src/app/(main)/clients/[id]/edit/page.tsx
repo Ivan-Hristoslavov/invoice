@@ -277,7 +277,7 @@ export default function EditClientPage() {
         requiredPlan="STARTER"
         currentPlan={plan}
         featureName="Търсенето по ЕИК"
-        message="Търсенето по ЕИК/БУЛСТАТ и автоматичното попълване от Регистъра е налично от план Стартер. Надградете за да зареждате данни с един клик."
+        message="Попълвайте клиент с един клик от Регистъра (ЕИК/БУЛСТАТ). Доступно от план Стартер."
         variant="overlay"
         showUpgradeLink
         isUpgradeLoading={eikCheckoutLoading}

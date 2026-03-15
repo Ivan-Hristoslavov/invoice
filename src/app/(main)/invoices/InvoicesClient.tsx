@@ -485,13 +485,12 @@ export default function InvoicesClient({
           <AlertTriangle className="h-4 w-4 text-amber-600" />
           <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-amber-800 dark:text-amber-200">
-              Остава ви само <strong>{invoiceUsage.remaining}</strong> фактура този месец. 
-              Надградете за неограничени фактури.
+              Остава ви <strong>{invoiceUsage.remaining} фактура</strong> този месец. С план Про създавате неограничено и изпращате по имейл за по-бързи плащания.
             </span>
             <Link href="/settings/subscription">
               <Button size="sm" variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-100 sm:ml-4">
                 <Crown className="h-4 w-4 mr-2" />
-                Надградете
+                Вижте плановете →
               </Button>
             </Link>
           </AlertDescription>
@@ -503,13 +502,12 @@ export default function InvoicesClient({
           <XCircle className="h-4 w-4 text-red-600" />
           <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-red-800 dark:text-red-200">
-              Достигнахте лимита от <strong>3 фактури</strong> за този месец. 
-              Надградете до PRO за неограничени фактури.
+              Издадохте <strong>3 фактури</strong> този месец — лимитът на безплатния план. С Про създавате неограничено и изпращате по имейл за по-бързи плащания.
             </span>
             <Link href="/settings/subscription">
               <Button size="sm" className="bg-linear-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 sm:ml-4">
                 <Crown className="h-4 w-4 mr-2" />
-                Надградете до PRO
+                Отключете неограничени фактури →
               </Button>
             </Link>
           </AlertDescription>
@@ -530,7 +528,7 @@ export default function InvoicesClient({
             )}
           </div>
           <p className="card-description">
-            Управлявайте и проследявайте вашите фактури
+            Създавайте фактури бързо, изглеждайте професионално и проследявайте какво ви дължат
           </p>
         </div>
         <div className="page-header-actions">

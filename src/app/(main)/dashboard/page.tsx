@@ -365,7 +365,7 @@ export default async function DashboardPage() {
           </Badge>
           <h1 className="page-title">Табло</h1>
           <p className="card-description mt-1">
-            Добре дошли, {session.user.name || 'потребител'}!
+            Ето преглед на фактурите и дейностите ви
           </p>
         </div>
         <Button 
@@ -391,8 +391,8 @@ export default async function DashboardPage() {
         <InvoiceWorkspaceSetup
           hasCompanies={hasCompanies}
           hasClients={hasClients}
-          title="Започнете с настройката на фактурирането"
-          description="След първия вход е най-лесно първо да добавите фирма и клиент. Щом и двете са готови, ще можете да създавате фактури без блокиращи стъпки."
+          title="Стъпки за първа фактура"
+          description="Добавете фирма и клиент веднъж — след това всяка нова фактура е с няколко клика."
         />
       )}
 
@@ -444,9 +444,9 @@ export default async function DashboardPage() {
                 <div className="h-14 w-14 rounded-full bg-muted/50 flex items-center justify-center mb-4">
                   <FileText className="h-7 w-7 text-muted-foreground" />
                 </div>
-                <p className="text-base font-semibold mb-1">Няма фактури</p>
+                <p className="text-base font-semibold mb-1">Все още няма фактури</p>
                 <p className="text-sm text-muted-foreground mb-6 max-w-xs">
-                  Създайте първата си фактура, за да започнете да управлявате финансите си
+                  Създайте първата за минути и започнете да проследявате какво ви дължат
                 </p>
                 <Button size="sm" asChild className="shadow-md">
                   <Link href="/invoices/new" className="flex items-center whitespace-nowrap">

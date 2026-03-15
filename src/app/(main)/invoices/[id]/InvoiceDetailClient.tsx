@@ -411,7 +411,7 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
                         variant="outline"
                         className="w-full justify-start border-dashed border-amber-300 py-3 text-left dark:border-amber-700"
                       >
-                        <Link href="/settings/subscription" aria-label="Надградете до PRO за изпращане на фактури">
+                        <Link href="/settings/subscription" aria-label="Изпращане по имейл с план Про">
                         <div className="flex items-center gap-4 w-full">
                           <Lock className="w-5 h-5 shrink-0 text-amber-500" />
                           <span className="font-medium flex-1">Изпрати фактура</span>
@@ -424,8 +424,8 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p className="text-sm mb-1">Изпращането на фактури по имейл е налично само в PRO и BUSINESS плановете.</p>
-                    <span className="text-xs text-primary">Надградете сега →</span>
+                    <p className="text-sm mb-1">Изпращайте фактури по имейл и получавайте по-бързи плащания — в плановете Про и Бизнес.</p>
+                    <span className="text-xs text-primary">Изпращане по имейл с Про →</span>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>

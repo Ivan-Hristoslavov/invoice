@@ -110,16 +110,12 @@ export default function UsersClient({ company, usersWithRoles, currentUserId }: 
           <Lock className="h-4 w-4 text-amber-600" />
           <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-amber-800 dark:text-amber-200">
-              {isFree 
-                ? "Вашият FREE план позволява само 1 потребител."
-                : "Вашият PRO план позволява само 1 потребител."
-              }
-              {" "}Надградете до BUSINESS за до 5 потребители.
+              Този план позволява 1 потребител. С Бизнес до 5 члена в екипа — каняйте съдружници и счетоводители.
             </span>
             <Link href="/settings/subscription">
               <Button size="sm" className="bg-linear-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 sm:ml-4">
                 <Crown className="h-4 w-4 mr-2" />
-                Надградете до BUSINESS
+                Вижте плановете →
               </Button>
             </Link>
           </AlertDescription>

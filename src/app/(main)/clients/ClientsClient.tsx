@@ -86,16 +86,16 @@ export default function ClientsClient({
           <AlertDescription className="flex items-center justify-between">
             <span className="text-amber-800 dark:text-amber-200">
               {clientsRemaining === 1 ? (
-                <>Остава ви само <strong>1 клиент</strong> в {plan} плана.</>
+                <>Остава ви <strong>1 клиент</strong> в този план.</>
               ) : (
-                <>Остават ви само <strong>{clientsRemaining} клиента</strong> в {plan} плана.</>
+                <>Остават ви <strong>{clientsRemaining} клиента</strong> в този план.</>
               )}
-              {' '}Надградете за повече клиенти.
+              {' '}Надградете за още клиенти и търсене по ЕИК.
             </span>
             <Link href="/settings/subscription">
               <Button size="sm" variant="outline" className="ml-4 border-amber-300 text-amber-700 hover:bg-amber-100">
                 <Crown className="h-4 w-4 mr-2" />
-                Надградете
+                Вижте плановете →
               </Button>
             </Link>
           </AlertDescription>
@@ -107,15 +107,12 @@ export default function ClientsClient({
           <XCircle className="h-4 w-4 text-red-600" />
           <AlertDescription className="flex items-center justify-between">
             <span className="text-red-800 dark:text-red-200">
-              Достигнахте лимита от <strong>{clientLimit} клиента</strong> за {plan} плана.
-              {plan === 'FREE' && ' Надградете до STARTER за до 25 клиента или до PRO за до 100.'}
-              {plan === 'STARTER' && ' Надградете до PRO за до 100 клиента или до BUSINESS за неограничени.'}
-              {plan === 'PRO' && ' Надградете до BUSINESS за неограничени клиенти.'}
+              Лимитът за клиенти за този план е достигнат. С по-висок план добавяте още клиенти и ползвате търсене по ЕИК с един клик.
             </span>
             <Link href="/settings/subscription">
               <Button size="sm" className="ml-4 bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
                 <Crown className="h-4 w-4 mr-2" />
-                Надградете
+                Отключете повече клиенти →
               </Button>
             </Link>
           </AlertDescription>

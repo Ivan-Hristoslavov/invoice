@@ -231,7 +231,7 @@ export async function checkSubscriptionLimits(
         return {
           allowed: false,
           plan,
-          message: `Собствено лого е налично само в PRO и BUSINESS плановете. Надградете за да добавите вашето лого.`,
+          message: `Вашето лого на фактурите е в плановете Про и Бизнес. Надградете, за да изглеждате още по-професионално.`,
         };
       }
       break;
@@ -242,7 +242,7 @@ export async function checkSubscriptionLimits(
           allowed: false,
           plan,
           message:
-            "Експортът е заключен за FREE плана. Надградете до STARTER за CSV експорт или до PRO/BUSINESS за JSON и PDF експорт.",
+            "Експортът е в платените планове: CSV от Стартер, PDF и пълна експорт от Про и Бизнес.",
         };
       }
       break;
@@ -252,7 +252,7 @@ export async function checkSubscriptionLimits(
         return {
           allowed: false,
           plan,
-          message: `Кредитни известия са налични само в PRO и BUSINESS плановете. Надградете за да създавате кредитни известия.`,
+          message: `Кредитни известия — в плановете Про и Бизнес. Надградете, за да издавате сторнирания и корекции лесно.`,
         };
       }
       break;
@@ -262,7 +262,7 @@ export async function checkSubscriptionLimits(
         return {
           allowed: false,
           plan,
-          message: `Изпращане на фактури по имейл е налично само в PRO и BUSINESS плановете. Надградете за да изпращате фактури по имейл.`,
+          message: `Изпращайте фактури по имейл и получавайте по-бързи плащания — в плановете Про и Бизнес.`,
         };
       }
       break;
@@ -282,7 +282,7 @@ export async function checkSubscriptionLimits(
         return {
           allowed: false,
           plan,
-          message: `Търсенето по ЕИК/БУЛСТАТ е платена функция. Надградете до план Стартер за да попълвате данни автоматично от Регистъра.`,
+          message: `Попълвайте данни с един клик от Регистъра (ЕИК/БУЛСТАТ). Доступно от план Стартер.`,
         };
       }
       break;
