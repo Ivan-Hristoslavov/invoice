@@ -69,16 +69,20 @@ export async function POST(req: Request) {
         { status: 500 }
       );
     }
-    let appUrl: string;
+    let baseOrigin: string;
     try {
       const parsed = new URL(rawAppUrl);
-      appUrl = `${parsed.protocol}//${parsed.host}`.replace(/\/$/, "");
+      if (!parsed.host) throw new Error("Missing host");
+      baseOrigin = `https://${parsed.host}`;
     } catch {
       return NextResponse.json(
         { error: "NEXT_PUBLIC_APP_URL не е валиден URL (напр. https://invoice-ten-sigma.vercel.app, без интервал в края)." },
         { status: 500 }
       );
     }
+
+    const successUrl = new URL("/settings/subscription?success=true", baseOrigin).href;
+    const cancelUrl = new URL("/settings/subscription?canceled=true", baseOrigin).href;
 
     const stripe = await getStripe();
     const customerId = await ensureStripeCustomerBinding({
@@ -96,8 +100,8 @@ export async function POST(req: Request) {
           quantity: 1,
         },
       ],
-      success_url: `${appUrl}/settings/subscription?success=true`,
-      cancel_url: `${appUrl}/settings/subscription?canceled=true`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       customer: customerId,
       client_reference_id: sessionUser.id,
       metadata: {
