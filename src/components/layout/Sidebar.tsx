@@ -10,8 +10,6 @@ import {
   Building,
   Package,
   Settings,
-  Menu,
-  X,
   HelpCircle,
   LogOut,
   ChevronRight,
@@ -19,8 +17,9 @@ import {
   ArrowDownCircle,
   ArrowUpCircle
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { useSidebar } from "@/components/layout/SidebarContext";
 import { APP_NAME } from "@/config/constants";
 import { useSession, signOut } from "next-auth/react";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
@@ -94,8 +93,7 @@ const bottomNavItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const { isOpen, setOpen, isMobile } = useSidebar();
   const { data: session, status } = useSession();
   const isAuthenticated = status === "authenticated";
   const { plan, isLoadingUsage } = useSubscriptionLimit();
@@ -103,20 +101,14 @@ export function Sidebar() {
     ? SUBSCRIPTION_PLANS[plan as SubscriptionPlanKey].displayName
     : plan ?? "Безплатен";
 
-  useEffect(() => {
-    const checkIsMobile = () => {
-      const mobile = window.innerWidth < 1024;
-      setIsMobile(mobile);
-      // On desktop (>= 1024px), sidebar is always visible, no collapse
-      if (!mobile) {
-        setIsOpen(false);
-      }
-    };
-    
-    checkIsMobile();
-    window.addEventListener('resize', checkIsMobile);
-    return () => window.removeEventListener('resize', checkIsMobile);
-  }, []);
+  const planBadgeClass =
+    plan === "STARTER"
+      ? "border-blue-500/50 bg-blue-500/10 text-blue-600 dark:text-blue-400"
+      : plan === "PRO"
+        ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+        : plan === "BUSINESS"
+          ? "border-violet-500/50 bg-violet-500/10 text-violet-600 dark:text-violet-400"
+          : "border-border/60 bg-muted/80 text-muted-foreground";
 
   useEffect(() => {
     if (!isMobile || !isOpen) return;
@@ -135,22 +127,22 @@ export function Sidebar() {
   // Close sidebar on route change (mobile only)
   useEffect(() => {
     if (isMobile) {
-      setIsOpen(false);
+      setOpen(false);
     }
-  }, [pathname, isMobile]);
+  }, [pathname, isMobile, setOpen]);
 
   useEffect(() => {
     if (!isMobile || !isOpen) return;
 
     function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        setIsOpen(false);
+        setOpen(false);
       }
     }
 
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [isMobile, isOpen]);
+  }, [isMobile, isOpen, setOpen]);
 
   // Skip rendering sidebar on auth pages or home page when not authenticated
   if (pathname.includes("/signin") || pathname.includes("/signup")) {
@@ -174,22 +166,7 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile Menu Button - Only visible when sidebar is hidden (mobile) */}
-      {isMobile && (
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="fixed left-3 top-[calc(env(safe-area-inset-top)+0.625rem)] z-60 h-9 w-9 border border-border bg-background/95 shadow-lg backdrop-blur-md hover:bg-muted sm:left-4 sm:top-3 sm:h-10 sm:w-10"
-          onClick={() => setIsOpen(!isOpen)}
-          aria-label={isOpen ? "Затвори менюто" : "Отвори менюто"}
-          aria-controls="main-sidebar"
-          aria-expanded={isOpen}
-        >
-          {isOpen ? <X className="w-5 h-5" aria-hidden="true" /> : <Menu className="w-5 h-5" aria-hidden="true" />}
-        </Button>
-      )}
-
-      {/* Backdrop */}
+      {/* Backdrop - мобилно меню се отваря от бутона в Navbar */}
       <AnimatePresence>
         {isOpen && isMobile && (
           <motion.div
@@ -197,7 +174,7 @@ export function Sidebar() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-40 bg-black/55 lg:hidden"
-            onClick={() => setIsOpen(false)}
+            onClick={() => setOpen(false)}
             aria-hidden="true"
           />
         )}
@@ -310,7 +287,10 @@ export function Sidebar() {
             <span>{APP_NAME} v1.0.0</span>
             {!isLoadingUsage && (
               <span
-                className="rounded border border-border/60 bg-muted/80 px-1.5 py-0.5 text-[10px] font-medium"
+                className={cn(
+                  "rounded border px-1.5 py-0.5 text-[10px] font-medium",
+                  planBadgeClass
+                )}
                 title="Текущ план"
               >
                 {planDisplayName}

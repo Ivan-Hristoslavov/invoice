@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { SidebarProvider } from "@/components/layout/SidebarContext";
 import { BackgroundShapes } from "@/components/ui/background-shapes";
 import { CommandPaletteProvider } from "@/components/ui/command-palette";
 import { KeyboardShortcutsProvider } from "@/components/ui/keyboard-shortcuts-provider";
@@ -42,6 +43,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   return (
     <KeyboardShortcutsProvider>
       <CommandPaletteProvider>
+        <SidebarProvider>
         <div className="relative flex min-h-screen flex-col overflow-x-hidden pt-14 sm:pt-16">
           <a href="#main-content" className="skip-to-content">
             Преминете към съдържанието
@@ -63,6 +65,7 @@ export function MainLayout({ children }: MainLayoutProps) {
             </main>
           </div>
         </div>
+        </SidebarProvider>
       </CommandPaletteProvider>
     </KeyboardShortcutsProvider>
   );

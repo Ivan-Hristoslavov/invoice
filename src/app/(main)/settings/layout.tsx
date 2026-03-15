@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { SettingsNav } from "./SettingsNav";
 import { SettingsLayoutClient } from "./SettingsLayoutClient";
+import { SettingsNavProvider } from "./SettingsNavProvider";
 
 interface SettingsLayoutProps {
   children: ReactNode;
@@ -17,8 +18,10 @@ export default async function SettingsLayout({ children }: SettingsLayoutProps) 
   }
 
   return (
-    <SettingsLayoutClient sidebar={<SettingsNav />}>
-      {children}
-    </SettingsLayoutClient>
+    <SettingsNavProvider>
+      <SettingsLayoutClient sidebar={<SettingsNav />}>
+        {children}
+      </SettingsLayoutClient>
+    </SettingsNavProvider>
   );
 }

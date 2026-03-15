@@ -10,13 +10,16 @@ import {
   FileText,
   Settings,
   ArrowLeft,
+  Palette,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useSettingsNav } from "./SettingsNavProvider";
 
 const navItems = [
   { id: "profile", title: "Профил", href: "/settings/profile", icon: User },
+  { id: "appearance", title: "Външен вид", href: "/settings/appearance", icon: Palette },
   { id: "security", title: "Сигурност", href: "/settings/security", icon: ShieldCheck },
   { id: "company", title: "Компания", href: "/settings/company", icon: Building },
   { id: "invoice-preferences", title: "Фактури", href: "/settings/invoice-preferences", icon: FileText },
@@ -33,26 +36,29 @@ function pathnameToTabId(pathname: string): string {
 export function SettingsNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const { isPending, startTransition } = useSettingsNav();
   const selectedKey = pathnameToTabId(pathname);
 
   const handleTabChange = (key: string) => {
     const item = navItems.find((i) => i.id === key);
-    if (item) router.push(item.href);
+    if (item && item.href !== pathname) {
+      startTransition(() => router.push(item.href));
+    }
   };
 
   return (
     <div className="w-full space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+      <div className="flex flex-row items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
             <Settings className="h-4 w-4 text-primary" />
           </div>
-          <div>
+          <div className="min-w-0">
             <h2 className="text-sm font-semibold">Настройки</h2>
             <p className="text-[10px] text-muted-foreground">Управление на акаунта</p>
           </div>
         </div>
-        <Button asChild variant="ghost" size="sm" className="h-8 w-full rounded-full px-3 sm:w-auto lg:hidden">
+        <Button asChild variant="ghost" size="sm" className="h-8 shrink-0 rounded-full px-3 lg:hidden">
           <Link href="/dashboard" className="flex items-center gap-1.5 whitespace-nowrap">
             <ArrowLeft className="h-3.5 w-3.5" />
             Назад
@@ -77,10 +83,12 @@ export function SettingsNav() {
                 key={item.id}
                 id={item.id}
                 value={item.id}
+                disabled={isPending}
                 className={cn(
                   "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   "data-[selected=true]:bg-primary data-[selected=true]:text-primary-foreground",
-                  "data-[selected=false]:text-muted-foreground hover:text-foreground"
+                  "data-[selected=false]:text-muted-foreground hover:text-foreground",
+                  "disabled:opacity-70 disabled:pointer-events-none"
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" />

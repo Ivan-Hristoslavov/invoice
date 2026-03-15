@@ -89,37 +89,44 @@ const PLANS = {
 
 type PlanKey = keyof typeof PLANS;
 
-export function SubscriptionPlans() {
+interface SubscriptionPlansProps {
+  /** Извиква се след първия refetch при ?success=true – за да скрие страницата loading overlay-а */
+  onSuccessRefetchDone?: () => void;
+}
+
+export function SubscriptionPlans({ onSuccessRefetchDone }: SubscriptionPlansProps = {}) {
   const searchParams = useSearchParams();
-  const { subscription, isLoading, error, createCheckoutSession, cancelSubscription, refetchSubscription } = useSubscription();
+  const { subscription, isLoading, error, createCheckoutSession, cancelSubscription, refetchSubscription, refetchSubscriptionSilent } = useSubscription();
   const { refreshUsage } = useSubscriptionLimit();
   const [cancelingSubscription, setCancelingSubscription] = useState(false);
   const [editingSubscription, setEditingSubscription] = useState(false);
   const [showCancellationSurvey, setShowCancellationSurvey] = useState(false);
   const [isYearly, setIsYearly] = useState(true);
 
-  // След успешен checkout обновяваме абонамента и лимитите веднага (и с повторен опит след 2s/5s ако webhook-ът закъснее)
+  // При връщане след плащане (?success=true): един път refetch с loading, после callback; след 4s тих retry
+  const successParam = searchParams.get('success');
   const didRefreshOnSuccess = useRef(false);
   useEffect(() => {
-    const success = searchParams.get('success');
-    if (success !== 'true') return;
+    if (successParam !== 'true') return;
+    if (didRefreshOnSuccess.current) return;
+    didRefreshOnSuccess.current = true;
 
-    const refresh = async () => {
-      await refetchSubscription();
-      await refreshUsage();
+    const run = async () => {
+      try {
+        await refetchSubscription();
+        await refreshUsage();
+      } finally {
+        onSuccessRefetchDone?.();
+      }
     };
+    run();
 
-    if (!didRefreshOnSuccess.current) {
-      didRefreshOnSuccess.current = true;
-      refresh();
-    }
-    const t2 = window.setTimeout(refresh, 2000);
-    const t5 = window.setTimeout(refresh, 5000);
-    return () => {
-      clearTimeout(t2);
-      clearTimeout(t5);
-    };
-  }, [searchParams, refetchSubscription, refreshUsage]);
+    const t = window.setTimeout(() => {
+      refetchSubscriptionSilent();
+      refreshUsage();
+    }, 4000);
+    return () => clearTimeout(t);
+  }, [successParam, refetchSubscription, refetchSubscriptionSilent, refreshUsage, onSuccessRefetchDone]);
 
   const handleSubscribe = async (plan: string) => {
     try {
@@ -253,9 +260,9 @@ export function SubscriptionPlans() {
 
       {/* Header + Toggle */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-            <Sparkles className="h-4 w-4 text-emerald-500" />
+        <div className="flex justify-center sm:justify-start">
+          <div className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+            <Sparkles className="h-4 w-4 shrink-0 text-emerald-500" />
             <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">14 дни безплатен trial</span>
           </div>
         </div>
@@ -299,8 +306,8 @@ export function SubscriptionPlans() {
         </p>
       )}
 
-      {/* Plans Grid */}
-      <div id="subscription-plans" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Plans Grid – по-компактни карти */}
+      <div id="subscription-plans" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {(Object.keys(PLANS) as PlanKey[]).map((planKey) => {
           const plan = PLANS[planKey];
           const isCurrent = isCurrentPlan(planKey);
@@ -322,28 +329,28 @@ export function SubscriptionPlans() {
             <div
               key={planKey}
               className={cn(
-                "flex flex-col rounded-2xl border bg-card overflow-hidden transition-all duration-300",
-                isPopular && !isCurrent && "border-emerald-500/60 shadow-xl shadow-emerald-500/15 scale-[1.02]",
-                isCurrent && "border-primary/50 bg-primary/5 shadow-lg shadow-primary/10",
-                !isPopular && !isCurrent && "hover:border-border/80 hover:shadow-md"
+                "flex flex-col rounded-xl border bg-card overflow-hidden transition-all duration-300",
+                isPopular && !isCurrent && "border-emerald-500/60 shadow-lg shadow-emerald-500/15 scale-[1.02]",
+                isCurrent && "border-primary/50 bg-primary/5 shadow-md shadow-primary/10",
+                !isPopular && !isCurrent && "hover:border-border/80 hover:shadow-sm"
               )}
             >
               {/* Colored top bar */}
-              <div className={cn("h-1.5 w-full", planTheme.topBar)} />
+              <div className={cn("h-1 w-full", planTheme.topBar)} />
 
-              <div className="p-5 flex flex-col flex-1">
+              <div className="p-4 flex flex-col flex-1">
                 {/* Header row: icon + name + badge */}
-                <div className="flex items-start gap-3 mb-4">
+                <div className="flex items-start gap-2.5 mb-3">
                   <div className={cn(
-                    "h-10 w-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5",
+                    "h-9 w-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5",
                     planTheme.iconBg,
                     planTheme.iconText
                   )}>
-                    <Icon className="h-5 w-5" />
+                    <Icon className="h-4 w-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-semibold text-base leading-tight">{plan.displayName}</h3>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <h3 className="font-semibold text-sm leading-tight">{plan.displayName}</h3>
                       {isCurrent && (
                         <Badge className="px-2 py-0 text-[10px] h-5 font-semibold border-0 bg-primary text-primary-foreground shrink-0">
                           <Check className="h-2.5 w-2.5 mr-0.5" />Текущ
@@ -360,14 +367,14 @@ export function SubscriptionPlans() {
                         </Badge>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{plan.description}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{plan.description}</p>
                   </div>
                 </div>
 
                 {/* Price */}
-                <div className="mb-5">
+                <div className="mb-3">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold tracking-tight">
+                    <span className="text-2xl font-bold tracking-tight">
                       {price === 0 ? '0' : price.toFixed(2)}
                     </span>
                     <span className="text-sm text-muted-foreground font-normal">€/мес</span>
@@ -398,13 +405,13 @@ export function SubscriptionPlans() {
                 </div>
 
                 {/* Features */}
-                <div className="flex-1 mb-5">
-                  <ul className="space-y-2.5">
+                <div className="flex-1 mb-4">
+                  <ul className="space-y-1.5">
                     {plan.features.map((feature, index) => (
                       <li
                         key={index}
                         className={cn(
-                          "flex items-center gap-2.5 text-sm",
+                          "flex items-center gap-2 text-xs sm:text-sm",
                           !feature.included && "text-muted-foreground/50"
                         )}
                       >
@@ -424,7 +431,7 @@ export function SubscriptionPlans() {
                 </div>
 
                 {/* Separator */}
-                <div className="border-t border-border/50 mb-4" />
+                <div className="border-t border-border/50 mb-3" />
 
                 {/* Button */}
                 {isCurrent ? (

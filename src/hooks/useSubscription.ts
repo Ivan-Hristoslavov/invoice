@@ -31,6 +31,8 @@ interface UseSubscriptionReturn {
   createCheckoutSession: (plan: string, billingInterval?: 'monthly' | 'yearly') => Promise<void>;
   cancelSubscription: () => Promise<void>;
   refetchSubscription: () => Promise<void>;
+  /** Refetch without showing loading (e.g. after payment when webhook may be delayed) */
+  refetchSubscriptionSilent: () => Promise<void>;
 }
 
 export function useSubscription(): UseSubscriptionReturn {
@@ -40,10 +42,10 @@ export function useSubscription(): UseSubscriptionReturn {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const fetchSubscription = async () => {
+  const fetchSubscription = async (silent = false) => {
     if (status === 'unauthenticated') return;
     try {
-      setIsLoading(true);
+      if (!silent) setIsLoading(true);
       setError(null);
       const response = await fetch('/api/subscription');
       if (!response.ok) {
@@ -53,9 +55,9 @@ export function useSubscription(): UseSubscriptionReturn {
       setSubscription(data.subscription ?? null);
     } catch (err: any) {
       console.error('Error fetching subscription:', err);
-      setError(err?.message ?? 'Failed to fetch');
+      if (!silent) setError(err?.message ?? 'Failed to fetch');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -159,6 +161,7 @@ export function useSubscription(): UseSubscriptionReturn {
     error,
     createCheckoutSession,
     cancelSubscription,
-    refetchSubscription: fetchSubscription,
+    refetchSubscription: () => fetchSubscription(false),
+    refetchSubscriptionSilent: () => fetchSubscription(true),
   };
 } 
