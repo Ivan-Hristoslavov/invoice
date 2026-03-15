@@ -363,28 +363,32 @@ export async function sendVerificationEmail({
     ? `${appName} <${fromAddress}>`
     : fromAddress;
 
+  const htmlContent = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2>Здравейте, ${name}!</h2>
+      <p>Благодарим ви за регистрацията в ${appName}. Моля, потвърдете имейл адреса си, за да активирате акаунта и да влезете.</p>
+      <div style="margin: 30px 0; text-align: center;">
+        <a href="${confirmUrl}" style="display: inline-block; padding: 14px 32px; background-color: #059669; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+          Потвърдете имейла
+        </a>
+      </div>
+      <p style="font-size: 14px; color: #6b7280;">
+        Линкът е валиден 24 часа. Ако не сте се регистрирали, игнорирайте този имейл.
+      </p>
+      <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;" />
+      <p style="font-size: 12px; color: #9ca3af;">
+        Това е автоматично генериран имейл от ${appName}. Моля, не отговаряйте.
+      </p>
+    </div>
+  `;
+  const textContent = `Здравейте, ${name}!\n\nБлагодарим ви за регистрацията в ${appName}. Потвърдете имейла си на този адрес (валиден 24 часа):\n${confirmUrl}\n\nАко не сте се регистрирали, игнорирайте този имейл.\n\n— ${appName}`;
+
   await transporter.sendMail({
     from,
     to,
     subject: `Потвърдете имейла си - ${appName}`,
-    html: `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2>Здравейте, ${name}!</h2>
-        <p>Благодарим ви за регистрацията в ${appName}. Моля, потвърдете имейл адреса си, за да активирате акаунта и да влезете.</p>
-        <div style="margin: 30px 0; text-align: center;">
-          <a href="${confirmUrl}" style="display: inline-block; padding: 14px 32px; background-color: #059669; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
-            Потвърдете имейла
-          </a>
-        </div>
-        <p style="font-size: 14px; color: #6b7280;">
-          Линкът е валиден 24 часа. Ако не сте се регистрирали, игнорирайте този имейл.
-        </p>
-        <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;" />
-        <p style="font-size: 12px; color: #9ca3af;">
-          Това е автоматично генериран имейл от ${appName}. Моля, не отговаряйте.
-        </p>
-      </div>
-    `,
+    text: textContent,
+    html: htmlContent,
   });
 }
 

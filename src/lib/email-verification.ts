@@ -73,3 +73,63 @@ export async function consumeEmailVerificationToken(
 
   return email;
 }
+
+const ONE_TIME_LOGIN_PREFIX = "login:";
+const ONE_TIME_LOGIN_TTL_MINUTES = 5;
+
+/**
+ * Create a one-time login token (e.g. after email confirmation) so the user can sign in without password.
+ */
+export async function createOneTimeLoginToken(email: string): Promise<string> {
+  const normalizedEmail = normalizeEmail(email);
+  const supabase = createAdminClient();
+  const token = crypto.randomBytes(32).toString("hex");
+  const expires = new Date(
+    Date.now() + ONE_TIME_LOGIN_TTL_MINUTES * 60 * 1000
+  ).toISOString();
+
+  await supabase
+    .from("VerificationToken")
+    .delete()
+    .eq("identifier", ONE_TIME_LOGIN_PREFIX + normalizedEmail);
+
+  const { error } = await supabase.from("VerificationToken").insert({
+    identifier: ONE_TIME_LOGIN_PREFIX + normalizedEmail,
+    token,
+    expires,
+  });
+
+  if (error) throw error;
+
+  return token;
+}
+
+/**
+ * Consume a one-time login token. Returns the email if valid and deletes the token.
+ */
+export async function consumeOneTimeLoginToken(
+  token: string
+): Promise<string | null> {
+  if (!token?.trim()) return null;
+  const supabase = createAdminClient();
+
+  const { data: row, error } = await supabase
+    .from("VerificationToken")
+    .select("identifier, expires")
+    .eq("token", token.trim())
+    .maybeSingle();
+
+  if (error || !row || !String(row.identifier).startsWith(ONE_TIME_LOGIN_PREFIX))
+    return null;
+
+  if (new Date(row.expires).getTime() < Date.now()) {
+    await supabase.from("VerificationToken").delete().eq("token", token.trim());
+    return null;
+  }
+
+  const email = String(row.identifier).slice(ONE_TIME_LOGIN_PREFIX.length);
+
+  await supabase.from("VerificationToken").delete().eq("token", token.trim());
+
+  return email;
+}
