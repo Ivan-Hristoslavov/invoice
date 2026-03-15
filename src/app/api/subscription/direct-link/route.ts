@@ -62,10 +62,20 @@ export async function POST(req: Request) {
       );
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-    if (!appUrl?.trim()) {
+    const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() ?? "";
+    if (!rawAppUrl) {
       return NextResponse.json(
         { error: "NEXT_PUBLIC_APP_URL не е зададен. Задайте го в Vercel Environment Variables (напр. https://invoice-ten-sigma.vercel.app)." },
+        { status: 500 }
+      );
+    }
+    let appUrl: string;
+    try {
+      const parsed = new URL(rawAppUrl);
+      appUrl = `${parsed.protocol}//${parsed.host}`.replace(/\/$/, "");
+    } catch {
+      return NextResponse.json(
+        { error: "NEXT_PUBLIC_APP_URL не е валиден URL (напр. https://invoice-ten-sigma.vercel.app, без интервал в края)." },
         { status: 500 }
       );
     }
