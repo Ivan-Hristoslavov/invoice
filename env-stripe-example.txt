@@ -3,6 +3,11 @@
 # =============================================================================
 # След като създадеш продукти/цени в Stripe Dashboard, вземи Price ID (price_xxx)
 # и го постави отдолу. Ключовете по-долу вече ги имаш в .env.
+#
+# ПРОДАКЦИЯ (Vercel): Добави същите променливи в Vercel > Project > Settings >
+# Environment Variables за Production (и Preview ако искаш). Минимум:
+# STRIPE_SECRET_KEY, STRIPE_STARTER_MONTHLY_PRICE_ID, STRIPE_STARTER_YEARLY_PRICE_ID,
+# NEXT_PUBLIC_APP_URL=https://invoice-ten-sigma.vercel.app
 # =============================================================================
 
 # --- Ключове (задължителни) ---
