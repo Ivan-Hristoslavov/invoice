@@ -96,7 +96,7 @@ export function SubscriptionHistory({ refreshTrigger }: SubscriptionHistoryProps
   if (!subscription) {
     return (
       <p className="text-sm text-muted-foreground py-4">
-        Нямате активен абонамент.
+        Нямате активен платен абонамент. След като изберете план и платите, тук ще се показва история на плащанията и промените в статуса.
       </p>
     );
   }
@@ -107,7 +107,7 @@ export function SubscriptionHistory({ refreshTrigger }: SubscriptionHistoryProps
   if (!hasPayments && !hasStatusHistory) {
     return (
       <p className="text-sm text-muted-foreground py-4">
-        Все още няма история на плащанията или статуса.
+        Все още няма записани плащания или промени в статуса. Плащанията се записват автоматично след успешен разплащане; ако току-що сте платили, обновете страницата след няколко секунди.
       </p>
     );
   }
@@ -154,7 +154,7 @@ export function SubscriptionHistory({ refreshTrigger }: SubscriptionHistoryProps
             <PaymentsTable payments={payments} />
           ) : (
             <p className="text-sm text-muted-foreground py-6 text-center">
-              Все още няма записани плащания. Плащанията се записват след успешен разплащане.
+              Все още няма записани плащания. Те се записват автоматично след успешен разплащане; ако току-що сте платили, обновете страницата след няколко секунди.
             </p>
           )}
         </TabsContent>
