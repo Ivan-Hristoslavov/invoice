@@ -88,6 +88,9 @@ export async function POST(req: Request) {
     const successUrl = new URL("/settings/subscription?success=true", baseOrigin).href;
     const cancelUrl = new URL("/settings/subscription?canceled=true", baseOrigin).href;
 
+    // Log in Vercel → Project → Logs to see what URLs are sent to Stripe (helps debug "invalid URL")
+    console.log("[direct-link] redirect URLs", { baseOrigin, successUrl, cancelUrl, hasNextPublic: !!rawAppUrl, vercelUrl: vercelUrl || "(none)" });
+
     const stripe = await getStripe();
     const customerId = await ensureStripeCustomerBinding({
       userId: sessionUser.id,
