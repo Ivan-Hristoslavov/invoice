@@ -50,12 +50,23 @@ export async function POST(req: Request) {
     // Price is always resolved server-side from env. Never accept price_id or amount from client to prevent manipulation.
     const priceId = getCanonicalPriceId(selectedPlan, interval);
     if (!priceId) {
-      return new NextResponse(`Липсва Stripe цена за ${selectedPlan} (${interval}). Задайте в .env (напр. STRIPE_STARTER_YEARLY_PRICE_ID).`, { status: 500 });
+      return NextResponse.json(
+        { error: `Липсва Stripe цена за ${selectedPlan} (${interval}). Задайте в Vercel env (напр. STRIPE_STARTER_YEARLY_PRICE_ID).` },
+        { status: 500 }
+      );
     }
     if (priceId.startsWith("prod_")) {
-      return new NextResponse(
-        "В .env е зададен Product ID (prod_...). Нужен е Price ID (price_...). В Stripe: отвори продукта → под него са цените → копирай Price ID.",
+      return NextResponse.json(
+        { error: "В .env е зададен Product ID (prod_...). Нужен е Price ID (price_...). В Stripe: отвори продукта → под него са цените → копирай Price ID." },
         { status: 400 }
+      );
+    }
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (!appUrl?.trim()) {
+      return NextResponse.json(
+        { error: "NEXT_PUBLIC_APP_URL не е зададен. Задайте го в Vercel Environment Variables (напр. https://invoice-ten-sigma.vercel.app)." },
+        { status: 500 }
       );
     }
 
@@ -75,8 +86,8 @@ export async function POST(req: Request) {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings/subscription?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings/subscription?canceled=true`,
+      success_url: `${appUrl}/settings/subscription?success=true`,
+      cancel_url: `${appUrl}/settings/subscription?canceled=true`,
       customer: customerId,
       client_reference_id: sessionUser.id,
       metadata: {
@@ -103,9 +114,14 @@ export async function POST(req: Request) {
       error?.type === "StripeInvalidRequestError" &&
       error?.code === "resource_missing" &&
       String(error?.param || "").includes("price");
-    const message = isNoSuchPrice
-      ? "Stripe не намира тази цена. Провери: (1) В .env само Price ID (price_...). (2) Същия режим Test/Live като ключа. (3) Същия Stripe акаунт."
-      : "Internal Server Error";
-    return new NextResponse(message, { status: 500 });
+    let message: string;
+    if (isNoSuchPrice) {
+      message = "Stripe не намира тази цена. Провери: (1) В Vercel env само Price ID (price_...). (2) Същия режим Test/Live като ключа. (3) Същия Stripe акаунт.";
+    } else if (error?.message) {
+      message = error.message;
+    } else {
+      message = "Internal Server Error";
+    }
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

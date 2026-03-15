@@ -85,9 +85,21 @@ export function useSubscription(): UseSubscriptionReturn {
       });
 
       if (!response.ok) {
-        const errorData = await response.text();
-        console.error("Error response:", errorData);
-        throw new Error(errorData || 'Failed to get checkout link');
+        const contentType = response.headers.get("content-type");
+        let errorMessage = "Failed to get checkout link";
+        try {
+          if (contentType?.includes("application/json")) {
+            const json = await response.json();
+            errorMessage = json?.error || json?.message || errorMessage;
+          } else {
+            const text = await response.text();
+            if (text) errorMessage = text;
+          }
+        } catch {
+          // use default errorMessage
+        }
+        console.error("Error response:", errorMessage);
+        throw new Error(errorMessage);
       }
       const data = await response.json();
 
