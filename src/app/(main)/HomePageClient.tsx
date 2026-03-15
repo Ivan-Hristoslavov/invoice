@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import {
   ChevronRight,
@@ -17,6 +18,7 @@ import {
   ArrowRight,
   Star,
   Crown,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { APP_NAME } from "@/config/constants";
@@ -459,9 +461,9 @@ export default function HomePage() {
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center gap-2"
             >
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg gradient-primary sm:h-8 sm:w-8">
-                <FileText className="h-3.5 w-3.5 text-white sm:h-4 sm:w-4" />
-              </div>
+              <Link href="/" className="flex h-7 w-7 items-center justify-center rounded-lg overflow-hidden sm:h-8 sm:w-8">
+                <Image src="/logo.png" alt="" width={32} height={32} className="h-full w-full object-contain" />
+              </Link>
               <span className="max-w-28 truncate text-base font-bold tracking-tight sm:max-w-none sm:text-xl">
                 {APP_NAME}
               </span>
@@ -566,6 +568,43 @@ export default function HomePage() {
                   </div>
                 </HCardContent>
               </HCard>
+            </div>
+          </div>
+        </section>
+
+        {/* ── What we do (Какво прави Invoicy) ── */}
+        <section className="px-4 py-5 sm:py-9">
+          <div className="container mx-auto max-w-6xl">
+            <div className="mb-4 text-center sm:mb-5">
+              <Chip variant="soft" color="accent" className="mb-4">
+                Какво прави {APP_NAME}
+              </Chip>
+              <h2 className="section-title mb-2 sm:mb-3">
+                Всичко необходимо за професионално фактуриране на едно място
+              </h2>
+              <p className="lead-text mx-auto max-w-2xl">
+                Създавайте фактури, кредитни и дебитни известия, управлявайте клиенти и фирми, изпращайте документи по имейл и следете статуси — в съответствие с българските изисквания.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 mb-6">
+              {[
+                { text: "Издаване на фактури с автоматично номериране и НАП-съвместими реквизити", icon: FileText },
+                { text: "Управление на клиенти и компании с ЕИК/Булстат и данъчни полета", icon: Building },
+                { text: "Кредитни и дебитни известия за сторниране и коригиране", icon: CreditCard },
+                { text: "PDF и CSV експорт, изпращане на фактури по имейл (PRO/Business)", icon: Zap },
+                { text: "Екип с роли — собственик, администратор, счетоводител, наблюдател", icon: Users },
+                { text: "История на промените и аудит за всяка фактура", icon: Shield },
+              ].map((item) => (
+                <div
+                  key={item.text}
+                  className="flex items-start gap-3 rounded-2xl border border-border/60 bg-card/95 px-4 py-3.5 shadow-sm"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <item.icon className="h-5 w-5" />
+                  </div>
+                  <p className="small-text font-medium text-foreground leading-snug pt-1.5">{item.text}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -1277,9 +1316,7 @@ export default function HomePage() {
             <div className="mb-6 grid grid-cols-1 gap-6 md:mb-10 md:grid-cols-4 md:gap-10">
               <div>
                 <div className="mb-3 flex items-center gap-2 sm:mb-4">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg gradient-primary sm:h-8 sm:w-8">
-                    <FileText className="h-3.5 w-3.5 text-white sm:h-4 sm:w-4" />
-                  </div>
+                  <Image src="/logo.png" alt="" width={32} height={32} className="h-7 w-7 sm:h-8 sm:w-8 object-contain" />
                   <span className="section-title">{APP_NAME}</span>
                 </div>
                 <p className="card-description">

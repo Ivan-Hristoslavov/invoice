@@ -3,6 +3,8 @@ import bcrypt from "bcryptjs";
 import cuid from "cuid";
 import { createAdminClient } from "@/lib/supabase/server";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { createEmailVerificationToken } from "@/lib/email-verification";
+import { sendVerificationEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   try {
@@ -67,10 +69,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Send email verification (non-blocking: do not fail register if email fails)
+    try {
+      const { token } = await createEmailVerificationToken(email);
+      const baseUrl =
+        process.env.NEXTAUTH_URL ||
+        process.env.NEXT_PUBLIC_APP_URL ||
+        "http://localhost:3000";
+      const confirmUrl = `${baseUrl}/confirm-email?token=${token}`;
+      await sendVerificationEmail({
+        to: email,
+        name: name || email.split("@")[0],
+        confirmUrl,
+      });
+    } catch (emailErr) {
+      console.error("Verification email send failed:", emailErr);
+      // Still return 201; user can request a new verification link later if we add that
+    }
+
     return NextResponse.json(
-      { 
-        message: "Потребителят е регистриран успешно", 
-        user 
+      {
+        message:
+          "Акаунтът е създаден. Проверете имейла си за линк за потвърждение преди първи вход.",
+        user: { id: user.id, name: user.name, email: user.email },
       },
       { status: 201 }
     );

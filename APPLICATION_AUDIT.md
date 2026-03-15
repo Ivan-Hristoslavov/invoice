@@ -12,20 +12,9 @@ Invoicy is a Bulgarian invoice management web application built with Next.js 14 
 
 ## 1. CRITICAL ISSUES (Must Fix Before Launch)
 
-### 1.1 Password Reset Not Implemented
+### 1.1 Password Reset — IMPLEMENTED
 
-**File:** `src/app/api/auth/forgot-password/route.ts`
-
-The forgot password endpoint has a TODO and returns a fake success without actually sending any email or generating a token. Users cannot recover their accounts.
-
-**What needs to happen:**
-- Generate a secure reset token (crypto.randomBytes)
-- Store token + expiration in the database (add `PasswordResetToken` table)
-- Send email with reset link via existing SMTP setup
-- Create `/reset-password?token=xxx` page
-- API endpoint to validate token and update password
-
-**Priority:** CRITICAL
+**Status (updated):** Password reset is implemented. Forgot-password API generates a token, stores it in `PasswordResetToken`, sends email via `sendPasswordResetEmail`. Reset-password page (`/reset-password?token=xxx`) and API validate the token and update the password. Rate limiting is applied.
 
 ### 1.2 Authorization Middleware Bug
 

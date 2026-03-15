@@ -7,7 +7,8 @@ import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { EyeIcon, EyeOffIcon, LockIcon, MailIcon, Loader2, ArrowRight } from "lucide-react";
+import { EyeIcon, EyeOffIcon, LockIcon, MailIcon, Loader2, ArrowRight, MailPlus } from "lucide-react";
+import { toast } from "sonner";
 
 export function SignInForm() {
   const router = useRouter();
@@ -19,7 +20,10 @@ export function SignInForm() {
   const [isMagicLoading, setIsMagicLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
   const hasAttemptedMagicLinkRef = useRef(false);
+
+  const isEmailNotVerified = error && error.includes("потвърдете имейла");
 
   const authError = searchParams.get("error");
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
@@ -98,7 +102,11 @@ export function SignInForm() {
       });
 
       if (result?.error) {
-        setError("Невалиден имейл или парола");
+        setError(
+          result.error === "EmailNotVerified"
+            ? "Моля, потвърдете имейла си преди влизане. Проверете пощенската си кутия за линк за потвърждение."
+            : "Невалиден имейл или парола"
+        );
         setIsLoading(false);
         return;
       }
@@ -114,6 +122,28 @@ export function SignInForm() {
   const handleGoogleSignIn = () => {
     setIsGoogleLoading(true);
     signIn("google", { callbackUrl });
+  };
+
+  const handleResendVerification = async () => {
+    if (!email?.trim() || resendLoading) return;
+    setResendLoading(true);
+    try {
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message || "Проверете имейла си за нов линк за потвърждение.");
+      } else {
+        toast.error(data.message || "Неуспешно изпращане. Опитайте отново по-късно.");
+      }
+    } catch {
+      toast.error("Възникна грешка. Опитайте отново по-късно.");
+    } finally {
+      setResendLoading(false);
+    }
   };
 
   return (
@@ -194,8 +224,25 @@ export function SignInForm() {
         </div>
 
         {error && (
-          <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+          <div className="space-y-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
             <p className="text-xs text-red-600 dark:text-red-400 font-medium">{error}</p>
+            {isEmailNotVerified && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 w-full border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30"
+                onClick={handleResendVerification}
+                disabled={resendLoading}
+              >
+                {resendLoading ? (
+                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <MailPlus className="mr-2 h-3.5 w-3.5" />
+                )}
+                Изпрати отново линк за потвърждение
+              </Button>
+            )}
           </div>
         )}
 

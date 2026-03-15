@@ -464,6 +464,15 @@
   @apply space-y-2;
 }
 
+/* Form actions: consistent order — secondary/cancel left, primary submit right */
+@utility form-actions {
+  @apply flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 sm:justify-end sm:items-center;
+}
+
+@utility form-actions-between {
+  @apply flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 sm:justify-between sm:items-center;
+}
+
 @utility loading-overlay {
   @apply fixed inset-0 bg-background/80 backdrop-blur-xs flex items-center justify-center z-50;
 }

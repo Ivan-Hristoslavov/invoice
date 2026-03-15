@@ -67,6 +67,13 @@ const quickLinks = [
     icon: Settings,
     href: "/settings",
     color: "from-indigo-500 to-blue-600"
+  },
+  {
+    title: "Екип и покани",
+    description: "Членове на екипа, роли и покани за компания",
+    icon: Users,
+    href: "/settings/team",
+    color: "from-rose-500 to-pink-600"
   }
 ];
 
@@ -273,6 +280,35 @@ export default function HelpPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Legal & shortcuts */}
+        <Card className="border border-border/60 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg">Правна информация и бързи клавиши</CardTitle>
+            <CardDescription>
+              Документи за поверителност, условия и подсказки за използване
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-3">
+              <Button asChild variant="outline" size="sm">
+                <Link href="/gdpr">GDPR</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/terms">Условия за ползване</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/privacy">Поверителност</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/cookies">Бисквитки</Link>
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Натиснете <kbd className="rounded border border-border/80 bg-muted/60 px-1.5 py-0.5 font-mono text-xs">?</kbd> в приложението за списък с клавишни комбинации.
+            </p>
+          </CardContent>
+        </Card>
 
         {/* Contact Support CTA */}
         <Card className="border-0 shadow-lg bg-linear-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20">

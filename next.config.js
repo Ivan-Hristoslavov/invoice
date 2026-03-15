@@ -60,47 +60,34 @@ const nextConfig = {
 
     return config;
   },
-  // Настройки за HTTP кеширане
+  // HTTP headers: avoid caching app pages so users see new deployments without clearing cache
   async headers() {
+    const securityHeaders = [
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'X-Frame-Options', value: 'DENY' },
+      { key: 'X-XSS-Protection', value: '1; mode=block' },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate, proxy-revalidate' },
+      { key: 'Pragma', value: 'no-cache' },
+    ];
     return [
+      // Hashed static assets can be cached (Next.js adds content hash to filenames)
       {
-        source: '/:all*(svg|jpg|png|webp)',
+        source: '/_next/static/:path*',
         headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, must-revalidate',
-          },
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],
       },
       {
-        source: '/:all*(js|css)',
+        source: '/:all*(svg|jpg|jpeg|png|webp|ico)',
         headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, must-revalidate',
-          },
+          { key: 'Cache-Control', value: 'public, max-age=86400, must-revalidate' },
         ],
       },
+      // All app routes and HTML: do not cache so deployments are visible immediately
       {
-        source: '/',
-        headers: [
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
-          },
-        ],
+        source: '/:path*',
+        headers: securityHeaders,
       },
     ];
   },
