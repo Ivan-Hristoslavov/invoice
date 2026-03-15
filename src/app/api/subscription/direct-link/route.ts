@@ -62,38 +62,20 @@ export async function POST(req: Request) {
       );
     }
 
-    // Prefer NEXT_PUBLIC_APP_URL; on Vercel fall back to VERCEL_URL (set automatically, no protocol)
-    const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() ?? "";
-    const vercelUrl = process.env.VERCEL_URL?.trim() ?? "";
-    let originInput = rawAppUrl || (vercelUrl ? `https://${vercelUrl}` : "");
-    // If no protocol (e.g. user set "invoice-ten-sigma.vercel.app"), Stripe will reject; force https
-    if (originInput && !/^https?:\/\//i.test(originInput)) {
-      originInput = `https://${originInput}`;
-    }
+    // Build redirect base from the request so we never depend on env (fixes "Not a valid URL" on Vercel)
+    const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
+    const proto = req.headers.get("x-forwarded-proto") || "https";
+    const baseOrigin = host ? `${proto}://${host}`.replace(/\/$/, "") : "";
 
-    if (!originInput) {
+    if (!baseOrigin || !host) {
       return NextResponse.json(
-        { error: "NEXT_PUBLIC_APP_URL (or VERCEL_URL) не е зададен. Задайте NEXT_PUBLIC_APP_URL в Vercel (напр. https://invoice-ten-sigma.vercel.app)." },
-        { status: 500 }
-      );
-    }
-    let baseOrigin: string;
-    try {
-      const parsed = new URL(originInput);
-      if (!parsed.host) throw new Error("Missing host");
-      baseOrigin = `https://${parsed.host}`;
-    } catch {
-      return NextResponse.json(
-        { error: "NEXT_PUBLIC_APP_URL не е валиден URL (напр. https://invoice-ten-sigma.vercel.app, без интервал в края)." },
+        { error: "Не може да се определи адресът на приложението. Опитайте отново." },
         { status: 500 }
       );
     }
 
-    const successUrl = new URL("/settings/subscription?success=true", baseOrigin).href;
-    const cancelUrl = new URL("/settings/subscription?canceled=true", baseOrigin).href;
-
-    // Log in Vercel → Project → Logs to see what URLs are sent to Stripe (helps debug "invalid URL")
-    console.log("[direct-link] redirect URLs", { baseOrigin, successUrl, cancelUrl, hasNextPublic: !!rawAppUrl, vercelUrl: vercelUrl || "(none)" });
+    const successUrl = `${baseOrigin}/settings/subscription?success=true`;
+    const cancelUrl = `${baseOrigin}/settings/subscription?canceled=true`;
 
     const stripe = await getStripe();
     const customerId = await ensureStripeCustomerBinding({
