@@ -7,6 +7,8 @@ import {
   formatValidationIssues,
   validateBulgarianPartyInput,
 } from "@/lib/bulgarian-party";
+import { hasPermission } from "@/lib/permissions";
+import { getAccessibleOwnerUserIdsForUser } from "@/lib/team";
 import { z } from "zod";
 
 const clientSchema = z.object({
@@ -46,12 +48,13 @@ export async function GET(
 
     const { id } = await context.params;
     const supabase = createAdminClient();
+    const accessibleOwnerIds = await getAccessibleOwnerUserIdsForUser(sessionUser.id);
 
     const { data: client, error } = await supabase
       .from("Client")
       .select("*")
       .eq("id", id)
-      .eq("userId", sessionUser.id)
+      .in("userId", accessibleOwnerIds)
       .single();
 
     if (error || !client) {
@@ -84,6 +87,11 @@ export async function PUT(
       return NextResponse.json({ error: "Сесията ви е невалидна. Моля, влезте отново." }, { status: 401 });
     }
 
+    const canUpdate = await hasPermission(sessionUser.id, "client:update");
+    if (!canUpdate) {
+      return NextResponse.json({ error: "Нямате право да редактирате клиенти" }, { status: 403 });
+    }
+
     const { id } = await context.params;
     const json = await request.json();
     const validated = clientSchema.parse(json);
@@ -97,12 +105,13 @@ export async function PUT(
     }
 
     const supabase = createAdminClient();
+    const accessibleOwnerIds = await getAccessibleOwnerUserIdsForUser(sessionUser.id);
 
     const { data: existingClient, error: existingClientError } = await supabase
       .from("Client")
       .select("id")
       .eq("id", id)
-      .eq("userId", sessionUser.id)
+      .in("userId", accessibleOwnerIds)
       .single();
 
     if (existingClientError || !existingClient) {
@@ -137,7 +146,7 @@ export async function PUT(
         updatedAt: new Date().toISOString(),
       })
       .eq("id", id)
-      .eq("userId", sessionUser.id)
+      .in("userId", accessibleOwnerIds)
       .select()
       .single();
 

@@ -47,3 +47,21 @@ export const INVOICE_STATUS = {
 } as const;
 
 // Social links and contact information can be added here
+
+// Storage: images bucket (logos + attachments)
+export const STORAGE_BUCKET_IMAGES = "images";
+
+// Logo upload: max size 2MB, recommended max dimension for PDF/email
+export const MAX_LOGO_SIZE_BYTES = 2 * 1024 * 1024;
+export const MAX_LOGO_DIMENSION_PX = 800;
+
+// Invoice attachment upload: allowed types and max size per file
+export const ALLOWED_ATTACHMENT_MIME_TYPES = [
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+] as const;
+export const MAX_ATTACHMENT_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+export const MAX_ATTACHMENTS_PER_INVOICE = 10;

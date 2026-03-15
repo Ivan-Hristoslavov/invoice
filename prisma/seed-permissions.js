@@ -63,13 +63,15 @@ async function main() {
 
   console.log(`Created ${permissions.length} permissions`);
 
-  // Define role permissions
+  // Define role permissions (only one role has full control: OWNER)
   const rolePermissions = {
-    // Admin has all permissions
-    ADMIN: permissions.map(p => p.name),
-    
-    // Owner has most permissions except system-level ones
-    OWNER: permissions.map(p => p.name).filter(p => !p.includes('admin:')),
+    // Owner: single full-control role (all permissions). One per company.
+    OWNER: permissions.map(p => p.name),
+
+    // Admin: almost full, but cannot delete company or manage users (only OWNER can)
+    ADMIN: permissions.map(p => p.name).filter(
+      (name) => name !== 'company:delete' && name !== 'user:manage'
+    ),
     
     // Manager has operational permissions but not deletion or company management
     MANAGER: [

@@ -84,6 +84,7 @@ interface Invoice {
   total: number;
   status: string;
   userId: string;
+  createdById?: string | null;
   client: {
     id: string;
     name: string;
@@ -97,6 +98,7 @@ interface InvoicesClientProps {
   companies: Array<{ id: string; name: string }>;
   canCreateInvoices: boolean;
   currentUserId: string;
+  createdByMap?: Record<string, { name: string | null; email?: string | null }>;
 }
 
 export default function InvoicesClient({
@@ -105,6 +107,7 @@ export default function InvoicesClient({
   companies,
   canCreateInvoices,
   currentUserId,
+  createdByMap = {},
 }: InvoicesClientProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
@@ -799,6 +802,11 @@ export default function InvoicesClient({
                           <div className="min-w-0">
                             <p className="truncate font-semibold text-sm">{invoice.invoiceNumber}</p>
                             <p className="truncate text-xs text-muted-foreground">{invoice.client.name}</p>
+                            {invoice.createdById && createdByMap[invoice.createdById] && (
+                              <p className="truncate text-xs text-muted-foreground">
+                                Създадена от: {createdByMap[invoice.createdById].name ?? "—"}
+                              </p>
+                            )}
                             <p className="text-xs text-muted-foreground">
                               {format(new Date(invoice.issueDate), "d MMM yyyy", { locale: bg })}
                             </p>
@@ -956,6 +964,9 @@ export default function InvoicesClient({
                       Клиент
                     </TableHead>
                     <TableHead className="px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Създадена от
+                    </TableHead>
+                    <TableHead className="px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                       Дата
                     </TableHead>
                     <TableHead className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -1005,6 +1016,13 @@ export default function InvoicesClient({
                                 <div className="min-w-0">
                                   <p className="truncate text-sm font-medium">{invoice.client.name}</p>
                                 </div>
+                              </TableCell>
+                              <TableCell className="px-6 py-4">
+                                <p className="truncate text-sm text-muted-foreground">
+                                  {invoice.createdById && createdByMap[invoice.createdById]
+                                    ? createdByMap[invoice.createdById].name ?? invoice.createdById
+                                    : "—"}
+                                </p>
                               </TableCell>
                               <TableCell className="px-6 py-4">
                                 <p className="text-sm text-muted-foreground">

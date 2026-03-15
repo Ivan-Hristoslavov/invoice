@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
+import { STORAGE_BUCKET_IMAGES } from "@/config/constants";
 
 export async function DELETE(
   request: NextRequest,
@@ -43,7 +44,7 @@ export async function DELETE(
         const filePath = logoUrl.pathname.split('/').slice(-2).join('/'); // Get 'logos/filename'
         
         const { error: deleteError } = await supabase.storage
-          .from('images')
+          .from(STORAGE_BUCKET_IMAGES)
           .remove([filePath]);
 
         if (deleteError) {

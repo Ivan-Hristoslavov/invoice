@@ -216,7 +216,7 @@ export async function GET(request: NextRequest) {
 
 // Обработка на POST заявка
 export async function POST(request: NextRequest) {
-  return withRateLimit(request, () => 
+  return withRateLimit(request, () =>
     withErrorHandling(request, () =>
       withAuthorization(request, async () => {
         // Сесията вече е проверена от withAuthorization middleware
@@ -345,6 +345,7 @@ export async function POST(request: NextRequest) {
               isEInvoice: validatedData.isEInvoice || false,
               isOriginal: validatedData.isOriginal !== false,
               bulstatNumber: company.bulstatNumber || null,
+              createdById: sessionUser.id,
               ...createDocumentSnapshots(
                 company,
                 client,
@@ -443,7 +444,7 @@ export async function POST(request: NextRequest) {
           formatApiResponse(fullInvoice), 
           { status: ApiStatusCode.CREATED }
         );
-      })
+      }, { requiredPermissions: ['invoice:create'] })
     )
   );
 }

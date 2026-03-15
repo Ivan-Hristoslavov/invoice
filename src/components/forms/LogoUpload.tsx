@@ -9,6 +9,7 @@ import { Upload, X, Check, Loader2, Lock, Crown } from "lucide-react";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import { MAX_LOGO_SIZE_BYTES, MAX_LOGO_DIMENSION_PX } from "@/config/constants";
 
 interface LogoUploadProps {
   currentLogoUrl?: string | null;
@@ -58,10 +59,9 @@ export function LogoUpload({ currentLogoUrl, companyId, onLogoUploaded }: LogoUp
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > MAX_LOGO_SIZE_BYTES) {
       toast.error("Файлът е твърде голям", {
-        description: "Максималният размер на файла е 5MB"
+        description: `Максималният размер е ${MAX_LOGO_SIZE_BYTES / (1024 * 1024)}MB`
       });
       return;
     }
@@ -96,11 +96,17 @@ export function LogoUpload({ currentLogoUrl, companyId, onLogoUploaded }: LogoUp
       throw new Error('No 2d context');
     }
 
-    // Set canvas size to match cropped area
-    canvas.width = pixelCrop.width;
-    canvas.height = pixelCrop.height;
+    // Cap dimensions for smaller file size (PDF/email)
+    let w = pixelCrop.width;
+    let h = pixelCrop.height;
+    if (w > MAX_LOGO_DIMENSION_PX || h > MAX_LOGO_DIMENSION_PX) {
+      const scale = Math.min(MAX_LOGO_DIMENSION_PX / w, MAX_LOGO_DIMENSION_PX / h);
+      w = Math.round(w * scale);
+      h = Math.round(h * scale);
+    }
+    canvas.width = w;
+    canvas.height = h;
 
-    // Draw cropped image
     ctx.drawImage(
       image,
       pixelCrop.x,
@@ -109,11 +115,10 @@ export function LogoUpload({ currentLogoUrl, companyId, onLogoUploaded }: LogoUp
       pixelCrop.height,
       0,
       0,
-      pixelCrop.width,
-      pixelCrop.height
+      w,
+      h
     );
 
-    // Convert to blob with compression
     return new Promise((resolve, reject) => {
       canvas.toBlob(
         (blob) => {
@@ -124,7 +129,7 @@ export function LogoUpload({ currentLogoUrl, companyId, onLogoUploaded }: LogoUp
           resolve(blob);
         },
         'image/jpeg',
-        0.85 // Quality: 85% for smaller file size
+        0.85
       );
     });
   };
@@ -282,7 +287,7 @@ export function LogoUpload({ currentLogoUrl, companyId, onLogoUploaded }: LogoUp
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            JPG, PNG или SVG. Максимален размер 5MB. Препоръчителен размер: 200x200px.
+            JPG, PNG или SVG. Макс. {MAX_LOGO_SIZE_BYTES / (1024 * 1024)}MB. Препоръчително до {MAX_LOGO_DIMENSION_PX}×{MAX_LOGO_DIMENSION_PX}px (за PDF и имейл).
           </p>
         </div>
       </div>

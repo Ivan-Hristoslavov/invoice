@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { APP_NAME } from "@/config/constants";
+import { createAdminClient } from "@/lib/supabase/server";
 import {
   Card,
   CardContent,
@@ -10,21 +11,33 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ProfileForm } from "./ProfileForm";
 import { GdprSection } from "./GdprSection";
-import { User, Camera } from "lucide-react";
+import { User, Camera, Info } from "lucide-react";
 
 export const metadata: Metadata = {
   title: `Настройки на профила | ${APP_NAME}`,
   description: "Обновете информацията за вашия профил",
 };
 
-export default async function ProfileSettingsPage() {
+export default async function ProfileSettingsPage(props: {
+  searchParams?: Promise<{ setup?: string }>;
+}) {
   const session = await getServerSession(authOptions);
+  const searchParams = (await props.searchParams) ?? {};
+  const isSetup = searchParams.setup === "1";
 
-  if (!session) {
+  if (!session?.user) {
     redirect("/signin");
   }
+
+  const supabase = createAdminClient();
+  const { data: dbUser } = await supabase
+    .from("User")
+    .select("name, email, phone")
+    .eq("id", session.user.id)
+    .single();
 
   const initials = session.user.name
     ? session.user.name
@@ -85,6 +98,15 @@ export default async function ProfileSettingsPage() {
         </CardContent>
       </Card>
 
+      {isSetup && (
+        <Alert className="border-primary/30 bg-primary/5">
+          <Info className="h-4 w-4 text-primary" />
+          <AlertDescription>
+            Попълнете име и по избор телефон, след което запазете промените. Това помага на екипа да ви познае.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Profile form card */}
       <Card>
         <CardHeader>
@@ -101,8 +123,9 @@ export default async function ProfileSettingsPage() {
         <CardContent>
           <ProfileForm
             defaultValues={{
-              name: session.user.name || "",
-              email: session.user.email || "",
+              name: dbUser?.name ?? session.user.name ?? "",
+              email: dbUser?.email ?? session.user.email ?? "",
+              phone: dbUser?.phone ?? "",
             }}
           />
         </CardContent>

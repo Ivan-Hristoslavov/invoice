@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   FileText,
   Users,
+  UsersRound,
   Building,
   Package,
   Settings,
@@ -67,6 +68,12 @@ const mainNavItems = [
     href: "/products", 
     icon: Package,
     gradient: "from-cyan-500 to-blue-600"
+  },
+  { 
+    name: "Екип", 
+    href: "/settings/team", 
+    icon: UsersRound,
+    gradient: "from-violet-500 to-purple-600"
   },
 ];
 
@@ -154,7 +161,7 @@ export function Sidebar() {
 
   const isActive = (href: string) => {
     if (href === "/settings") {
-      return pathname === "/settings";
+      return (pathname === "/settings" || pathname.startsWith("/settings/")) && pathname !== "/settings/team";
     }
     return pathname === href || pathname.startsWith(href + "/");
   };

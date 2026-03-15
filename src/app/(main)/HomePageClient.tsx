@@ -2,7 +2,6 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { motion } from "framer-motion";
 import {
   ChevronRight,
@@ -461,8 +460,10 @@ export default function HomePage() {
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center gap-2"
             >
-              <Link href="/" className="flex h-7 w-7 items-center justify-center rounded-lg overflow-hidden sm:h-8 sm:w-8">
-                <Image src="/logo.png" alt="" width={32} height={32} className="h-full w-full object-contain" />
+              <Link href="/" className="flex h-7 w-7 items-center justify-center rounded-lg overflow-hidden sm:h-8 sm:w-8" aria-label="Начало">
+                <div className="flex h-full w-full items-center justify-center rounded-lg gradient-primary shadow-md">
+                  <FileText className="h-4 w-4 text-white sm:h-5 sm:w-5" aria-hidden />
+                </div>
               </Link>
               <span className="max-w-28 truncate text-base font-bold tracking-tight sm:max-w-none sm:text-xl">
                 {APP_NAME}
@@ -1316,7 +1317,9 @@ export default function HomePage() {
             <div className="mb-6 grid grid-cols-1 gap-6 md:mb-10 md:grid-cols-4 md:gap-10">
               <div>
                 <div className="mb-3 flex items-center gap-2 sm:mb-4">
-                  <Image src="/logo.png" alt="" width={32} height={32} className="h-7 w-7 sm:h-8 sm:w-8 object-contain" />
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg gradient-primary shadow-md sm:h-8 sm:w-8">
+                    <FileText className="h-4 w-4 text-white sm:h-5 sm:w-5" aria-hidden />
+                  </div>
                   <span className="section-title">{APP_NAME}</span>
                 </div>
                 <p className="card-description">

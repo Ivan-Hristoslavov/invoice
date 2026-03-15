@@ -115,9 +115,10 @@ type Invoice = {
 
 interface InvoiceDetailClientProps {
   initialInvoice: Invoice;
+  createdByName?: string | null;
 }
 
-export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailClientProps) {
+export default function InvoiceDetailClient({ initialInvoice, createdByName }: InvoiceDetailClientProps) {
   const router = useRouter();
   const [invoice, setInvoice] = useState<Invoice>(initialInvoice);
   const [activeTab, setActiveTab] = useState("details");
@@ -673,6 +674,12 @@ export default function InvoiceDetailClient({ initialInvoice }: InvoiceDetailCli
                         <div className="flex items-start justify-between gap-4">
                           <span className="text-muted-foreground">Начин на плащане</span>
                           <span className="text-right">{getPaymentMethodText(invoice.paymentMethod)}</span>
+                        </div>
+                      )}
+                      {createdByName && (
+                        <div className="flex items-start justify-between gap-4">
+                          <span className="text-muted-foreground">Създадена от</span>
+                          <span className="text-right">{createdByName}</span>
                         </div>
                       )}
                     </div>

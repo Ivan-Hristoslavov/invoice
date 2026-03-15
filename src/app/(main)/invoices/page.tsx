@@ -58,14 +58,27 @@ export default async function InvoicesPage() {
   const canCreateInvoices = await checkPermission("invoice:create");
 
   const supabase = createAdminClient();
-  
-  // Fetch invoices created by the current user only.
+
+  // Fetch invoices (company scope)
   const { data: userInvoices } = await supabase
     .from("Invoice")
     .select("*, client:Client(*)")
     .eq("userId", sessionUser.id)
     .order("issueDate", { ascending: false });
   const invoices = userInvoices || [];
+
+  // Resolve creator names for "Created by" column
+  const createdByIds = [...new Set((invoices as { createdById?: string }[]).map((inv) => inv.createdById).filter(Boolean))] as string[];
+  const createdByMap: Record<string, { name: string | null; email?: string | null }> = {};
+  if (createdByIds.length > 0) {
+    const { data: creators } = await supabase
+      .from("User")
+      .select("id, name, email")
+      .in("id", createdByIds);
+    for (const u of creators || []) {
+      createdByMap[u.id] = { name: u.name ?? null, email: u.email ?? null };
+    }
+  }
 
   // Fetch clients and companies for export dialog
   const { data: clients } = await supabase
@@ -82,15 +95,16 @@ export default async function InvoicesPage() {
 
   return (
     <InvoicesClient
-      initialInvoices={invoices.map(inv => ({
+      initialInvoices={invoices.map((inv) => ({
         ...inv,
-        issueDate: typeof inv.issueDate === 'string' ? inv.issueDate : inv.issueDate,
-        dueDate: typeof inv.dueDate === 'string' ? inv.dueDate : inv.dueDate,
+        issueDate: typeof inv.issueDate === "string" ? inv.issueDate : inv.issueDate,
+        dueDate: typeof inv.dueDate === "string" ? inv.dueDate : inv.dueDate,
       }))}
       clients={clients || []}
       companies={companies || []}
       canCreateInvoices={canCreateInvoices}
       currentUserId={sessionUser.id}
+      createdByMap={createdByMap}
     />
   );
 } 

@@ -4,6 +4,12 @@ import { useState } from "react";
 import { Paperclip, File, Image, FileText, X, Upload, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { getDocuments, uploadDocument, deleteDocument } from "@/lib/services/document-service";
+import {
+  ALLOWED_ATTACHMENT_MIME_TYPES,
+  MAX_ATTACHMENT_SIZE_BYTES,
+  MAX_ATTACHMENTS_PER_INVOICE,
+} from "@/config/constants";
 
 type Document = {
   id: string;
@@ -23,52 +29,77 @@ export default function DocumentsTab({ invoiceId, documents: initialDocuments = 
   const [documents, setDocuments] = useState<Document[]>(initialDocuments);
   const [isUploading, setIsUploading] = useState(false);
 
+  const allowedAccept = ALLOWED_ATTACHMENT_MIME_TYPES.join(",");
+  const maxSizeMb = MAX_ATTACHMENT_SIZE_BYTES / (1024 * 1024);
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    const allowedSet = new Set(ALLOWED_ATTACHMENT_MIME_TYPES);
+    const toUpload: File[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (!allowedSet.has(file.type)) {
+        toast.error(`Невалиден тип: ${file.name}. Позволени: PDF, JPG, PNG, WebP, GIF.`);
+        continue;
+      }
+      if (file.size > MAX_ATTACHMENT_SIZE_BYTES) {
+        toast.error(`${file.name} надвишава ${maxSizeMb}MB`);
+        continue;
+      }
+      toUpload.push(file);
+    }
+
+    const remaining = MAX_ATTACHMENTS_PER_INVOICE - documents.length;
+    if (toUpload.length > remaining) {
+      toast.error(`Максимум ${MAX_ATTACHMENTS_PER_INVOICE} прикачени файла. Остават ${remaining} места.`);
+      toUpload.splice(remaining);
+    }
+    if (toUpload.length === 0) {
+      e.target.value = "";
+      return;
+    }
+
     setIsUploading(true);
-
     try {
-      // In a real implementation, you would upload files to a storage service
-      // and then save the references in your database
-      
-      // Mock implementation for demo purposes
-      const newDocuments = Array.from(files).map((file, index) => ({
-        id: `doc-${Date.now()}-${index}`,
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        url: URL.createObjectURL(file), // This would be a cloud storage URL in production
-        createdAt: new Date().toISOString(),
-      }));
-
-      setDocuments([...documents, ...newDocuments]);
-      toast.success(`${files.length} document(s) uploaded successfully`);
-      
-      // In a real implementation, you would make an API call here to save
-      // the document references to the invoice record
-
+      const created: Document[] = [];
+      for (const file of toUpload) {
+        const doc = await uploadDocument(invoiceId, file);
+        created.push({
+          id: doc.id,
+          name: doc.name,
+          size: doc.size,
+          type: doc.type,
+          url: doc.url,
+          createdAt: doc.createdAt,
+        });
+      }
+      setDocuments([...documents, ...created]);
+      toast.success(
+        created.length === 1
+          ? "Файлът е прикачен"
+          : `${created.length} файла са прикачени`
+      );
     } catch (error) {
       console.error("Error uploading document:", error);
-      toast.error("Failed to upload document. Please try again.");
+      toast.error(
+        error instanceof Error ? error.message : "Неуспешно качване. Опитайте отново."
+      );
     } finally {
       setIsUploading(false);
-      // Reset the file input
       e.target.value = "";
     }
   };
 
   const handleDeleteDocument = async (documentId: string) => {
     try {
-      // In a real implementation, you would make an API call to delete the document
-      
-      // Mock implementation for demo purposes
-      setDocuments(documents.filter(doc => doc.id !== documentId));
-      toast.success("Document removed successfully");
+      await deleteDocument(invoiceId, documentId);
+      setDocuments(documents.filter((doc) => doc.id !== documentId));
+      toast.success("Прикаченият файл е премахнат");
     } catch (error) {
       console.error("Error deleting document:", error);
-      toast.error("Failed to delete document. Please try again.");
+      toast.error("Неуспешно премахване на файла.");
     }
   };
 
@@ -88,24 +119,25 @@ export default function DocumentsTab({ invoiceId, documents: initialDocuments = 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium">Attached Documents</h3>
+        <h3 className="text-sm font-medium">Прикачени документи</h3>
         <div className="relative">
           <input
             type="file"
             id="file-upload"
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            accept={allowedAccept}
             onChange={handleFileUpload}
             multiple
             disabled={isUploading}
           />
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             className="relative"
-            disabled={isUploading}
+            disabled={isUploading || documents.length >= MAX_ATTACHMENTS_PER_INVOICE}
           >
             <Paperclip className="mr-2 h-4 w-4" />
-            {isUploading ? "Uploading..." : "Attach Files"}
+            {isUploading ? "Качване..." : "Прикачи файлове"}
           </Button>
         </div>
       </div>
@@ -113,9 +145,9 @@ export default function DocumentsTab({ invoiceId, documents: initialDocuments = 
       {documents.length === 0 ? (
         <div className="text-center py-8 border border-dashed rounded-lg">
           <Paperclip className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-          <p className="text-sm text-muted-foreground mb-1">No documents attached</p>
+          <p className="text-sm text-muted-foreground mb-1">Няма прикачени файлове</p>
           <p className="text-xs text-muted-foreground">
-            Attach receipts, contracts, or other documents related to this invoice
+            PDF, JPG, PNG, WebP или GIF. Макс. {maxSizeMb}MB на файл, до {MAX_ATTACHMENTS_PER_INVOICE} файла.
           </p>
         </div>
       ) : (
