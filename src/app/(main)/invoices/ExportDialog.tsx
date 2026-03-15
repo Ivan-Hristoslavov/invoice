@@ -117,7 +117,7 @@ export default function ExportDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Export Invoices</DialogTitle>
           <DialogDescription>

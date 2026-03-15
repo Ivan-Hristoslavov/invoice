@@ -8,30 +8,31 @@ import {
   validateBulgarianPartyInput,
 } from "@/lib/bulgarian-party";
 import { z } from "zod";
+import { FIELD_LIMITS } from "@/lib/validations/field-limits";
 
 const companySchema = z.object({
   id: z.string().optional(),
-  name: z.string().min(1, "Името на компанията е задължително"),
-  email: z.string().email("Моля, въведете валиден имейл").optional().or(z.literal("")),
-  phone: z.string().optional().or(z.literal("")),
-  address: z.string().optional().or(z.literal("")),
-  city: z.string().optional().or(z.literal("")),
-  state: z.string().optional().or(z.literal("")),
-  zipCode: z.string().optional().or(z.literal("")),
-  country: z.string().optional().or(z.literal("")),
-  vatNumber: z.string().optional().or(z.literal("")),
-  taxIdNumber: z.string().optional().or(z.literal("")),
-  registrationNumber: z.string().optional().or(z.literal("")),
+  name: z.string().min(2, "Името на компанията е задължително").max(FIELD_LIMITS.name, "Името е твърде дълго"),
+  email: z.string().email("Моля, въведете валиден имейл").max(FIELD_LIMITS.email).optional().or(z.literal("")),
+  phone: z.string().max(FIELD_LIMITS.phone).optional().or(z.literal("")),
+  address: z.string().max(FIELD_LIMITS.address).optional().or(z.literal("")),
+  city: z.string().max(FIELD_LIMITS.city).optional().or(z.literal("")),
+  state: z.string().max(100).optional().or(z.literal("")),
+  zipCode: z.string().max(FIELD_LIMITS.postalCode).optional().or(z.literal("")),
+  country: z.string().max(FIELD_LIMITS.country).optional().or(z.literal("")),
+  vatNumber: z.string().max(FIELD_LIMITS.phone).optional().or(z.literal("")),
+  taxIdNumber: z.string().max(100).optional().or(z.literal("")),
+  registrationNumber: z.string().max(100).optional().or(z.literal("")),
   bulstatNumber: z.string().optional().or(z.literal("")),
   vatRegistered: z.boolean().optional().default(false),
-  vatRegistrationNumber: z.string().optional().or(z.literal("")),
-  mol: z.string().optional().or(z.literal("")),
-  accountablePerson: z.string().optional().or(z.literal("")),
+  vatRegistrationNumber: z.string().max(FIELD_LIMITS.phone).optional().or(z.literal("")),
+  mol: z.string().max(FIELD_LIMITS.mol).optional().or(z.literal("")),
+  accountablePerson: z.string().max(FIELD_LIMITS.accountablePerson).optional().or(z.literal("")),
   uicType: z.enum(["BULSTAT", "EGN"]).optional().default("BULSTAT"),
-  bankName: z.string().optional().or(z.literal("")),
-  bankAccount: z.string().optional().or(z.literal("")),
-  bankSwift: z.string().optional().or(z.literal("")),
-  bankIban: z.string().optional().or(z.literal("")),
+  bankName: z.string().max(FIELD_LIMITS.bankName).optional().or(z.literal("")),
+  bankAccount: z.string().max(FIELD_LIMITS.bankAccount).optional().or(z.literal("")),
+  bankSwift: z.string().max(FIELD_LIMITS.bankSwift).optional().or(z.literal("")),
+  bankIban: z.string().max(FIELD_LIMITS.bankIban).optional().or(z.literal("")),
 });
 
 export async function GET(
@@ -175,12 +176,19 @@ export async function PUT(
     return NextResponse.json(company);
   } catch (error) {
     if (error instanceof z.ZodError) {
+      const details = error.errors.map((e) => ({
+        path: e.path.map(String),
+        message: e.message,
+      }));
       return NextResponse.json(
-        { error: "Неуспешна валидация", details: error.errors },
+        { error: "Невалидни данни за компанията. Моля, проверете полетата.", details },
         { status: 400 }
       );
     }
     console.error("Грешка при обновяване на компания:", error);
-    return NextResponse.json({ error: "Неуспешно обновяване на компания" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Неуспешно обновяване на компания. Моля, опитайте отново." },
+      { status: 500 }
+    );
   }
 }

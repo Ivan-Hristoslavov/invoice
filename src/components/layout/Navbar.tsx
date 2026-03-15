@@ -17,6 +17,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useCommandPalette } from "@/components/ui/command-palette";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { APP_NAME } from "@/config/constants";
+import { SUBSCRIPTION_PLANS, type SubscriptionPlanKey } from "@/lib/subscription-plans";
 
 export function Navbar() {
   const { data: session, status } = useSession();
@@ -25,7 +26,10 @@ export function Navbar() {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const { setOpen: setCommandPaletteOpen } = useCommandPalette();
-  const { isLoadingUsage, canCreateInvoice } = useSubscriptionLimit();
+  const { plan, isLoadingUsage, canCreateInvoice } = useSubscriptionLimit();
+  const planDisplayName = plan && plan in SUBSCRIPTION_PLANS
+    ? SUBSCRIPTION_PLANS[plan as SubscriptionPlanKey].displayName
+    : plan ?? "Безплатен";
 
   useEffect(() => {
     setMounted(true);
@@ -67,6 +71,14 @@ export function Navbar() {
           <span className="max-w-28 truncate text-sm font-bold tracking-tight sm:max-w-none sm:text-xl">
             {APP_NAME}
           </span>
+          {!isLoadingUsage && (
+            <span
+              className="shrink-0 rounded-md border border-border/60 bg-muted/80 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground sm:text-xs"
+              title="Текущ план"
+            >
+              {planDisplayName}
+            </span>
+          )}
         </Link>
         {/* Spacer */}
         <div className="flex-1" />
@@ -91,7 +103,7 @@ export function Navbar() {
             <Button 
               asChild 
               size="icon" 
-              className="h-8 w-8 gradient-primary text-white border-0 shadow-md hover:opacity-90 sm:h-10 sm:w-10"
+              className="h-8 w-8 rounded-full gradient-primary text-white border-0 shadow-md hover:opacity-90 sm:h-10 sm:w-10"
               title="Нова фактура"
               aria-label="Нова фактура"
             >

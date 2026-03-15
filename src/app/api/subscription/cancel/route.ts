@@ -2,17 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/server';
-import Stripe from 'stripe';
-
-// Lazy initialization helper to avoid build-time errors
-function getStripe() {
-  if (!process.env.STRIPE_SECRET_KEY) {
-    throw new Error('STRIPE_SECRET_KEY is not configured');
-  }
-  return new Stripe(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: '2023-10-16'
-  });
-}
+import { getStripe } from '@/lib/stripe';
 
 export async function POST() {
   try {
@@ -36,7 +26,7 @@ export async function POST() {
     }
 
     // Cancel the subscription in Stripe
-    const stripe = getStripe();
+    const stripe = await getStripe();
     if (subscription.stripeSubscriptionId) {
       await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
         cancel_at_period_end: true

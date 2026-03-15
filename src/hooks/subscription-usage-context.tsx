@@ -34,6 +34,7 @@ export interface UsageData {
     creditNotes: boolean;
     emailSending: boolean;
     apiAccess: boolean;
+    eikSearch: boolean;
   };
 }
 

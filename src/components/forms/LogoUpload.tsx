@@ -301,7 +301,7 @@ export function LogoUpload({ currentLogoUrl, companyId, onLogoUploaded }: LogoUp
       />
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Редактиране на лого</DialogTitle>
             <DialogDescription>

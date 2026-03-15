@@ -74,7 +74,7 @@ export function KeyboardShortcutsHelp({ trigger }: KeyboardShortcutsHelpProps) {
           </DialogTrigger>
         )
       )}
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-h-[85vh] max-w-md overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Keyboard className="h-5 w-5" />

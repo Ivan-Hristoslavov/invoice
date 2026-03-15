@@ -24,7 +24,7 @@ const invoiceItemSchema = z.object({
   productId: z.string().optional(),
   description: z.string().min(1, "Описанието е задължително"),
   quantity: z.number().min(0.01, "Количеството трябва да е по-голямо от 0"),
-  unitPrice: z.number().min(0, "Единичната цена не може да е отрицателна"),
+  unitPrice: z.number().min(0.01, "Цената е задължителна и трябва да е положителна"),
   taxRate: z.number().min(0, "ДДС не може да е отрицателно"),
 });
 

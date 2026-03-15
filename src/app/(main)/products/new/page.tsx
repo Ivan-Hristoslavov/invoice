@@ -41,6 +41,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { applyApiValidationDetails } from "@/lib/form-errors";
+import { FIELD_LIMITS } from "@/lib/validations/field-limits";
 
 const PRODUCT_UNITS = [
   { value: "piece", label: "Брой" },
@@ -61,18 +63,21 @@ const PRODUCT_UNITS = [
 ] as const;
 
 const productSchema = z.object({
-  name: z.string().min(1, "Името на продукта е задължително"),
-  description: z.string().optional(),
+  name: z
+    .string()
+    .min(2, "Името на продукта е задължително (минимум 2 символа)")
+    .max(FIELD_LIMITS.name, "Името е твърде дълго"),
+  description: z.string().max(FIELD_LIMITS.description, "Описанието е твърде дълго").optional(),
   price: z
     .string()
     .min(1, "Цената е задължителна")
-    .refine((v) => !isNaN(parseFloat(v)) && parseFloat(v) >= 0, "Цената трябва да е положително число"),
+    .refine((v) => !isNaN(parseFloat(v)) && parseFloat(v) >= 0, "Цената не може да бъде отрицателна"),
   unit: z.string().min(1, "Единицата е задължителна"),
   taxRate: z
     .string()
     .refine(
-      (v) => v === "" || (!isNaN(parseFloat(v)) && parseFloat(v) >= 0),
-      "Данъчната ставка трябва да е положително число"
+      (v) => v === "" || (!isNaN(parseFloat(v)) && parseFloat(v) >= 0 && parseFloat(v) <= 100),
+      "ДДС ставката трябва да е между 0 и 100"
     ),
 });
 
@@ -118,7 +123,14 @@ export default function NewProductPage() {
       });
 
       if (!response.ok) {
-        const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
+        const errorPayload = (await response.json().catch(() => null)) as {
+          error?: string;
+          details?: Array<{ path?: string[]; message?: string }>;
+        } | null;
+        const details = errorPayload?.details;
+        if (details?.length) {
+          applyApiValidationDetails(form, details);
+        }
         throw new Error(errorPayload?.error || "Неуспешно създаване на продукт");
       }
 
@@ -129,9 +141,9 @@ export default function NewProductPage() {
       router.push("/products");
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Моля, опитайте отново.";
+        error instanceof Error ? error.message : "Моля, проверете полетата и опитайте отново.";
       console.warn("Грешка при създаване на продукт:", errorMessage);
-      toast.error("Грешка", { description: errorMessage });
+      toast.error("Неуспешно създаване", { description: errorMessage });
     } finally {
       setIsLoading(false);
     }

@@ -36,7 +36,8 @@ import {
   ArrowLeft, 
   ArrowRight,
   Plus, 
-  Trash2, 
+  Trash2,
+  X, 
   Search, 
   Check, 
   Edit, 
@@ -85,14 +86,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FormDatePicker } from "@/components/ui/date-picker";
 import { InvoiceWorkspaceSetup } from "@/components/invoice/InvoiceWorkspaceSetup";
 import { FullPageLoader, LoadingSpinner } from "@/components/ui/loading-spinner";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { createPortal } from "react-dom";
 
 // Step indicator component
 function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { title: string; icon: React.ReactNode }[] }) {
@@ -377,6 +371,7 @@ function InvoiceItemEditorDialog({
   onOpenChange,
   onUpdate,
   onRemove,
+  onDone,
   canRemove,
 }: {
   item: any | null;
@@ -386,6 +381,7 @@ function InvoiceItemEditorDialog({
   onOpenChange: (open: boolean) => void;
   onUpdate: (field: string, value: string | number) => void;
   onRemove: () => void;
+  onDone?: (item: { description: string; quantity: number; unitPrice: number; taxRate: number; productId?: string }) => void;
   canRemove: boolean;
 }) {
   if (!item) return null;
@@ -395,39 +391,53 @@ function InvoiceItemEditorDialog({
   const itemTax = itemTotal * (item.taxRate / 100);
   const itemTotalWithTax = itemTotal + itemTax;
 
-  return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100vw-1rem)] max-w-sm max-h-[calc(100dvh-1rem)] gap-2 overflow-y-auto border-0 bg-background/95 p-3.5 sm:max-w-xl sm:gap-3 sm:p-5">
-        <DialogHeader className="space-y-1 px-1 pr-8 text-left">
-          <DialogTitle className="text-base leading-tight sm:text-lg">
-            {isAddMode ? "Добавяне на артикул" : "Редакция на артикул"}
-          </DialogTitle>
-          <DialogDescription className="text-sm leading-5 sm:leading-6">
-            {isAddMode
-              ? "Попълнете описанието, количеството, цената и ДДС за новия ред."
-              : "Променете описанието, количеството, цената и ДДС за този ред."}
-          </DialogDescription>
-        </DialogHeader>
+  const panel = (
+    <div
+      className="fixed inset-0 z-100 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label={isAddMode ? "Добавяне на артикул" : "Редакция на артикул"}
+    >
+      <div className="fixed inset-0 bg-black/50" aria-hidden onClick={() => onOpenChange(false)} />
+      <div
+        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-border bg-background p-5 shadow-2xl sm:p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4 pb-4">
+          <div className="space-y-1 min-w-0">
+            <h2 className="text-base font-semibold leading-tight sm:text-lg">
+              {isAddMode ? "Добавяне на артикул" : "Редакция на артикул"}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {isAddMode
+                ? "Попълнете име, количество, цена и ДДС за новия артикул. Име и цена са задължителни."
+                : "Променете описанието, количеството, цената и ДДС за този ред."}
+            </p>
+          </div>
+          <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => onOpenChange(false)} aria-label="Затвори">
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">Описание</Label>
+            <Label className="text-sm font-semibold">{isAddMode ? "Име" : "Описание"}</Label>
             <Input
               value={item.description}
               onChange={(e) => onUpdate("description", e.target.value)}
-              placeholder="Описание на артикула..."
-              className="h-11 border-border/60 bg-background/80 text-base font-medium focus:border-primary"
+              placeholder={isAddMode ? "Име на артикула..." : "Описание на артикула..."}
+              className="h-11 border-border/60 bg-background/80 text-center text-base font-medium focus:border-primary"
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
+          <div className="grid grid-cols-3 gap-3 sm:gap-4">
             <div className="space-y-2">
               <Label className="text-xs font-semibold sm:text-sm">Количество</Label>
               <NumericInput
                 allowDecimal={false}
                 value={item.quantity}
                 onChange={(e) => onUpdate("quantity", parseInt(e.target.value) || 1)}
-                className="h-10 bg-background/80 text-base font-semibold sm:h-11"
+                className="h-10 bg-background/80 text-center text-base font-semibold sm:h-11"
               />
             </div>
             <div className="space-y-2">
@@ -435,7 +445,7 @@ function InvoiceItemEditorDialog({
               <NumericInput
                 value={item.taxRate}
                 onChange={(e) => onUpdate("taxRate", parseFloat(e.target.value) || 0)}
-                className="h-10 bg-background/80 text-base font-semibold sm:h-11"
+                className="h-10 bg-background/80 text-center text-base font-semibold sm:h-11"
               />
             </div>
             <div className="space-y-2">
@@ -443,7 +453,7 @@ function InvoiceItemEditorDialog({
               <NumericInput
                 value={item.unitPrice}
                 onChange={(e) => onUpdate("unitPrice", parseFloat(e.target.value) || 0)}
-                className="h-10 bg-background/80 text-base font-semibold sm:h-11"
+                className="h-10 bg-background/80 text-center text-base font-semibold sm:h-11"
                 placeholder={currency}
               />
             </div>
@@ -451,20 +461,20 @@ function InvoiceItemEditorDialog({
 
           <Separator variant="secondary" />
 
-          <div className="grid grid-cols-3 gap-2">
-            <div className="rounded-2xl border border-border/60 bg-background/70 p-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            <div className="rounded-2xl border border-border/60 bg-background/70 p-3 text-center">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Подсума</p>
               <p className="mt-1 text-sm font-bold tabular-nums sm:mt-1.5 sm:text-base">
                 {formatPrice(itemTotal)} {currency}
               </p>
             </div>
-            <div className="rounded-2xl border border-border/60 bg-background/70 p-3">
+            <div className="rounded-2xl border border-border/60 bg-background/70 p-3 text-center">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">ДДС</p>
               <p className="mt-1 text-sm font-bold tabular-nums sm:mt-1.5 sm:text-base">
                 {formatPrice(itemTax)} {currency}
               </p>
             </div>
-            <div className="rounded-2xl border border-primary/20 bg-primary/8 p-3">
+            <div className="rounded-2xl border border-primary/20 bg-primary/8 p-3 text-center">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Общо</p>
               <p className="mt-1 text-sm font-extrabold text-primary tabular-nums sm:mt-1.5 sm:text-lg">
                 {formatPrice(itemTotalWithTax)} {currency}
@@ -473,7 +483,7 @@ function InvoiceItemEditorDialog({
           </div>
         </div>
 
-        <DialogFooter className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
+        <div className="mt-6 flex flex-wrap items-center justify-end gap-2 sm:gap-3">
           {canRemove ? (
             <Button
               type="button"
@@ -488,13 +498,33 @@ function InvoiceItemEditorDialog({
               {isAddMode ? "Премахни реда" : "Изтрий"}
             </Button>
           ) : null}
-          <Button type="button" variant="outline" className="h-10 w-full px-3 text-sm font-semibold sm:h-11 sm:w-auto" onClick={() => onOpenChange(false)}>
-            {isAddMode ? "Готово" : "Затвори"}
+          <Button
+            type="button"
+            variant="outline"
+            className="h-10 w-full px-3 text-sm font-semibold sm:h-11 sm:w-auto"
+            onClick={() => onOpenChange(false)}
+          >
+            Затвори
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <Button
+            type="button"
+            variant="default"
+            className="h-10 w-full px-3 text-sm font-semibold sm:h-11 sm:w-auto"
+            disabled={!item.description.trim() || Number(item.unitPrice) <= 0}
+            onClick={() => {
+              onDone?.(item);
+              onOpenChange(false);
+            }}
+          >
+            {isAddMode ? "Създай" : "Редактира"}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
+
+  if (!open) return null;
+  return typeof document !== "undefined" ? createPortal(panel, document.body) : null;
 }
 
 function NewInvoiceContent() {
@@ -533,6 +563,7 @@ function NewInvoiceContent() {
     quantity: number;
     unitPrice: number;
     taxRate: number;
+    productId?: string;
   }>>([]);
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
   const [itemEditorMode, setItemEditorMode] = useState<"add" | "edit">("edit");
@@ -685,6 +716,14 @@ function NewInvoiceContent() {
     [items]
   );
 
+  const canProceedFromProductsStep = useMemo(
+    () =>
+      items.some(
+        (item) => item.description.trim() && Number(item.unitPrice) > 0
+      ),
+    [items]
+  );
+
   const paymentMethodLabel = useMemo(() => {
     if (invoiceData.paymentMethod === "BANK_TRANSFER") return "Банков превод";
     if (invoiceData.paymentMethod === "CASH") return "В брой";
@@ -747,13 +786,45 @@ function NewInvoiceContent() {
     ));
   }, []);
 
+  const handleItemDone = useCallback(async (item: { description: string; quantity: number; unitPrice: number; taxRate: number; productId?: string }) => {
+    if (item.productId || !item.description.trim()) return;
+    const message = "Да добавите този артикул като продукт в каталога за бъдеща употреба?";
+    if (typeof window === "undefined" || !window.confirm(message)) return;
+    try {
+      const res = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: item.description.trim(),
+          price: Number(item.unitPrice),
+          unit: "бр.",
+          taxRate: Number(item.taxRate) || 20,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error || "Неуспешно създаване на продукт");
+        return;
+      }
+      const product = await res.json();
+      if (editingItemId != null && product?.id) {
+        updateItem(editingItemId, "productId", product.id);
+      }
+      setProducts((prev) => [...prev, product]);
+      toast.success("Продуктът е добавен в каталога");
+    } catch (e: any) {
+      toast.error(e.message || "Грешка при създаване на продукт");
+    }
+  }, [editingItemId, updateItem]);
+
   const addProduct = useCallback((product: any) => {
     const newItem = {
       id: Math.max(0, ...items.map(i => i.id)) + 1,
       description: product.name,
       quantity: 1,
       unitPrice: Number(product.price),
-      taxRate: Number(product.taxRate) || DEFAULT_VAT_RATE
+      taxRate: Number(product.taxRate) || DEFAULT_VAT_RATE,
+      productId: product.id
     };
     setItems(prev => [...prev, newItem]);
     toast.success(`"${product.name}" добавен`, {
@@ -794,8 +865,13 @@ function NewInvoiceContent() {
       return;
     }
 
+    if (currentStep === 2 && !canProceedFromProductsStep) {
+      toast.error("Добавете поне един артикул с име и цена (различна от 0,00) преди да продължите.");
+      return;
+    }
+
     setCurrentStep((prev) => Math.min(steps.length - 1, prev + 1));
-  }, [currentStep, invoiceData.companyId, steps.length, validateClientStep]);
+  }, [currentStep, invoiceData.companyId, steps.length, validateClientStep, canProceedFromProductsStep]);
 
   const handleSubmit = async () => {
     setIsLoading(true);
@@ -818,13 +894,27 @@ function NewInvoiceContent() {
         return;
       }
       
-      const validItems = items.filter(item => item.description.trim());
+      const validItems = items.filter(
+        (item) => item.description.trim() && Number(item.unitPrice) > 0
+      );
       if (validItems.length === 0) {
-        toast.error("Добавете поне един артикул");
+        const hasItemsWithoutPrice = items.some(
+          (i) => i.description.trim() && Number(i.unitPrice) <= 0
+        );
+        toast.error(
+          hasItemsWithoutPrice
+            ? "Всеки артикул трябва да има име и положителна цена."
+            : "Добавете поне един артикул с име и цена."
+        );
         setCurrentStep(2);
         return;
       }
-      
+      if (validItems.length < items.length) {
+        toast.error("Всеки артикул трябва да има име и положителна цена. Премахнете или попълнете редовете без цена.");
+        setCurrentStep(2);
+        return;
+      }
+
       const response = await fetch("/api/invoices", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1365,6 +1455,7 @@ function NewInvoiceContent() {
                 if (!editingItem) return;
                 removeItem(editingItem.id);
               }}
+              onDone={handleItemDone}
               canRemove={items.length > 0}
             />
           </div>
@@ -1827,7 +1918,15 @@ function NewInvoiceContent() {
                 {currentStep < 3 ? (
                   <Button
                     onClick={handleNextStep}
-                    disabled={currentStep === 0 ? !selectedClient : currentStep === 1 && !invoiceData.companyId}
+                    disabled={
+                      currentStep === 0
+                        ? !selectedClient
+                        : currentStep === 1
+                          ? !invoiceData.companyId
+                          : currentStep === 2
+                            ? !canProceedFromProductsStep
+                            : false
+                    }
                     className="h-11 w-full gap-2 justify-center sm:w-auto"
                   >
                     Напред

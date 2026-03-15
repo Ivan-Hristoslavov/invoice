@@ -66,7 +66,7 @@ export function CancellationSurvey({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Отказване от абонамент</DialogTitle>
           <DialogDescription>

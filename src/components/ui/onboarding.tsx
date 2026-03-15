@@ -292,8 +292,8 @@ export function Onboarding({
       {/* Стартов диалог */}
       {showDialog && (
         <Dialog open={showDialog} onOpenChange={setShowDialog}>
-          <DialogContent className="sm:max-w-md">
-            <DialogTitle>Добре дошли в RapidFrame</DialogTitle>
+          <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
+            <DialogTitle>Добре дошли</DialogTitle>
             <div className="py-4">
               <p className="text-muted-foreground mb-4">
                 Нека ви покажем как да използвате основните функции на платформата. 

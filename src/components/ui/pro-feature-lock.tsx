@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { hasPlanAccess } from "@/lib/subscription-plans";
 
-type PlanType = "PRO" | "BUSINESS";
+type PlanType = "STARTER" | "PRO" | "BUSINESS";
 
 interface ProFeatureLockProps {
   /** The feature requires this plan or higher */
@@ -33,8 +33,10 @@ interface ProFeatureLockProps {
   message?: string;
   /** Show upgrade link */
   showUpgradeLink?: boolean;
-  /** Callback when upgrade is clicked */
+  /** Callback when upgrade is clicked (e.g. start Stripe checkout). When provided, used instead of linking to /settings/subscription. */
   onUpgradeClick?: () => void;
+  /** Show loading state on upgrade button (e.g. while creating checkout session) */
+  isUpgradeLoading?: boolean;
 }
 
 /**
@@ -52,8 +54,10 @@ function getPlanBadgeVariant(plan: PlanType): "default" | "secondary" | "outline
     case "BUSINESS":
       return "default";
     case "PRO":
-    default:
       return "secondary";
+    case "STARTER":
+    default:
+      return "outline-solid";
   }
 }
 
@@ -71,6 +75,7 @@ export function ProFeatureLock({
   message,
   showUpgradeLink = true,
   onUpgradeClick,
+  isUpgradeLoading = false,
 }: ProFeatureLockProps) {
   const isLocked = !hasAccess(currentPlan, requiredPlan);
 
@@ -79,10 +84,16 @@ export function ProFeatureLock({
     return <>{children}</>;
   }
 
+  const planSuffix =
+    requiredPlan === "STARTER"
+      ? " (Стартер, Про и Бизнес)"
+      : requiredPlan === "PRO"
+        ? " и BUSINESS плана"
+        : " плана";
   const defaultMessage =
     featureName
-      ? `${featureName} е налична само в ${requiredPlan}${requiredPlan === "PRO" ? " и BUSINESS" : ""} плана.`
-      : `Тази функция е налична само в ${requiredPlan}${requiredPlan === "PRO" ? " и BUSINESS" : ""} плана.`;
+      ? `${featureName} е налична от план ${requiredPlan}${planSuffix}.`
+      : `Тази функция е налична от план ${requiredPlan}${planSuffix}.`;
 
   const displayMessage = message || defaultMessage;
 
@@ -111,20 +122,35 @@ export function ProFeatureLock({
             <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
               {displayMessage}
             </p>
-            {showUpgradeLink && (
-              <Button
-                asChild
-                size="sm"
-                className="bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
-                onClick={onUpgradeClick}
-              >
-                <Link href="/settings/subscription">
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Надградете до {requiredPlan}
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Link>
-              </Button>
-            )}
+            {showUpgradeLink &&
+              (onUpgradeClick ? (
+                <Button
+                  size="sm"
+                  className="gap-2 bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+                  onClick={onUpgradeClick}
+                  disabled={isUpgradeLoading}
+                >
+                  {isUpgradeLoading ? (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
+                  )}
+                  {isUpgradeLoading ? "Подготвяме плащането..." : `Надградете до ${requiredPlan}`}
+                  {!isUpgradeLoading && <ArrowRight className="h-4 w-4" />}
+                </Button>
+              ) : (
+                <Button
+                  asChild
+                  size="sm"
+                  className="bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white gap-2"
+                >
+                  <Link href="/settings/subscription">
+                    <Sparkles className="h-4 w-4" />
+                    Надградете до {requiredPlan}
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              ))}
           </div>
         </div>
         {children && (
@@ -147,14 +173,30 @@ export function ProFeatureLock({
             <p className="text-sm text-muted-foreground mb-3 max-w-xs">
               {displayMessage}
             </p>
-            {showUpgradeLink && (
-              <Button asChild size="sm" variant="outline" onClick={onUpgradeClick}>
-                <Link href="/settings/subscription">
-                  <Crown className="h-4 w-4 mr-2 text-amber-500" />
-                  Надградете
-                </Link>
-              </Button>
-            )}
+            {showUpgradeLink &&
+              (onUpgradeClick ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onUpgradeClick}
+                  disabled={isUpgradeLoading}
+                  className="gap-2"
+                >
+                  {isUpgradeLoading ? (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  ) : (
+                    <Crown className="h-4 w-4 text-amber-500" />
+                  )}
+                  {isUpgradeLoading ? "Подготвяме плащането..." : "Надградете до Стартер"}
+                </Button>
+              ) : (
+                <Button asChild size="sm" variant="outline" className="gap-2">
+                  <Link href="/settings/subscription">
+                    <Crown className="h-4 w-4 text-amber-500" />
+                    Надградете
+                  </Link>
+                </Button>
+              ))}
           </div>
         </div>
       </div>

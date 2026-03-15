@@ -20,6 +20,8 @@ type PlanFeatures = {
   creditNotes: boolean;
   emailSending: boolean;
   apiAccess: boolean;
+  /** Търсене по ЕИК/БУЛСТАТ (CompanyBook API) – налично от план Стартер */
+  eikSearch: boolean;
 };
 
 type PlanLimits = {
@@ -57,6 +59,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanKey, SubscriptionPlanDef
       creditNotes: false,
       emailSending: false,
       apiAccess: false,
+      eikSearch: false,
     },
     limits: {
       maxInvoicesPerMonth: 3,
@@ -85,6 +88,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanKey, SubscriptionPlanDef
       creditNotes: false,
       emailSending: false,
       apiAccess: false,
+      eikSearch: true,
     },
     limits: {
       maxInvoicesPerMonth: 15,
@@ -113,6 +117,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanKey, SubscriptionPlanDef
       creditNotes: true,
       emailSending: true,
       apiAccess: false,
+      eikSearch: true,
     },
     limits: {
       maxInvoicesPerMonth: UNLIMITED,
@@ -145,6 +150,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanKey, SubscriptionPlanDef
       creditNotes: true,
       emailSending: true,
       apiAccess: true,
+      eikSearch: true,
     },
     limits: {
       maxInvoicesPerMonth: UNLIMITED,
@@ -239,6 +245,10 @@ export function getDefaultSubscriptionPlan() {
 
 export function hasAnyExportAccess(capability: ExportCapability): boolean {
   return capability !== "none";
+}
+
+export function hasEikSearchAccess(plan: string | null | undefined): boolean {
+  return hasPlanAccess(plan, "STARTER");
 }
 
 export function canExportFormat(

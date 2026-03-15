@@ -4,14 +4,18 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/server";
 import { authOptions } from "@/lib/auth";
 import { resolveSessionUser } from "@/lib/session-user";
+import { FIELD_LIMITS } from "@/lib/validations/field-limits";
 import cuid from "cuid";
 
 const productSchema = z.object({
-  name: z.string().min(1),
-  description: z.string().optional(),
-  price: z.number().nonnegative(),
-  unit: z.string().min(1),
-  taxRate: z.number().nonnegative().default(20),
+  name: z
+    .string()
+    .min(2, "Името на продукта е задължително (минимум 2 символа)")
+    .max(FIELD_LIMITS.name, "Името на продукта е твърде дълго"),
+  description: z.string().max(FIELD_LIMITS.description, "Описанието е твърде дълго").optional().or(z.literal("")),
+  price: z.number().min(0, "Цената не може да бъде отрицателна"),
+  unit: z.string().min(1, "Единицата е задължителна").max(50, "Единицата е твърде дълга"),
+  taxRate: z.number().min(0, "ДДС ставката не може да бъде отрицателна").max(100, "ДДС не може да надвишава 100%").default(20),
 });
 
 export async function POST(request: NextRequest) {
@@ -75,15 +79,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(product, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
+      const details = error.errors.map((e) => ({
+        path: e.path.map(String),
+        message: e.message,
+      }));
       return NextResponse.json(
-        { error: "Невалидни данни за продукта", details: error.errors },
+        { error: "Невалидни данни за продукта. Моля, проверете полетата.", details },
         { status: 400 }
       );
     }
 
     console.error("Грешка при създаване на продукт:", error);
     return NextResponse.json(
-      { error: "Неуспешно създаване на продукт" },
+      { error: "Неуспешно създаване на продукт. Моля, опитайте отново." },
       { status: 500 }
     );
   }
@@ -109,7 +117,8 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams;
-    const query = searchParams.get("query") || "";
+    const rawQuery = searchParams.get("query") || "";
+    const query = rawQuery.slice(0, FIELD_LIMITS.searchQuery).trim().replace(/[%_]/g, " ");
     const page = parseInt(searchParams.get("page") || "0");
     const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get("pageSize") || "12")));
 

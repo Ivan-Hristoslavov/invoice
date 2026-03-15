@@ -25,6 +25,7 @@ export const PLAN_LIMITS = Object.fromEntries(
       allowEmailSending: definition.features.emailSending,
       maxUsers: definition.limits.maxUsers,
       allowApiAccess: definition.features.apiAccess,
+      allowEikSearch: definition.features.eikSearch,
       storageLimit: definition.limits.storageLimit,
     },
   ])
@@ -41,6 +42,7 @@ export const PLAN_LIMITS = Object.fromEntries(
     allowEmailSending: boolean;
     maxUsers: number;
     allowApiAccess: boolean;
+    allowEikSearch: boolean;
     storageLimit: number;
   }
 >;
@@ -99,7 +101,7 @@ export async function checkSubscription(req: NextRequest) {
 // Check if user is allowed to perform an action based on their subscription
 export async function checkSubscriptionLimits(
   userId: string, 
-  feature: 'invoices' | 'companies' | 'clients' | 'products' | 'customBranding' | 'export' | 'creditNotes' | 'emailSending' | 'apiAccess' | 'users'
+  feature: 'invoices' | 'companies' | 'clients' | 'products' | 'customBranding' | 'export' | 'creditNotes' | 'emailSending' | 'apiAccess' | 'users' | 'eikSearch'
 ): Promise<{ allowed: boolean; message?: string; plan?: string }> {
   // Get active subscription (or FREE if no subscription)
   const supabase = createAdminClient();
@@ -271,6 +273,16 @@ export async function checkSubscriptionLimits(
           allowed: false,
           plan,
           message: `API достъп е наличен само в BUSINESS плана. Надградете до BUSINESS за API достъп.`,
+        };
+      }
+      break;
+
+    case 'eikSearch':
+      if (!limits.allowEikSearch) {
+        return {
+          allowed: false,
+          plan,
+          message: `Търсенето по ЕИК/БУЛСТАТ е платена функция. Надградете до план Стартер за да попълвате данни автоматично от Регистъра.`,
         };
       }
       break;

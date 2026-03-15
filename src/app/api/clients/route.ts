@@ -9,31 +9,28 @@ import {
   validateBulgarianPartyInput,
 } from "@/lib/bulgarian-party";
 import { getAccessibleOwnerUserIdsForUser } from "@/lib/team";
-import { hasPermission } from "@/lib/permissions";
 import { z } from "zod";
 import cuid from "cuid";
+import { FIELD_LIMITS } from "@/lib/validations/field-limits";
 
 // Define validation schema for client
 const clientSchema = z.object({
-  name: z.string().min(1, "Името на клиента е задължително"),
-  email: z.string().email("Моля, въведете валиден имейл").optional().or(z.literal("")),
-  phone: z.string().optional().or(z.literal("")),
-  address: z.string().optional().or(z.literal("")),
-  city: z.string().optional().or(z.literal("")),
-  state: z.string().optional().or(z.literal("")),
-  zipCode: z.string().optional().or(z.literal("")),
-  country: z.string().optional().or(z.literal("")),
-  vatNumber: z.string().optional().or(z.literal("")),
-  taxIdNumber: z.string().optional().or(z.literal("")),
-  
-  // Bulgarian-specific fields
+  name: z.string().min(2, "Името на клиента е задължително (минимум 2 символа)").max(FIELD_LIMITS.name, "Името е твърде дълго"),
+  email: z.string().email("Моля, въведете валиден имейл").max(FIELD_LIMITS.email).optional().or(z.literal("")),
+  phone: z.string().max(FIELD_LIMITS.phone).optional().or(z.literal("")),
+  address: z.string().max(FIELD_LIMITS.address).optional().or(z.literal("")),
+  city: z.string().max(FIELD_LIMITS.city).optional().or(z.literal("")),
+  state: z.string().max(100).optional().or(z.literal("")),
+  zipCode: z.string().max(FIELD_LIMITS.postalCode).optional().or(z.literal("")),
+  country: z.string().max(FIELD_LIMITS.country).optional().or(z.literal("")),
+  vatNumber: z.string().max(FIELD_LIMITS.phone).optional().or(z.literal("")),
+  taxIdNumber: z.string().max(100).optional().or(z.literal("")),
   bulstatNumber: z.string().optional().or(z.literal("")),
   vatRegistered: z.boolean().optional().default(false),
-  vatRegistrationNumber: z.string().optional().or(z.literal("")),
-  mol: z.string().optional().or(z.literal("")),
+  vatRegistrationNumber: z.string().max(FIELD_LIMITS.phone).optional().or(z.literal("")),
+  mol: z.string().max(FIELD_LIMITS.mol).optional().or(z.literal("")),
   uicType: z.enum(["BULSTAT", "EGN"]).optional().default("BULSTAT"),
-  
-  locale: z.string().default("bg"),
+  locale: z.string().max(10).default("bg"),
 });
 
 export async function GET(request: NextRequest) {
@@ -58,7 +55,8 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const bulstatNumber = searchParams.get("bulstatNumber");
     const uicType = searchParams.get("uicType");
-    const query = searchParams.get("query") || "";
+    const rawQuery = searchParams.get("query") || "";
+    const query = rawQuery.slice(0, FIELD_LIMITS.searchQuery).trim().replace(/[%_]/g, " ");
     const page = parseInt(searchParams.get("page") || "0");
     const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get("pageSize") || "12")));
 
@@ -174,14 +172,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const canCreate = await hasPermission(sessionUser.id, "client:create");
-    if (!canCreate) {
-      return NextResponse.json(
-        { error: "Нямате право да създавате клиенти" },
-        { status: 403 }
-      );
-    }
-
     // Parse and validate the data
     const json = await request.json();
     const entryMode = json?.entryMode === "manual" ? "manual" : "eik";
@@ -242,16 +232,19 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Грешка при създаване на клиент:", error);
     
-    // Return validation errors if present
     if (error instanceof z.ZodError) {
+      const details = error.errors.map((e) => ({
+        path: e.path.map(String),
+        message: e.message,
+      }));
       return NextResponse.json(
-        { error: "Неуспешна валидация", details: error.errors },
+        { error: "Невалидни данни за клиента. Моля, проверете полетата.", details },
         { status: 400 }
       );
     }
-    
+
     return NextResponse.json(
-      { error: "Неуспешно създаване на клиент" },
+      { error: "Неуспешно създаване на клиент. Моля, опитайте отново." },
       { status: 500 }
     );
   }
