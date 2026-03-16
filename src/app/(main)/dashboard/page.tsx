@@ -356,7 +356,7 @@ export default async function DashboardPage() {
   const hasInvoiceWorkspaceSetup = hasCompanies && hasClients;
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-5">
       {/* Header */}
       <div className="page-header">
         <div className="flex-1 min-w-0">
@@ -397,7 +397,7 @@ export default async function DashboardPage() {
       )}
 
       {/* Stats Grid */}
-      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {stats.map((stat) => (
           <StatsCard
             key={stat.title}
@@ -417,13 +417,13 @@ export default async function DashboardPage() {
       </div>
 
       {/* Quick Actions & Recent Invoices */}
-      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-5 lg:grid-cols-3">
         {/* Quick Actions - only show when usage loaded and user is allowed */}
         <DashboardQuickActions hasInvoiceWorkspaceSetup={hasInvoiceWorkspaceSetup} />
 
         {/* Recent Invoices */}
         <Card className="lg:col-span-2 border border-border/50 shadow-md">
-          <CardHeader className="flex flex-row items-center justify-between pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
+          <CardHeader className="flex flex-row items-center justify-between px-3 pb-3 pt-3 sm:px-6 sm:pb-4 sm:pt-6">
             <div className="min-w-0 flex-1">
               <Badge variant="info" className="mb-2">
                 Последни записи
@@ -438,14 +438,14 @@ export default async function DashboardPage() {
               </Link>
             </Button>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 pb-3 sm:px-5 sm:pb-5">
             {recentInvoices.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="h-14 w-14 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-                  <FileText className="h-7 w-7 text-muted-foreground" />
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                  <FileText className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <p className="text-base font-semibold mb-1">Все още няма фактури</p>
-                <p className="text-sm text-muted-foreground mb-6 max-w-xs">
+                <p className="mb-1 text-lg font-semibold">Все още няма фактури</p>
+                <p className="mb-6 max-w-xs text-sm text-muted-foreground">
                   Създайте първата за минути и започнете да проследявате какво ви дължат
                 </p>
                 <Button size="sm" asChild className="shadow-md">
@@ -511,7 +511,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Summary counts + Activity */}
-      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-5 lg:grid-cols-3">
         {/* Credit & Debit Note Summary */}
         <Card className="lg:col-span-1 border border-border/50 shadow-md">
           <CardHeader className="pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
@@ -574,11 +574,11 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             {!auditLogs || auditLogs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="h-14 w-14 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-                  <Activity className="h-7 w-7 text-muted-foreground" />
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                  <Activity className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <p className="text-base font-semibold mb-1">Няма активност</p>
+                <p className="mb-1 text-lg font-semibold">Няма активност</p>
                 <p className="text-sm text-muted-foreground max-w-xs">
                   Тук ще се показват последните ви действия
                 </p>

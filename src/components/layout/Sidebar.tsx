@@ -181,15 +181,18 @@ export function Sidebar() {
       </AnimatePresence>
 
       {/* Sidebar - Fixed and always visible on desktop (lg+), collapsible on mobile only */}
-      <motion.aside 
+      <motion.aside
         id="main-sidebar"
         className={cn(
-          "fixed left-0 top-14 z-40 flex h-[calc(100dvh-3.5rem)] w-72 shrink-0 flex-col overflow-hidden rounded-none border-l-0 border-t-0 border-b-0 border-r border-border glass-card sm:top-16 sm:h-[calc(100dvh-4rem)]",
-          "lg:translate-x-0",
-          isMobile && !isOpen && "-translate-x-full"
+          "fixed top-14 z-40 flex h-[calc(100dvh-3.5rem)] w-72 shrink-0 flex-col overflow-hidden border-t-0 border-b-0 glass-card sm:top-16 sm:h-[calc(100dvh-4rem)]",
+          // Desktop: pinned to left, right border
+          "lg:left-0 lg:right-auto lg:border-l-0 lg:border-r lg:border-border lg:translate-x-0",
+          // Mobile: pinned to right, left border
+          "right-0 border-r-0 border-l border-border lg:border-l-0",
+          isMobile && !isOpen && "translate-x-full"
         )}
         initial={false}
-        animate={{ x: isMobile && !isOpen ? "-100%" : 0 }}
+        animate={{ x: isMobile && !isOpen ? "100%" : 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
         {/* Main Navigation */}

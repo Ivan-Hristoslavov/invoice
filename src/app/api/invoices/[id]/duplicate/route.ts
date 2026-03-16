@@ -5,7 +5,6 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { generateNextInvoiceNumber } from "@/lib/invoice-number";
 import { logAction } from "@/lib/audit-log";
 import { resolveSessionUser } from "@/lib/session-user";
-import { checkSubscriptionLimits } from "@/middleware/subscription";
 
 export async function POST(
   request: NextRequest,
@@ -25,13 +24,6 @@ export async function POST(
     const { id } = await params;
     const supabase = createAdminClient();
 
-    const invoiceLimitCheck = await checkSubscriptionLimits(userId, "invoices");
-    if (!invoiceLimitCheck.allowed) {
-      return NextResponse.json(
-        { error: invoiceLimitCheck.message || "Достигнат е лимитът за фактури за вашия план" },
-        { status: 403 }
-      );
-    }
 
     const { data: original, error: fetchError } = await supabase
       .from("Invoice")

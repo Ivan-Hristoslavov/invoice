@@ -259,20 +259,20 @@ export function SubscriptionPlans({ onSuccessRefetchDone }: SubscriptionPlansPro
       )}
 
       {/* Header + Toggle */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex justify-center sm:justify-start">
+      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex w-full justify-center sm:justify-start">
           <div className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
             <Sparkles className="h-4 w-4 shrink-0 text-emerald-500" />
             <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">14 дни безплатен trial</span>
           </div>
         </div>
         
-        {/* Billing Toggle - Improved Design */}
-        <div className="grid w-full max-w-md grid-cols-2 gap-1 rounded-full border bg-muted/50 p-1 sm:w-auto">
+        {/* Billing Toggle - Compact */}
+        <div className="grid w-full max-w-[200px] grid-cols-2 gap-0.5 rounded-full border bg-muted/50 p-0.5 sm:w-auto">
           <button
             onClick={() => setIsYearly(false)}
             className={cn(
-              "flex min-w-0 items-center justify-center rounded-full px-3 py-2 text-sm font-medium transition-all",
+              "flex min-w-0 items-center justify-center rounded-full px-2 py-1.5 text-xs font-medium transition-all",
               !isYearly 
                 ? "bg-background shadow-xs text-foreground" 
                 : "text-muted-foreground hover:text-foreground"
@@ -283,7 +283,7 @@ export function SubscriptionPlans({ onSuccessRefetchDone }: SubscriptionPlansPro
           <button
             onClick={() => setIsYearly(true)}
             className={cn(
-              "flex min-w-0 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-all",
+              "flex min-w-0 items-center justify-center gap-1 rounded-full px-2 py-1.5 text-xs font-medium transition-all",
               isYearly 
                 ? "bg-emerald-500 text-white shadow-xs" 
                 : "text-muted-foreground hover:text-foreground"
@@ -291,10 +291,10 @@ export function SubscriptionPlans({ onSuccessRefetchDone }: SubscriptionPlansPro
           >
             Годишно
             <span className={cn(
-              "rounded-full px-1.5 py-0.5 text-[9px] font-bold sm:text-[10px]",
+              "rounded-full px-1 py-0.5 text-[8px] font-bold leading-tight",
               isYearly ? "bg-white/20" : "bg-emerald-500/20 text-emerald-600"
             )}>
-              2 мес. безплатно
+              2 мес. безпл.
             </span>
           </button>
         </div>
@@ -338,9 +338,9 @@ export function SubscriptionPlans({ onSuccessRefetchDone }: SubscriptionPlansPro
               {/* Colored top bar */}
               <div className={cn("h-1 w-full", planTheme.topBar)} />
 
-              <div className="p-4 flex flex-col flex-1">
+              <div className="flex flex-1 flex-col p-3.5 sm:p-4">
                 {/* Header row: icon + name + badge */}
-                <div className="flex items-start gap-2.5 mb-3">
+                <div className="mb-2.5 flex items-start gap-2.5">
                   <div className={cn(
                     "h-9 w-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5",
                     planTheme.iconBg,
@@ -349,7 +349,7 @@ export function SubscriptionPlans({ onSuccessRefetchDone }: SubscriptionPlansPro
                     <Icon className="h-4 w-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <h3 className="font-semibold text-sm leading-tight">{plan.displayName}</h3>
                       {isCurrent && (
                         <Badge className="px-2 py-0 text-[10px] h-5 font-semibold border-0 bg-primary text-primary-foreground shrink-0">
@@ -367,14 +367,14 @@ export function SubscriptionPlans({ onSuccessRefetchDone }: SubscriptionPlansPro
                         </Badge>
                       )}
                     </div>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">{plan.description}</p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">{plan.description}</p>
                   </div>
                 </div>
 
                 {/* Price */}
-                <div className="mb-3">
+                <div className="mb-2.5">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-2xl font-bold tracking-tight">
+                    <span className="text-xl font-bold tracking-tight sm:text-2xl">
                       {price === 0 ? '0' : price.toFixed(2)}
                     </span>
                     <span className="text-sm text-muted-foreground font-normal">€/мес</span>
@@ -405,7 +405,7 @@ export function SubscriptionPlans({ onSuccessRefetchDone }: SubscriptionPlansPro
                 </div>
 
                 {/* Features */}
-                <div className="flex-1 mb-4">
+                <div className="mb-3 flex-1">
                   <ul className="space-y-1.5">
                     {plan.features.map((feature, index) => (
                       <li

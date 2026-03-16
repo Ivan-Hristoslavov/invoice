@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { Building, Plus, Search, FileText, CheckCircle2, Crown, XCircle, LayoutGrid, List, Pencil } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Building, Plus, Search, FileText, CheckCircle2, LayoutGrid, List, Pencil } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
-import { UsageCounter, LockedButton } from "@/components/ui/pro-feature-lock";
+import { UsageCounter, LockedButton, LimitBanner } from "@/components/ui/pro-feature-lock";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useState, useMemo, useEffect } from "react";
 import { Pagination } from "@/components/ui/pagination";
 import {
@@ -38,6 +39,7 @@ interface CompaniesClientProps {
 }
 
 export default function CompaniesClient({ companies, invoiceCounts }: CompaniesClientProps) {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   const [currentPage, setCurrentPage] = useState(1);
@@ -84,25 +86,13 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
     <div className="space-y-4 sm:space-y-6">
       {/* Subscription Warning Banner */}
       {!canCreateCompany && (
-        <Alert className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
-          <XCircle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <span className="text-red-800 dark:text-red-200">
-              {isFree && (
-                <>Достигнахте лимита от <strong>1 фирма</strong> за безплатния план. С Про управлявате до 3 фирми от един акаунт.</>
-              )}
-              {isPro && (
-                <>Достигнахте лимита от <strong>3 фирми</strong> за Про. С Бизнес до 10 фирми от един акаунт.</>
-              )}
-            </span>
-            <Link href="/settings/subscription" className="flex items-center whitespace-nowrap">
-              <Button size="sm" className="bg-linear-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 sm:ml-4">
-                <Crown className="h-4 w-4 mr-2" />
-                Вижте плановете →
-              </Button>
-            </Link>
-          </AlertDescription>
-        </Alert>
+        <LimitBanner
+          variant="error"
+          message={isFree
+            ? <><strong>Лимит: 1 фирма</strong> за безплатния план. С Про — до 3 фирми от един акаунт.</>
+            : <><strong>Лимит: 3 фирми</strong> за Про план. С Бизнес — до 10 фирми.</>
+          }
+        />
       )}
 
       {/* Header */}
@@ -208,34 +198,26 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
       {/* Companies Grid */}
       {filteredCompanies.length === 0 ? (
         <Card className="border-0 shadow-lg">
-          <CardContent className="py-16">
-            <div className="flex flex-col items-center justify-center text-center">
-              <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                <Building className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold mb-1">
-                {searchQuery ? "Няма намерени компании" : "Все още нямате компании"}
-              </h3>
-              <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-                {searchQuery 
-                  ? "Опитайте да промените критериите за търсене"
-                  : "Добавете първата си компания, за да започнете да създавате фактури"
-                }
-              </p>
-              {!searchQuery && canCreateCompany && (
-                <Button asChild>
-                  <Link href="/companies/new" className="flex items-center whitespace-nowrap">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Добави първата компания
-                  </Link>
-                </Button>
-              )}
-              {!searchQuery && !canCreateCompany && (
-                <LockedButton requiredPlan={isFree ? "PRO" : "BUSINESS"}>
-                  Добави компания
-                </LockedButton>
-              )}
-            </div>
+          <CardContent className="p-0">
+            <EmptyState
+              icon={Building}
+              heading={searchQuery ? "Няма намерени компании" : "Все още нямате компании"}
+              description={searchQuery ? "Опитайте да промените критериите за търсене" : "Добавете първата си компания, за да започнете да създавате фактури"}
+              action={!searchQuery ? (
+                canCreateCompany ? (
+                  <Button asChild>
+                    <Link href="/companies/new" className="flex items-center whitespace-nowrap">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Добави първата компания
+                    </Link>
+                  </Button>
+                ) : (
+                  <LockedButton requiredPlan={isFree ? "PRO" : "BUSINESS"}>
+                    Добави компания
+                  </LockedButton>
+                )
+              ) : undefined}
+            />
           </CardContent>
         </Card>
       ) : viewMode === "cards" ? (
@@ -245,7 +227,7 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
             <div key={company.id} className="group relative">
               <Card
                 className="h-full min-h-[150px] border-0 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer"
-                onClick={() => window.location.href = "/settings/company"}
+                onClick={() => router.push("/settings/company")}
               >
                 <div
                   className="absolute right-3 top-3 z-10 opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100"

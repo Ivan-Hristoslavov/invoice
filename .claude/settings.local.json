@@ -82,7 +82,11 @@
       "Bash(npx vitest run src/tests/components/common/ValidatedForm.test.tsx --reporter=verbose 2>&1 | grep -E \"\\(Error|×|✓|FAIL\\)\" | head -20)",
       "Bash(npx vitest run --reporter=verbose 2>&1 | tail -20)",
       "Bash(npx vitest run 2>&1 | tail -10)",
-      "Bash(grep -r \"classNames=\" /Users/ivanivanov/Documents/MyProjects/invoice/src --include=\"*.tsx\" --include=\"*.ts\" 2>/dev/null | head -30)"
+      "Bash(grep -r \"classNames=\" /Users/ivanivanov/Documents/MyProjects/invoice/src --include=\"*.tsx\" --include=\"*.ts\" 2>/dev/null | head -30)",
+      "Bash(ls -la /Users/ivanivanov/Documents/MyProjects/invoice/src/app/\\\\\\(main\\\\\\)/ | grep -E \"page\\\\|layout\")",
+      "Bash(cat \"/Users/ivanivanov/Documents/MyProjects/invoice/src/app/\\(main\\)/HomePageClient.tsx\" | head -400)",
+      "Bash(wc -l /Users/ivanivanov/Documents/MyProjects/invoice/src/app/\\\\\\(main\\\\\\)/clients/new/page.tsx)",
+      "Bash(npm run build 2>&1)"
     ]
   }
 }

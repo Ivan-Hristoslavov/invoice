@@ -86,16 +86,16 @@ export function StatsCard({
         <p className="tiny-text text-muted-foreground mb-2 hidden sm:block">{description}</p>
         
         {trend && (
-          <div className="flex items-center gap-1.5 pt-3 border-t border-border/50">
+          <div className="flex items-center gap-1 pt-2 border-t border-border/50">
             {trendUp ? (
-              <ArrowUpRight className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+              <ArrowUpRight className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
             ) : (
-              <ArrowDownRight className="h-4 w-4 text-red-600 flex-shrink-0" />
+              <ArrowDownRight className="h-3.5 w-3.5 text-red-600 shrink-0" />
             )}
-            <span className={`text-sm font-semibold ${trendUp ? 'text-emerald-600' : 'text-red-600'}`}>
+            <span className={`text-xs font-semibold shrink-0 ${trendUp ? 'text-emerald-600' : 'text-red-600'}`}>
               {trend}
             </span>
-            <span className="text-xs text-muted-foreground ml-0.5">спрямо миналия месец</span>
+            <span className="hidden sm:inline text-xs text-muted-foreground ml-0.5 truncate">спрямо миналия месец</span>
           </div>
         )}
       </CardContent>

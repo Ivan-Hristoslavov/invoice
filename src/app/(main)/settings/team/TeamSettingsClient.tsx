@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import UserRoleActions from "../users/user-role-actions";
-import { UsageCounter, LockedButton } from "@/components/ui/pro-feature-lock";
+import { UsageCounter, LockedButton, LimitBanner } from "@/components/ui/pro-feature-lock";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 
 type TeamRole = "OWNER" | "ADMIN" | "MANAGER" | "ACCOUNTANT" | "VIEWER";
@@ -219,17 +219,10 @@ export default function TeamSettingsClient({
       </div>
 
       {!isBusiness && members.length >= userUsage.limit && (
-        <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
-          <ShieldCheck className="h-4 w-4 text-amber-600" />
-          <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <span className="text-amber-800 dark:text-amber-200">
-              Достигнахте лимита за членове. С Бизнес до 5 потребителя в екипа — каняйте съдружници и счетоводители.
-            </span>
-            <Button asChild size="sm">
-              <Link href="/settings/subscription">Вижте плановете →</Link>
-            </Button>
-          </AlertDescription>
-        </Alert>
+        <LimitBanner
+          variant="warning"
+          message={<>Лимитът за членове е достигнат. С Бизнес до 5 потребителя — каняйте съдружници и счетоводители.</>}
+        />
       )}
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.9fr)]">

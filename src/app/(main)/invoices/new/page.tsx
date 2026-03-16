@@ -81,7 +81,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { DEFAULT_VAT_RATE } from "@/config/constants";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
-import { UsageCounter } from "@/components/ui/pro-feature-lock";
+import { UsageCounter, LimitBanner } from "@/components/ui/pro-feature-lock";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FormDatePicker } from "@/components/ui/date-picker";
 import { InvoiceWorkspaceSetup } from "@/components/invoice/InvoiceWorkspaceSetup";
@@ -98,10 +98,10 @@ function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { t
           <div className="flex flex-col items-center gap-2">
             <div className={`
               relative flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all duration-300 sm:h-10 sm:w-10
-              ${index < currentStep 
-                ? 'bg-emerald-500 border-emerald-500 text-white' 
-                : index === currentStep 
-                  ? 'bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/25' 
+              ${index < currentStep
+                ? 'bg-success border-success text-success-foreground'
+                : index === currentStep
+                  ? 'bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/25'
                   : 'bg-muted border-muted-foreground/20 text-muted-foreground'}
             `}>
               <div className="absolute inset-0 flex items-center justify-center">
@@ -119,7 +119,7 @@ function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { t
             </p>
           </div>
           {index < steps.length - 1 && (
-            <div className={`h-0.5 w-6 transition-all duration-300 sm:w-12 md:w-16 ${index < currentStep ? 'bg-emerald-500' : 'bg-muted-foreground/20'}`} />
+            <div className={`h-0.5 w-6 transition-all duration-300 sm:w-12 md:w-16 ${index < currentStep ? 'bg-success' : 'bg-muted-foreground/20'}`} />
           )}
         </div>
       ))}
@@ -284,80 +284,39 @@ function InvoiceItemCard({
   const itemTotalWithTax = itemTotal + itemTax;
   
   return (
-    <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm transition-all duration-200 hover:border-primary/30 hover:shadow-md">
-      <div className="space-y-3 px-3.5 py-3.5 sm:px-4 sm:py-4">
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
-          <div className="flex min-w-0 items-start gap-3">
-            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-sm font-extrabold text-primary">
-              {index + 1}
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-lg font-extrabold tracking-tight">Артикул {index + 1}</p>
-                <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                  x{item.quantity}
-                </span>
-              </div>
-              <p className="mt-1 truncate text-sm font-semibold">
-                {item.description?.trim() || "Без описание"}
-              </p>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-primary/20 bg-primary/6 px-3 py-2.5 sm:min-w-[124px] sm:text-right">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-              Общо
-            </p>
-            <p className="mt-1 text-xl font-extrabold text-primary tabular-nums">
-              {formatPrice(itemTotalWithTax)} {currency}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <span className="rounded-full border border-border/60 bg-muted/20 px-2.5 py-1 text-xs font-semibold text-muted-foreground">
-            {item.quantity} бр.
-          </span>
-          <span className="rounded-full border border-border/60 bg-muted/20 px-2.5 py-1 text-xs font-semibold text-muted-foreground">
-            {formatPrice(item.unitPrice)} {currency}
-          </span>
-          <span className="rounded-full border border-border/60 bg-muted/20 px-2.5 py-1 text-xs font-semibold text-muted-foreground">
-            ДДС {item.taxRate}%
-          </span>
-          <span className="rounded-full border border-border/60 bg-muted/20 px-2.5 py-1 text-xs font-semibold text-muted-foreground">
-            Подсума {formatPrice(itemTotal)} {currency}
-          </span>
-          <span className="rounded-full border border-primary/20 bg-primary/8 px-2.5 py-1 text-xs font-bold text-primary">
-            ДДС {formatPrice(itemTax)} {currency}
-          </span>
-        </div>
-
-        <Separator variant="tertiary" />
-
-        <div className={`grid gap-2 ${canRemove ? "grid-cols-2" : "grid-cols-1"}`}>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-10 w-full justify-center rounded-xl border-border/60 px-3.5 font-semibold"
-            onClick={onEdit}
-          >
-            <Edit className="mr-2 h-4 w-4" />
-            Редакция
+    <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-card px-3.5 py-3 shadow-sm transition-all hover:border-primary/30 hover:shadow-md">
+      {/* Index */}
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-bold text-muted-foreground">
+        {index + 1}
+      </span>
+      {/* Content */}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-foreground">
+          {item.description?.trim() || <span className="italic text-muted-foreground">Без описание</span>}
+        </p>
+        <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
+          {item.quantity} бр. × {formatPrice(item.unitPrice)} {currency} · ДДС {item.taxRate}%
+        </p>
+      </div>
+      {/* Total */}
+      <div className="shrink-0 text-right">
+        <p className="text-sm font-bold text-primary tabular-nums">
+          {formatPrice(itemTotalWithTax)} {currency}
+        </p>
+        <p className="text-[10px] text-muted-foreground tabular-nums">
+          + {formatPrice(itemTax)} ДДС
+        </p>
+      </div>
+      {/* Actions */}
+      <div className="flex shrink-0 items-center gap-1">
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl" onClick={onEdit} type="button" aria-label="Редакция">
+          <Edit className="h-3.5 w-3.5" />
+        </Button>
+        {canRemove && (
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl text-destructive hover:bg-destructive/10" onClick={onRemove} type="button" aria-label="Изтрий">
+            <Trash2 className="h-3.5 w-3.5" />
           </Button>
-          {canRemove ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-10 w-full justify-center rounded-xl border-destructive/30 px-3.5 font-semibold text-destructive hover:bg-destructive/10"
-              onClick={onRemove}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Изтрий
-            </Button>
-          ) : null}
-        </div>
+        )}
       </div>
     </div>
   );
@@ -426,7 +385,7 @@ function InvoiceItemEditorDialog({
               value={item.description}
               onChange={(e) => onUpdate("description", e.target.value)}
               placeholder={isAddMode ? "Име на артикула..." : "Описание на артикула..."}
-              className="h-11 border-border/60 bg-background/80 text-center text-base font-medium focus:border-primary"
+              className="h-11 border-border/60 bg-background/80 text-base font-medium focus:border-primary"
             />
           </div>
 
@@ -786,35 +745,43 @@ function NewInvoiceContent() {
     ));
   }, []);
 
-  const handleItemDone = useCallback(async (item: { description: string; quantity: number; unitPrice: number; taxRate: number; productId?: string }) => {
+  const handleItemDone = useCallback((item: { description: string; quantity: number; unitPrice: number; taxRate: number; productId?: string }) => {
     if (item.productId || !item.description.trim()) return;
-    const message = "Да добавите този артикул като продукт в каталога за бъдеща употреба?";
-    if (typeof window === "undefined" || !window.confirm(message)) return;
-    try {
-      const res = await fetch("/api/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: item.description.trim(),
-          price: Number(item.unitPrice),
-          unit: "бр.",
-          taxRate: Number(item.taxRate) || 20,
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        toast.error(err.error || "Неуспешно създаване на продукт");
-        return;
-      }
-      const product = await res.json();
-      if (editingItemId != null && product?.id) {
-        updateItem(editingItemId, "productId", product.id);
-      }
-      setProducts((prev) => [...prev, product]);
-      toast.success("Продуктът е добавен в каталога");
-    } catch (e: any) {
-      toast.error(e.message || "Грешка при създаване на продукт");
-    }
+    toast("Запазване в каталог?", {
+      description: `"${item.description.trim()}" може да се запази за бъдеща употреба`,
+      action: {
+        label: "Добави",
+        onClick: async () => {
+          try {
+            const res = await fetch("/api/products", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name: item.description.trim(),
+                price: Number(item.unitPrice),
+                unit: "бр.",
+                taxRate: Number(item.taxRate) || 20,
+              }),
+            });
+            if (!res.ok) {
+              const err = await res.json();
+              toast.error(err.error || "Неуспешно създаване на продукт");
+              return;
+            }
+            const product = await res.json();
+            if (editingItemId != null && product?.id) {
+              updateItem(editingItemId, "productId", product.id);
+            }
+            setProducts((prev) => [...prev, product]);
+            toast.success("Продуктът е добавен в каталога");
+          } catch (e: any) {
+            toast.error(e.message || "Грешка при създаване на продукт");
+          }
+        },
+      },
+      cancel: { label: "Пропусни" },
+      duration: 7000,
+    });
   }, [editingItemId, updateItem]);
 
   const addProduct = useCallback((product: any) => {
@@ -982,15 +949,8 @@ description: error.message?.includes("план")
       case 0:
         return (
           <div className="space-y-6">
-            <div className="mx-auto max-w-3xl text-center">
-              <h2 className="mb-2 text-xl font-bold sm:text-2xl">Изберете клиент за фактурата</h2>
-              <p className="text-sm text-muted-foreground sm:text-base">
-                Използвайте съществуващ клиент от списъка или създайте нов в раздел `Клиенти`, след което се върнете тук.
-              </p>
-            </div>
-
-            <Card className="overflow-hidden border-primary/15">
-              <div className="sticky top-0 z-10 border-b border-border/60 bg-card/95 backdrop-blur supports-backdrop-filter:bg-card/80">
+            <Card className="overflow-hidden border-primary/25">
+              <div className="sticky top-0 z-10 border-b border-border bg-card/95 backdrop-blur supports-backdrop-filter:bg-card/80">
                 <CardHeader className="pb-4">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div>
@@ -1062,26 +1022,17 @@ description: error.message?.includes("план")
             </div>
 
             <Card className="border-primary/15 bg-linear-to-br from-primary/5 via-card to-card">
-              <CardContent className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
+              <CardContent className="flex items-center justify-between gap-3 px-4 py-3">
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  <p className="text-sm font-medium">Нов клиент?</p>
+                  <p className="text-xs text-muted-foreground">Отворете раздел `Клиенти`, създайте запис и се върнете тук.</p>
+                </div>
+                <Button asChild size="sm" className="shrink-0 gap-1.5 px-4">
+                  <Link href="/clients/new?returnTo=/invoices/new">
                     Нов клиент
-                  </p>
-                  <p className="pt-1 text-lg font-semibold">
-                    Създаването на нов клиент се прави в отделния раздел
-                  </p>
-                  <p className="pt-1 text-sm text-muted-foreground">
-                    Отворете `Клиенти`, създайте нов запис и се върнете тук, за да го изберете от списъка.
-                  </p>
-                </div>
-                <div className="flex justify-center lg:justify-center">
-                  <Button asChild className="h-11 shrink-0 gap-2 px-6">
-                    <Link href="/clients/new">
-                      Нов клиент
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                </div>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </Button>
               </CardContent>
             </Card>
 
@@ -1117,11 +1068,6 @@ description: error.message?.includes("план")
       case 1:
         return (
           <div className="space-y-5">
-            <div className="mb-6 text-left">
-              <h2 className="mb-1 text-xl font-bold sm:text-2xl">Детайли на фактурата</h2>
-              <p className="text-muted-foreground text-sm">Настройте основните данни за фактурата</p>
-            </div>
-
             <div className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
                 <div className="min-w-0">
@@ -1151,172 +1097,192 @@ description: error.message?.includes("план")
               <Separator variant="secondary" />
             </div>
 
-            {/* Main 2-column layout */}
-            <div className="box-content space-y-5 lg:grid lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] lg:gap-8 lg:space-y-0">
-              <Card
-                className="rounded-none border-0 bg-transparent pb-5 shadow-none lg:border lg:border-border/60 lg:bg-card lg:pb-0 lg:shadow-sm"
-                style={{
-                  backgroundClip: "unset",
-                  WebkitBackgroundClip: "unset",
-                  color: "rgba(0, 0, 0, 0)",
-                }}
-              >
-                <CardContent className="space-y-6 p-0 text-foreground lg:p-5">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-primary" />
-                      <p className="text-base font-semibold">Детайли по документа</p>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Попълнете датите, мястото на издаване и начина на плащане.
-                    </p>
+            {/* Flat sections with separators, 2-col on desktop */}
+            <div className="lg:grid lg:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)] lg:divide-x lg:divide-border">
+              {/* Left: Dates + Payment */}
+              <div className="lg:pr-7">
+                <div className="space-y-4 pb-5">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-sm font-semibold">Дати на фактурата</p>
                   </div>
-
-                  <Separator variant="secondary" />
-
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-primary" />
-                      <p className="text-sm font-semibold">Дати на фактурата</p>
-                    </div>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <FormDatePicker
-                        label="Дата на издаване"
-                        value={invoiceData.issueDate}
-                        onChange={(val) => handleInputChange('issueDate', val)}
-                      />
-                      <FormDatePicker
-                        label="Краен срок за плащане"
-                        value={invoiceData.dueDate}
-                        onChange={(val) => handleInputChange('dueDate', val)}
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <FormDatePicker
-                        label="Дата на данъчното събитие"
-                        value={invoiceData.supplyDate}
-                        onChange={(val) => handleInputChange('supplyDate', val)}
-                      />
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">Място на издаване</Label>
-                        <Input
-                          value={invoiceData.placeOfIssue}
-                          onChange={(e) => handleInputChange('placeOfIssue', e.target.value)}
-                          placeholder="напр. София"
-                        />
-                      </div>
-                    </div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <FormDatePicker
+                      label="Дата на издаване"
+                      value={invoiceData.issueDate}
+                      onChange={(val) => handleInputChange('issueDate', val)}
+                    />
+                    <FormDatePicker
+                      label="Краен срок за плащане"
+                      value={invoiceData.dueDate}
+                      onChange={(val) => handleInputChange('dueDate', val)}
+                    />
                   </div>
-
-                  <Separator variant="tertiary" />
-
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <CreditCard className="h-4 w-4 text-primary" />
-                      <p className="text-sm font-semibold">Плащане</p>
-                    </div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <FormDatePicker
+                      label="Дата на данъчното събитие"
+                      value={invoiceData.supplyDate}
+                      onChange={(val) => handleInputChange('supplyDate', val)}
+                    />
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium">Начин на плащане</Label>
-                      <Select
-                        value={invoiceData.paymentMethod}
-                        onValueChange={(value) => handleInputChange('paymentMethod', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="BANK_TRANSFER">
-                            <span className="flex items-center gap-2"><Banknote className="h-4 w-4 text-blue-500" />Банков превод</span>
-                          </SelectItem>
-                          <SelectItem value="CASH">
-                            <span className="flex items-center gap-2"><Coins className="h-4 w-4 text-emerald-500" />В брой</span>
-                          </SelectItem>
-                          <SelectItem value="CREDIT_CARD">
-                            <span className="flex items-center gap-2"><CreditCard className="h-4 w-4 text-violet-500" />Кредитна/дебитна карта</span>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Label className="text-sm font-medium">Място на издаване</Label>
+                      <Input
+                        value={invoiceData.placeOfIssue}
+                        onChange={(e) => handleInputChange('placeOfIssue', e.target.value)}
+                        placeholder="напр. София"
+                      />
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
 
-              <Separator className="my-4 lg:hidden" />
-              <Card className="rounded-none border-0 bg-transparent shadow-none lg:rounded-xl lg:border lg:border-border/60 lg:bg-card lg:shadow-sm">
-                <CardContent className="space-y-5 p-0 lg:p-5">
-                  {recipientPreview ? (
-                    <>
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-primary" />
-                          <p className="text-sm font-semibold">Клиент</p>
+                <Separator />
+
+                <div className="space-y-4 pt-5">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-sm font-semibold">Плащане</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Начин на плащане</Label>
+                    <Select
+                      value={invoiceData.paymentMethod}
+                      onValueChange={(value) => handleInputChange('paymentMethod', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="BANK_TRANSFER">
+                          <span className="flex items-center gap-2"><Banknote className="h-4 w-4 text-blue-500" />Банков превод</span>
+                        </SelectItem>
+                        <SelectItem value="CASH">
+                          <span className="flex items-center gap-2"><Coins className="h-4 w-4 text-emerald-500" />В брой</span>
+                        </SelectItem>
+                        <SelectItem value="CREDIT_CARD">
+                          <span className="flex items-center gap-2"><CreditCard className="h-4 w-4 text-violet-500" />Кредитна/дебитна карта</span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mobile separator between columns */}
+              <Separator className="my-5 lg:hidden" />
+
+              {/* Right: Client + Company + Currency */}
+              <div className="lg:pl-7">
+                {recipientPreview ? (
+                  <>
+                    <div className="space-y-3 pb-5">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm font-semibold">Клиент</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+                          {recipientPreview.name?.charAt(0)?.toUpperCase() || "?"}
                         </div>
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-                            {recipientPreview.name?.charAt(0)?.toUpperCase() || "?"}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-lg font-semibold">{recipientPreview.name}</p>
-                            {recipientPreview.email ? (
-                              <p className="truncate text-sm text-muted-foreground">{recipientPreview.email}</p>
-                            ) : null}
-                          </div>
-                          <Button variant="ghost" size="sm" onClick={() => setCurrentStep(0)} className="h-8 px-2">
-                            <Edit className="h-3.5 w-3.5" />
-                          </Button>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-semibold">{recipientPreview.name}</p>
+                          {recipientPreview.email ? (
+                            <p className="truncate text-sm text-muted-foreground">{recipientPreview.email}</p>
+                          ) : null}
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => setCurrentStep(0)} className="h-8 px-2">
+                          <Edit className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                    <Separator />
+                    <div className="space-y-4 pt-5">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm font-semibold">Фирма и валута</p>
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Вашата фирма</Label>
+                          <Select
+                            value={invoiceData.companyId}
+                            onValueChange={(value) => handleInputChange('companyId', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Изберете фирма" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {companies.map(company => (
+                                <SelectItem key={company.id} value={company.id}>
+                                  {company.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Валута</Label>
+                          <Select
+                            value={invoiceData.currency}
+                            onValueChange={(value) => handleInputChange('currency', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="BGN">🇧🇬 BGN - Лев</SelectItem>
+                              <SelectItem value="EUR">🇪🇺 EUR - Евро</SelectItem>
+                              <SelectItem value="USD">🇺🇸 USD - Долар</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
-
-                      <Separator variant="secondary" />
-                    </>
-                  ) : null}
-
+                    </div>
+                  </>
+                ) : (
                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4 text-primary" />
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
                       <p className="text-sm font-semibold">Фирма и валута</p>
                     </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Вашата фирма</Label>
-                      <Select
-                        value={invoiceData.companyId}
-                        onValueChange={(value) => handleInputChange('companyId', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Изберете фирма" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {companies.map(company => (
-                            <SelectItem key={company.id} value={company.id}>
-                              {company.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <Separator variant="tertiary" />
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Валута</Label>
-                      <Select
-                        value={invoiceData.currency}
-                        onValueChange={(value) => handleInputChange('currency', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="BGN">🇧🇬 BGN - Лев</SelectItem>
-                          <SelectItem value="EUR">🇪🇺 EUR - Евро</SelectItem>
-                          <SelectItem value="USD">🇺🇸 USD - Долар</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Вашата фирма</Label>
+                        <Select
+                          value={invoiceData.companyId}
+                          onValueChange={(value) => handleInputChange('companyId', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Изберете фирма" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {companies.map(company => (
+                              <SelectItem key={company.id} value={company.id}>
+                                {company.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Валута</Label>
+                        <Select
+                          value={invoiceData.currency}
+                          onValueChange={(value) => handleInputChange('currency', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="BGN">🇧🇬 BGN - Лев</SelectItem>
+                            <SelectItem value="EUR">🇪🇺 EUR - Евро</SelectItem>
+                            <SelectItem value="USD">🇺🇸 USD - Долар</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                )}
+              </div>
             </div>
           </div>
         );
@@ -1325,24 +1291,17 @@ description: error.message?.includes("план")
       case 2:
         return (
           <div className="space-y-5">
-            <div className="mb-8 text-left">
-              <h2 className="mb-1.5 text-xl font-bold sm:text-2xl">Добавете продукти</h2>
-              <p className="text-muted-foreground">Изберете от каталога или добавете ръчно</p>
-            </div>
-            
-            {/* Products catalog */}
+            {/* Catalog section */}
             {products.length > 0 && (
-              <Card className="rounded-none border-0 bg-transparent pb-5 shadow-none lg:rounded-xl lg:border lg:border-border/70 lg:bg-card lg:pb-0 lg:shadow-sm">
-                <CardHeader className="px-0 pb-4 pt-0 lg:px-6 lg:pb-4 lg:pt-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <>
+                <div className="pb-1">
+                  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight">
-                        <Sparkles className="h-5 w-5 text-primary" />
-                        Каталог с продукти
-                      </CardTitle>
-                      <CardDescription className="mt-1 text-sm font-medium text-muted-foreground">
-                        Кликнете върху продукт, за да го добавите.
-                      </CardDescription>
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                        <p className="text-sm font-semibold">Каталог с продукти</p>
+                      </div>
+                      <p className="mt-0.5 text-xs text-muted-foreground">Кликнете върху продукт, за да го добавите.</p>
                     </div>
                     <div className="relative w-full sm:w-64">
                       <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
@@ -1355,8 +1314,6 @@ description: error.message?.includes("план")
                       />
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent className="px-0 pb-0 lg:px-6 lg:pb-6">
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {filteredProducts.map((product) => (
                       <ProductCard
@@ -1367,79 +1324,78 @@ description: error.message?.includes("план")
                       />
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-            )}
-            
-            {/* Invoice items */}
-            <Card className={`rounded-none border-0 bg-transparent shadow-none lg:rounded-xl lg:border lg:border-border/70 lg:bg-card lg:shadow-sm ${products.length > 0 ? "border-t border-border/50 pt-5 lg:border-t-0 lg:pt-0" : ""}`}>
-              <CardHeader className="px-0 pb-4 pt-0 lg:px-6 lg:pb-4 lg:pt-6">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-                  <div className="flex-1 min-w-0">
-                    <CardTitle className="card-title flex items-center gap-2">
-                      <ShoppingCart className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
-                      <span className="truncate">Артикули</span>
-                    </CardTitle>
-                    <CardDescription className="card-description mt-1">{items.length} артикул(а)</CardDescription>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    onClick={addItem}
-                    className="btn-responsive btn-text"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    <span className="hidden sm:inline">Добави ред</span>
-                    <span className="sm:hidden">Добави</span>
-                  </Button>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4 px-0 pb-0 pt-0 lg:px-6 lg:pb-6">
-                {items.length > 0 && (
-                  <div className="grid gap-2.5 sm:grid-cols-3">
-                    <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
-                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Редове</p>
-                      <p className="mt-1 text-sm font-semibold">{items.length}</p>
-                    </div>
-                    <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
-                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Подсума</p>
-                      <p className="mt-1 text-sm font-semibold tabular-nums">
-                        {formatPrice(totals.subtotal)} {invoiceData.currency}
-                      </p>
-                    </div>
-                    <div className="rounded-xl border border-primary/15 bg-primary/5 p-3">
-                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Общо</p>
-                      <p className="mt-1 text-sm font-bold text-primary tabular-nums">
-                        {formatPrice(totals.total)} {invoiceData.currency}
-                      </p>
-                    </div>
+                <Separator />
+              </>
+            )}
+
+            {/* Items section */}
+            <div className={products.length > 0 ? "pt-1" : ""}>
+              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2.5">
+                  <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <div>
+                    <p className="text-sm font-semibold">Артикули</p>
+                    <p className="text-xs text-muted-foreground">{items.length} артикул(а)</p>
                   </div>
-                )}
-                {items.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Package className="h-12 w-12 mx-auto mb-3 opacity-40" />
-                    <p className="font-medium">Няма добавени артикули</p>
-                    <p className="text-sm mt-1">Изберете продукт от каталога или добавете ръчно</p>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={addItem}
+                  className="btn-responsive btn-text"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Добави ред</span>
+                  <span className="sm:hidden">Добави</span>
+                </Button>
+              </div>
+
+              {items.length > 0 && (
+                <div className="mb-4 grid gap-2.5 sm:grid-cols-3">
+                  <div className="rounded-xl border border-border bg-muted/20 p-3">
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Редове</p>
+                    <p className="mt-1 text-sm font-semibold">{items.length}</p>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-                    {items.map((item, index) => (
-                      <InvoiceItemCard
-                        key={item.id}
-                        item={item}
-                        index={index}
-                        onEdit={() => {
-                          setItemEditorMode("edit");
-                          setEditingItemId(item.id);
-                        }}
-                        onRemove={() => removeItem(item.id)}
-                        canRemove={true}
-                        currency={invoiceData.currency}
-                      />
-                    ))}
+                  <div className="rounded-xl border border-border bg-muted/20 p-3">
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Подсума</p>
+                    <p className="mt-1 text-sm font-semibold tabular-nums">
+                      {formatPrice(totals.subtotal)} {invoiceData.currency}
+                    </p>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                  <div className="rounded-xl border border-primary/25 bg-primary/5 p-3">
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Общо</p>
+                    <p className="mt-1 text-sm font-bold text-primary tabular-nums">
+                      {formatPrice(totals.total)} {invoiceData.currency}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {items.length === 0 ? (
+                <div className="py-10 text-center text-muted-foreground">
+                  <Package className="h-12 w-12 mx-auto mb-3 opacity-40" />
+                  <p className="font-medium">Няма добавени артикули</p>
+                  <p className="mt-1 text-sm">Изберете продукт от каталога или добавете ръчно</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                  {items.map((item, index) => (
+                    <InvoiceItemCard
+                      key={item.id}
+                      item={item}
+                      index={index}
+                      onEdit={() => {
+                        setItemEditorMode("edit");
+                        setEditingItemId(item.id);
+                      }}
+                      onRemove={() => removeItem(item.id)}
+                      canRemove={true}
+                      currency={invoiceData.currency}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
 
             <InvoiceItemEditorDialog
               item={editingItem}
@@ -1465,30 +1421,23 @@ description: error.message?.includes("план")
       case 3:
         return (
           <div className="space-y-5">
-            <div className="flex flex-col gap-2 text-center sm:text-left">
-              <h2 className="text-xl font-bold sm:text-2xl">Преглед на фактурата</h2>
-              <p className="text-sm text-muted-foreground">
-                Проверете документа и сумите преди създаване.
-              </p>
-            </div>
-
             <div className="grid box-content gap-4 xl:grid-cols-[minmax(0,1.8fr)_320px]">
-              <Card className="box-content solid-card overflow-hidden border border-border/70 bg-white shadow-sm dark:bg-slate-900">
-                <div className="border-b border-border/60 bg-muted/15 px-4 py-3.5 sm:px-5 sm:py-4">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <Card className="box-content solid-card overflow-hidden border border-border bg-card shadow-sm">
+                <div className="border-b border-border bg-muted/15 px-4 py-3.5 sm:px-5 sm:py-4">
+                  <div className="flex items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-2.5">
                       <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                        Фактура №:
+                        №
                       </span>
-                      <p className="min-w-0 truncate font-mono text-base font-bold tracking-tight sm:text-lg">
+                      <p className="min-w-0 truncate font-mono text-base font-bold tracking-tight">
                         {invoiceData.invoiceNumber}
                       </p>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="secondary" className="px-2.5 py-1 text-xs sm:text-sm">
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Badge variant="secondary" className="px-2.5 py-1 text-xs">
                         {invoiceData.currency}
                       </Badge>
-                      <Badge variant="outline" className="px-2.5 py-1 text-xs sm:text-sm">
+                      <Badge variant="outline" className="px-2.5 py-1 text-xs">
                         {previewItems.length} {previewItems.length === 1 ? "артикул" : "артикула"}
                       </Badge>
                     </div>
@@ -1548,89 +1497,33 @@ description: error.message?.includes("план")
                       </p>
                     </div>
 
-                    <div className="space-y-0 md:hidden">
+                    <div className="divide-y divide-border/50">
                       {previewItems.map((item, index) => {
                         const itemTotal = item.quantity * item.unitPrice;
                         const itemTotalWithVat = itemTotal + itemTotal * (item.taxRate / 100);
 
                         return (
-                          <div key={item.id} className="py-3 first:pt-0 last:pb-0">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0 flex-1">
-                                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                  Артикул {index + 1}
-                                </p>
-                                <p className="mt-1 wrap-break-word text-sm font-semibold">{item.description}</p>
-                              </div>
-                              <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-                                x{item.quantity}
-                              </span>
+                          <div key={item.id} className="flex items-center gap-3 py-3 first:pt-1">
+                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-bold text-muted-foreground">
+                              {index + 1}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-semibold">{item.description}</p>
+                              <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
+                                {item.quantity} бр. × {formatPrice(item.unitPrice)} {invoiceData.currency} · ДДС {item.taxRate}%
+                              </p>
                             </div>
-
-                            <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                              <div className="flex items-center justify-between gap-3">
-                                <span className="text-muted-foreground">Ед. цена</span>
-                                <span className="font-semibold">
-                                  {formatPrice(item.unitPrice)} {invoiceData.currency}
-                                </span>
-                              </div>
-                              <div className="flex items-center justify-between gap-3">
-                                <span className="text-muted-foreground">ДДС</span>
-                                <span className="font-semibold">{item.taxRate}%</span>
-                              </div>
-                              <div className="flex items-center justify-between gap-3">
-                                <span className="text-muted-foreground">Подсума</span>
-                                <span className="font-semibold">
-                                  {formatPrice(itemTotal)} {invoiceData.currency}
-                                </span>
-                              </div>
-                              <div className="flex items-center justify-between gap-3">
-                                <span className="text-muted-foreground">Общо</span>
-                                <span className="font-semibold text-primary">
-                                  {formatPrice(itemTotalWithVat)} {invoiceData.currency}
-                                </span>
-                              </div>
+                            <div className="shrink-0 text-right">
+                              <p className="text-sm font-bold text-primary tabular-nums">
+                                {formatPrice(itemTotalWithVat)} {invoiceData.currency}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground tabular-nums">
+                                без ДДС {formatPrice(itemTotal)} {invoiceData.currency}
+                              </p>
                             </div>
-                            {index < previewItems.length - 1 ? <Separator className="mt-3" /> : null}
                           </div>
                         );
                       })}
-                    </div>
-
-                    <div className="hidden md:block">
-                      <div className="grid grid-cols-12 gap-3 border-b border-border/60 px-0 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                        <div className="col-span-1 text-center">№</div>
-                        <div className="col-span-6">Описание</div>
-                        <div className="col-span-2 text-right">Количество</div>
-                        <div className="col-span-3 text-right">Общо</div>
-                      </div>
-                      <div className="divide-y divide-border/50">
-                        {previewItems.map((item, index) => {
-                          const itemTotal = item.quantity * item.unitPrice;
-
-                          return (
-                            <div key={item.id} className="grid grid-cols-12 gap-3 px-0 py-3">
-                              <div className="col-span-1 text-center text-xs font-medium text-muted-foreground sm:text-sm">
-                                {index + 1}
-                              </div>
-                              <div className="col-span-6">
-                                <p className="mb-0.5 text-sm font-semibold">{item.description}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {formatPrice(item.unitPrice)} {invoiceData.currency} × {item.quantity} (ДДС {item.taxRate}%)
-                                </p>
-                              </div>
-                              <div className="col-span-2 text-right text-sm font-medium">
-                                {item.quantity}
-                              </div>
-                              <div className="col-span-3 text-right">
-                                <p className="text-sm font-semibold">
-                                  {formatPrice(itemTotal)} {invoiceData.currency}
-                                </p>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -1648,7 +1541,7 @@ description: error.message?.includes("план")
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-border/60 bg-background/30">
+                  <div className="rounded-2xl border border-border bg-background/30">
                     <div className="divide-y divide-border/50">
                       <div className="flex items-start justify-between gap-4 px-4 py-3 text-sm">
                         <span className="text-muted-foreground">Дата на издаване</span>
@@ -1738,37 +1631,20 @@ description: error.message?.includes("план")
     <div className="min-h-screen">
       {/* Subscription limit warning */}
       {isFree && !isLoadingUsage && !canCreateInvoice && (
-        <Alert className="mb-4 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
-          <AlertTriangle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="flex items-center justify-between">
-            <span className="text-red-800 dark:text-red-200">
-              Издадохте <strong>3 фактури</strong> този месец — лимитът на безплатния план. С Про създавате неограничено и изпращате по имейл за по-бързи плащания.
-            </span>
-            <Link href="/settings/subscription">
-              <Button size="sm" className="ml-4 bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
-                <Crown className="h-4 w-4 mr-2" />
-                Отключете неограничени фактури →
-              </Button>
-            </Link>
-          </AlertDescription>
-        </Alert>
+        <LimitBanner
+          variant="error"
+          message={<>Издадохте <strong>3 фактури</strong> този месец — лимитът на безплатния план. С Про без ограничения.</>}
+          linkText="Отключете неограничени →"
+          className="mb-4"
+        />
       )}
 
       {isFree && !isLoadingUsage && canCreateInvoice && invoiceUsage.remaining === 1 && (
-        <Alert className="mb-4 border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
-          <AlertTriangle className="h-4 w-4 text-amber-600" />
-          <AlertDescription className="flex items-center justify-between">
-            <span className="text-amber-800 dark:text-amber-200">
-              Остава ви <strong>1 фактура</strong> този месец. С план Про не спирате и изпращате фактури по имейл.
-            </span>
-            <Link href="/settings/subscription">
-              <Button size="sm" variant="outline" className="ml-4 border-amber-300 text-amber-700 hover:bg-amber-100">
-                <Crown className="h-4 w-4 mr-2" />
-                Вижте плановете →
-              </Button>
-            </Link>
-          </AlertDescription>
-        </Alert>
+        <LimitBanner
+          variant="warning"
+          message={<>Остава ви <strong>1 фактура</strong> този месец. С Про не спирате и изпращате по имейл.</>}
+          className="mb-4"
+        />
       )}
 
       <div className="mx-auto w-full max-w-[1440px]">
@@ -1804,25 +1680,25 @@ description: error.message?.includes("план")
         </div>
 
         {showClientPickerOnly ? (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-5">
             {renderStepContent(0)}
           </div>
         ) : (
         /* Wizard shell */
-        <Card className="overflow-visible rounded-none border-x-0 border-border/60 bg-linear-to-br from-card/90 via-card to-card/95 shadow-none sm:rounded-2xl sm:border-x sm:shadow-xl sm:shadow-primary/5">
-          <CardHeader className="border-b border-border/40 bg-card/85 px-4 pb-3 pt-4 sm:px-6 sm:pb-4">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <Card className="overflow-visible rounded-none border-x-0 border-border bg-linear-to-br from-card/90 via-card to-card/95 shadow-none sm:rounded-2xl sm:border-x sm:shadow-xl sm:shadow-primary/5">
+          <CardHeader className="border-b border-border/40 bg-card/85 px-3 pb-2.5 pt-3 sm:px-5 sm:pb-3.5 sm:pt-4">
+            <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
               <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
                   Стъпка {currentStep + 1} от {steps.length}
                 </p>
                 <div className="mt-2 flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-primary/12 text-primary sm:h-10 sm:w-10">
                   {currentStepDetails.icon}
                   </div>
                   <div className="min-w-0">
-                    <h2 className="text-base font-semibold sm:text-lg">{currentStepDetails.title}</h2>
-                    <p className="pt-1 text-sm text-muted-foreground">
+                    <h2 className="text-sm font-semibold sm:text-base">{currentStepDetails.title}</h2>
+                    <p className="pt-1 text-xs text-muted-foreground sm:text-sm">
                       {stepDescriptions[currentStep]}
                     </p>
                   </div>
@@ -1845,11 +1721,11 @@ description: error.message?.includes("план")
               </div>
             </div>
           </CardHeader>
-          <div className="sticky top-[calc(env(safe-area-inset-top)+3.5rem)] z-30 border-b border-border/40 bg-card/95 px-4 py-3 backdrop-blur supports-backdrop-filter:bg-card/85 sm:top-[calc(env(safe-area-inset-top)+4rem)] sm:px-6">
+          <div className="sticky top-[calc(env(safe-area-inset-top)+3.25rem)] z-30 border-b border-border/40 bg-card/95 px-3 py-2.5 backdrop-blur supports-backdrop-filter:bg-card/85 sm:top-[calc(env(safe-area-inset-top)+4rem)] sm:px-5 sm:py-3">
             <StepIndicator currentStep={currentStep} steps={steps} />
           </div>
-          <CardContent className="px-4 pb-4 pt-4 sm:px-6 sm:pb-6">
-            <div className="space-y-4">
+          <CardContent className="px-3 pb-3 pt-3 sm:px-5 sm:pb-5 sm:pt-4">
+            <div className="space-y-3 sm:space-y-4">
               {steps.map((step, index) => {
                 const isOpen = index === currentStep;
                 const isUnlocked = index <= currentStep;
@@ -1857,7 +1733,7 @@ description: error.message?.includes("план")
                 return (
                   <section
                     key={step.title}
-                    className="overflow-hidden rounded-2xl border border-border/60 bg-background/40 shadow-sm"
+                    className="overflow-hidden rounded-2xl border border-border bg-background/40 shadow-sm"
                   >
                     <button
                       type="button"

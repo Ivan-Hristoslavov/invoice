@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Building, Plus, Search, Users, Lock, AlertTriangle, XCircle, Crown, LayoutGrid, List, Pencil } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Building, Plus, Search, Users, Lock, LayoutGrid, List, Pencil } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { UsageCounter } from "@/components/ui/pro-feature-lock";
+import { UsageCounter, LimitBanner } from "@/components/ui/pro-feature-lock";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import {
   Table,
@@ -55,6 +56,7 @@ export default function ClientsClient({
   isAtLimit,
   createdByMap = {},
 }: ClientsClientProps) {
+  const router = useRouter();
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -81,42 +83,21 @@ export default function ClientsClient({
     <div className="space-y-6">
       {/* Soft Upgrade Prompts */}
       {isApproachingLimit && (
-        <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
-          <AlertTriangle className="h-4 w-4 text-amber-600" />
-          <AlertDescription className="flex items-center justify-between">
-            <span className="text-amber-800 dark:text-amber-200">
-              {clientsRemaining === 1 ? (
-                <>Остава ви <strong>1 клиент</strong> в този план.</>
-              ) : (
-                <>Остават ви <strong>{clientsRemaining} клиента</strong> в този план.</>
-              )}
-              {' '}Надградете за още клиенти и търсене по ЕИК.
-            </span>
-            <Link href="/settings/subscription">
-              <Button size="sm" variant="outline" className="ml-4 border-amber-300 text-amber-700 hover:bg-amber-100">
-                <Crown className="h-4 w-4 mr-2" />
-                Вижте плановете →
-              </Button>
-            </Link>
-          </AlertDescription>
-        </Alert>
+        <LimitBanner
+          variant="warning"
+          message={clientsRemaining === 1
+            ? <><strong>Остава 1 клиент</strong> в плана. Надградете за повече и търсене по ЕИК.</>
+            : <><strong>Остават {clientsRemaining} клиента</strong> в плана. Надградете за повече и търсене по ЕИК.</>
+          }
+        />
       )}
-      
+
       {isAtLimit && (
-        <Alert className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
-          <XCircle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="flex items-center justify-between">
-            <span className="text-red-800 dark:text-red-200">
-              Лимитът за клиенти за този план е достигнат. С по-висок план добавяте още клиенти и ползвате търсене по ЕИК с един клик.
-            </span>
-            <Link href="/settings/subscription">
-              <Button size="sm" className="ml-4 bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
-                <Crown className="h-4 w-4 mr-2" />
-                Отключете повече клиенти →
-              </Button>
-            </Link>
-          </AlertDescription>
-        </Alert>
+        <LimitBanner
+          variant="error"
+          message={<>Лимитът за клиенти е достигнат. С по-висок план добавяте повече и ползвате ЕИК.</>}
+          linkText="Отключете повече клиенти →"
+        />
       )}
 
       {/* Header */}
@@ -218,28 +199,20 @@ export default function ClientsClient({
       {/* Empty State */}
       {filteredClients.length === 0 ? (
         <Card className="border-0 shadow-lg">
-          <CardContent className="py-16">
-            <div className="flex flex-col items-center justify-center text-center">
-              <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                <Users className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold mb-1">
-                {searchQuery ? "Няма намерени клиенти" : "Все още нямате клиенти"}
-              </h3>
-              <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-                {searchQuery 
-                  ? "Опитайте с друга ключова дума" 
-                  : "Добавете първия си клиент, за да започнете да създавате фактури"}
-              </p>
-              {!searchQuery && (
-                <Link href="/clients/new">
-                  <Button className="gap-2">
+          <CardContent className="p-0">
+            <EmptyState
+              icon={Users}
+              heading={searchQuery ? "Няма намерени клиенти" : "Все още нямате клиенти"}
+              description={searchQuery ? "Опитайте с друга ключова дума" : "Добавете първия си клиент, за да започнете да създавате фактури"}
+              action={!searchQuery ? (
+                <Button asChild>
+                  <Link href="/clients/new" className="gap-2">
                     <Plus className="h-4 w-4" />
                     Добави първия клиент
-                  </Button>
-                </Link>
-              )}
-            </div>
+                  </Link>
+                </Button>
+              ) : undefined}
+            />
           </CardContent>
         </Card>
       ) : viewMode === "cards" ? (
@@ -249,7 +222,7 @@ export default function ClientsClient({
             <div key={client.id} className="group relative">
               <Card
                 className="h-full min-h-[150px] border-0 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer"
-                onClick={() => window.location.href = `/clients/${client.id}`}
+                onClick={() => router.push(`/clients/${client.id}`)}
               >
                 <div
                   className="absolute right-3 top-3 z-10 opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100"
@@ -323,7 +296,7 @@ export default function ClientsClient({
                 <TableRow
                   key={client.id}
                   className="group cursor-pointer transition-colors hover:bg-muted/50"
-                  onClick={() => window.location.href = `/clients/${client.id}`}
+                  onClick={() => router.push(`/clients/${client.id}`)}
                 >
                   <TableCell>
                     <div>
