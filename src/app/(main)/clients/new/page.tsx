@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useCallback, useEffect, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -74,20 +74,19 @@ function ModeOptionCard({
     <button
       type="button"
       onClick={onClick}
-      className="group relative overflow-hidden rounded-[28px] border border-border/70 bg-card text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+      className="group relative overflow-hidden rounded-2xl border border-border/70 bg-card text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md hover:shadow-primary/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
     >
-      <div className="absolute inset-x-0 top-0 h-24 bg-linear-to-br from-primary/14 via-primary/6 to-transparent opacity-80" />
-      <div className="relative space-y-5 p-6 sm:p-7">
-        <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/12 text-primary ring-1 ring-primary/15">
+      <div className="space-y-2.5 p-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary ring-1 ring-primary/15">
             {icon}
           </div>
           <div className="min-w-0">
-            <h3 className="text-lg font-semibold tracking-tight text-foreground">{title}</h3>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
+            <h3 className="text-sm font-semibold tracking-tight text-foreground">{title}</h3>
+            <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{description}</p>
           </div>
         </div>
-        <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-3 text-sm text-muted-foreground">
+        <div className="rounded-xl border border-border/60 bg-background/70 px-3 py-2 text-xs text-muted-foreground">
           {caption}
         </div>
       </div>
@@ -112,10 +111,10 @@ function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { t
           <div className="flex flex-col items-center gap-2">
             <div className={`
               relative flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all duration-300 sm:h-10 sm:w-10
-              ${index < currentStep 
-                ? 'bg-emerald-500 border-emerald-500 text-white' 
-                : index === currentStep 
-                  ? 'bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/25' 
+              ${index < currentStep
+                ? 'bg-success border-success text-success-foreground'
+                : index === currentStep
+                  ? 'bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/25'
                   : 'bg-muted border-muted-foreground/20 text-muted-foreground'}
             `}>
               <div className="absolute inset-0 flex items-center justify-center">
@@ -133,7 +132,7 @@ function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { t
             </p>
           </div>
           {index < steps.length - 1 && (
-            <div className={`h-0.5 w-6 transition-all duration-300 sm:w-12 md:w-16 ${index < currentStep ? 'bg-emerald-500' : 'bg-muted-foreground/20'}`} />
+            <div className={`h-0.5 w-6 transition-all duration-300 sm:w-12 md:w-16 ${index < currentStep ? 'bg-success' : 'bg-muted-foreground/20'}`} />
           )}
         </div>
       ))}
@@ -143,11 +142,15 @@ function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { t
   );
 }
 
-// Define validation schema for client (Bulgarian invoice: recipient name + address required)
 const clientSchema = z.object({
   name: z.string().min(1, "Името на клиента е задължително"),
   email: z.string().email("Моля, въведете валиден имейл").optional().or(z.literal("")),
-  phone: z.string().optional().or(z.literal("")),
+  phone: z
+    .string()
+    .min(1, "Телефонът е задължителен")
+    .refine((value) => getDigitsOnly(value).length >= 6, {
+      message: "Въведете валиден телефонен номер с поне 6 цифри",
+    }),
   address: z.string().min(1, "Адресът е задължителен за издаване на фактури"),
   city: z.string().min(1, "Градът е задължителен"),
   state: z.string().optional().or(z.literal("")),
@@ -155,7 +158,12 @@ const clientSchema = z.object({
   country: z.string().optional().or(z.literal("")),
   vatNumber: z.string().optional().or(z.literal("")),
   taxIdNumber: z.string().optional().or(z.literal("")),
-  bulstatNumber: z.string().optional().or(z.literal("")),
+  bulstatNumber: z
+    .string()
+    .min(9, "ЕИК/БУЛСТАТ е задължителен и трябва да съдържа поне 9 цифри")
+    .refine((value) => getDigitsOnly(value).length >= 9, {
+      message: "ЕИК/БУЛСТАТ трябва да съдържа поне 9 цифри",
+    }),
   vatRegistered: z.boolean().optional().default(false),
   vatRegistrationNumber: z.string().optional().or(z.literal("")),
   mol: z.string().optional().or(z.literal("")),
@@ -205,8 +213,9 @@ function getStepForClientField(field?: string) {
   }
 }
 
-export default function NewClientPage() {
+function NewClientPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [confirmed, setConfirmed] = useState(false);
@@ -392,6 +401,11 @@ export default function NewClientPage() {
   ]);
 
   async function onSubmit(data: ClientFormValues) {
+    // Guard against double submission in the same render frame
+    if (isLoading) {
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -426,7 +440,8 @@ export default function NewClientPage() {
         },
       });
 
-      router.push("/clients");
+      const returnTo = searchParams.get("returnTo");
+      router.push(returnTo || "/clients");
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Възникна грешка при създаване на клиента. Моля, опитайте отново.";
@@ -450,16 +465,20 @@ export default function NewClientPage() {
     switch (currentStep) {
       case 0: {
         const nameValid = formValues.name.trim().length > 0;
+        const phoneValid = (formValues.phone ?? "").trim().length > 0;
         const emailValid = isValidEmail(formValues.email || "");
-        return nameValid && emailValid;
+        return nameValid && phoneValid && emailValid;
       }
       case 1: {
         const addressValid = (formValues.address ?? "").trim().length > 0;
         const cityValid = (formValues.city ?? "").trim().length > 0;
         return addressValid && cityValid;
       }
-      case 2:
-        return true;
+      case 2: {
+        const bulstatDigits = getDigitsOnly(formValues.bulstatNumber || "");
+        const hasRequiredBulstat = bulstatDigits.length >= 9;
+        return hasRequiredBulstat;
+      }
       default:
         return true;
     }
@@ -490,13 +509,11 @@ export default function NewClientPage() {
 
       {!clientCreationMode ? (
         <div className="mx-auto max-w-5xl space-y-6">
-          <div className="overflow-hidden rounded-[32px] border border-border/70 bg-linear-to-br from-card via-card to-primary/5 px-6 py-8 text-center shadow-lg shadow-black/5 sm:px-8 sm:py-10">
-            <div className="mx-auto max-w-2xl space-y-3">
-              <h2 className="text-3xl font-semibold tracking-tight text-foreground">Как искате да създадете клиента?</h2>
-              <p className="text-sm leading-6 text-muted-foreground sm:text-base">
-                Изберете най-удобния начин. При автоматично попълване първо търсите по ЕИК, а при ръчното попълване въвеждате данните сами.
-              </p>
-            </div>
+          <div className="rounded-2xl border border-border/60 bg-card/50 px-4 py-3.5 text-center">
+            <h2 className="text-base font-semibold tracking-tight text-foreground">Как искате да създадете клиента?</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Изберете начин на въвеждане на данните.
+            </p>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
@@ -526,21 +543,21 @@ export default function NewClientPage() {
                   }
                 }}
               >
-                <div className="rounded-[28px] border border-border/70 bg-card text-left">
-                  <div className="relative space-y-5 p-6 sm:p-7">
-                    <div className="flex items-start gap-4">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/12 text-primary ring-1 ring-primary/15">
-                        <Search className="h-5 w-5" />
+                <div className="rounded-2xl border border-border/70 bg-card text-left">
+                  <div className="space-y-2.5 p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary ring-1 ring-primary/15">
+                        <Search className="h-4 w-4" />
                       </div>
                       <div className="min-w-0">
-                        <h3 className="text-lg font-semibold tracking-tight text-foreground">Автоматично попълване с ЕИК</h3>
-                        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                          Въвеждате ЕИК/БУЛСТАТ, проверяваме фирмата и попълваме наличните данни вместо вас.
+                        <h3 className="text-sm font-semibold tracking-tight text-foreground">Автоматично попълване с ЕИК</h3>
+                        <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                          Въвеждате ЕИК/БУЛСТАТ, проверяваме фирмата и попълваме данните вместо вас.
                         </p>
                       </div>
                     </div>
-                    <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-3 text-sm text-muted-foreground">
-                      Подходящо за български фирми, когато искате да спестите ръчно попълване.
+                    <div className="rounded-xl border border-border/60 bg-background/70 px-3 py-2 text-xs text-muted-foreground">
+                      Подходящо за български фирми.
                     </div>
                   </div>
                 </div>
@@ -1192,5 +1209,13 @@ export default function NewClientPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function NewClientPage() {
+  return (
+    <Suspense fallback={null}>
+      <NewClientPageContent />
+    </Suspense>
   );
 }

@@ -412,8 +412,9 @@ export default function NewCompanyPage() {
 
     const normalizedBulstat = (formValues.bulstatNumber || "").replace(/\D/g, "");
     const isBulstat = formValues.uicType !== "EGN";
-    const hasNonDuplicateError =
-      Boolean(bulstatFieldError) && bulstatFieldError?.type !== "duplicate";
+    // Read field state directly to avoid bulstatFieldError in deps (which causes cancellation loops)
+    const currentError = form.getFieldState("bulstatNumber").error;
+    const hasNonDuplicateError = Boolean(currentError) && currentError?.type !== "duplicate";
 
     if (!isBulstat || normalizedBulstat.length < 9 || hasNonDuplicateError) {
       duplicateCheckRequestRef.current += 1;
@@ -422,7 +423,6 @@ export default function NewCompanyPage() {
       return;
     }
 
-    clearDuplicateBulstatError();
     const requestId = duplicateCheckRequestRef.current + 1;
     duplicateCheckRequestRef.current = requestId;
 
@@ -458,10 +458,9 @@ export default function NewCompanyPage() {
               payload.message ||
               "Тази компания е регистрирана и не може да бъде добавена като ваша.",
           });
-          return;
+        } else {
+          clearDuplicateBulstatError();
         }
-
-        clearDuplicateBulstatError();
       } catch {
         // Keep duplicate preflight best-effort only; POST remains authoritative.
       } finally {
@@ -475,7 +474,6 @@ export default function NewCompanyPage() {
       window.clearTimeout(timeoutId);
     };
   }, [
-    bulstatFieldError,
     clearDuplicateBulstatError,
     companyCreationMode,
     form,

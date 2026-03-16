@@ -378,28 +378,27 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
     if (!invoice.client.email) return null;
     
     return (
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3">
-            <Send className="w-6 h-6" />
+      <Card>
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+            <Send className="w-4 h-4" />
             Комуникация с клиента
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-4">
+        <CardContent className="px-4 pb-4 pt-0">
+          <div className="grid gap-2">
             {canSendEmail ? (
-              <Button 
-                variant="outline" 
-                className="w-full justify-start text-left h-auto py-3"
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full justify-start text-left h-8"
                 onClick={handleSendInvoiceOnly}
                 disabled={isSendingEmail}
               >
-                <div className="flex items-center gap-4">
-                  <Send className="w-5 h-5 shrink-0 text-gray-600" />
-                  <span className="font-medium">
-                    {isSendingEmail ? "Изпращане..." : "Изпрати фактура"}
-                  </span>
-                </div>
+                <Send className="w-3.5 h-3.5 mr-2 shrink-0 text-gray-600" />
+                <span className="text-xs font-medium">
+                  {isSendingEmail ? "Изпращане..." : "Изпрати фактура"}
+                </span>
               </Button>
             ) : (
               <TooltipProvider>
@@ -409,16 +408,15 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
                       <Button
                         asChild
                         variant="outline"
-                        className="w-full justify-start border-dashed border-amber-300 py-3 text-left dark:border-amber-700"
+                        size="sm"
+                        className="w-full justify-start border-dashed border-amber-300 h-8 text-left dark:border-amber-700"
                       >
                         <Link href="/settings/subscription" aria-label="Изпращане по имейл с план Про">
-                        <div className="flex items-center gap-4 w-full">
-                          <Lock className="w-5 h-5 shrink-0 text-amber-500" />
-                          <span className="font-medium flex-1">Изпрати фактура</span>
+                          <Lock className="w-3.5 h-3.5 mr-2 shrink-0 text-amber-500" />
+                          <span className="text-xs font-medium flex-1">Изпрати фактура</span>
                           <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">
                             PRO
                           </span>
-                        </div>
                         </Link>
                       </Button>
                     </div>
@@ -434,16 +432,15 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
             {invoice.status === "ISSUED" && (
               <Button
                 variant="destructive"
-                className="w-full justify-start text-left h-auto py-3"
+                size="sm"
+                className="w-full justify-start text-left h-8"
                 onClick={() => setShowCancelModal(true)}
                 disabled={isSendingEmail}
               >
-                <div className="flex items-center gap-4">
-                  <AlertTriangle className="w-5 h-5 shrink-0" />
-                  <span className="font-medium">
-                    {isSendingEmail ? "Отмяна..." : "Отмени фактура"}
-                  </span>
-                </div>
+                <AlertTriangle className="w-3.5 h-3.5 mr-2 shrink-0" />
+                <span className="text-xs font-medium">
+                  {isSendingEmail ? "Отмяна..." : "Отмени фактура"}
+                </span>
               </Button>
             )}
             
@@ -481,87 +478,87 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
         
         {/* Main row: Title, Status, Actions */}
         <div className="page-header">
-          <div className="flex min-w-0 flex-wrap items-center gap-3">
-            <h1 className="page-title">
+          <div className="flex min-w-0 flex-wrap items-center gap-2.5">
+            <h1 className="text-lg font-bold tracking-tight sm:text-xl">
               Фактура #{invoice.invoiceNumber}
             </h1>
             <div
-              className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(
+              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
                 invoice.status
               )}`}
             >
-              <span className="flex items-center gap-1.5">
+              <span className="flex items-center gap-1">
                 {getStatusIcon(invoice.status)}
                 {getStatusText(invoice.status)}
               </span>
             </div>
           </div>
-          
+
           {/* Actions */}
           <div className="w-full sm:w-auto">
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+            <div className="flex flex-wrap items-center gap-1.5">
             {/* Draft actions */}
             {invoice.status === "DRAFT" && (
               <>
-                <Button variant="outline" size="sm" asChild className="h-10 rounded-xl sm:flex-none">
+                <Button variant="outline" size="sm" asChild className="h-8 rounded-lg text-xs sm:flex-none">
                   <Link href={`/invoices/${invoice.id}/edit`} className="flex items-center whitespace-nowrap">
-                    <Edit className="w-4 h-4 mr-1.5" />
+                    <Edit className="w-3.5 h-3.5 mr-1" />
                     Редактирай
                   </Link>
                 </Button>
-                <Button 
+                <Button
                   size="sm"
-                  className="h-10 rounded-xl border-0 text-white gradient-primary hover:opacity-90 sm:flex-none"
+                  className="h-8 rounded-lg border-0 text-xs text-white gradient-primary hover:opacity-90 sm:flex-none"
                   onClick={() => setShowIssueModal(true)}
                   disabled={isChangingStatus}
                 >
-                  <FileCheck className="w-4 h-4 mr-1.5" />
+                  <FileCheck className="w-3.5 h-3.5 mr-1" />
                   {isChangingStatus ? "..." : "Издай"}
                 </Button>
               </>
             )}
-            
+
           {/* Issued actions */}
           {invoice.status === "ISSUED" && (
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               size="sm"
-              className="col-span-2 h-10 rounded-xl sm:col-span-1 sm:flex-none"
+              className="h-8 rounded-lg text-xs sm:flex-none"
               onClick={() => setShowCancelModal(true)}
               disabled={isSendingEmail}
             >
-              <AlertTriangle className="w-4 h-4 mr-1.5" />
+              <AlertTriangle className="w-3.5 h-3.5 mr-1" />
               Отмени
             </Button>
           )}
-            
+
           {/* Common actions */}
           <Button
             variant="outline"
             size="sm"
-            className="hidden h-10 rounded-xl sm:inline-flex sm:flex-none"
+            className="hidden h-8 rounded-lg text-xs sm:inline-flex sm:flex-none"
             onClick={handleDuplicateInvoice}
             disabled={isDuplicating}
           >
-            <Copy className="w-4 h-4 mr-1.5" />
+            <Copy className="w-3.5 h-3.5 mr-1" />
             {isDuplicating ? "..." : "Дублирай"}
           </Button>
-          <Button variant="outline" size="sm" className="hidden h-10 rounded-xl sm:inline-flex sm:flex-none" onClick={handlePrintInvoice}>
-            <Printer className="w-4 h-4 mr-1.5" />
+          <Button variant="outline" size="sm" className="hidden h-8 rounded-lg text-xs sm:inline-flex sm:flex-none" onClick={handlePrintInvoice}>
+            <Printer className="w-3.5 h-3.5 mr-1" />
             Принт
           </Button>
-          <Button variant="outline" size="sm" className="hidden h-10 rounded-xl sm:inline-flex sm:flex-none" onClick={handleExportPdf} title="Изтегли оригинал">
-            <Download className="w-4 h-4 mr-1.5" />
+          <Button variant="outline" size="sm" className="hidden h-8 rounded-lg text-xs sm:inline-flex sm:flex-none" onClick={handleExportPdf} title="Изтегли оригинал">
+            <Download className="w-3.5 h-3.5 mr-1" />
             PDF
           </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => exportInvoiceAsPdf(invoice.id, true)}
             title="Изтегли копие"
-                    className="hidden text-muted-foreground sm:inline-flex sm:h-10 sm:flex-none"
+            className="hidden text-xs text-muted-foreground sm:inline-flex sm:h-8 sm:flex-none"
           >
-            <Copy className="w-4 h-4 mr-1.5" />
+            <Copy className="w-3.5 h-3.5 mr-1" />
             Копие
           </Button>
             </div>
@@ -600,47 +597,47 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
       <div className="grid gap-5 md:grid-cols-3 md:gap-8">
         <div className="space-y-5 md:col-span-2 md:space-y-8">
           <Card className="overflow-hidden">
-            <CardHeader className="pb-0">
-              <CardTitle className="text-xl">Информация за фактурата</CardTitle>
+            <CardHeader className="pb-0 px-4 pt-4">
+              <CardTitle className="text-sm font-semibold">Информация за фактурата</CardTitle>
             </CardHeader>
             <Tabs
               defaultValue="details"
               onValueChange={setActiveTab}
               className="w-full"
             >
-              <div className="px-4 pb-1 pt-4 sm:px-6">
-                <TabsList className="mb-2 grid h-auto grid-cols-2 gap-1 rounded-xl border border-border/40 bg-muted/40 p-1 sm:flex">
-                  <TabsTrigger value="details" className="min-h-10 rounded-lg px-3 text-sm font-medium text-muted-foreground data-selected:bg-background data-selected:text-foreground data-selected:shadow-sm">Детайли</TabsTrigger>
-                  <TabsTrigger value="items" className="min-h-10 rounded-lg px-3 text-sm font-medium text-muted-foreground data-selected:bg-background data-selected:text-foreground data-selected:shadow-sm">Артикули</TabsTrigger>
-                  <TabsTrigger value="documents" className="min-h-10 rounded-lg px-3 text-sm font-medium text-muted-foreground data-selected:bg-background data-selected:text-foreground data-selected:shadow-sm">
-                    <span className="flex items-center gap-1.5">
-                      <Paperclip className="h-3.5 w-3.5" />
+              <div className="px-3 pb-1 pt-3 sm:px-4">
+                <TabsList className="mb-1 flex gap-0.5 rounded-lg border border-border/40 bg-muted/40 p-0.5 h-auto">
+                  <TabsTrigger value="details" className="min-h-8 rounded-md px-3 text-xs font-medium text-muted-foreground data-selected:bg-background data-selected:text-foreground data-selected:shadow-sm">Детайли</TabsTrigger>
+                  <TabsTrigger value="items" className="min-h-8 rounded-md px-3 text-xs font-medium text-muted-foreground data-selected:bg-background data-selected:text-foreground data-selected:shadow-sm">Артикули</TabsTrigger>
+                  <TabsTrigger value="documents" className="min-h-8 rounded-md px-3 text-xs font-medium text-muted-foreground data-selected:bg-background data-selected:text-foreground data-selected:shadow-sm">
+                    <span className="flex items-center gap-1">
+                      <Paperclip className="h-3 w-3" />
                       Документи
                     </span>
                   </TabsTrigger>
-                  <TabsTrigger value="history" className="min-h-10 rounded-lg px-3 text-sm font-medium text-muted-foreground data-selected:bg-background data-selected:text-foreground data-selected:shadow-sm">
-                    <span className="flex items-center gap-1.5">
-                      <History className="h-3.5 w-3.5" />
+                  <TabsTrigger value="history" className="min-h-8 rounded-md px-3 text-xs font-medium text-muted-foreground data-selected:bg-background data-selected:text-foreground data-selected:shadow-sm">
+                    <span className="flex items-center gap-1">
+                      <History className="h-3 w-3" />
                       История
                     </span>
                   </TabsTrigger>
                 </TabsList>
               </div>
 
-              <TabsContent value="details" className="p-4 pt-4 sm:p-6 sm:pt-4">
-                <div className="grid gap-6 md:grid-cols-2 md:gap-8">
-                  <div className="rounded-2xl border border-border/60 bg-muted/15 p-4 sm:p-5">
-                    <h3 className="font-medium mb-4 text-base">Информация за компанията</h3>
-                    <div className="space-y-3 text-base">
-                      <p>{invoice.company.name}</p>
+              <TabsContent value="details" className="p-3 pt-3 sm:p-5 sm:pt-4">
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="rounded-xl border border-border/60 bg-muted/15 p-3">
+                    <h3 className="font-medium mb-2 text-sm">Информация за компанията</h3>
+                    <div className="space-y-1 text-sm text-muted-foreground">
+                      <p className="font-medium text-foreground">{invoice.company.name}</p>
                       {invoice.company.email && <p>{invoice.company.email}</p>}
                       {invoice.company.phone && <p>{invoice.company.phone}</p>}
                     </div>
                   </div>
-                  <div className="rounded-2xl border border-border/60 bg-muted/15 p-4 sm:p-5">
-                    <h3 className="font-medium mb-4 text-base">Информация за клиента</h3>
-                    <div className="space-y-3 text-base">
-                      <p>{invoice.client.name}</p>
+                  <div className="rounded-xl border border-border/60 bg-muted/15 p-3">
+                    <h3 className="font-medium mb-2 text-sm">Информация за клиента</h3>
+                    <div className="space-y-1 text-sm text-muted-foreground">
+                      <p className="font-medium text-foreground">{invoice.client.name}</p>
                       {invoice.client.email && <p>{invoice.client.email}</p>}
                       {invoice.client.phone && <p>{invoice.client.phone}</p>}
                       {invoice.client.address && (
@@ -654,32 +651,32 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
                   </div>
                 </div>
 
-                <div className="mt-6 grid gap-6 md:grid-cols-2 md:gap-8">
-                  <div className="rounded-2xl border border-border/60 bg-muted/15 p-4 sm:p-5">
-                    <h3 className="font-medium mb-4 text-base">Детайли на фактурата</h3>
-                    <div className="space-y-3 text-base">
-                      <div className="flex items-start justify-between gap-4">
+                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                  <div className="rounded-xl border border-border/60 bg-muted/15 p-3">
+                    <h3 className="font-medium mb-2 text-sm">Детайли на фактурата</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between gap-4">
                         <span className="text-muted-foreground">Дата на издаване</span>
-                        <span className="text-right">{format(new Date(invoice.issueDate), "dd.MM.yyyy")}</span>
+                        <span>{format(new Date(invoice.issueDate), "dd.MM.yyyy")}</span>
                       </div>
-                      <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center justify-between gap-4">
                         <span className="text-muted-foreground">Дата на плащане</span>
-                        <span className="text-right">{format(new Date(invoice.dueDate), "dd.MM.yyyy")}</span>
+                        <span>{format(new Date(invoice.dueDate), "dd.MM.yyyy")}</span>
                       </div>
-                      <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center justify-between gap-4">
                         <span className="text-muted-foreground">Валута</span>
-                        <span className="text-right">{invoice.currency}</span>
+                        <span>{invoice.currency}</span>
                       </div>
                       {invoice.paymentMethod && (
-                        <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-center justify-between gap-4">
                           <span className="text-muted-foreground">Начин на плащане</span>
-                          <span className="text-right">{getPaymentMethodText(invoice.paymentMethod)}</span>
+                          <span>{getPaymentMethodText(invoice.paymentMethod)}</span>
                         </div>
                       )}
                       {createdByName && (
-                        <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-center justify-between gap-4">
                           <span className="text-muted-foreground">Създадена от</span>
-                          <span className="text-right">{createdByName}</span>
+                          <span>{createdByName}</span>
                         </div>
                       )}
                     </div>
@@ -885,15 +882,39 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
                               <span>IP: {log.ipAddress}</span>
                             )}
                           </div>
-                          {log.changes && (
-                            <div className="mt-2 text-xs text-muted-foreground bg-muted/50 rounded p-2">
-                              {typeof log.changes === 'string' ? (
-                                <pre className="whitespace-pre-wrap">{log.changes}</pre>
-                              ) : (
-                                <pre className="whitespace-pre-wrap">{JSON.stringify(log.changes, null, 2)}</pre>
-                              )}
-                            </div>
-                          )}
+                          {log.changes && (() => {
+                            const changes = typeof log.changes === 'string' ? log.changes : log.changes;
+                            if (typeof changes === 'object' && changes !== null) {
+                              const entries = Object.entries(changes as Record<string, unknown>).filter(([, v]) => v !== null && v !== undefined);
+                              if (entries.length === 0) return null;
+                              const labels: Record<string, string> = {
+                                previousStatus: 'Предишен статус',
+                                newStatus: 'Нов статус',
+                                persistedStatus: 'Запазен статус',
+                                duplicatedFrom: 'Дублирано от',
+                                sentTo: 'Изпратено до',
+                                format: 'Формат',
+                                fields: 'Промени',
+                              };
+                              const statusLabels: Record<string, string> = {
+                                DRAFT: 'Чернова', ISSUED: 'Издадена', UNPAID: 'Неплатена',
+                                PAID: 'Платена', CANCELLED: 'Отменена', VOIDED: 'Анулирана',
+                              };
+                              return (
+                                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                                  {entries.map(([key, val]) => (
+                                    <span key={key}>
+                                      <span className="font-medium text-foreground/70">{labels[key] ?? key}:</span>{' '}
+                                      {statusLabels[String(val)] ?? String(val)}
+                                    </span>
+                                  ))}
+                                </div>
+                              );
+                            }
+                            return (
+                              <p className="mt-2 text-xs text-muted-foreground">{String(changes)}</p>
+                            );
+                          })()}
                         </div>
                       </div>
                     ))}
@@ -914,43 +935,30 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
           />
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Обобщение</CardTitle>
+            <CardHeader className="pb-2 pt-4 px-4">
+              <CardTitle className="text-sm font-semibold">Обобщение</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center pb-2">
+            <CardContent className="px-4 pb-4 pt-0">
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Междинна сума</span>
-                  <span>
-                    {formatCurrency(Number(invoice.subtotal), invoice.currency)}
-                  </span>
+                  <span>{formatCurrency(Number(invoice.subtotal), invoice.currency)}</span>
                 </div>
-                <div className="flex justify-between items-center pb-2">
+                <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Данък</span>
-                  <span>
-                    {formatCurrency(
-                      Number(invoice.taxAmount),
-                      invoice.currency
-                    )}
-                  </span>
+                  <span>{formatCurrency(Number(invoice.taxAmount), invoice.currency)}</span>
                 </div>
                 {invoice.discount && (
-                  <div className="flex justify-between items-center pb-2">
+                  <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Отстъпка</span>
-                    <span>
-                      -
-                      {formatCurrency(
-                        Number(invoice.discount),
-                        invoice.currency
-                      )}
-                    </span>
+                    <span>-{formatCurrency(Number(invoice.discount), invoice.currency)}</span>
                   </div>
                 )}
-                <div className="flex justify-between items-center pb-2 border-b">
-                  <span className="text-muted-foreground">Общо</span>
-                  <span className="font-bold">
+                <div className="flex justify-between items-center border-t pt-2">
+                  <span className="font-medium">Общо</span>
+                  <span className="font-bold text-base">
                     {formatCurrency(Number(invoice.total), invoice.currency)}
                   </span>
                 </div>

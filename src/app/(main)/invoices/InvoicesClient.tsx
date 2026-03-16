@@ -13,13 +13,13 @@ import {
   CardTitle 
 } from "@/components/ui/card";
 import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
-import { 
-  FileText, 
-  Plus, 
-  Search, 
-  Upload, 
-  Download, 
-  Eye, 
+import {
+  FileText,
+  Plus,
+  Search,
+  Upload,
+  Download,
+  Eye,
   Edit,
   Filter,
   CheckCircle,
@@ -32,8 +32,8 @@ import {
   Trash2,
   Ban,
   Copy,
-  Crown,
-  AlertTriangle
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +55,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { StatusChangeModal } from "@/components/invoice/StatusChangeModal";
 import { DeleteInvoiceModal } from "@/components/invoice/DeleteInvoiceModal";
@@ -63,8 +62,7 @@ import { VoidInvoiceModal } from "@/components/invoice/VoidInvoiceModal";
 import { CancelInvoiceModal } from "@/components/invoice/CancelInvoiceModal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
-import { ProFeatureLock, UsageCounter, LockedButton } from "@/components/ui/pro-feature-lock";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ProFeatureLock, UsageCounter, LockedButton, LimitBanner } from "@/components/ui/pro-feature-lock";
 import {
   Table,
   TableBody,
@@ -241,6 +239,24 @@ export default function InvoicesClient({
     setStatusModal({ isOpen: false, invoice: null, newStatus: "" });
   };
 
+  // Handle duplicate invoice
+  const handleDuplicate = async (invoiceId: string) => {
+    try {
+      const response = await fetch(`/api/invoices/${invoiceId}/duplicate`, { method: "POST" });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Грешка при дублиране");
+      }
+      const data = await response.json();
+      toast.success("Фактурата е дублирана", {
+        description: `Нова чернова ${data.invoiceNumber} е създадена`,
+      });
+      router.push(`/invoices/${data.id}`);
+    } catch (error: any) {
+      toast.error(error.message || "Грешка при дублиране на фактурата");
+    }
+  };
+
   // Open cancel modal
   const openCancelModal = (invoice: Invoice) => {
     setCancelModal({ isOpen: true, invoice });
@@ -374,6 +390,8 @@ export default function InvoicesClient({
     setCurrentPage(1);
   }, [searchQuery, statusFilter, sortField, sortDirection]);
 
+  const activeFilterCount = (statusFilter !== "all" ? 1 : 0) + (sortField !== "date" || sortDirection !== "desc" ? 1 : 0);
+
   // Stats
   const stats = useMemo(() => {
     const issued = invoices.filter((invoice) => normalizeInvoiceStatus(invoice.status) === "ISSUED");
@@ -481,37 +499,18 @@ export default function InvoicesClient({
     <div className="app-page-shell">
       {/* Subscription Warning Banner for FREE plan */}
       {!isLoadingUsage && isFree && invoiceUsage.remaining <= 1 && invoiceUsage.remaining > 0 && (
-        <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
-          <AlertTriangle className="h-4 w-4 text-amber-600" />
-          <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <span className="text-amber-800 dark:text-amber-200">
-              Остава ви <strong>{invoiceUsage.remaining} фактура</strong> този месец. С план Про създавате неограничено и изпращате по имейл за по-бързи плащания.
-            </span>
-            <Link href="/settings/subscription">
-              <Button size="sm" variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-100 sm:ml-4">
-                <Crown className="h-4 w-4 mr-2" />
-                Вижте плановете →
-              </Button>
-            </Link>
-          </AlertDescription>
-        </Alert>
+        <LimitBanner
+          variant="warning"
+          message={<>Остава ви <strong>{invoiceUsage.remaining} фактура</strong> този месец. С план Про създавате неограничено и изпращате по имейл.</>}
+        />
       )}
-      
+
       {!isLoadingUsage && isFree && !canCreateInvoice && (
-        <Alert className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
-          <XCircle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <span className="text-red-800 dark:text-red-200">
-              Издадохте <strong>3 фактури</strong> този месец — лимитът на безплатния план. С Про създавате неограничено и изпращате по имейл за по-бързи плащания.
-            </span>
-            <Link href="/settings/subscription">
-              <Button size="sm" className="bg-linear-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 sm:ml-4">
-                <Crown className="h-4 w-4 mr-2" />
-                Отключете неограничени фактури →
-              </Button>
-            </Link>
-          </AlertDescription>
-        </Alert>
+        <LimitBanner
+          variant="error"
+          message={<>Издадохте <strong>3 фактури</strong> този месец — лимитът на безплатния план. С Про без ограничения.</>}
+          linkText="Отключете неограничени →"
+        />
       )}
 
       {/* Header */}
@@ -563,23 +562,23 @@ export default function InvoicesClient({
       
       {/* Fast Action Button - Floating */}
       {canCreateInvoices && !isLoadingUsage && canCreateInvoice && (
-        <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] right-4 z-40 md:hidden">
+        <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] right-3 z-40 md:hidden">
           <Button
             asChild
             size="lg"
-            className="h-14 w-14 rounded-full gradient-primary hover:opacity-90 text-white border-0 shadow-2xl transition-all hover:scale-110"
+            className="h-12 w-12 rounded-full gradient-primary hover:opacity-90 text-white border-0 shadow-xl transition-transform hover:scale-105 active:scale-95"
           >
             <Link href="/invoices/new">
-              <Plus className="h-6 w-6" />
+              <Plus className="h-5 w-5" />
             </Link>
           </Button>
         </div>
       )}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {statsCards.map((stat, index) => (
-          <div key={stat.title} className={cn(index > 1 && "hidden sm:block")}>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+        {statsCards.map((stat) => (
+          <div key={stat.title}>
             <CardStatsMetric
               title={stat.title}
               value={stat.value}
@@ -593,38 +592,48 @@ export default function InvoicesClient({
       </div>
 
       {/* Filters */}
-      <Card className="border-0 shadow-lg">
-        <CardContent className="p-3 sm:p-4">
-          <div className="space-y-3 md:hidden">
+      <Card className="rounded-xl border border-border/50 shadow-md">
+        <CardContent className="p-2 sm:p-3">
+          <div className="space-y-2 md:hidden">
             <div className="relative min-w-0">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder="Търсене по номер, клиент или дата..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-11 border-border pl-10"
+                className="h-9 border-border pl-8 text-sm"
               />
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-1.5">
               <Button
                 type="button"
                 variant="outline"
-                className="h-11 justify-center"
+                size="sm"
+                className="min-h-0! h-9 justify-center text-sm"
                 onClick={() => setShowMobileFilters((prev) => !prev)}
               >
-                <Filter className="mr-2 h-4 w-4" />
-                {showMobileFilters ? "Скрий" : "Филтри"}
+                <Filter className="mr-1.5 h-3.5 w-3.5" />
+                Филтри
+                {activeFilterCount > 0 && (
+                  <span className="ml-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
+                    {activeFilterCount}
+                  </span>
+                )}
+                {showMobileFilters
+                  ? <ChevronUp className="ml-1.5 h-3 w-3 text-muted-foreground" />
+                  : <ChevronDown className="ml-1.5 h-3 w-3 text-muted-foreground" />
+                }
               </Button>
               {canCreateInvoices && (
                 <ExportDialogWrapper clients={clients} companies={companies} />
               )}
             </div>
             {showMobileFilters && (
-              <div className="grid gap-3">
+              <div className="grid gap-2">
                 <Select value={statusFilter} onValueChange={setStatusFilter} aria-label="Филтър по статус">
-                  <SelectTrigger className="h-11 w-full">
-                    <Filter className="mr-2 h-4 w-4" />
+                  <SelectTrigger className="min-h-0! h-9 w-full text-sm rounded-lg px-3">
+                    <Filter className="mr-1.5 h-3.5 w-3.5" />
                     <SelectValue placeholder="Филтър по статус" />
                   </SelectTrigger>
                   <SelectContent>
@@ -640,8 +649,8 @@ export default function InvoicesClient({
                   setSortField(field as any);
                   setSortDirection(dir as any);
                 }} aria-label="Сортиране на фактурите">
-                  <SelectTrigger className="h-11 w-full">
-                    <ArrowUpDown className="mr-2 h-4 w-4" />
+                  <SelectTrigger className="min-h-0! h-9 w-full text-sm rounded-lg px-3">
+                    <ArrowUpDown className="mr-1.5 h-3.5 w-3.5" />
                     <SelectValue placeholder="Сортирай" />
                   </SelectTrigger>
                   <SelectContent>
@@ -656,20 +665,20 @@ export default function InvoicesClient({
               </div>
             )}
           </div>
-          <div className="hidden gap-3 md:grid md:grid-cols-2 xl:grid-cols-[minmax(0,1.35fr)_180px_220px_auto] xl:items-center">
+          <div className="hidden gap-2 md:grid md:grid-cols-2 xl:grid-cols-[minmax(0,1.35fr)_160px_200px_auto] xl:items-center">
             <div className="relative min-w-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
               <Input
                 type="search"
                 placeholder="Търсене по номер, клиент или дата..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-11 border-border"
+                className="pl-8 h-9 border-border text-sm"
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter} aria-label="Филтър по статус">
-              <SelectTrigger className="h-11 w-full">
-                <Filter className="mr-2 h-4 w-4" />
+              <SelectTrigger className="min-h-0! h-9 w-full text-sm rounded-lg px-3">
+                <Filter className="mr-1.5 h-3.5 w-3.5" />
                 <SelectValue placeholder="Филтър по статус" />
               </SelectTrigger>
               <SelectContent>
@@ -685,8 +694,8 @@ export default function InvoicesClient({
               setSortField(field as any);
               setSortDirection(dir as any);
             }} aria-label="Сортиране на фактурите">
-              <SelectTrigger className="h-11 w-full">
-                <ArrowUpDown className="mr-2 h-4 w-4" />
+              <SelectTrigger className="min-h-0! h-9 w-full text-sm rounded-lg px-3">
+                <ArrowUpDown className="mr-1.5 h-3.5 w-3.5" />
                 <SelectValue placeholder="Сортирай" />
               </SelectTrigger>
               <SelectContent>
@@ -708,7 +717,7 @@ export default function InvoicesClient({
       </Card>
 
       {/* Invoices List */}
-      <Card className="border-0 shadow-lg">
+      <Card className="border border-border/50 shadow-md">
         <CardHeader className="pb-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -773,13 +782,13 @@ export default function InvoicesClient({
             </div>
           ) : (
             <>
-              <div className="space-y-3 px-4 pb-4 md:hidden">
+              <div className="space-y-2 px-2 pb-4 md:hidden sm:px-3">
                 {paginatedInvoices.map((invoice) => {
                   const normalizedStatus = normalizeInvoiceStatus(invoice.status);
                   const statusConfig = getStatusConfig(normalizedStatus);
                   const StatusIcon = statusConfig.icon;
                   return (
-                    <div key={invoice.id} className="rounded-2xl border border-border/60 bg-card p-4 shadow-xs">
+                    <div key={invoice.id} className="bg-muted/25 rounded-xl px-3 py-3 sm:px-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex min-w-0 items-start gap-3">
                           <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
@@ -818,60 +827,59 @@ export default function InvoicesClient({
                           </span>
                         </div>
                       </div>
-                      <div className="mt-4 grid grid-cols-2 gap-2">
-                        <Button size="sm" variant="outline" asChild className="h-10 justify-center rounded-xl">
-                          <Link href={`/invoices/${invoice.id}`}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            Преглед
-                          </Link>
-                        </Button>
-                        {invoice.userId === currentUserId && normalizedStatus === "DRAFT" && (
-                          <Button size="sm" className="h-10 justify-center rounded-xl border-0 text-white gradient-primary hover:opacity-90" onClick={() => openStatusModal(invoice, "ISSUED")}>
-                            <FileCheck className="mr-2 h-4 w-4" />
-                            Издай
-                          </Button>
-                        )}
-                        {invoice.userId === currentUserId && normalizedStatus === "DRAFT" ? (
-                          <Button size="sm" variant="outline" asChild className="h-10 justify-center rounded-xl">
-                            <Link href={`/invoices/${invoice.id}/edit`}>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Редакция
+                      <div className="mt-2 flex items-center gap-0.5 border-t border-border/40 pt-2">
+                        {/* Inline: Преглед, Издай (draft), Редакция (draft) or Дублирай, then menu */}
+                        <div className="hidden min-[320px]:flex flex-1 items-center gap-0.5 min-w-0">
+                          <Button size="sm" variant="ghost" asChild className="min-h-0! h-6 flex-1 min-w-0 justify-center rounded-md px-1 py-1">
+                            <Link href={`/invoices/${invoice.id}`} className="text-muted-foreground hover:text-foreground" title="Преглед">
+                              <Eye className="h-3 w-3" />
                             </Link>
                           </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-10 justify-center rounded-xl"
-                            onClick={async () => {
-                              try {
-                                const response = await fetch(`/api/invoices/${invoice.id}/duplicate`, { method: "POST" });
-                                if (!response.ok) {
-                                  const error = await response.json();
-                                  throw new Error(error.error || "Грешка при дублиране");
-                                }
-                                const data = await response.json();
-                                toast.success("Фактурата е дублирана", {
-                                  description: `Нова чернова ${data.invoiceNumber} е създадена`,
-                                });
-                                router.push(`/invoices/${data.id}`);
-                              } catch (error: any) {
-                                toast.error(error.message || "Грешка при дублиране на фактурата");
-                              }
-                            }}
-                          >
-                            <Copy className="mr-2 h-4 w-4" />
-                            Дублирай
-                          </Button>
-                        )}
+                          {invoice.userId === currentUserId && normalizedStatus === "DRAFT" && (
+                            <>
+                              <Button size="sm" className="min-h-0! h-6 flex-1 min-w-0 justify-center rounded-md border-0 px-1 py-1 text-white gradient-primary hover:opacity-90" onClick={() => openStatusModal(invoice, "ISSUED")} title="Издай">
+                                <FileCheck className="h-3 w-3" />
+                              </Button>
+                              <Button size="sm" variant="ghost" asChild className="min-h-0! h-6 flex-1 min-w-0 justify-center rounded-md px-1 py-1">
+                                <Link href={`/invoices/${invoice.id}/edit`} className="text-muted-foreground hover:text-foreground" title="Редакция">
+                                  <Edit className="h-3 w-3" />
+                                </Link>
+                              </Button>
+                            </>
+                          )}
+                          {normalizedStatus !== "DRAFT" && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="min-h-0! h-6 flex-1 min-w-0 justify-center rounded-md px-1 py-1 text-muted-foreground hover:text-foreground"
+                              onClick={() => handleDuplicate(invoice.id)}
+                              title="Дублирай"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                        {/* Narrow: single "Действия"; wider: icon-only menu */}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="col-span-2 h-10 justify-center rounded-xl">
-                              <MoreHorizontal className="mr-2 h-4 w-4" />
-                              Още действия
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="min-h-0! h-6 flex-1 min-[320px]:w-6 min-[320px]:flex-none min-[320px]:p-0 rounded-md px-2"
+                              title="Още действия"
+                            >
+                              <Edit className="h-3 w-3 shrink-0 min-[320px]:hidden" />
+                              <span className="text-[10px] font-medium min-[320px]:sr-only">Действия</span>
+                              <MoreHorizontal className="hidden min-[320px]:block h-3 w-3 shrink-0" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuItem asChild>
+                              <Link href={`/invoices/${invoice.id}`}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                Преглед
+                              </Link>
+                            </DropdownMenuItem>
                             {invoice.userId === currentUserId && normalizedStatus === "DRAFT" && (
                               <DropdownMenuItem asChild>
                                 <Link href={`/invoices/${invoice.id}/edit`}>
@@ -909,24 +917,7 @@ export default function InvoicesClient({
                                 Отмени фактура
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem
-                              onClick={async () => {
-                                try {
-                                  const response = await fetch(`/api/invoices/${invoice.id}/duplicate`, { method: "POST" });
-                                  if (!response.ok) {
-                                    const error = await response.json();
-                                    throw new Error(error.error || "Грешка при дублиране");
-                                  }
-                                  const data = await response.json();
-                                  toast.success("Фактурата е дублирана", {
-                                    description: `Нова чернова ${data.invoiceNumber} е създадена`,
-                                  });
-                                  router.push(`/invoices/${data.id}`);
-                                } catch (error: any) {
-                                  toast.error(error.message || "Грешка при дублиране на фактурата");
-                                }
-                              }}
-                            >
+                            <DropdownMenuItem onClick={() => handleDuplicate(invoice.id)}>
                               <Copy className="mr-2 h-4 w-4" />
                               Дублирай
                             </DropdownMenuItem>
@@ -978,7 +969,8 @@ export default function InvoicesClient({
                     </TableHead>
                   </TableHeader>
                   <TableBody items={paginatedInvoices}>
-                    {(invoice) => {
+                    {(item) => {
+                      const invoice = item as Invoice;
                       const normalizedStatus = normalizeInvoiceStatus(invoice.status);
                       const statusConfig = getStatusConfig(normalizedStatus);
                       const StatusIcon = statusConfig.icon;
@@ -1105,25 +1097,7 @@ export default function InvoicesClient({
                                           Преглед
                                         </Link>
                                       </DropdownMenuItem>
-                                      <DropdownMenuItem
-                                        onClick={async (e) => {
-                                          e.stopPropagation();
-                                          try {
-                                            const response = await fetch(`/api/invoices/${invoice.id}/duplicate`, { method: "POST" });
-                                            if (!response.ok) {
-                                              const error = await response.json();
-                                              throw new Error(error.error || "Грешка при дублиране");
-                                            }
-                                            const data = await response.json();
-                                            toast.success("Фактурата е дублирана", {
-                                              description: `Нова чернова ${data.invoiceNumber} е създадена`,
-                                            });
-                                            router.push(`/invoices/${data.id}`);
-                                          } catch (error: any) {
-                                            toast.error(error.message || "Грешка при дублиране на фактурата");
-                                          }
-                                        }}
-                                      >
+                                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDuplicate(invoice.id); }}>
                                         <Copy className="mr-2 h-4 w-4" />
                                         Дублирай
                                       </DropdownMenuItem>

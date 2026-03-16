@@ -19,24 +19,24 @@ export function CardStatsMetric({
   valueSuffix,
 }: CardStatsMetricProps) {
   return (
-    <Card className="border border-border/50 shadow-xs bg-linear-to-br from-card/60 to-card/30">
-      <CardContent className="p-2.5 sm:p-4">
-        <div className="flex items-center justify-between">
+    <Card className="rounded-xl border border-border/50 shadow-xs bg-linear-to-br from-card/60 to-card/30">
+      <CardContent className="p-2 sm:p-2.5">
+        <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
-            <p className="tiny-text font-medium text-muted-foreground">{title}</p>
-            <div className="flex items-baseline gap-1">
-              <p className={cn("text-base font-bold sm:text-2xl", valueClassName)}>
+            <p className="text-[10px] font-medium text-muted-foreground sm:text-xs">{title}</p>
+            <div className="flex items-baseline gap-0.5">
+              <p className={cn("text-sm font-bold sm:text-lg", valueClassName)}>
                 {value}
               </p>
               {valueSuffix && (
-                <span className="text-[11px] text-muted-foreground sm:text-sm">
+                <span className="text-[10px] text-muted-foreground sm:text-xs">
                   {valueSuffix}
                 </span>
               )}
             </div>
           </div>
-          <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:h-9 sm:w-9", `bg-linear-to-br ${gradient}`)}>
-            <Icon className="h-3.5 w-3.5 text-white sm:h-5 sm:w-5" />
+          <div className={cn("flex h-6 w-6 shrink-0 items-center justify-center rounded-md sm:h-7 sm:w-7", `bg-linear-to-br ${gradient}`)}>
+            <Icon className="h-3 w-3 text-white sm:h-3.5 sm:w-3.5" />
           </div>
         </div>
       </CardContent>

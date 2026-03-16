@@ -356,13 +356,10 @@ export default async function DashboardPage() {
   const hasInvoiceWorkspaceSetup = hasCompanies && hasClients;
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-5">
       {/* Header */}
       <div className="page-header">
         <div className="flex-1 min-w-0">
-          <Badge variant="info" className="mb-2">
-            Начален преглед
-          </Badge>
           <h1 className="page-title">Табло</h1>
           <p className="card-description mt-1">
             Ето преглед на фактурите и дейностите ви
@@ -397,7 +394,7 @@ export default async function DashboardPage() {
       )}
 
       {/* Stats Grid */}
-      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
         {stats.map((stat) => (
           <StatsCard
             key={stat.title}
@@ -417,13 +414,13 @@ export default async function DashboardPage() {
       </div>
 
       {/* Quick Actions & Recent Invoices */}
-      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-5 lg:grid-cols-3">
         {/* Quick Actions - only show when usage loaded and user is allowed */}
         <DashboardQuickActions hasInvoiceWorkspaceSetup={hasInvoiceWorkspaceSetup} />
 
         {/* Recent Invoices */}
         <Card className="lg:col-span-2 border border-border/50 shadow-md">
-          <CardHeader className="flex flex-row items-center justify-between pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
+          <CardHeader className="flex flex-row items-center justify-between px-3 pb-3 pt-3 sm:px-6 sm:pb-4 sm:pt-6">
             <div className="min-w-0 flex-1">
               <Badge variant="info" className="mb-2">
                 Последни записи
@@ -438,14 +435,14 @@ export default async function DashboardPage() {
               </Link>
             </Button>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 pb-3 sm:px-5 sm:pb-5">
             {recentInvoices.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="h-14 w-14 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-                  <FileText className="h-7 w-7 text-muted-foreground" />
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                  <FileText className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <p className="text-base font-semibold mb-1">Все още няма фактури</p>
-                <p className="text-sm text-muted-foreground mb-6 max-w-xs">
+                <p className="mb-1 text-lg font-semibold">Все още няма фактури</p>
+                <p className="mb-6 max-w-xs text-sm text-muted-foreground">
                   Създайте първата за минути и започнете да проследявате какво ви дължат
                 </p>
                 <Button size="sm" asChild className="shadow-md">
@@ -456,52 +453,50 @@ export default async function DashboardPage() {
                 </Button>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {recentInvoices.map((invoice) => (
                   <Link
                     key={invoice.id}
                     href={`/invoices/${invoice.id}`}
-                    className="group flex flex-col gap-3 rounded-xl border border-border/50 bg-muted/30 p-4 transition-all duration-200 hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between"
+                    className="group relative flex items-center gap-3 rounded-xl border border-border/50 bg-muted/20 p-3 transition-all duration-200 hover:bg-muted/50 sm:gap-4"
                   >
-                    <div className="flex min-w-0 flex-1 items-center gap-4">
-                      <div className={`h-11 w-11 rounded-lg shrink-0 flex items-center justify-center ${
-                        invoice.status === 'ISSUED' 
-                          ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
-                          : invoice.status === 'DRAFT'
-                          ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
-                          : 'bg-red-500/10 text-red-600 border border-red-500/20'
-                      }`}>
-                        {invoice.status === 'ISSUED' ? (
-                          <CheckCircle className="h-5 w-5" />
-                        ) : invoice.status === 'DRAFT' ? (
-                          <Clock className="h-5 w-5" />
-                        ) : (
-                          <XCircle className="h-5 w-5" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm mb-0.5 truncate">{invoice.invoiceNumber}</p>
-                        <p className="text-xs text-muted-foreground truncate">{invoice.client.name}</p>
-                      </div>
+                    {/* Status badge: top right */}
+                    <span className={`absolute top-2 right-2 rounded-full px-2 py-0.5 text-[10px] font-medium sm:text-xs ${
+                      invoice.status === 'ISSUED'
+                        ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                        : invoice.status === 'DRAFT'
+                        ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
+                        : 'bg-red-500/10 text-red-600 border border-red-500/20'
+                    }`}>
+                      {invoice.status === 'ISSUED' ? 'Издадена' : invoice.status === 'DRAFT' ? 'Чернова' : 'Отказана'}
+                    </span>
+                    {/* Icon: left middle */}
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-background ${
+                      invoice.status === 'ISSUED'
+                        ? 'text-emerald-600'
+                        : invoice.status === 'DRAFT'
+                        ? 'text-amber-600'
+                        : 'text-red-600'
+                    }`}>
+                      {invoice.status === 'ISSUED' ? (
+                        <CheckCircle className="h-4 w-4" />
+                      ) : invoice.status === 'DRAFT' ? (
+                        <Clock className="h-4 w-4" />
+                      ) : (
+                        <XCircle className="h-4 w-4" />
+                      )}
                     </div>
-                    <div className="flex items-center justify-between gap-3 sm:justify-end sm:gap-4">
-                      <div className="min-w-0">
-                        <p className="font-bold text-sm">{invoice.total.toFixed(2)} €</p>
-                        <p className="text-xs text-muted-foreground">
-                          {format(invoice.issueDate, 'd MMM yyyy', { locale: bg })}
-                        </p>
-                      </div>
-                      <div className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-                        invoice.status === 'ISSUED' 
-                          ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
-                          : invoice.status === 'DRAFT'
-                          ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
-                          : 'bg-red-500/10 text-red-600 border border-red-500/20'
-                      }`}>
-                        {invoice.status === 'ISSUED' ? 'Издадена' : invoice.status === 'DRAFT' ? 'Чернова' : 'Отказана'}
-                      </div>
-                      <Eye className="hidden h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 sm:block" />
+                    <div className="min-w-0 flex-1 pr-14">
+                      <p className="font-semibold text-sm truncate">{invoice.invoiceNumber}</p>
+                      <p className="text-[11px] text-muted-foreground truncate sm:text-xs">{invoice.client.name}</p>
                     </div>
+                    <div className="min-w-0 text-right">
+                      <p className="font-bold text-sm">{invoice.total.toFixed(2)} €</p>
+                      <p className="text-[11px] text-muted-foreground sm:text-xs">
+                        {format(invoice.issueDate, 'd MMM yyyy', { locale: bg })}
+                      </p>
+                    </div>
+                    <Eye className="hidden h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 sm:block" />
                   </Link>
                 ))}
               </div>
@@ -511,7 +506,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Summary counts + Activity */}
-      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-5 lg:grid-cols-3">
         {/* Credit & Debit Note Summary */}
         <Card className="lg:col-span-1 border border-border/50 shadow-md">
           <CardHeader className="pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
@@ -574,11 +569,11 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             {!auditLogs || auditLogs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="h-14 w-14 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-                  <Activity className="h-7 w-7 text-muted-foreground" />
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                  <Activity className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <p className="text-base font-semibold mb-1">Няма активност</p>
+                <p className="mb-1 text-lg font-semibold">Няма активност</p>
                 <p className="text-sm text-muted-foreground max-w-xs">
                   Тук ще се показват последните ви действия
                 </p>

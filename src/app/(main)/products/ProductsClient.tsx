@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Plus, Search, Lock, AlertTriangle, XCircle, Crown, LayoutGrid, List, Euro, Percent, Package } from "lucide-react";
+import { Plus, Search, Lock, LayoutGrid, List, Euro, Percent, Package } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { UsageCounter } from "@/components/ui/pro-feature-lock";
+import { UsageCounter, LimitBanner } from "@/components/ui/pro-feature-lock";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import {
   Table,
@@ -80,42 +80,20 @@ export default function ProductsClient({
     <div className="space-y-4 sm:space-y-6">
       {/* Soft Upgrade Prompts */}
       {isApproachingLimit && (
-        <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
-          <AlertTriangle className="h-4 w-4 text-amber-600" />
-          <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <span className="text-amber-800 dark:text-amber-200">
-              {productsRemaining === 1 ? (
-                <>Остава ви <strong>1 продукт</strong> в този план.</>
-              ) : (
-                <>Остават ви <strong>{productsRemaining} продукта</strong> в този план.</>
-              )}
-              {' '}Надградете за неограничени артикули.
-            </span>
-            <Link href="/settings/subscription" className="flex items-center whitespace-nowrap">
-              <Button size="sm" variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-100 sm:ml-4">
-                <Crown className="h-4 w-4 mr-2" />
-                Вижте плановете →
-              </Button>
-            </Link>
-          </AlertDescription>
-        </Alert>
+        <LimitBanner
+          variant="warning"
+          message={productsRemaining === 1
+            ? <><strong>Остава 1 продукт</strong> в плана. Надградете за неограничени артикули.</>
+            : <><strong>Остават {productsRemaining} продукта</strong> в плана. Надградете за неограничени артикули.</>
+          }
+        />
       )}
-      
+
       {isAtLimit && (
-        <Alert className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
-          <XCircle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <span className="text-red-800 dark:text-red-200">
-              Лимитът за продукти е достигнат. Надградете, за да добавяте още артикули без ограничения.
-            </span>
-            <Link href="/settings/subscription" className="flex items-center whitespace-nowrap">
-              <Button size="sm" className="bg-linear-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 sm:ml-4">
-                <Crown className="h-4 w-4 mr-2" />
-                Вижте плановете →
-              </Button>
-            </Link>
-          </AlertDescription>
-        </Alert>
+        <LimitBanner
+          variant="error"
+          message={<>Лимитът за продукти е достигнат. Надградете за неограничени артикули.</>}
+        />
       )}
 
       {/* Header */}
@@ -226,28 +204,20 @@ export default function ProductsClient({
       {/* Empty State */}
       {filteredProducts.length === 0 ? (
         <Card className="border-0 shadow-lg">
-          <CardContent className="py-16">
-            <div className="flex flex-col items-center justify-center text-center">
-              <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                <Package className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold mb-1">
-                {searchQuery ? "Няма намерени продукти" : "Все още нямате продукти"}
-              </h3>
-              <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-                {searchQuery 
-                  ? "Опитайте с друга ключова дума" 
-                  : "Добавете първия си продукт или услуга, за да ги използвате във фактурите"}
-              </p>
-              {!searchQuery && (
+          <CardContent className="p-0">
+            <EmptyState
+              icon={Package}
+              heading={searchQuery ? "Няма намерени продукти" : "Все още нямате продукти"}
+              description={searchQuery ? "Опитайте с друга ключова дума" : "Добавете първия си продукт или услуга, за да ги използвате във фактурите"}
+              action={!searchQuery ? (
                 <Button asChild>
                   <Link href="/products/new" className="flex items-center whitespace-nowrap">
                     <Plus className="mr-2 h-4 w-4" />
                     Добави първия продукт
                   </Link>
                 </Button>
-              )}
-            </div>
+              ) : undefined}
+            />
           </CardContent>
         </Card>
       ) : viewMode === "cards" ? (

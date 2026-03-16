@@ -188,7 +188,40 @@ export async function POST(request: NextRequest) {
     }
     
     const supabase = createAdminClient();
-    
+
+    // Prevent duplicate clients with the same normalized identifier (EIK/BULSTAT)
+    const accessibleOwnerIds = await getAccessibleOwnerUserIdsForUser(sessionUser.id);
+    const normalizedBulstat = normalized.bulstatNumber || "";
+
+    if (normalizedBulstat) {
+      const { data: existingClient, error: duplicateCheckError } = await supabase
+        .from("Client")
+        .select("id")
+        .in("userId", accessibleOwnerIds)
+        .eq("bulstatNumber", normalizedBulstat)
+        .limit(1)
+        .maybeSingle();
+
+      if (duplicateCheckError) {
+        console.error("Грешка при проверка за дублиран клиент:", duplicateCheckError);
+      }
+
+      if (existingClient) {
+        return NextResponse.json(
+          {
+            error: "Вече имате клиент с този ЕИК/БУЛСТАТ.",
+            details: [
+              {
+                path: ["bulstatNumber"],
+                message: "Вече имате клиент с този ЕИК/БУЛСТАТ.",
+              },
+            ],
+          },
+          { status: 409 },
+        );
+      }
+    }
+
     // Create the client
     const clientId = cuid();
     const { data: client, error } = await supabase

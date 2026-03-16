@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Lock, Crown, Sparkles, ArrowRight } from "lucide-react";
+import { Lock, Crown, Sparkles, ArrowRight, AlertTriangle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -377,6 +377,58 @@ export function LockedButton({
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
+  );
+}
+
+/**
+ * Compact single-row subscription limit banner — replaces the large Alert+button pattern.
+ * Works well on mobile (text wraps naturally, no oversized button).
+ */
+export function LimitBanner({
+  variant,
+  message,
+  linkText = "Вижте плановете →",
+  linkHref = "/settings/subscription",
+  className,
+}: {
+  variant: "warning" | "error";
+  message: React.ReactNode;
+  linkText?: string;
+  linkHref?: string;
+  className?: string;
+}) {
+  const isError = variant === "error";
+  return (
+    <div
+      className={cn(
+        "flex items-start gap-2.5 rounded-xl px-3.5 py-2.5 text-sm",
+        isError
+          ? "border border-red-200/70 bg-red-50/60 dark:border-red-800/40 dark:bg-red-950/20"
+          : "border border-amber-200/70 bg-amber-50/60 dark:border-amber-800/40 dark:bg-amber-950/20",
+        className
+      )}
+    >
+      {isError ? (
+        <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500 dark:text-red-400" />
+      ) : (
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500 dark:text-amber-400" />
+      )}
+      <p
+        className={cn(
+          "min-w-0 flex-1 leading-snug",
+          isError ? "text-red-800 dark:text-red-300" : "text-amber-800 dark:text-amber-300"
+        )}
+      >
+        {message}{" "}
+        <Link
+          href={linkHref}
+          className="inline-flex items-center gap-0.5 font-semibold underline-offset-2 hover:underline"
+        >
+          {linkText}
+          <ArrowRight className="inline h-3 w-3" />
+        </Link>
+      </p>
+    </div>
   );
 }
 

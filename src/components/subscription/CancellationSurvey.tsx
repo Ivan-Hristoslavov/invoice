@@ -10,7 +10,6 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { AlertTriangle } from 'lucide-react';
@@ -66,75 +65,77 @@ export function CancellationSurvey({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[500px]">
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle>Отказване от абонамент</DialogTitle>
           <DialogDescription>
             Съжаляваме, че искате да се откажете. Моля, споделете защо напускате и как можем да подобрим услугата.
           </DialogDescription>
         </DialogHeader>
-        
+
         {submitted ? (
-          <div className="flex flex-col items-center justify-center py-8 space-y-4">
-            <p className="text-center text-lg">Благодарим за обратната връзка!</p>
-            <p className="text-center text-muted-foreground">
+          <div className="flex flex-col items-center justify-center py-8 space-y-2 text-center">
+            <p className="text-base font-semibold">Благодарим за обратната връзка!</p>
+            <p className="text-sm text-muted-foreground">
               Вашият абонамент ще бъде прекратен в края на текущия период.
             </p>
           </div>
         ) : (
           <>
-            <div className="space-y-6 py-4">
-              <div className="space-y-3">
-                <Label htmlFor="reason">Защо се отказвате от абонамента?</Label>
-                <RadioGroup 
-                  id="reason" 
-                  value={reason} 
+            <div className="space-y-5 py-2">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-foreground">Защо се отказвате от абонамента?</p>
+                <RadioGroup
+                  value={reason}
                   onValueChange={setReason}
-                  className="space-y-2"
+                  className="space-y-0"
                 >
                   {reasons.map((r) => (
-                    <div key={r.value} className="flex items-center space-x-2">
+                    <label
+                      key={r.value}
+                      htmlFor={r.value}
+                      className={`flex cursor-pointer items-center gap-3 py-2.5 pr-2 transition-colors border-b border-border/40 last:border-0 hover:bg-muted/30 ${reason === r.value ? 'bg-muted/25' : ''}`}
+                    >
                       <RadioGroupItem value={r.value} id={r.value} />
-                      <Label htmlFor={r.value}>{r.label}</Label>
-                    </div>
+                      <span className="text-sm">{r.label}</span>
+                    </label>
                   ))}
                 </RadioGroup>
               </div>
-              
-              <div className="space-y-3">
-                <Label htmlFor="feedback">
-                  Вашето мнение е важно за нас. Как можем да подобрим услугата?
-                </Label>
+
+              <div className="space-y-1.5">
+                <p className="text-sm font-medium text-foreground">
+                  Как можем да подобрим услугата?
+                </p>
                 <Textarea
                   id="feedback"
                   placeholder="Споделете вашите мисли..."
                   value={feedback}
                   onChange={(e) => setFeedback(e.target.value)}
-                  rows={4}
+                  rows={3}
+                  className="resize-none border-border/50 bg-transparent rounded-lg focus-visible:ring-2"
                 />
               </div>
-              
-              <div className="flex items-center bg-amber-50 p-3 rounded-md text-amber-800">
-                <AlertTriangle className="h-4 w-4 mr-2 flex-shrink-0" />
-                <p className="text-sm">
-                  Вашият абонамент ще остане активен до края на платения период, след което няма да бъде подновен.
-                </p>
-              </div>
+
+              <p className="flex items-start gap-2 text-xs text-muted-foreground pt-1">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+                Вашият абонамент ще остане активен до края на платения период, след което няма да бъде подновен.
+              </p>
             </div>
-            
-            <DialogFooter className="flex-col-reverse sm:flex-row gap-2 sm:gap-3">
+
+            <DialogFooter className="gap-2 sm:gap-2">
               <Button
                 variant="ghost"
                 onClick={onClose}
                 disabled={isLoading}
-                className="w-full sm:w-auto rounded-full border border-border/60 bg-card/40 hover:bg-muted/60"
+                className="rounded-full border border-border/60"
               >
                 Отказ
               </Button>
               <Button
                 onClick={handleSubmitSurvey}
                 disabled={isLoading || !reason}
-                className="w-full sm:w-auto rounded-full bg-linear-to-r from-rose-500 to-red-600 text-white hover:from-rose-600 hover:to-red-700 shadow-lg shadow-red-600/20"
+                className="rounded-full bg-gradient-to-r from-rose-500 to-red-600 text-white hover:from-rose-600 hover:to-red-700 shadow-sm shadow-red-600/20"
               >
                 {isLoading ? 'Обработка...' : 'Потвърди отказване'}
               </Button>

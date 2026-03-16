@@ -14,7 +14,7 @@ import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const linkClass =
-  "flex items-center w-full p-2.5 sm:p-3 rounded-lg sm:rounded-xl hover:bg-muted/50 transition-colors group";
+  "flex items-center w-full p-2 sm:p-2.5 rounded-lg sm:rounded-xl hover:bg-muted/50 transition-colors group";
 
 export function DashboardQuickActions({
   hasInvoiceWorkspaceSetup = true,

@@ -58,7 +58,12 @@ export function SettingsNav() {
             <p className="text-[10px] text-muted-foreground">Управление на акаунта</p>
           </div>
         </div>
-        <Button asChild variant="ghost" size="sm" className="h-8 shrink-0 rounded-full px-3 lg:hidden">
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          className="h-8 shrink-0 rounded-full px-3 lg:hidden w-auto min-w-[96px]"
+        >
           <Link href="/dashboard" className="flex items-center gap-1.5 whitespace-nowrap">
             <ArrowLeft className="h-3.5 w-3.5" />
             Назад
@@ -87,7 +92,7 @@ export function SettingsNav() {
                 className={cn(
                   "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   "data-[selected=true]:bg-primary data-[selected=true]:text-primary-foreground",
-                  "data-[selected=false]:text-muted-foreground hover:text-foreground",
+                  "data-[selected=false]:text-foreground/80 hover:text-foreground",
                   "disabled:opacity-70 disabled:pointer-events-none"
                 )}
               >
