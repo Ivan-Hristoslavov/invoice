@@ -33,7 +33,7 @@ import {
   Ban,
   Copy,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +55,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { StatusChangeModal } from "@/components/invoice/StatusChangeModal";
 import { DeleteInvoiceModal } from "@/components/invoice/DeleteInvoiceModal";
@@ -563,21 +562,21 @@ export default function InvoicesClient({
       
       {/* Fast Action Button - Floating */}
       {canCreateInvoices && !isLoadingUsage && canCreateInvoice && (
-        <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] right-4 z-40 md:hidden">
+        <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] right-3 z-40 md:hidden">
           <Button
             asChild
             size="lg"
-            className="h-14 w-14 rounded-full gradient-primary hover:opacity-90 text-white border-0 shadow-2xl transition-all hover:scale-110"
+            className="h-12 w-12 rounded-full gradient-primary hover:opacity-90 text-white border-0 shadow-xl transition-transform hover:scale-105 active:scale-95"
           >
             <Link href="/invoices/new">
-              <Plus className="h-6 w-6" />
+              <Plus className="h-5 w-5" />
             </Link>
           </Button>
         </div>
       )}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         {statsCards.map((stat) => (
           <div key={stat.title}>
             <CardStatsMetric
@@ -593,36 +592,37 @@ export default function InvoicesClient({
       </div>
 
       {/* Filters */}
-      <Card className="border-0 shadow-lg">
-        <CardContent className="p-3 sm:p-4">
-          <div className="space-y-3 md:hidden">
+      <Card className="rounded-xl border border-border/50 shadow-md">
+        <CardContent className="p-2 sm:p-3">
+          <div className="space-y-2 md:hidden">
             <div className="relative min-w-0">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder="Търсене по номер, клиент или дата..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-11 border-border pl-10"
+                className="h-9 border-border pl-8 text-sm"
               />
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-1.5">
               <Button
                 type="button"
                 variant="outline"
-                className="relative h-11 justify-center"
+                size="sm"
+                className="min-h-0! h-9 justify-center text-sm"
                 onClick={() => setShowMobileFilters((prev) => !prev)}
               >
-                <Filter className="mr-2 h-4 w-4" />
+                <Filter className="mr-1.5 h-3.5 w-3.5" />
                 Филтри
                 {activeFilterCount > 0 && (
-                  <span className="ml-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                  <span className="ml-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
                     {activeFilterCount}
                   </span>
                 )}
                 {showMobileFilters
-                  ? <ChevronUp className="ml-2 h-3.5 w-3.5 text-muted-foreground" />
-                  : <ChevronDown className="ml-2 h-3.5 w-3.5 text-muted-foreground" />
+                  ? <ChevronUp className="ml-1.5 h-3 w-3 text-muted-foreground" />
+                  : <ChevronDown className="ml-1.5 h-3 w-3 text-muted-foreground" />
                 }
               </Button>
               {canCreateInvoices && (
@@ -630,10 +630,10 @@ export default function InvoicesClient({
               )}
             </div>
             {showMobileFilters && (
-              <div className="grid gap-3">
+              <div className="grid gap-2">
                 <Select value={statusFilter} onValueChange={setStatusFilter} aria-label="Филтър по статус">
-                  <SelectTrigger className="h-11 w-full">
-                    <Filter className="mr-2 h-4 w-4" />
+                  <SelectTrigger className="min-h-0! h-9 w-full text-sm rounded-lg px-3">
+                    <Filter className="mr-1.5 h-3.5 w-3.5" />
                     <SelectValue placeholder="Филтър по статус" />
                   </SelectTrigger>
                   <SelectContent>
@@ -649,8 +649,8 @@ export default function InvoicesClient({
                   setSortField(field as any);
                   setSortDirection(dir as any);
                 }} aria-label="Сортиране на фактурите">
-                  <SelectTrigger className="h-11 w-full">
-                    <ArrowUpDown className="mr-2 h-4 w-4" />
+                  <SelectTrigger className="min-h-0! h-9 w-full text-sm rounded-lg px-3">
+                    <ArrowUpDown className="mr-1.5 h-3.5 w-3.5" />
                     <SelectValue placeholder="Сортирай" />
                   </SelectTrigger>
                   <SelectContent>
@@ -665,20 +665,20 @@ export default function InvoicesClient({
               </div>
             )}
           </div>
-          <div className="hidden gap-3 md:grid md:grid-cols-2 xl:grid-cols-[minmax(0,1.35fr)_180px_220px_auto] xl:items-center">
+          <div className="hidden gap-2 md:grid md:grid-cols-2 xl:grid-cols-[minmax(0,1.35fr)_160px_200px_auto] xl:items-center">
             <div className="relative min-w-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
               <Input
                 type="search"
                 placeholder="Търсене по номер, клиент или дата..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-11 border-border"
+                className="pl-8 h-9 border-border text-sm"
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter} aria-label="Филтър по статус">
-              <SelectTrigger className="h-11 w-full">
-                <Filter className="mr-2 h-4 w-4" />
+              <SelectTrigger className="min-h-0! h-9 w-full text-sm rounded-lg px-3">
+                <Filter className="mr-1.5 h-3.5 w-3.5" />
                 <SelectValue placeholder="Филтър по статус" />
               </SelectTrigger>
               <SelectContent>
@@ -694,8 +694,8 @@ export default function InvoicesClient({
               setSortField(field as any);
               setSortDirection(dir as any);
             }} aria-label="Сортиране на фактурите">
-              <SelectTrigger className="h-11 w-full">
-                <ArrowUpDown className="mr-2 h-4 w-4" />
+              <SelectTrigger className="min-h-0! h-9 w-full text-sm rounded-lg px-3">
+                <ArrowUpDown className="mr-1.5 h-3.5 w-3.5" />
                 <SelectValue placeholder="Сортирай" />
               </SelectTrigger>
               <SelectContent>
@@ -717,7 +717,7 @@ export default function InvoicesClient({
       </Card>
 
       {/* Invoices List */}
-      <Card className="border-0 shadow-lg">
+      <Card className="border border-border/50 shadow-md">
         <CardHeader className="pb-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -782,13 +782,13 @@ export default function InvoicesClient({
             </div>
           ) : (
             <>
-              <div className="space-y-3 px-4 pb-4 md:hidden">
+              <div className="space-y-2 px-2 pb-4 md:hidden sm:px-3">
                 {paginatedInvoices.map((invoice) => {
                   const normalizedStatus = normalizeInvoiceStatus(invoice.status);
                   const statusConfig = getStatusConfig(normalizedStatus);
                   const StatusIcon = statusConfig.icon;
                   return (
-                    <div key={invoice.id} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                    <div key={invoice.id} className="bg-muted/25 rounded-xl px-3 py-3 sm:px-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex min-w-0 items-start gap-3">
                           <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
@@ -827,44 +827,50 @@ export default function InvoicesClient({
                           </span>
                         </div>
                       </div>
-                      <div className="mt-2 flex items-center gap-1 border-t border-border/40 pt-2">
-                        {/* When wide enough: inline buttons */}
-                        <div className="hidden min-[340px]:flex flex-1 items-center gap-1 min-w-0">
-                          <Button size="sm" variant="outline" asChild className="h-6 flex-1 justify-center rounded-md text-[10px] font-medium px-1.5 min-w-0">
-                            <Link href={`/invoices/${invoice.id}`}>
-                              <Eye className="mr-1 h-2.5 w-2.5" />
-                              Преглед
+                      <div className="mt-2 flex items-center gap-0.5 border-t border-border/40 pt-2">
+                        {/* Inline: Преглед, Издай (draft), Редакция (draft) or Дублирай, then menu */}
+                        <div className="hidden min-[320px]:flex flex-1 items-center gap-0.5 min-w-0">
+                          <Button size="sm" variant="ghost" asChild className="min-h-0! h-6 flex-1 min-w-0 justify-center rounded-md px-1 py-1">
+                            <Link href={`/invoices/${invoice.id}`} className="text-muted-foreground hover:text-foreground" title="Преглед">
+                              <Eye className="h-3 w-3" />
                             </Link>
                           </Button>
                           {invoice.userId === currentUserId && normalizedStatus === "DRAFT" && (
-                            <Button size="sm" className="h-6 flex-1 justify-center rounded-md border-0 text-[10px] font-medium text-white gradient-primary hover:opacity-90 px-1.5 min-w-0" onClick={() => openStatusModal(invoice, "ISSUED")}>
-                              <FileCheck className="mr-1 h-2.5 w-2.5" />
-                              Издай
-                            </Button>
+                            <>
+                              <Button size="sm" className="min-h-0! h-6 flex-1 min-w-0 justify-center rounded-md border-0 px-1 py-1 text-white gradient-primary hover:opacity-90" onClick={() => openStatusModal(invoice, "ISSUED")} title="Издай">
+                                <FileCheck className="h-3 w-3" />
+                              </Button>
+                              <Button size="sm" variant="ghost" asChild className="min-h-0! h-6 flex-1 min-w-0 justify-center rounded-md px-1 py-1">
+                                <Link href={`/invoices/${invoice.id}/edit`} className="text-muted-foreground hover:text-foreground" title="Редакция">
+                                  <Edit className="h-3 w-3" />
+                                </Link>
+                              </Button>
+                            </>
                           )}
                           {normalizedStatus !== "DRAFT" && (
                             <Button
                               size="sm"
-                              variant="outline"
-                              className="h-6 flex-1 justify-center rounded-md text-[10px] font-medium px-1.5 min-w-0"
+                              variant="ghost"
+                              className="min-h-0! h-6 flex-1 min-w-0 justify-center rounded-md px-1 py-1 text-muted-foreground hover:text-foreground"
                               onClick={() => handleDuplicate(invoice.id)}
+                              title="Дублирай"
                             >
-                              <Copy className="mr-1 h-2.5 w-2.5" />
-                              Дублирай
+                              <Copy className="h-3 w-3" />
                             </Button>
                           )}
                         </div>
-                        {/* When very narrow: full-width "Действия"; when wider: icon-only menu */}
+                        {/* Narrow: single "Действия"; wider: icon-only menu */}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
-                              variant="outline"
+                              variant="ghost"
                               size="sm"
-                              className="h-6 min-w-0 flex-1 min-[340px]:w-6 min-[340px]:flex-none min-[340px]:px-0 rounded-md px-2"
+                              className="min-h-0! h-6 flex-1 min-[320px]:w-6 min-[320px]:flex-none min-[320px]:p-0 rounded-md px-2"
+                              title="Още действия"
                             >
-                              <Edit className="h-2.5 w-2.5 shrink-0 min-[340px]:hidden" />
-                              <span className="text-[10px] font-medium min-[340px]:sr-only">Действия</span>
-                              <MoreHorizontal className="hidden min-[340px]:block h-3 w-3 shrink-0" />
+                              <Edit className="h-3 w-3 shrink-0 min-[320px]:hidden" />
+                              <span className="text-[10px] font-medium min-[320px]:sr-only">Действия</span>
+                              <MoreHorizontal className="hidden min-[320px]:block h-3 w-3 shrink-0" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-56">
