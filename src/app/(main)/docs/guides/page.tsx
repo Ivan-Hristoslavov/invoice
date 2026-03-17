@@ -63,9 +63,19 @@ const guidesData = [
 ];
 
 // Карта за ръководство
-function GuideCard({ guide }) {
+interface GuideData {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ElementType;
+  topics: string[];
+  difficulty: string;
+  timeToRead: string;
+}
+
+function GuideCard({ guide }: { guide: GuideData }) {
   const Icon = guide.icon;
-  
+
   return (
     <Card className="h-full hover:shadow-md transition-shadow">
       <CardHeader className="pb-3">

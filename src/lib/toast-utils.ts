@@ -115,20 +115,13 @@ export function promiseToast<T>(
   return toast.promise(promise, {
     loading: options.loading,
     success: (data) => {
-      const message = typeof options.success === "function" 
-        ? options.success(data) 
+      return typeof options.success === "function"
+        ? options.success(data)
         : options.success;
-      return {
-        message,
-        action: options.action ? {
-          label: options.action.label,
-          onClick: () => options.action?.onClick(data),
-        } : undefined,
-      };
     },
-    error: (error) => 
-      typeof options.error === "function" 
-        ? options.error(error) 
+    error: (error) =>
+      typeof options.error === "function"
+        ? options.error(error)
         : options.error,
   });
 }

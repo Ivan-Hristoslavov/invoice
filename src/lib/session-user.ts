@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 interface SessionUserLike {
   id?: string | null;
   email?: string | null;
+  name?: string | null;
 }
 
 export async function resolveSessionUser(sessionUser?: SessionUserLike | null) {
@@ -15,7 +16,7 @@ export async function resolveSessionUser(sessionUser?: SessionUserLike | null) {
   if (sessionUser.id) {
     const { data: byId } = await supabase
       .from("User")
-      .select("id, email")
+      .select("id, email, name")
       .eq("id", sessionUser.id)
       .maybeSingle();
 
@@ -27,7 +28,7 @@ export async function resolveSessionUser(sessionUser?: SessionUserLike | null) {
 
   const { data: byEmail } = await supabase
     .from("User")
-    .select("id, email")
+    .select("id, email, name")
     .ilike("email", normalizedEmail)
     .maybeSingle();
 

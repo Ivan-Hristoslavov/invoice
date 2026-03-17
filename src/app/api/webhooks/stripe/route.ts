@@ -357,17 +357,12 @@ async function recordSubscriptionPayment(
 }
 
 async function constructStripeEvent(requestBody: string, signature: string) {
+  if (!webhookSecret) {
+    throw new Error("STRIPE_WEBHOOK_SECRET is not configured");
+  }
+
   const stripe = await getStripe();
-
-  if (webhookSecret) {
-    return stripe.webhooks.constructEvent(requestBody, signature, webhookSecret);
-  }
-
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("STRIPE_WEBHOOK_SECRET is required in production");
-  }
-
-  return JSON.parse(requestBody) as Stripe.Event;
+  return stripe.webhooks.constructEvent(requestBody, signature, webhookSecret);
 }
 
 export async function POST(req: Request) {

@@ -36,20 +36,20 @@ interface UsersClientProps {
   currentUserId: string;
 }
 
-function getRoleChipColor(role: Role): "danger" | "secondary" | "primary" | "success" {
+function getRoleChipColor(role: Role): "danger" | "default" | "warning" | "success" {
   switch (role) {
     case "ADMIN":
       return "danger";
     case "OWNER":
-      return "secondary";
+      return "default";
     case "MANAGER":
-      return "primary";
+      return "warning";
     case "ACCOUNTANT":
       return "success";
     case "VIEWER":
-      return "secondary";
+      return "default";
     default:
-      return "secondary";
+      return "default";
   }
 }
 

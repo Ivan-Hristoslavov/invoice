@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useState } from "react";
 import { useForm, UseFormProps, FieldValues, SubmitHandler, UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,7 +19,7 @@ interface UseFormValidationReturn<T extends FieldValues> {
   formError: string | null;
   handleSubmit: () => Promise<void>;
   setFormError: (error: string | null) => void;
-  FormError: () => JSX.Element | null;
+  FormError: () => React.JSX.Element | null;
 }
 
 export function useFormValidation<T extends FieldValues>({

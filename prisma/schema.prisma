@@ -118,7 +118,7 @@ model Company {
   bankIban          String?
   logo              String?
   stripeAccountId   String?   // Stripe Connect Account ID
-  
+
   // Bulgarian-specific fields
   bulstatNumber     String?   // Bulgarian company identifier (ЕИК/БУЛСТАТ)
   vatRegistered     Boolean   @default(false) // Whether company is VAT registered (Регистрация по ЗДДС)
@@ -130,13 +130,13 @@ model Company {
   certificateSerialNumber String? // Certificate serial number for e-signing
   certificateThumbprint String?  // Certificate thumbprint
   uicType           String?   @default("BULSTAT") // Valid values: "BULSTAT" or "EGN"
-  
+
   taxComplianceSystem String?  @default("general") // Tax system: "bulgarian", "eu", or "general"
-  
+
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
-  userId            String    
-  
+  userId            String
+
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   invoices          Invoice[]
   creditNotes       CreditNote[]
@@ -144,6 +144,8 @@ model Company {
   invoiceSequences  InvoiceSequence[]
   userRoles         UserRole[]
   teamInvites       TeamInvite[]
+
+  @@index([userId])
 }
 
 model Client {
@@ -172,11 +174,14 @@ model Client {
   updatedAt         DateTime  @updatedAt
   userId            String
   locale            String    @default("en") // Client preferred locale
-  
+
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   invoices          Invoice[]
   creditNotes       CreditNote[]
   debitNotes        DebitNote[]
+
+  @@index([userId])
+  @@index([userId, name])
 }
 
 model Product {
@@ -193,9 +198,12 @@ model Product {
   
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   invoiceItems InvoiceItem[]
-  
+
   // Product translations
   translations ProductTranslation[]
+
+  @@index([userId])
+  @@index([userId, name])
 }
 
 model ProductTranslation {
@@ -259,8 +267,12 @@ model Invoice {
   creditNote      CreditNote? // Credit note created from this invoice
   debitNotes      DebitNote[] // Debit notes related to this invoice
   auditLogs       AuditLog[]
-  
+
   @@unique([invoiceNumber, userId])
+  @@index([userId, status])
+  @@index([userId, issueDate])
+  @@index([companyId, status])
+  @@index([clientId])
 }
 
 model InvoiceItem {

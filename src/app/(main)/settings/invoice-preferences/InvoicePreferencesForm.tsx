@@ -64,8 +64,8 @@ export function InvoicePreferencesForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingDefaults, setIsLoadingDefaults] = useState(true);
 
-  const form = useForm<PreferencesFormValues>({
-    resolver: zodResolver(preferencesSchema),
+  const form = useForm<PreferencesFormValues, unknown, PreferencesFormValues>({
+    resolver: zodResolver(preferencesSchema) as any,
     defaultValues: {
       defaultVatRate: DEFAULT_VAT_RATE,
       resetNumberingYearly: true,

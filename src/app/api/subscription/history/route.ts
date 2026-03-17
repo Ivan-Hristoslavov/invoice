@@ -80,7 +80,7 @@ export async function GET(req: Request) {
             status: 'PAID',
             currency: inv.currency || 'eur',
             paymentMethod: null,
-            paymentIntentId: typeof inv.payment_intent === 'string' ? inv.payment_intent : null,
+            paymentIntentId: typeof (inv as any).payment_intent === 'string' ? (inv as any).payment_intent : null,
             createdAt: new Date((inv.created || Date.now() / 1000) * 1000).toISOString(),
           }));
           await supabaseAdmin
@@ -98,7 +98,7 @@ export async function GET(req: Request) {
           status: 'PAID',
           currency: inv.currency || 'eur',
           paymentMethod: null,
-          paymentIntentId: typeof inv.payment_intent === 'string' ? inv.payment_intent : null,
+          paymentIntentId: typeof (inv as any).payment_intent === 'string' ? (inv as any).payment_intent : null,
           createdAt: new Date((inv.created || Date.now() / 1000) * 1000).toISOString(),
         }));
       } catch (stripeErr) {

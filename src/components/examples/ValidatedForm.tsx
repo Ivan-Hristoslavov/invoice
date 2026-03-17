@@ -1,6 +1,7 @@
 "use client"
 
 import React from "react";
+import { z } from "zod";
 import { useFormValidation } from "@/hooks/use-form-validation";
 import { clientSchema } from "@/lib/validations/forms";
 import { Button } from "@/components/ui/button";
@@ -11,21 +12,11 @@ import { FormLayout, FormSection, FormField } from "@/components/forms/form-layo
 import { Loading } from "@/components/ui/loading";
 import { SuccessAnimation } from "@/components/ui/success-animation";
 
-interface ClientFormData {
-  name: string;
-  email: string;
-  phone?: string;
-  vat?: string;
-  address: string;
-  city: string;
-  country: string;
-  postalCode?: string;
-  notes?: string;
-}
+type ClientFormData = z.infer<typeof clientSchema>;
 
 export function ValidatedClientForm() {
   const [isSuccess, setIsSuccess] = React.useState(false);
-  
+
   // Използване на нашия хук за валидация на форми
   const {
     form,

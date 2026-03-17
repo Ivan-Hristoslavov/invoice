@@ -811,24 +811,21 @@ export default function InvoicesClient({
                           </div>
                           <div className="min-w-0">
                             <p className="truncate font-semibold text-sm">
-                              {invoice.invoiceNumber}
+                              {invoice.client.name}
                             </p>
                             <p className="truncate text-xs text-muted-foreground">
-                              {invoice.client.name}
+                              № {invoice.invoiceNumber}
                             </p>
                             {invoice.createdById && createdByMap[invoice.createdById] && (
                               <p className="truncate text-xs text-muted-foreground">
-                                Създадена от: {createdByMap[invoice.createdById].name ?? "—"}
+                                От: {createdByMap[invoice.createdById].name ?? "—"}
                               </p>
                             )}
-                            <div className="mt-0.5 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                            <div className="mt-0.5 text-xs text-muted-foreground">
                               <p>
                                 {format(new Date(invoice.issueDate), "d MMM yyyy", {
                                   locale: bg,
                                 })}
-                              </p>
-                              <p className="text-sm font-bold tabular-nums text-foreground">
-                                {formatPrice(Number(invoice.total))} €
                               </p>
                             </div>
                           </div>
@@ -843,6 +840,9 @@ export default function InvoicesClient({
                             <StatusIcon className="h-3 w-3" />
                             {statusConfig.label}
                           </span>
+                          <p className="text-sm font-bold tabular-nums text-foreground">
+                            {formatPrice(Number(invoice.total))} €
+                          </p>
                         </div>
                       </div>
                       <div className="mt-2 flex items-center gap-0.5 border-t border-border/40 pt-2">

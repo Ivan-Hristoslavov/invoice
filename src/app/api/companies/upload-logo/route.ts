@@ -5,6 +5,50 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { checkSubscriptionLimits } from "@/middleware/subscription";
 import { MAX_LOGO_SIZE_BYTES, STORAGE_BUCKET_IMAGES } from "@/config/constants";
 
+/**
+ * Detects image MIME type from magic bytes (first bytes of file).
+ * Returns null if the buffer doesn't match any known image format.
+ */
+function detectImageMimeType(buffer: Buffer): string | null {
+  if (buffer.length < 4) return null;
+
+  // JPEG: FF D8 FF
+  if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) {
+    return 'image/jpeg';
+  }
+  // PNG: 89 50 4E 47 0D 0A 1A 0A
+  if (
+    buffer[0] === 0x89 && buffer[1] === 0x50 &&
+    buffer[2] === 0x4E && buffer[3] === 0x47
+  ) {
+    return 'image/png';
+  }
+  // GIF: 47 49 46 38
+  if (
+    buffer[0] === 0x47 && buffer[1] === 0x49 &&
+    buffer[2] === 0x46 && buffer[3] === 0x38
+  ) {
+    return 'image/gif';
+  }
+  // WebP: 52 49 46 46 ... 57 45 42 50
+  if (
+    buffer.length >= 12 &&
+    buffer[0] === 0x52 && buffer[1] === 0x49 &&
+    buffer[2] === 0x46 && buffer[3] === 0x46 &&
+    buffer[8] === 0x57 && buffer[9] === 0x45 &&
+    buffer[10] === 0x42 && buffer[11] === 0x50
+  ) {
+    return 'image/webp';
+  }
+  // SVG: starts with '<svg' or '<?xml' (text-based, check prefix)
+  const prefix = buffer.slice(0, 256).toString('utf8').trimStart();
+  if (prefix.startsWith('<svg') || prefix.startsWith('<?xml')) {
+    return 'image/svg+xml';
+  }
+
+  return null;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -47,20 +91,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      return NextResponse.json(
-        { error: "Невалиден тип файл. Позволени са само изображения." },
-        { status: 400 }
-      );
-    }
-
+    // Validate file size first (cheap check)
     if (file.size > MAX_LOGO_SIZE_BYTES) {
       return NextResponse.json(
         { error: `Размерът на файла надвишава ${MAX_LOGO_SIZE_BYTES / (1024 * 1024)}MB` },
         { status: 400 }
       );
     }
+
+    // Validate file content using magic bytes (not just MIME type which can be spoofed)
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+    const detectedMime = detectImageMimeType(buffer);
+    if (!detectedMime || !allowedMimeTypes.includes(detectedMime)) {
+      return NextResponse.json(
+        { error: "Невалиден тип файл. Позволени са само JPEG, PNG, GIF, WebP и SVG изображения." },
+        { status: 400 }
+      );
+    }
+
+    // Sanitize filename extension based on detected type
+    const mimeToExt: Record<string, string> = {
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/gif': 'gif',
+      'image/webp': 'webp',
+      'image/svg+xml': 'svg',
+    };
+    const safeExt = mimeToExt[detectedMime];
 
     const supabase = createAdminClient();
 
@@ -79,19 +138,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate unique filename
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${companyId}-${Date.now()}.${fileExt}`;
+    // Generate unique filename using the verified safe extension
+    const fileName = `${companyId}-${Date.now()}.${safeExt}`;
     const filePath = `logos/${fileName}`;
 
-    // Convert File to ArrayBuffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
+    // buffer already read above for magic byte check
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from(STORAGE_BUCKET_IMAGES)
       .upload(filePath, buffer, {
-        contentType: file.type,
+        contentType: detectedMime,
         upsert: false,
       });
 

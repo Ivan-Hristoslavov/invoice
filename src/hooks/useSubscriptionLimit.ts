@@ -12,7 +12,7 @@ interface SubscriptionLimitResult {
 }
 
 interface UseSubscriptionLimitResult {
-  checkLimit: (feature: string) => Promise<SubscriptionLimitResult>;
+  checkLimit: (feature: 'clients' | 'invoices' | 'products' | 'customBranding' | 'export' | 'emailSending' | 'creditNotes' | 'users' | 'companies') => Promise<SubscriptionLimitResult>;
   isChecking: boolean;
   error: string | null;
   plan: string | null;

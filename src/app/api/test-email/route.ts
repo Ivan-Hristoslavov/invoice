@@ -50,8 +50,13 @@ export async function POST(request: Request) {
       );
     }
 
-    // Use SMTP_TO_ADDRESS for testing if available, otherwise use the hardcoded email
-    const toAddress = process.env.SMTP_TO_ADDRESS || 'hristoslavov.ivanov@gmail.com';
+    const toAddress = process.env.SMTP_TO_ADDRESS;
+    if (!toAddress) {
+      return NextResponse.json(
+        { error: 'SMTP_TO_ADDRESS is not configured. Set it in your environment variables.' },
+        { status: 500 }
+      );
+    }
 
     const transporter = getSmtpTransporter();
     const info = await transporter.sendMail({
@@ -72,7 +77,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error sending test email:', error);
     return NextResponse.json(
-      { error: 'Error sending email', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Error sending email' },
       { status: 500 }
     );
   }

@@ -270,40 +270,11 @@ export default function ProductPage() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Редактиране на продукт</h1>
+            <h1 className="text-xl font-semibold tracking-tight">Редактиране на продукт</h1>
             <p className="text-sm text-muted-foreground">По-стегната форма за основни детайли, цена и ДДС.</p>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" disabled={isDeleting} className="h-10 rounded-full px-4">
-                <Trash2 className="mr-2 h-4 w-4" />
-                {isDeleting ? "Изтриване..." : "Изтрий"}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Сигурни ли сте?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Това действие не може да бъде отменено. Това ще изтрие окончателно продукта от вашия акаунт и системата.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Отказ</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                  Изтрий
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-
-          <Button type="submit" form="product-form" disabled={isLoading} className="h-10 rounded-full px-5">
-            <Save className="mr-2 h-4 w-4" />
-            {isLoading ? "Запазване..." : "Запази"}
-          </Button>
-        </div>
       </div>
 
       <Form {...form}>
@@ -457,9 +428,28 @@ export default function ProductPage() {
                   <Save className="mr-2 h-4 w-4" />
                   {isLoading ? "Запазване..." : "Запази промените"}
                 </Button>
-                <Button type="button" variant="outline" asChild className="w-full sm:flex-1">
-                  <Link href="/products">Отказ</Link>
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button type="button" variant="destructive" disabled={isDeleting} className="w-full sm:w-auto">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {isDeleting ? "Изтриване..." : "Изтрий"}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Сигурни ли сте?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Това действие не може да бъде отменено. Продуктът ще бъде изтрит окончателно.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Отказ</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        Изтрий
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </CardFooter>
             </Card>
           </div>
