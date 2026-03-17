@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase";
 import { authOptions } from "@/lib/auth";
-import * as bcrypt from "bcrypt";
+import * as bcrypt from "bcryptjs";
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1),

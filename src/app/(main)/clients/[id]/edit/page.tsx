@@ -84,8 +84,8 @@ export default function EditClientPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingClient, setIsLoadingClient] = useState(true);
 
-  const form = useForm<ClientFormValues>({
-    resolver: zodResolver(clientSchema),
+  const form = useForm<ClientFormValues, unknown, ClientFormValues>({
+    resolver: zodResolver(clientSchema) as any,
     defaultValues: {
       name: "",
       email: "",

@@ -127,7 +127,7 @@ function processCsvRows(rows: any[]): CsvInvoice[] {
       // Skip if required fields are missing
       if (!description || !quantity || !unitPrice) continue;
       
-      invoice.items.push({
+      invoice.items?.push({
         description,
         quantity,
         unitPrice,
@@ -135,9 +135,9 @@ function processCsvRows(rows: any[]): CsvInvoice[] {
         productId: row[`item_${i}_productId`] || undefined
       });
     }
-    
+
     // Only add invoices with at least one item
-    if (invoice.items.length > 0) {
+    if ((invoice.items?.length ?? 0) > 0) {
       invoices.push(invoice as CsvInvoice);
     }
   }

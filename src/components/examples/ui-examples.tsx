@@ -92,20 +92,18 @@ export default function UIExamples() {
               <CardTitle>Празни състояния</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <EmptyState 
-                title="Няма резултати" 
+              <EmptyState
+                heading="Няма резултати"
                 description="Не бяха намерени резултати, отговарящи на вашите критерии."
                 icon={FileIcon}
-                actionLabel="Изчистване на филтрите"
-                actionOnClick={() => alert('Филтрите са изчистени')}
+                action={<button onClick={() => alert('Филтрите са изчистени')}>Изчистване на филтрите</button>}
               />
-              
-              <EmptyState 
+
+              <EmptyState
                 icon={FileText}
-                title="Нямате фактури"
+                heading="Нямате фактури"
                 description="Създайте първата си фактура, за да започнете да следите вашите плащания."
-                actionLabel="Създаване на фактура"
-                actionOnClick={() => alert('Създаване на нова фактура')}
+                action={<button onClick={() => alert('Създаване на нова фактура')}>Създаване на фактура</button>}
               />
             </CardContent>
           </Card>
@@ -201,12 +199,7 @@ export default function UIExamples() {
             </CardHeader>
             <CardContent>
               <FormLayout
-                title="Създаване на нов продукт"
-                description="Добавете информация за продукта, който предлагате."
-                isLoading={isLoading}
                 onSubmit={handleSubmit}
-                submitText="Създаване на продукт"
-                onCancel={() => alert('Отказано')}
               >
                 <FormSection
                   title="Основна информация"

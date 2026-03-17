@@ -86,7 +86,16 @@
       "Bash(ls -la /Users/ivanivanov/Documents/MyProjects/invoice/src/app/\\\\\\(main\\\\\\)/ | grep -E \"page\\\\|layout\")",
       "Bash(cat \"/Users/ivanivanov/Documents/MyProjects/invoice/src/app/\\(main\\)/HomePageClient.tsx\" | head -400)",
       "Bash(wc -l /Users/ivanivanov/Documents/MyProjects/invoice/src/app/\\\\\\(main\\\\\\)/clients/new/page.tsx)",
-      "Bash(npm run build 2>&1)"
+      "Bash(npm run build 2>&1)",
+      "Bash(grep -l \"export async function\\\\|export function\" /Users/ivanivanov/Documents/MyProjects/invoice/src/app/api/*/*.ts /Users/ivanivanov/Documents/MyProjects/invoice/src/app/api/*/*/*.ts 2>/dev/null | wc -l)",
+      "Bash(grep -h \"export async function\\\\|export function\" /Users/ivanivanov/Documents/MyProjects/invoice/src/app/api/*/*.ts /Users/ivanivanov/Documents/MyProjects/invoice/src/app/api/*/*/*.ts 2>/dev/null | sort | head -50)",
+      "Bash(for file in /Users/ivanivanov/Documents/MyProjects/invoice/src/app/api/*/*.ts; do\n  if grep -q \"export async function \\(GET|POST|PUT|DELETE\\)\" \"$file\" 2>/dev/null; then\n    if ! grep -q \"getServerSession\\\\|withAuthorization\\\\|checkAuth\" \"$file\" 2>/dev/null; then\n      echo \"NO AUTH: $file\"\n    fi\n  fi\ndone)",
+      "Bash(ls -la /Users/ivanivanov/Documents/MyProjects/invoice/src/app/api/*/route.ts 2>/dev/null | wc -l)",
+      "Bash(git rm --cached .env)",
+      "Bash(find /Users/ivanivanov/Documents/MyProjects/invoice/node_modules/@heroui/chip -name \"*.d.ts\" 2>/dev/null | head -5)",
+      "Bash(find /Users/ivanivanov/Documents/MyProjects/invoice/node_modules/@heroui -name \"*.d.ts\" 2>/dev/null | head -10)",
+      "Bash(find /Users/ivanivanov/Documents/MyProjects/invoice/node_modules/@heroui -path \"*/chip*\" -name \"*.d.ts\" 2>/dev/null | head -5)",
+      "Bash(npm install swr --save 2>&1 | tail -5)"
     ]
   }
 }

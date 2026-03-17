@@ -18,6 +18,7 @@ import {
   MinusCircle,
   PlusCircle,
   Activity,
+  Hash,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -480,9 +481,18 @@ export default async function DashboardPage() {
                         <XCircle className="h-4 w-4" />
                       )}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-sm truncate">{invoice.invoiceNumber}</p>
-                      <p className="text-[11px] text-muted-foreground truncate sm:text-xs">{invoice.client.name}</p>
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground sm:text-xs">
+                        <Building className="h-3 w-3 text-muted-foreground/80" />
+                        <span className="truncate">От: {invoice.company.name}</span>
+                      </p>
+                      <p className="flex items-center gap-1.5 font-semibold text-sm text-foreground">
+                        <Hash className="h-3.5 w-3.5 text-muted-foreground/90" />
+                        <span className="truncate">{invoice.invoiceNumber}</span>
+                      </p>
+                      <p className="hidden text-[11px] text-muted-foreground sm:block truncate">
+                        {invoice.client.name}
+                      </p>
                     </div>
                     <div className="min-w-0 text-right space-y-1">
                       <p

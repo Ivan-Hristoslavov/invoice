@@ -122,7 +122,7 @@ export async function fetchApi<T>(
         data.error?.message || 'Възникна грешка при обработка на заявката',
         data.error?.details,
         response.status as ApiStatusCode
-      );
+      ) as unknown as ApiResponse<T>;
     }
     
     // Ако API-то не връща success флаг, го добавяме
@@ -140,7 +140,7 @@ export async function fetchApi<T>(
       'FETCH_ERROR',
       error instanceof Error ? error.message : 'Възникна грешка при изпращане на заявката',
       { originalError: error }
-    );
+    ) as unknown as ApiResponse<T>;
   }
 }
 

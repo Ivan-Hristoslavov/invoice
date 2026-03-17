@@ -109,8 +109,8 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<CompanyInfoValues>({
-    resolver: zodResolver(companyInfoSchema),
+  const form = useForm<CompanyInfoValues, unknown, CompanyInfoValues>({
+    resolver: zodResolver(companyInfoSchema) as any,
     defaultValues: {
       ...defaultValues,
       country: defaultValues.country || "България",

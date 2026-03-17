@@ -148,9 +148,9 @@ export async function createCheckoutSession(
     let priceId: string | null = null;
     
     if (plan === 'PRO') {
-      priceId = process.env.STRIPE_PRO_PRICE_ID || SUBSCRIPTION_PLANS[plan].priceId || SUBSCRIPTION_PLANS[plan].priceIdMonthly;
+      priceId = process.env.STRIPE_PRO_PRICE_ID || SUBSCRIPTION_PLANS[plan].stripe.monthly;
     } else if (plan === 'BUSINESS') {
-      priceId = process.env.STRIPE_BUISNESS_PRICE_ID || SUBSCRIPTION_PLANS[plan].priceId || SUBSCRIPTION_PLANS[plan].priceIdMonthly;
+      priceId = process.env.STRIPE_BUISNESS_PRICE_ID || SUBSCRIPTION_PLANS[plan].stripe.monthly;
     }
 
     if (!priceId || priceId.includes('fallback')) {
@@ -281,9 +281,9 @@ export async function handleSubscriptionUpdated(
       plan = SubscriptionPlan.PRO;
     } else if (businessPriceId && priceId === businessPriceId) {
       plan = SubscriptionPlan.BUSINESS;
-    } else if (priceId === SUBSCRIPTION_PLANS.PRO.priceIdMonthly || priceId === SUBSCRIPTION_PLANS.PRO.priceIdYearly) {
+    } else if (priceId === SUBSCRIPTION_PLANS.PRO.stripe.monthly || priceId === SUBSCRIPTION_PLANS.PRO.stripe.yearly) {
       plan = SubscriptionPlan.PRO;
-    } else if (priceId === SUBSCRIPTION_PLANS.BUSINESS.priceIdMonthly || priceId === SUBSCRIPTION_PLANS.BUSINESS.priceIdYearly) {
+    } else if (priceId === SUBSCRIPTION_PLANS.BUSINESS.stripe.monthly || priceId === SUBSCRIPTION_PLANS.BUSINESS.stripe.yearly) {
       plan = SubscriptionPlan.BUSINESS;
     } else {
       // Default to FREE if we can't determine the plan (fallback)

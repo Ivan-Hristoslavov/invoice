@@ -53,7 +53,7 @@ export async function fetchProductsByIds(
 
   if (error) throw error;
 
-  return new Map(
+  return new Map<string, Record<string, any>>(
     (products || []).map((product: Record<string, any>) => [product.id, product])
   );
 }

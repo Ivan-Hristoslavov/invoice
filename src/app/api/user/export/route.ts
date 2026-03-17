@@ -17,79 +17,76 @@ export async function GET(request: NextRequest) {
     const supabase = createAdminClient();
     const userId = session.user.id;
 
-    // Fetch all user data in parallel for better performance
+    // Fetch invoices first so we can use their IDs for invoice items
+    const invoicesResult = await supabase
+      .from("Invoice")
+      .select("*")
+      .eq("userId", userId);
+
+    const invoiceIds = invoicesResult.data?.map((i) => i.id) ?? [];
+
+    // Fetch all remaining user data in parallel
     const [
       userResult,
       companiesResult,
       clientsResult,
       productsResult,
-      invoicesResult,
       invoiceItemsResult,
       documentsResult,
       subscriptionsResult,
       auditLogsResult,
       creditNotesResult,
-    ] = await Promise.all([
+    ] = await Promise.allSettled([
       // User profile (without password)
       supabase
         .from("User")
         .select("id, name, email, emailVerified, image, createdAt, updatedAt, defaultLocale, defaultVatRate")
         .eq("id", userId)
         .single(),
-      
+
       // Companies
       supabase
         .from("Company")
         .select("*")
         .eq("userId", userId),
-      
+
       // Clients
       supabase
         .from("Client")
         .select("*")
         .eq("userId", userId),
-      
+
       // Products with translations
       supabase
         .from("Product")
         .select("*, translations:ProductTranslation(*)")
         .eq("userId", userId),
-      
-      // Invoices
-      supabase
-        .from("Invoice")
-        .select("*")
-        .eq("userId", userId),
-      
-      // Invoice items (we'll match them to invoices later)
-      supabase
-        .from("InvoiceItem")
-        .select("*")
-        .in("invoiceId", 
-          // Get invoice IDs for this user
-          (await supabase.from("Invoice").select("id").eq("userId", userId)).data?.map(i => i.id) || []
-        ),
-      
+
+      // Invoice items (joined via already-fetched invoice IDs — no extra query needed)
+      invoiceIds.length > 0
+        ? supabase.from("InvoiceItem").select("*").in("invoiceId", invoiceIds)
+        : Promise.resolve({ data: [], error: null }),
+
       // Documents (metadata only, not the actual files)
       supabase
         .from("Document")
         .select("id, name, size, type, invoiceId, createdAt")
         .eq("userId", userId),
-      
+
       // Subscriptions with payment history
       supabase
         .from("Subscription")
         .select("*, payments:SubscriptionPayment(*), history:SubscriptionHistory(*)")
         .eq("userId", userId),
-      
+
       // Audit logs
       supabase
         .from("AuditLog")
         .select("*")
         .eq("userId", userId)
         .order("createdAt", { ascending: false })
-        .limit(1000), // Limit to last 1000 entries
-      
+        .limit(1000),
+
       // Credit notes
       supabase
         .from("CreditNote")
@@ -97,11 +94,25 @@ export async function GET(request: NextRequest) {
         .eq("userId", userId),
     ]);
 
+    // Extract data from settled results (use empty fallback on failure)
+    const settled = <T>(r: PromiseSettledResult<{ data: T | null; error: unknown }>): T | null =>
+      r.status === "fulfilled" ? r.value.data : null;
+
+    const userData = settled(userResult);
+    const companiesData = settled(companiesResult) ?? [];
+    const clientsData = settled(clientsResult) ?? [];
+    const productsData = settled(productsResult) ?? [];
+    const invoiceItemsData = settled(invoiceItemsResult) ?? [];
+    const documentsData = settled(documentsResult) ?? [];
+    const subscriptionsData = settled(subscriptionsResult) ?? [];
+    const auditLogsData = settled(auditLogsResult) ?? [];
+    const creditNotesData = settled(creditNotesResult) ?? [];
+
     // Combine invoice items with their invoices
-    const invoices = invoicesResult.data?.map(invoice => ({
+    const invoices = (invoicesResult.data ?? []).map(invoice => ({
       ...invoice,
-      items: invoiceItemsResult.data?.filter(item => item.invoiceId === invoice.id) || [],
-    })) || [];
+      items: invoiceItemsData.filter((item: { invoiceId: string }) => item.invoiceId === invoice.id),
+    }));
 
     // Build the export object
     const exportData = {
@@ -112,36 +123,36 @@ export async function GET(request: NextRequest) {
         gdprCompliant: true,
         description: "Пълен експорт на всички ваши лични данни съгласно GDPR Член 20 (Право на преносимост)",
       },
-      user: userResult.data ? {
-        ...userResult.data,
+      user: userData ? {
+        ...userData,
         // Remove sensitive fields
         stripeCustomerId: undefined,
       } : null,
-      companies: companiesResult.data?.map(company => ({
+      companies: companiesData.map((company: Record<string, unknown>) => ({
         ...company,
         // Remove sensitive fields
         napPassword: undefined,
         napUserName: undefined,
-      })) || [],
-      clients: clientsResult.data || [],
-      products: productsResult.data || [],
+      })),
+      clients: clientsData,
+      products: productsData,
       invoices,
-      creditNotes: creditNotesResult.data || [],
-      documents: documentsResult.data?.map(doc => ({
+      creditNotes: creditNotesData,
+      documents: documentsData.map((doc: Record<string, unknown>) => ({
         ...doc,
         // Don't include actual file URLs for security
         url: "[URL скрит за сигурност]",
-      })) || [],
-      subscriptions: subscriptionsResult.data || [],
-      auditLogs: auditLogsResult.data || [],
+      })),
+      subscriptions: subscriptionsData,
+      auditLogs: auditLogsData,
       statistics: {
-        totalCompanies: companiesResult.data?.length || 0,
-        totalClients: clientsResult.data?.length || 0,
-        totalProducts: productsResult.data?.length || 0,
-        totalInvoices: invoicesResult.data?.length || 0,
-        totalCreditNotes: creditNotesResult.data?.length || 0,
-        totalDocuments: documentsResult.data?.length || 0,
-        totalAuditLogs: auditLogsResult.data?.length || 0,
+        totalCompanies: companiesData.length,
+        totalClients: clientsData.length,
+        totalProducts: productsData.length,
+        totalInvoices: invoicesResult.data?.length ?? 0,
+        totalCreditNotes: creditNotesData.length,
+        totalDocuments: documentsData.length,
+        totalAuditLogs: auditLogsData.length,
       },
     };
 

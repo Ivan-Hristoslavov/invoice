@@ -19,6 +19,7 @@ interface Plan {
 
 interface SubscriptionPlans {
   FREE: Plan;
+  STARTER: Plan;
   PRO: Plan;
   BUSINESS: Plan;
 }
@@ -26,7 +27,7 @@ interface SubscriptionPlans {
 // Client-side function to get subscription plans
 export async function useSubscriptionPlans(): Promise<SubscriptionPlans> {
   try {
-    return await getSubscriptionPlans();
+    return await getSubscriptionPlans() as unknown as SubscriptionPlans;
   } catch (error) {
     console.error('Error fetching subscription plans:', error);
     throw new Error('Failed to load subscription plans');

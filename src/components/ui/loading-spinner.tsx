@@ -29,22 +29,20 @@ export function FullPageLoader({
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.16),transparent_38%),radial-gradient(circle_at_bottom,rgba(59,130,246,0.14),transparent_34%)]" />
 
       <div className="relative flex min-h-screen items-center justify-center px-4 py-8">
-        <div className="relative w-full max-w-md overflow-visible rounded-3xl border border-border/60 bg-background/90 px-10 pt-12 pb-10 text-center shadow-2xl">
-          <div className="absolute inset-x-0 top-0 h-1 rounded-t-3xl bg-linear-to-r from-cyan-500 via-emerald-500 to-blue-500" />
-
-          <div className="relative mx-auto mb-8 flex h-32 w-32 items-center justify-center">
-            <div className="absolute h-32 w-32 animate-ping rounded-full bg-primary/10 animation-duration-[2.4s]" />
-            <div className="absolute h-28 w-28 rounded-full border border-primary/15" />
-            <div className="absolute h-24 w-24 animate-spin rounded-full border-[3px] border-primary/15 border-t-primary animation-duration-[1.4s]" />
-            <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl gradient-primary shadow-lg shadow-primary/20">
-              <FileText className="h-7 w-7 text-white" />
+        <div className="relative flex flex-col items-center text-center">
+          <div className="relative mx-auto mb-10 flex h-40 w-40 items-center justify-center">
+            <div className="absolute h-40 w-40 animate-ping rounded-full bg-primary/12 animation-duration-[2.4s]" />
+            <div className="absolute h-34 w-34 rounded-full border border-primary/20" />
+            <div className="absolute h-32 w-32 animate-spin rounded-full border-[3px] border-primary/20 border-t-primary animation-duration-[1.4s]" />
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl gradient-primary shadow-xl shadow-primary/30">
+              <FileText className="h-9 w-9 text-white" />
             </div>
           </div>
 
-          <div className="mb-2 text-xs font-semibold uppercase tracking-[0.28em] text-primary/80">
+          <div className="mb-2 text-xs font-semibold uppercase tracking-[0.32em] text-primary/80">
             {APP_NAME}
           </div>
-          <h2 className="mb-2 text-xl font-semibold tracking-tight">{title}</h2>
+          <h2 className="mb-2 text-2xl font-semibold tracking-tight">{title}</h2>
           <p className="mx-auto max-w-sm text-sm leading-6 text-muted-foreground">
             {subtitle}
           </p>

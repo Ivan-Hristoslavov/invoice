@@ -1,14 +1,16 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import cuid from "cuid";
 
-export type AuditAction = 
-  | 'CREATE' 
-  | 'UPDATE' 
-  | 'DELETE' 
-  | 'CANCEL' 
-  | 'SEND' 
-  | 'EXPORT' 
-  | 'VIEW';
+export type AuditAction =
+  | 'CREATE'
+  | 'UPDATE'
+  | 'DELETE'
+  | 'CANCEL'
+  | 'SEND'
+  | 'EXPORT'
+  | 'VIEW'
+  | 'ISSUE'
+  | 'VOID';
 
 export type EntityType = 
   | 'INVOICE' 

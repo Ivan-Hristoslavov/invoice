@@ -40,7 +40,7 @@ export default function DocumentsTab({ invoiceId, documents: initialDocuments = 
     const toUpload: File[] = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      if (!allowedSet.has(file.type)) {
+      if (!allowedSet.has(file.type as "image/jpeg" | "image/png" | "image/gif" | "image/webp" | "application/pdf")) {
         toast.error(`Невалиден тип: ${file.name}. Позволени: PDF, JPG, PNG, WebP, GIF.`);
         continue;
       }

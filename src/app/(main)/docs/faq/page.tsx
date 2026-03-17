@@ -3,7 +3,13 @@ import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // FAQItem компонент
-function FAQItem({ question, answer, relatedQuestions = [] }) {
+interface FAQItemProps {
+  question: string;
+  answer: string;
+  relatedQuestions?: { id: string; text: string }[];
+}
+
+function FAQItem({ question, answer, relatedQuestions = [] }: FAQItemProps) {
   return (
     <div className="border-b py-4">
       <h3 className="text-lg font-semibold mb-2">{question}</h3>

@@ -77,7 +77,7 @@ export function FormField({
       )}
       
       {React.isValidElement(children) && (
-        React.cloneElement(children as React.ReactElement, {
+        React.cloneElement(children as React.ReactElement<any>, {
           id: fieldId,
           "aria-invalid": !!error,
           "aria-describedby": error ? `${fieldId}-error` : undefined,

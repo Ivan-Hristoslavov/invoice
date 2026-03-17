@@ -77,8 +77,8 @@ export const handlers = [
   
   // POST /api/invoices - Create invoice
   http.post('/api/invoices', async ({ request }) => {
-    const body = await request.json();
-    
+    const body = await request.json() as Record<string, any>;
+
     // Here you would normally validate the body
     const newInvoice = {
       id: '2',
@@ -99,7 +99,7 @@ export const handlers = [
         id: body.companyId,
         name: 'Моята Компания ООД',
       },
-      items: body.items.map((item, idx) => ({
+      items: body.items.map((item: any, idx: number) => ({
         id: `item-${idx}`,
         description: item.description,
         quantity: item.quantity,
@@ -118,7 +118,7 @@ export const handlers = [
   
   // Authentication mocks
   http.post('/api/auth/signin', async ({ request }) => {
-    const { email, password } = await request.json();
+    const { email, password } = await request.json() as { email: string; password: string };
     
     if (email === 'test@example.com' && password === 'Password123!') {
       return HttpResponse.json({
@@ -148,8 +148,8 @@ export const handlers = [
   
   // Payment mocks
   http.post('/api/payments', async ({ request }) => {
-    const body = await request.json();
-    
+    const body = await request.json() as Record<string, any>;
+
     const payment = {
       id: '1',
       invoiceId: body.invoiceId,

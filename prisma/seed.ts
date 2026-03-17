@@ -122,7 +122,7 @@ async function main() {
       invoiceNumber: 'INV-2023-0001',
       issueDate: new Date(),
       dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Due in 30 days
-      status: 'UNPAID',
+      status: 'ISSUED',
       subtotal: 1000.00,
       taxAmount: 200.00,
       total: 1200.00,
@@ -155,7 +155,7 @@ async function main() {
       invoiceNumber: 'INV-2023-0002',
       issueDate: new Date(),
       dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Due in 30 days
-      status: 'UNPAID',
+      status: 'ISSUED',
       subtotal: 1000.00,
       taxAmount: 200.00,
       total: 1200.00,

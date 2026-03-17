@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Chip } from "@heroui/react";
 
-export interface BadgeProps extends React.ComponentProps<typeof Chip> {
+export interface BadgeProps extends Omit<React.ComponentProps<typeof Chip>, "variant"> {
   variant?:
     | "default"
     | "secondary"
@@ -15,7 +15,7 @@ export interface BadgeProps extends React.ComponentProps<typeof Chip> {
     | "info";
 }
 
-const chipColorMap: Record<string, "primary" | "secondary" | "danger" | "success" | "warning"> = {
+const chipColorMap: Record<string, "default" | "accent" | "danger" | "success" | "warning"> = {
   // Всички стандартни бейджове (default/secondary/info/success/warning/outline)
   // се визуализират в зелено (success). Само destructive остава червен.
   default: "success",
@@ -28,15 +28,15 @@ const chipColorMap: Record<string, "primary" | "secondary" | "danger" | "success
   "outline-solid": "success",
 };
 
-const chipVariantMap: Record<string, "solid" | "soft" | "outline"> = {
-  default: "solid",
+const chipVariantMap: Record<string, "primary" | "secondary" | "soft" | "tertiary"> = {
+  default: "primary",
   secondary: "soft",
   destructive: "soft",
   success: "soft",
   warning: "soft",
   info: "soft",
-  outline: "outline",
-  "outline-solid": "outline",
+  outline: "secondary",
+  "outline-solid": "secondary",
 };
 
 function Badge({ variant = "default", className, children, ...props }: BadgeProps) {

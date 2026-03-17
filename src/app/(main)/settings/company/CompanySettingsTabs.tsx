@@ -8,9 +8,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { CompanyForm } from "./CompanyForm";
 import { CompanyLogoSection } from "./CompanyLogoSection";
-import { Building2, MapPin, Receipt, CreditCard, Image } from "lucide-react";
+import { Building2, MapPin, Receipt, CreditCard, Image, Lock } from "lucide-react";
+import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 
 interface CompanyData {
   id?: string;
@@ -44,6 +47,8 @@ interface CompanySettingsTabsProps {
 
 export function CompanySettingsTabs({ company }: CompanySettingsTabsProps) {
   const isNew = !company;
+  const { canUseFeature } = useSubscriptionLimit();
+  const canUseLogo = canUseFeature('customBranding');
 
   return (
     <Tabs defaultValue="info" className="w-full">
@@ -161,10 +166,25 @@ export function CompanySettingsTabs({ company }: CompanySettingsTabsProps) {
               </div>
             </CardHeader>
             <CardContent>
-              <CompanyLogoSection
-                currentLogoUrl={company?.logo}
-                companyId={company?.id || ""}
-              />
+              {canUseLogo ? (
+                <CompanyLogoSection
+                  currentLogoUrl={company?.logo ?? null}
+                  companyId={company?.id || ""}
+                />
+              ) : (
+                <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-amber-300 bg-amber-50/50 px-6 py-10 text-center dark:border-amber-700 dark:bg-amber-950/20">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/40">
+                    <Lock className="h-5 w-5 text-amber-500" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">Логото е Pro функция</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Налично в плановете Pro и Business</p>
+                  </div>
+                  <Button asChild size="sm" variant="outline" className="border-amber-300 dark:border-amber-700">
+                    <Link href="/settings/subscription">Надгради плана</Link>
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
