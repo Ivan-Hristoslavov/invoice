@@ -91,7 +91,7 @@ import { createPortal } from "react-dom";
 // Step indicator component
 function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { title: string; icon: React.ReactNode }[] }) {
   return (
-    <div className="overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="overflow-x-auto py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <div className="mx-auto flex min-w-max items-center justify-center gap-2 px-1">
       {steps.map((step, index) => (
         <div key={index} className="flex items-center gap-1.5 sm:gap-2">
@@ -914,16 +914,18 @@ function NewInvoiceContent() {
         throw new Error(errorMessage);
       }
       
+      const created = await response.json();
       // Refresh usage data after successful creation
       refreshUsage();
-      
+
+      const invoiceUrl = `/invoices/${created.id}`;
       toast.success("Фактурата е създадена успешно!", {
         action: {
           label: "Виж фактурата",
-          onClick: () => router.push("/invoices"),
+          onClick: () => router.push(invoiceUrl),
         },
       });
-      router.push("/invoices");
+      router.push(invoiceUrl);
     } catch (error: any) {
       console.error("Error creating invoice:", error);
       toast.error(error.message || "Грешка при създаване на фактура", {

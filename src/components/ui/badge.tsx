@@ -16,14 +16,16 @@ export interface BadgeProps extends React.ComponentProps<typeof Chip> {
 }
 
 const chipColorMap: Record<string, "primary" | "secondary" | "danger" | "success" | "warning"> = {
-  default: "primary",
-  secondary: "secondary",
+  // Всички стандартни бейджове (default/secondary/info/success/warning/outline)
+  // се визуализират в зелено (success). Само destructive остава червен.
+  default: "success",
+  secondary: "success",
   destructive: "danger",
   success: "success",
-  warning: "warning",
-  info: "secondary",
-  outline: "secondary",
-  "outline-solid": "secondary",
+  warning: "success",
+  info: "success",
+  outline: "success",
+  "outline-solid": "success",
 };
 
 const chipVariantMap: Record<string, "solid" | "soft" | "outline"> = {

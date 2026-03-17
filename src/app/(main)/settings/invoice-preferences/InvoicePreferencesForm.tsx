@@ -152,13 +152,8 @@ export function InvoicePreferencesForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        {/* Основни настройки */}
+        {/* Основни настройки – без вътрешно заглавие, по-изчистено под card header-a */}
         <div>
-          <h3 className="text-lg font-medium">Основни настройки</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Настройте основните параметри за вашите фактури
-          </p>
-          
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField
               control={form.control}
@@ -171,6 +166,7 @@ export function InvoicePreferencesForm() {
                       {...field}
                       value={field.value}
                       onChange={(e) => field.onChange(Number(e.target.value))}
+                      className="min-h-11 rounded-2xl text-sm"
                     />
                   </FormControl>
                   <FormDescription>
@@ -189,7 +185,7 @@ export function InvoicePreferencesForm() {
                   <FormLabel>Валута по подразбиране</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="min-h-11 rounded-2xl text-sm">
                         <SelectValue placeholder="Изберете валута" />
                       </SelectTrigger>
                     </FormControl>
@@ -225,7 +221,12 @@ export function InvoicePreferencesForm() {
                 <FormItem>
                   <FormLabel>Префикс на фактурите</FormLabel>
                   <FormControl>
-                    <Input {...field} value={field.value ?? ""} placeholder="Напр. INV-" />
+                  <Input
+                    {...field}
+                    value={field.value ?? ""}
+                    placeholder="Напр. INV-"
+                    className="min-h-11 rounded-2xl text-sm"
+                  />
                   </FormControl>
                   <FormDescription>
                     Незадължителен префикс преди номера на фактурата
@@ -271,6 +272,7 @@ export function InvoicePreferencesForm() {
                     value={field.value || ''}
                     onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
                     placeholder="Напр. 1 за 0000000001"
+                    className="min-h-11 rounded-2xl text-sm"
                   />
                 </FormControl>
                 <FormDescription>
@@ -303,6 +305,7 @@ export function InvoicePreferencesForm() {
                       {...field}
                       value={field.value ?? ""}
                       placeholder="Въведете стандартни общи условия"
+                    className="rounded-2xl text-sm"
                     />
                   </FormControl>
                 </FormItem>
@@ -320,6 +323,7 @@ export function InvoicePreferencesForm() {
                       {...field}
                       value={field.value ?? ""}
                       placeholder="Въведете стандартни бележки"
+                    className="rounded-2xl text-sm"
                     />
                   </FormControl>
                 </FormItem>
@@ -408,6 +412,7 @@ export function InvoicePreferencesForm() {
                       {...field}
                       value={field.value}
                       onChange={(e) => field.onChange(Number(e.target.value))}
+                    className="min-h-11 rounded-2xl text-sm"
                     />
                   </FormControl>
                   <FormDescription>
@@ -429,6 +434,7 @@ export function InvoicePreferencesForm() {
                       {...field}
                       value={field.value}
                       onChange={(e) => field.onChange(Number(e.target.value))}
+                    className="min-h-11 rounded-2xl text-sm"
                     />
                   </FormControl>
                   <FormDescription>
@@ -440,8 +446,8 @@ export function InvoicePreferencesForm() {
           </div>
         </div>
 
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isLoading}>
+        <div className="flex justify-center sm:justify-end">
+          <Button type="submit" disabled={isLoading} className="min-w-[180px] rounded-2xl">
             {isLoading ? "Запазване..." : "Запази настройките"}
           </Button>
         </div>

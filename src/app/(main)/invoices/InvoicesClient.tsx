@@ -791,13 +791,16 @@ export default function InvoicesClient({
                     <div key={invoice.id} className="bg-muted/25 rounded-xl px-3 py-3 sm:px-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex min-w-0 items-start gap-3">
-                          <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                          <div
+                            className={cn(
+                              "h-10 w-10 rounded-lg flex items-center justify-center",
                             normalizedStatus === "ISSUED"
-                              ? 'bg-emerald-500/10'
-                              : normalizedStatus === "DRAFT"
-                              ? 'bg-amber-500/10'
-                              : 'bg-red-500/10'
-                          }`}>
+                                ? "bg-emerald-500/10"
+                                : normalizedStatus === "DRAFT"
+                                  ? "bg-amber-500/10"
+                                  : "bg-red-500/10"
+                            )}
+                          >
                             <StatusIcon className={`h-5 w-5 ${
                               normalizedStatus === "ISSUED"
                                 ? 'text-emerald-600'
@@ -807,21 +810,36 @@ export default function InvoicesClient({
                             }`} />
                           </div>
                           <div className="min-w-0">
-                            <p className="truncate font-semibold text-sm">{invoice.invoiceNumber}</p>
-                            <p className="truncate text-xs text-muted-foreground">{invoice.client.name}</p>
+                            <p className="truncate font-semibold text-sm">
+                              {invoice.invoiceNumber}
+                            </p>
+                            <p className="truncate text-xs text-muted-foreground">
+                              {invoice.client.name}
+                            </p>
                             {invoice.createdById && createdByMap[invoice.createdById] && (
                               <p className="truncate text-xs text-muted-foreground">
                                 Създадена от: {createdByMap[invoice.createdById].name ?? "—"}
                               </p>
                             )}
-                            <p className="text-xs text-muted-foreground">
-                              {format(new Date(invoice.issueDate), "d MMM yyyy", { locale: bg })}
-                            </p>
+                            <div className="mt-0.5 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                              <p>
+                                {format(new Date(invoice.issueDate), "d MMM yyyy", {
+                                  locale: bg,
+                                })}
+                              </p>
+                              <p className="text-sm font-bold tabular-nums text-foreground">
+                                {formatPrice(Number(invoice.total))} €
+                              </p>
+                            </div>
                           </div>
                         </div>
-                        <div className="shrink-0 text-right">
-                          <p className="text-sm font-bold tabular-nums">{formatPrice(Number(invoice.total))} €</p>
-                          <span className={`mt-2 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${statusConfig.className}`}>
+                        <div className="shrink-0 text-right space-y-1">
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium",
+                              statusConfig.className
+                            )}
+                          >
                             <StatusIcon className="h-3 w-3" />
                             {statusConfig.label}
                           </span>
@@ -946,19 +964,19 @@ export default function InvoicesClient({
                   className="rounded-2xl border border-border/50 bg-transparent"
                 >
                   <TableHeader className="bg-muted/35">
-                    <TableHead isRowHeader className="px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    <TableHead isRowHeader className="px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground text-center">
                       Фактура
                     </TableHead>
-                    <TableHead className="px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    <TableHead className="px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground text-center">
                       Клиент
                     </TableHead>
-                    <TableHead className="px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    <TableHead className="px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground text-center">
                       Създадена от
                     </TableHead>
-                    <TableHead className="px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    <TableHead className="px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground text-center">
                       Дата
                     </TableHead>
-                    <TableHead className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    <TableHead className="px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground text-center">
                       Сума
                     </TableHead>
                     <TableHead className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">

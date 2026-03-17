@@ -11,7 +11,7 @@ import { AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CancellationSurvey } from './CancellationSurvey';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, formatPrice } from '@/lib/utils';
 import { SUBSCRIPTION_PLANS } from '@/lib/subscription-plans';
 
 const PLANS = {
@@ -260,15 +260,18 @@ export function SubscriptionPlans({ onSuccessRefetchDone }: SubscriptionPlansPro
 
       {/* Header + Toggle */}
       <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {/* Trial badge – по-компактен и не толкова висок */}
         <div className="flex w-full justify-center sm:justify-start">
-          <div className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+          <div className="flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 max-w-[240px]">
             <Sparkles className="h-4 w-4 shrink-0 text-emerald-500" />
-            <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">14 дни безплатен trial</span>
+            <span className="text-xs font-medium text-emerald-500 dark:text-emerald-300 leading-none">
+              14 дни безплатен trial
+            </span>
           </div>
         </div>
         
-        {/* Billing Toggle - Compact */}
-        <div className="grid w-full max-w-[200px] grid-cols-2 gap-0.5 rounded-full border bg-muted/50 p-0.5 sm:w-auto">
+        {/* Billing Toggle - Compact, центриран по-добре на мобилни */}
+        <div className="grid w-full max-w-xs grid-cols-2 gap-0.5 rounded-full border bg-muted/50 p-0.5 self-center sm:self-auto sm:w-auto sm:max-w-[220px]">
           <button
             onClick={() => setIsYearly(false)}
             className={cn(
@@ -375,13 +378,13 @@ export function SubscriptionPlans({ onSuccessRefetchDone }: SubscriptionPlansPro
                 <div className="mb-2.5">
                   <div className="flex items-baseline gap-1">
                     <span className="text-xl font-bold tracking-tight sm:text-2xl">
-                      {price === 0 ? '0' : price.toFixed(2)}
+                      {formatPrice(price)}
                     </span>
                     <span className="text-sm text-muted-foreground font-normal">€/мес</span>
                   </div>
                   {isYearly && plan.yearlyPrice > 0 && (
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {plan.yearlyPrice.toFixed(2)} € общо за 12 месеца
+                      {formatPrice(plan.yearlyPrice)} € общо за 12 месеца
                     </p>
                   )}
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5">

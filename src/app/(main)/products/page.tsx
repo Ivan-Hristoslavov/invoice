@@ -43,6 +43,7 @@ export default async function ProductsPage() {
     price: Number(p.price),
     unit: p.unit,
     taxRate: Number(p.taxRate),
+    isActive: p.isActive ?? true,
   }));
 
   // Get user's subscription plan

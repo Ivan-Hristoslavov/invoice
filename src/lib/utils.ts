@@ -26,26 +26,30 @@ export function formatPrice(value: number): string {
 }
 
 export function formatCurrency(amount: number, currency: string = "EUR"): string {
-  // Define currency symbols
   const currencySymbols: Record<string, string> = {
     EUR: "€",
+    BGN: "лв.",
+    USD: "$",
+    GBP: "£",
   };
 
-  // Get symbol or default to currency code
   const symbol = currencySymbols[currency] || currency;
-  
-  // Format the amount without trailing zeros
   const formattedAmount = formatPrice(amount);
-  
+
+  // BGN: amount + symbol (Bulgarian convention: 10.00 лв.)
+  if (currency === "BGN") return `${formattedAmount} ${symbol}`;
   return `${symbol}${formattedAmount}`;
 }
 
 export function getCurrencySymbol(currency: string = "EUR"): string {
   const currencySymbols: Record<string, string> = {
     EUR: "€",
+    BGN: "лв.",
+    USD: "$",
+    GBP: "£",
   };
-  
-  return currencySymbols[currency] || "€";
+
+  return currencySymbols[currency] || currency;
 }
 
 // Function to convert country names to ISO 3166-1 alpha-2 codes

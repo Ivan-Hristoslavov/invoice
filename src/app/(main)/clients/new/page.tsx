@@ -432,16 +432,17 @@ function NewClientPageContent() {
         throw new Error(errorPayload?.error || "Неуспешно създаване на клиент");
       }
 
+      const created = await response.json();
       toast.success("Клиентът е създаден", {
         description: "Вашият клиент беше създаден успешно.",
         action: {
-          label: "Нова фактура",
-          onClick: () => router.push("/invoices/new"),
+          label: "Виж клиента",
+          onClick: () => router.push(`/clients/${created.id}`),
         },
       });
 
       const returnTo = searchParams.get("returnTo");
-      router.push(returnTo || "/clients");
+      router.push(returnTo || `/clients/${created.id}`);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Възникна грешка при създаване на клиента. Моля, опитайте отново.";

@@ -205,7 +205,39 @@ export async function DELETE(
       );
     }
 
-    // Изтриване на продукта
+    // Проверка дали продуктът вече е използван във фактури
+    const { count: usageCount, error: usageError } = await supabase
+      .from("InvoiceItem")
+      .select("id", { count: "exact", head: true })
+      .eq("productId", productId);
+
+    if (usageError) {
+      throw usageError;
+    }
+
+    // Ако продуктът е използван поне веднъж, не го трием твърдо, а само го архивираме
+    if ((usageCount ?? 0) > 0) {
+      const { error: archiveError } = await supabase
+        .from("Product")
+        .update({
+          isActive: false,
+          updatedAt: new Date().toISOString(),
+        })
+        .eq("id", productId);
+
+      if (archiveError) {
+        throw archiveError;
+      }
+
+      return NextResponse.json({
+        success: true,
+        archived: true,
+        message:
+          "Продуктът е използван във фактури и беше архивиран (деактивиран), вместо да бъде изтрит.",
+      });
+    }
+
+    // Ако продуктът не е използван, може да бъде изтрит безопасно
     const { error: deleteError } = await supabase
       .from("Product")
       .delete()
@@ -215,7 +247,7 @@ export async function DELETE(
       throw deleteError;
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, archived: false });
   } catch (error) {
     console.error("Грешка при изтриване на продукт:", error);
     return NextResponse.json(
