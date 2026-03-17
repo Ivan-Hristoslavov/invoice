@@ -678,7 +678,7 @@ export default async function DashboardPage() {
                                 </span>
                               </>
                             )}
-                            <p>{timeAgo}</p>
+                            <p className="whitespace-nowrap">{timeAgo}</p>
                           </div>
                         </div>
                       </div>
