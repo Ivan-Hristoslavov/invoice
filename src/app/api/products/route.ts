@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
         unit: validated.unit,
         taxRate: validated.taxRate,
         userId: sessionUser.id,
+        isActive: true,
         updatedAt: new Date().toISOString(),
       })
       .select()
@@ -124,10 +125,20 @@ export async function GET(request: NextRequest) {
 
     const supabase = createAdminClient();
 
+    const includeInactive =
+      searchParams.get("includeInactive") === "true" ||
+      searchParams.get("includeInactive") === "1";
+
     let productQuery = supabase
       .from("Product")
       .select("*", { count: "exact" })
       .eq("userId", sessionUser.id);
+
+    // By default, return only active products. Admin UIs can pass
+    // ?includeInactive=true to see archived ones as well.
+    if (!includeInactive) {
+      productQuery = productQuery.eq("isActive", true);
+    }
 
     if (query) {
       productQuery = productQuery.or(

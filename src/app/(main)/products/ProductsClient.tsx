@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Plus, Search, Lock, LayoutGrid, List, Euro, Percent, Package } from "lucide-react";
+import { formatPrice } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ interface Product {
   price: number;
   unit: string;
   taxRate: number;
+  isActive?: boolean;
 }
 
 interface ProductsClientProps {
@@ -152,7 +154,7 @@ export default function ProductsClient({
         />
         <CardStatsMetric
           title="Средна цена"
-          value={avgPrice.toFixed(2)}
+          value={formatPrice(avgPrice)}
           valueSuffix="€"
           icon={Euro}
           gradient="from-blue-500 to-indigo-600"
@@ -228,9 +230,16 @@ export default function ProductsClient({
               <Card className="group h-full min-h-[112px] cursor-pointer border-0 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
                 <CardContent className="flex h-full flex-col items-center p-4 text-center sm:p-5">
                   {/* Name */}
-                  <h3 className="w-full truncate text-sm font-semibold transition-colors group-hover:text-primary sm:text-base">
-                    {product.name}
-                  </h3>
+                  <div className="flex w-full items-center justify-center gap-2">
+                    <h3 className="truncate text-sm font-semibold transition-colors group-hover:text-primary sm:text-base">
+                      {product.name}
+                    </h3>
+                    {product.isActive === false && (
+                      <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                        Архивиран
+                      </Badge>
+                    )}
+                  </div>
                   
                   {/* Description */}
                   {product.description && (
@@ -242,7 +251,7 @@ export default function ProductsClient({
                   {/* Price */}
                   <div className="mt-auto flex w-full items-center justify-center gap-1.5 border-t pt-3">
                     <span className="text-base font-bold sm:text-lg">
-                      {product.price.toFixed(2)} €
+                      {formatPrice(product.price)} €
                     </span>
                     <span className="text-xs text-muted-foreground">/ {product.unit}</span>
                     {product.taxRate > 0 && (
@@ -277,13 +286,20 @@ export default function ProductsClient({
                   onClick={() => window.location.href = `/products/${product.id}`}
                 >
                   <TableCell>
-                    <span className="font-medium">{product.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{product.name}</span>
+                      {product.isActive === false && (
+                        <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                          Архивиран
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground max-w-[200px] truncate">
                     {product.description || "-"}
                   </TableCell>
                   <TableCell className="text-right font-semibold">
-                    {product.price.toFixed(2)} €
+                    {formatPrice(product.price)} €
                   </TableCell>
                   <TableCell className="text-center text-muted-foreground">
                     {product.unit}

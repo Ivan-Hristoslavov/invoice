@@ -35,9 +35,22 @@ TabsList.displayName = "TabsList";
 // Map value → id for React Aria compatibility
 const TabsTrigger = React.forwardRef<
   HTMLDivElement,
-  Omit<React.ComponentProps<typeof HeroUITabs.Tab>, "id"> & { value?: string; id?: string }
+  Omit<React.ComponentProps<typeof HeroUITabs.Tab>, "id"> & {
+    value?: string;
+    id?: string;
+  }
 >(({ value, id, className, ...props }, ref) => (
-  <HeroUITabs.Tab ref={ref as any} id={id ?? value ?? ""} className={className} {...props} />
+  <HeroUITabs.Tab
+    ref={ref as any}
+    id={id ?? value ?? ""}
+    // По подразбиране всички табове са с бял текст,
+    // освен ако изрично не бъде override-нато.
+    className={cn(
+      "data-[selected=false]:text-slate-100 hover:text-slate-100",
+      className
+    )}
+    {...props}
+  />
 ));
 TabsTrigger.displayName = "TabsTrigger";
 

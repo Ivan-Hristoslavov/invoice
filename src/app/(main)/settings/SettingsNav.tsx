@@ -82,17 +82,16 @@ export function SettingsNav() {
         >
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = selectedKey === item.id;
             return (
               <TabsTrigger
                 key={item.id}
                 id={item.id}
                 value={item.id}
-                disabled={isPending}
+                isDisabled={isPending}
                 className={cn(
                   "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   "data-[selected=true]:bg-primary data-[selected=true]:text-primary-foreground",
-                  "data-[selected=false]:text-foreground/80 hover:text-foreground",
+                  "data-[selected=false]:text-slate-100 text-slate-100",
                   "disabled:opacity-70 disabled:pointer-events-none"
                 )}
               >

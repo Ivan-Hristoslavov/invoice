@@ -22,7 +22,6 @@ import {
   FileText,
   XCircle,
   Mail,
-  MoreVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,12 +42,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { normalizeInvoiceStatus } from "@/lib/invoice-status";
 // Payment link functionality removed - invoices are for issuance only
 
@@ -536,18 +529,18 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
           <Button
             variant="outline"
             size="sm"
-            className="hidden h-8 rounded-lg text-xs sm:inline-flex sm:flex-none"
+            className="h-8 rounded-lg text-xs"
             onClick={handleDuplicateInvoice}
             disabled={isDuplicating}
           >
             <Copy className="w-3.5 h-3.5 mr-1" />
             {isDuplicating ? "..." : "Дублирай"}
           </Button>
-          <Button variant="outline" size="sm" className="hidden h-8 rounded-lg text-xs sm:inline-flex sm:flex-none" onClick={handlePrintInvoice}>
+          <Button variant="outline" size="sm" className="h-8 rounded-lg text-xs" onClick={handlePrintInvoice}>
             <Printer className="w-3.5 h-3.5 mr-1" />
             Принт
           </Button>
-          <Button variant="outline" size="sm" className="hidden h-8 rounded-lg text-xs sm:inline-flex sm:flex-none" onClick={handleExportPdf} title="Изтегли оригинал">
+          <Button variant="outline" size="sm" className="h-8 rounded-lg text-xs" onClick={handleExportPdf} title="Изтегли оригинал">
             <Download className="w-3.5 h-3.5 mr-1" />
             PDF
           </Button>
@@ -556,39 +549,11 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
             size="sm"
             onClick={() => exportInvoiceAsPdf(invoice.id, true)}
             title="Изтегли копие"
-            className="hidden text-xs text-muted-foreground sm:inline-flex sm:h-8 sm:flex-none"
+            className="h-8 rounded-lg text-xs text-muted-foreground"
           >
             <Copy className="w-3.5 h-3.5 mr-1" />
             Копие
           </Button>
-            </div>
-            <div className="sm:hidden">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-10 w-full rounded-xl">
-                    <MoreVertical className="mr-2 h-4 w-4" />
-                    Още действия
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={handleDuplicateInvoice} disabled={isDuplicating}>
-                    <Copy className="mr-2 h-4 w-4" />
-                    Дублирай
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handlePrintInvoice}>
-                    <Printer className="mr-2 h-4 w-4" />
-                    Принт
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleExportPdf}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Изтегли PDF
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => exportInvoiceAsPdf(invoice.id, true)}>
-                    <Copy className="mr-2 h-4 w-4" />
-                    Изтегли копие
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
             </div>
           </div>
         </div>

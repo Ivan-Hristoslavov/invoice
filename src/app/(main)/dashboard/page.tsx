@@ -55,7 +55,7 @@ interface InvoiceWithClient {
 }
 
 const actionLabels: Record<string, string> = {
-  CREATE: "Създаде",
+  CREATE: "Нова",
   UPDATE: "Обнови",
   CANCEL: "Отмени",
   SEND: "Изпрати",
@@ -93,6 +93,10 @@ export default async function DashboardPage() {
     redirect("/signin");
   }
   
+  const sessionUserDisplayName =
+    (sessionUser as any).name ??
+    (sessionUser.email ? sessionUser.email.split("@")[0] : "—");
+
   const supabase = createAdminClient();
   
   // Get recent invoices
@@ -458,18 +462,8 @@ export default async function DashboardPage() {
                   <Link
                     key={invoice.id}
                     href={`/invoices/${invoice.id}`}
-                    className="group relative flex items-center gap-3 rounded-xl border border-border/50 bg-muted/20 p-3 transition-all duration-200 hover:bg-muted/50 sm:gap-4"
+                    className="group flex items-center gap-3 rounded-xl border border-border/50 bg-muted/20 p-3 transition-all duration-200 hover:bg-muted/50 sm:gap-4"
                   >
-                    {/* Status badge: top right */}
-                    <span className={`absolute top-2 right-2 rounded-full px-2 py-0.5 text-[10px] font-medium sm:text-xs ${
-                      invoice.status === 'ISSUED'
-                        ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
-                        : invoice.status === 'DRAFT'
-                        ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
-                        : 'bg-red-500/10 text-red-600 border border-red-500/20'
-                    }`}>
-                      {invoice.status === 'ISSUED' ? 'Издадена' : invoice.status === 'DRAFT' ? 'Чернова' : 'Отказана'}
-                    </span>
                     {/* Icon: left middle */}
                     <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-background ${
                       invoice.status === 'ISSUED'
@@ -486,14 +480,31 @@ export default async function DashboardPage() {
                         <XCircle className="h-4 w-4" />
                       )}
                     </div>
-                    <div className="min-w-0 flex-1 pr-14">
+                    <div className="min-w-0 flex-1">
                       <p className="font-semibold text-sm truncate">{invoice.invoiceNumber}</p>
                       <p className="text-[11px] text-muted-foreground truncate sm:text-xs">{invoice.client.name}</p>
                     </div>
-                    <div className="min-w-0 text-right">
-                      <p className="font-bold text-sm">{invoice.total.toFixed(2)} €</p>
-                      <p className="text-[11px] text-muted-foreground sm:text-xs">
-                        {format(invoice.issueDate, 'd MMM yyyy', { locale: bg })}
+                    <div className="min-w-0 text-right space-y-1">
+                      <p
+                        className={`inline-flex items-center justify-end rounded-full px-2 py-0.5 text-[10px] font-medium sm:text-xs ${
+                          invoice.status === "ISSUED"
+                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                            : invoice.status === "DRAFT"
+                              ? "bg-amber-500/10 text-amber-400 border border-amber-500/30"
+                              : "bg-red-500/10 text-red-400 border border-red-500/30"
+                        }`}
+                      >
+                        {invoice.status === "ISSUED"
+                          ? "Издадена"
+                          : invoice.status === "DRAFT"
+                            ? "Чернова"
+                            : "Отказана"}
+                      </p>
+                      <p className="font-bold text-sm leading-tight">
+                        {invoice.total.toFixed(2)} €
+                      </p>
+                      <p className="text-[11px] text-muted-foreground sm:text-xs leading-tight">
+                        {format(invoice.issueDate, "d MMM yyyy", { locale: bg })}
                       </p>
                     </div>
                     <Eye className="hidden h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 sm:block" />
@@ -606,7 +617,10 @@ export default async function DashboardPage() {
                           : null;
 
                     return (
-                      <div key={log.id} className="flex items-start gap-3 rounded-xl border border-border/50 bg-muted/20 p-3">
+                      <div
+                        key={log.id}
+                        className="flex items-center gap-3 rounded-xl border border-border/50 bg-muted/20 p-3"
+                      >
                         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-background border border-border/60">
                           {log.action === "CREATE" && <Plus className="h-4 w-4 text-emerald-600" />}
                           {log.action === "UPDATE" && <FileText className="h-4 w-4 text-blue-600" />}
@@ -618,37 +632,54 @@ export default async function DashboardPage() {
                             <Activity className="h-4 w-4 text-muted-foreground" />
                           )}
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                            <div className="min-w-0">
-                              <p className="text-sm leading-5">
-                                <span className="font-medium">{actionLabel}</span>{" "}
-                                <span className="text-muted-foreground">{entityLabel}</span>
-                              </p>
-                              {contextText ? (
-                                <p className="mt-1 truncate text-xs text-muted-foreground">
-                                  {contextText}
-                                </p>
-                              ) : null}
-                            </div>
-                            <p className="shrink-0 text-[11px] text-muted-foreground">
-                              {timeAgo}
-                            </p>
-                          </div>
-                          {relatedInvoice ? (
-                            <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
-                              <span className={`rounded-full px-2 py-0.5 font-medium ${
-                                relatedInvoice.status === "ISSUED"
-                                  ? "bg-emerald-500/10 text-emerald-600"
-                                  : relatedInvoice.status === "DRAFT"
-                                    ? "bg-amber-500/10 text-amber-600"
-                                    : "bg-red-500/10 text-red-600"
-                              }`}>
-                                {relatedInvoice.status === "ISSUED" ? "Издадена" : relatedInvoice.status === "DRAFT" ? "Чернова" : "Отказана"}
+                        <div className="min-w-0 flex-1 flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm leading-5">
+                              <span className="font-medium">{actionLabel}</span>{" "}
+                              <span className="text-muted-foreground">
+                                {entityLabel}
                               </span>
-                              <span>{Number(relatedInvoice.total).toFixed(2)} €</span>
-                            </div>
-                          ) : null}
+                            </p>
+                            {relatedInvoice ? (
+                              <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                                <p className="truncate">
+                                  №: {relatedInvoice.invoiceNumber}
+                                </p>
+                                <p className="truncate">
+                                  От: {sessionUserDisplayName}
+                                </p>
+                              </div>
+                            ) : contextText ? (
+                              <p className="mt-1 truncate text-xs text-muted-foreground">
+                                {contextText}
+                              </p>
+                            ) : null}
+                          </div>
+                          <div className="flex flex-col items-end gap-1 text-[11px] text-muted-foreground">
+                            {relatedInvoice && (
+                              <>
+                                <span
+                                  className={`rounded-full px-2 py-0.5 font-medium ${
+                                    relatedInvoice.status === "ISSUED"
+                                      ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                                      : relatedInvoice.status === "DRAFT"
+                                        ? "bg-amber-500/10 text-amber-400 border border-amber-500/30"
+                                        : "bg-red-500/10 text-red-400 border border-red-500/30"
+                                  }`}
+                                >
+                                  {relatedInvoice.status === "ISSUED"
+                                    ? "Издадена"
+                                    : relatedInvoice.status === "DRAFT"
+                                      ? "Чернова"
+                                      : "Отказана"}
+                                </span>
+                                <span className="font-semibold text-foreground whitespace-nowrap">
+                                  {Number(relatedInvoice.total).toFixed(2)} €
+                                </span>
+                              </>
+                            )}
+                            <p>{timeAgo}</p>
+                          </div>
                         </div>
                       </div>
                     );

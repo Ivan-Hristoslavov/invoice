@@ -3,12 +3,12 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { APP_NAME } from "@/config/constants";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
 import { InvoicePreferencesForm } from "./InvoicePreferencesForm";
 
@@ -25,14 +25,17 @@ export default async function InvoicePreferencesPage() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Настройки на фактури</CardTitle>
+    <Card className="glass-card mx-auto max-w-2xl rounded-[28px] border border-border/40 shadow-sm">
+      <CardHeader className="pb-4 sm:pb-5">
+        <CardTitle className="text-lg sm:text-xl">
+          Настройки на фактури
+        </CardTitle>
         <CardDescription>
-          Настройте предпочитанията си за фактури, включително ДДС ставка по подразбиране
+          Настройте предпочитанията си за фактури, включително ДДС ставка по
+          подразбиране
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-0">
         <InvoicePreferencesForm />
       </CardContent>
     </Card>
