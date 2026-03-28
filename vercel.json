@@ -3,15 +3,6 @@
   "installCommand": "npm install",
   "framework": "nextjs",
   "regions": ["iad1"],
-  "env": {
-    "NEXTAUTH_URL": "https://${VERCEL_URL}",
-    "NEXTAUTH_SECRET": "${NEXTAUTH_SECRET}"
-  },
-  "build": {
-    "env": {
-      "NEXT_PUBLIC_APP_URL": "https://${VERCEL_URL}"
-    }
-  },
   "headers": [
     {
       "source": "/(.*)",

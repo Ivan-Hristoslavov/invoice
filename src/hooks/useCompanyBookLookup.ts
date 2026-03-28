@@ -26,16 +26,30 @@ export function useCompanyBookLookup({ onSuccess, onError }: UseCompanyBookLooku
 
     try {
       const res = await fetch(`/api/companybook/${cleaned}`);
-      const data = await res.json();
-
-      if (!res.ok) {
-        const msg = data.error || "Грешка при търсене";
+      const raw = await res.text();
+      let payload: unknown;
+      try {
+        payload = raw ? JSON.parse(raw) : null;
+      } catch {
+        const msg = "Неочакван отговор от сървъра";
         setError(msg);
         onError?.(msg);
         return null;
       }
 
-      const fields = mapCompanyBookToFormFields(data as CompanyBookResponse);
+      if (!res.ok) {
+        const errObj =
+          payload && typeof payload === "object" && payload !== null && "error" in payload
+            ? (payload as { error?: unknown }).error
+            : undefined;
+        const msg =
+          typeof errObj === "string" && errObj.trim() ? errObj : "Грешка при търсене";
+        setError(msg);
+        onError?.(msg);
+        return null;
+      }
+
+      const fields = mapCompanyBookToFormFields(payload as CompanyBookResponse);
       onSuccess?.(fields);
       return fields;
     } catch {

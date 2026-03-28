@@ -4,11 +4,26 @@ import { authOptions } from "@/lib/auth";
 import { resolveSessionUser } from "@/lib/session-user";
 import { checkSubscriptionLimits } from "@/middleware/subscription";
 
-const API_BASE = process.env.COMPANYBOOK_API_BASE || process.env.COMPANY_BOOK_API_BASE_URL || "https://api.companybook.bg/api/companies";
-const API_KEY = process.env.COMPANYBOOK_API_KEY || process.env.COMPANY_BOOK_API_KEY || "";
+const DEFAULT_API_BASE = "https://api.companybook.bg/api/companies";
+const FETCH_TIMEOUT_MS = 20_000;
+
+function getCompanyBookCredentials(): { apiBase: string; apiKey: string } {
+  const apiKey = (
+    process.env.COMPANYBOOK_API_KEY ||
+    process.env.COMPANY_BOOK_API_KEY ||
+    ""
+  ).trim();
+  const rawBase = (
+    process.env.COMPANYBOOK_API_BASE ||
+    process.env.COMPANY_BOOK_API_BASE_URL ||
+    DEFAULT_API_BASE
+  ).trim();
+  const apiBase = rawBase || DEFAULT_API_BASE;
+  return { apiBase, apiKey };
+}
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ uic: string }> }
 ) {
   const session = await getServerSession(authOptions);
@@ -42,25 +57,29 @@ export async function GET(
     );
   }
 
-  if (!API_KEY) {
+  const { apiBase, apiKey } = getCompanyBookCredentials();
+
+  if (!apiKey) {
     return NextResponse.json(
       {
         error: "Автоматичното попълване по ЕИК е временно недостъпно. Можете да продължите с ръчно въвеждане.",
         featureUnavailable: true,
+        configMissing: true,
       },
       { status: 503 }
     );
   }
 
   try {
-    const url = `${API_BASE.replace(/\/companies\/?$/, "")}/companies/${uic}?with_data=true`;
+    const url = `${apiBase.replace(/\/companies\/?$/, "")}/companies/${uic}?with_data=true`;
 
     const response = await fetch(url, {
       headers: {
-        Authorization: `Bearer ${API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
         Accept: "application/json",
       },
-      next: { revalidate: 3600 },
+      cache: "no-store",
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
 
     if (!response.ok) {
@@ -79,13 +98,29 @@ export async function GET(
       );
     }
 
-    const data = await response.json();
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      return NextResponse.json(
+        {
+          error: "Невалиден отговор от регистъра. Можете да продължите с ръчно въвеждане.",
+          featureUnavailable: true,
+        },
+        { status: 503 }
+      );
+    }
     return NextResponse.json(data);
   } catch (error) {
+    const isAbort =
+      error instanceof Error &&
+      (error.name === "AbortError" || error.name === "TimeoutError");
     console.error("CompanyBook API error:", error);
     return NextResponse.json(
       {
-        error: "Неуспешна връзка с CompanyBook API. Можете да продължите с ръчно въвеждане.",
+        error: isAbort
+          ? "Превишено време за отговор от регистъра. Опитайте отново или въведете данните ръчно."
+          : "Неуспешна връзка с CompanyBook API. Можете да продължите с ръчно въвеждане.",
         featureUnavailable: true,
       },
       { status: 503 }

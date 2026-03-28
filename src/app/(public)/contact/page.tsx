@@ -29,7 +29,7 @@ export default function ContactPage() {
             Свържете се с нас
           </h1>
           <p className="text-xl text-muted-foreground">
-            Имате въпрос? Ще се радваме да чуем от вас
+            Пишете ни — отговаряме в посочените работни часове
           </p>
         </div>
 

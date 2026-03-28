@@ -1,35 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
-
-// Helper function to format price without trailing zeros
-// Helper function to format price - removes unnecessary trailing zeros
-const formatPrice = (value: number): string => {
-  // Round to 2 decimal places to avoid floating point issues
-  const rounded = Math.round(value * 100) / 100;
-  
-  // If it's a whole number, show without decimals
-  if (Number.isInteger(rounded)) {
-    return rounded.toString();
-  }
-  
-  // Check if it has only one decimal place (e.g., 1.2, 5.5)
-  const oneDecimal = Math.round(value * 10) / 10;
-  if (oneDecimal === rounded) {
-    return oneDecimal.toString();
-  }
-  
-  // Otherwise show 2 decimal places
-  return rounded.toFixed(2);
-};
-
-function formatLongDate(value: string): string {
-  return new Date(value).toLocaleDateString("bg-BG", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { 
@@ -87,46 +58,8 @@ import { FormDatePicker } from "@/components/ui/date-picker";
 import { InvoiceWorkspaceSetup } from "@/components/invoice/InvoiceWorkspaceSetup";
 import { FullPageLoader, LoadingSpinner } from "@/components/ui/loading-spinner";
 import { createPortal } from "react-dom";
-
-// Step indicator component
-function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { title: string; icon: React.ReactNode }[] }) {
-  return (
-    <div className="overflow-x-auto py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      <div className="mx-auto flex min-w-max items-center justify-center gap-2 px-1">
-      {steps.map((step, index) => (
-        <div key={index} className="flex items-center gap-1.5 sm:gap-2">
-          <div className="flex flex-col items-center gap-2">
-            <div className={`
-              relative flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all duration-300 sm:h-10 sm:w-10
-              ${index < currentStep
-                ? 'bg-success border-success text-success-foreground'
-                : index === currentStep
-                  ? 'bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/25'
-                  : 'bg-muted border-muted-foreground/20 text-muted-foreground'}
-            `}>
-              <div className="absolute inset-0 flex items-center justify-center">
-                {index < currentStep ? (
-                  <Check className="h-4 w-4" />
-                ) : (
-                  <div className="flex items-center justify-center h-4 w-4">
-                    {step.icon}
-                  </div>
-                )}
-              </div>
-            </div>
-            <p className={`hidden whitespace-nowrap text-center text-[11px] font-semibold sm:block ${index === currentStep ? 'text-foreground' : 'text-muted-foreground'}`}>
-              {step.title}
-            </p>
-          </div>
-          {index < steps.length - 1 && (
-            <div className={`h-0.5 w-6 transition-all duration-300 sm:w-12 md:w-16 ${index < currentStep ? 'bg-success' : 'bg-muted-foreground/20'}`} />
-          )}
-        </div>
-      ))}
-      </div>
-    </div>
-  );
-}
+import { formatInvoicePrice, formatInvoiceLongDate } from "./invoice-new-format";
+import { InvoiceStepIndicator } from "./InvoiceStepIndicator";
 
 // Product card component
 function ProductCard({ 
@@ -161,7 +94,7 @@ function ProductCard({
 
         <div className="shrink-0 text-right">
           <p className="text-base font-bold tabular-nums">
-            {formatPrice(Number(product.price))}
+            {formatInvoicePrice(Number(product.price))}
             <span className="text-xs font-normal text-muted-foreground ml-0.5">{currency}</span>
           </p>
           {product.taxRate ? (
@@ -295,16 +228,16 @@ function InvoiceItemCard({
           {item.description?.trim() || <span className="italic text-muted-foreground">Без описание</span>}
         </p>
         <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-          {item.quantity} бр. × {formatPrice(item.unitPrice)} {currency} · ДДС {item.taxRate}%
+          {item.quantity} бр. × {formatInvoicePrice(item.unitPrice)} {currency} · ДДС {item.taxRate}%
         </p>
       </div>
       {/* Total */}
       <div className="shrink-0 text-right">
         <p className="text-sm font-bold text-primary tabular-nums">
-          {formatPrice(itemTotalWithTax)} {currency}
+          {formatInvoicePrice(itemTotalWithTax)} {currency}
         </p>
         <p className="text-[10px] text-muted-foreground tabular-nums">
-          + {formatPrice(itemTax)} ДДС
+          + {formatInvoicePrice(itemTax)} ДДС
         </p>
       </div>
       {/* Actions */}
@@ -424,19 +357,19 @@ function InvoiceItemEditorDialog({
             <div className="rounded-2xl border border-border/60 bg-background/70 p-3 text-center">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Подсума</p>
               <p className="mt-1 text-sm font-bold tabular-nums sm:mt-1.5 sm:text-base">
-                {formatPrice(itemTotal)} {currency}
+                {formatInvoicePrice(itemTotal)} {currency}
               </p>
             </div>
             <div className="rounded-2xl border border-border/60 bg-background/70 p-3 text-center">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">ДДС</p>
               <p className="mt-1 text-sm font-bold tabular-nums sm:mt-1.5 sm:text-base">
-                {formatPrice(itemTax)} {currency}
+                {formatInvoicePrice(itemTax)} {currency}
               </p>
             </div>
             <div className="rounded-2xl border border-primary/20 bg-primary/8 p-3 text-center">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Общо</p>
               <p className="mt-1 text-sm font-extrabold text-primary tabular-nums sm:mt-1.5 sm:text-lg">
-                {formatPrice(itemTotalWithTax)} {currency}
+                {formatInvoicePrice(itemTotalWithTax)} {currency}
               </p>
             </div>
           </div>
@@ -795,7 +728,7 @@ function NewInvoiceContent() {
     };
     setItems(prev => [...prev, newItem]);
     toast.success(`"${product.name}" добавен`, {
-      description: `${formatPrice(Number(product.price))} ${invoiceData.currency}`
+      description: `${formatInvoicePrice(Number(product.price))} ${invoiceData.currency}`
     });
   }, [items, invoiceData.currency]);
 
@@ -1361,13 +1294,13 @@ description: error.message?.includes("план")
                   <div className="rounded-xl border border-border bg-muted/20 p-3">
                     <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Подсума</p>
                     <p className="mt-1 text-sm font-semibold tabular-nums">
-                      {formatPrice(totals.subtotal)} {invoiceData.currency}
+                      {formatInvoicePrice(totals.subtotal)} {invoiceData.currency}
                     </p>
                   </div>
                   <div className="rounded-xl border border-primary/25 bg-primary/5 p-3">
                     <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Общо</p>
                     <p className="mt-1 text-sm font-bold text-primary tabular-nums">
-                      {formatPrice(totals.total)} {invoiceData.currency}
+                      {formatInvoicePrice(totals.total)} {invoiceData.currency}
                     </p>
                   </div>
                 </div>
@@ -1512,15 +1445,15 @@ description: error.message?.includes("план")
                             <div className="min-w-0 flex-1">
                               <p className="truncate text-sm font-semibold">{item.description}</p>
                               <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-                                {item.quantity} бр. × {formatPrice(item.unitPrice)} {invoiceData.currency} · ДДС {item.taxRate}%
+                                {item.quantity} бр. × {formatInvoicePrice(item.unitPrice)} {invoiceData.currency} · ДДС {item.taxRate}%
                               </p>
                             </div>
                             <div className="shrink-0 text-right">
                               <p className="text-sm font-bold text-primary tabular-nums">
-                                {formatPrice(itemTotalWithVat)} {invoiceData.currency}
+                                {formatInvoicePrice(itemTotalWithVat)} {invoiceData.currency}
                               </p>
                               <p className="text-[10px] text-muted-foreground tabular-nums">
-                                без ДДС {formatPrice(itemTotal)} {invoiceData.currency}
+                                без ДДС {formatInvoicePrice(itemTotal)} {invoiceData.currency}
                               </p>
                             </div>
                           </div>
@@ -1547,11 +1480,11 @@ description: error.message?.includes("план")
                     <div className="divide-y divide-border/50">
                       <div className="flex items-start justify-between gap-4 px-4 py-3 text-sm">
                         <span className="text-muted-foreground">Дата на издаване</span>
-                        <span className="text-right font-semibold">{formatLongDate(invoiceData.issueDate)}</span>
+                        <span className="text-right font-semibold">{formatInvoiceLongDate(invoiceData.issueDate)}</span>
                       </div>
                       <div className="flex items-start justify-between gap-4 px-4 py-3 text-sm">
                         <span className="text-muted-foreground">Краен срок</span>
-                        <span className="text-right font-semibold">{formatLongDate(invoiceData.dueDate)}</span>
+                        <span className="text-right font-semibold">{formatInvoiceLongDate(invoiceData.dueDate)}</span>
                       </div>
                       <div className="flex items-start justify-between gap-4 px-4 py-3 text-sm">
                         <span className="text-muted-foreground">Начин на плащане</span>
@@ -1563,7 +1496,7 @@ description: error.message?.includes("план")
                       </div>
                       <div className="flex items-start justify-between gap-4 px-4 py-3 text-sm">
                         <span className="text-muted-foreground">Дата на доставка</span>
-                        <span className="text-right font-semibold">{formatLongDate(invoiceData.supplyDate)}</span>
+                        <span className="text-right font-semibold">{formatInvoiceLongDate(invoiceData.supplyDate)}</span>
                       </div>
                       <div className="flex items-start justify-between gap-4 px-4 py-3 text-sm">
                         <span className="text-muted-foreground">Тип</span>
@@ -1577,13 +1510,13 @@ description: error.message?.includes("план")
                       <div className="flex items-center justify-between gap-3 text-sm">
                         <span className="text-muted-foreground">Подсума</span>
                         <span className="font-semibold tabular-nums">
-                          {formatPrice(totals.subtotal)} {invoiceData.currency}
+                          {formatInvoicePrice(totals.subtotal)} {invoiceData.currency}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-3 text-sm">
                         <span className="text-muted-foreground">ДДС</span>
                         <span className="font-semibold tabular-nums">
-                          {formatPrice(totals.tax)} {invoiceData.currency}
+                          {formatInvoicePrice(totals.tax)} {invoiceData.currency}
                         </span>
                       </div>
                     </div>
@@ -1593,7 +1526,7 @@ description: error.message?.includes("план")
                         Общо
                       </span>
                       <span className="text-xl font-bold text-primary tabular-nums sm:text-2xl">
-                        {getCurrencySymbol(invoiceData.currency)} {formatPrice(totals.total)}
+                        {getCurrencySymbol(invoiceData.currency)} {formatInvoicePrice(totals.total)}
                       </span>
                     </div>
                   </div>
@@ -1718,13 +1651,13 @@ description: error.message?.includes("план")
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/8 px-3 py-1.5 text-xs font-semibold text-primary">
                   <span>Общо</span>
-                  <span className="tabular-nums">{getCurrencySymbol(invoiceData.currency)} {formatPrice(totals.total)}</span>
+                  <span className="tabular-nums">{getCurrencySymbol(invoiceData.currency)} {formatInvoicePrice(totals.total)}</span>
                 </div>
               </div>
             </div>
           </CardHeader>
           <div className="sticky top-[calc(env(safe-area-inset-top)+3.25rem)] z-30 border-b border-border/40 bg-card/95 px-3 py-2.5 backdrop-blur supports-backdrop-filter:bg-card/85 sm:top-[calc(env(safe-area-inset-top)+4rem)] sm:px-5 sm:py-3">
-            <StepIndicator currentStep={currentStep} steps={steps} />
+            <InvoiceStepIndicator currentStep={currentStep} steps={steps} />
           </div>
           <CardContent className="px-3 pb-3 pt-3 sm:px-5 sm:pb-5 sm:pt-4">
             <div className="space-y-3 sm:space-y-4">
@@ -1770,7 +1703,7 @@ description: error.message?.includes("план")
               <div className="hidden text-sm text-muted-foreground sm:block">
                 <span className="font-semibold text-foreground">{currentStepDetails.title}</span>
                 <span className="mx-2">•</span>
-                <span className="tabular-nums">{getCurrencySymbol(invoiceData.currency)} {formatPrice(totals.total)}</span>
+                <span className="tabular-nums">{getCurrencySymbol(invoiceData.currency)} {formatInvoicePrice(totals.total)}</span>
                 {clientMethodLabel ? (
                   <>
                     <span className="mx-2">•</span>

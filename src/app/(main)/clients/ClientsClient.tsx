@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Building, Plus, Search, Users, Lock, LayoutGrid, List, Pencil } from "lucide-react";
+import { AppSectionKicker } from "@/components/app/AppSectionKicker";
 import { Card, CardContent } from "@/components/ui/card";
 import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
 import { Button } from "@/components/ui/button";
@@ -80,7 +81,7 @@ export default function ClientsClient({
   );
 
   return (
-    <div className="space-y-6">
+    <div className="app-page-shell">
       {/* Soft Upgrade Prompts */}
       {isApproachingLimit && (
         <LimitBanner
@@ -101,47 +102,50 @@ export default function ClientsClient({
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold tracking-tight">Клиенти</h1>
+      <div className="page-header">
+        <div className="min-w-0 flex-1 space-y-2">
+          <AppSectionKicker icon={Users}>Контакти</AppSectionKicker>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="page-title">Клиенти</h1>
             {clientLimit !== -1 && (
-              <UsageCounter 
-                used={clients.length} 
+              <UsageCounter
+                used={clients.length}
                 limit={clientLimit}
                 label=""
               />
             )}
           </div>
-          <p className="text-muted-foreground mt-1">
-            Управлявайте вашите клиенти и контакти
+          <p className="card-description">
+            Управлявайте клиентите и контактите си на едно място
           </p>
         </div>
-        {canCreateClient ? (
-          <Link href="/clients/new">
-            <Button
-              size="3"
-              variant="solid"
-              color="green"
-              className="shadow-lg gap-2 whitespace-nowrap"
-            >
-              <Plus className="h-5 w-5" />
-              Нов клиент
-            </Button>
-          </Link>
-        ) : (
-          <Link href="/settings/subscription">
-            <Button
-              size="3"
-              variant="soft"
-              color="gray"
-              className="shadow-lg gap-2 whitespace-nowrap"
-            >
-              <Lock className="h-4 w-4" />
-              Надграждане за повече клиенти
-            </Button>
-          </Link>
-        )}
+        <div className="page-header-actions w-full sm:w-auto">
+          {canCreateClient ? (
+            <Link href="/clients/new" className="block w-full sm:inline-block sm:w-auto">
+              <Button
+                size="3"
+                variant="solid"
+                color="green"
+                className="w-full gap-2 whitespace-nowrap shadow-lg sm:w-auto"
+              >
+                <Plus className="h-5 w-5" />
+                Нов клиент
+              </Button>
+            </Link>
+          ) : (
+            <Link href="/settings/subscription" className="block w-full sm:inline-block sm:w-auto">
+              <Button
+                size="3"
+                variant="soft"
+                color="gray"
+                className="w-full gap-2 whitespace-nowrap shadow-lg sm:w-auto"
+              >
+                <Lock className="h-4 w-4" />
+                Надграждане за повече клиенти
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* Stats */}

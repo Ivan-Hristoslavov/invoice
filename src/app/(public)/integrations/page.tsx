@@ -66,7 +66,7 @@ export default function IntegrationsPage() {
             Интеграции
           </h1>
           <p className="text-xl text-muted-foreground">
-            Свържете {APP_NAME} с вашите любими инструменти за по-ефективна работа
+            Какво вече работи с {APP_NAME} и какво предстои — накратко и ясно
           </p>
         </div>
 
