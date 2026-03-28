@@ -37,3 +37,9 @@ RLS
 - Липсват политики за anon/authenticated с (auth.uid() = …) — ако планираш клиентски достъп до таблиците през Supabase JS с user JWT, ще трябва отделни политики; за Next.js API + Prisma това често не е нужно.
 
 Забележка: в твоя JSON няма TeamInvite, PasswordResetToken, StripePrice — ако ги има в базата, пусни отново секция 9 или провери дали са в друг schema.
+
+CompanyBook (ЕИК lookup) при деплой
+----------------------------------
+- В Vercel (или друг хост): Environment Variables → Production (и Preview ако тестваш там) → `COMPANYBOOK_API_KEY` = твоят Bearer ключ от companybook.bg. Без този ключ API `/api/companybook/[uic]` връща 503 и формите остават само с ръчно въвеждане.
+- `COMPANYBOOK_API_BASE` е по избор; по подразбиране в кода е `https://api.companybook.bg/api/companies`. Не използвай `NEXT_PUBLIC_` за ключа — той трябва да е само на сървъра.
+- Търсенето по ЕИК изисква план с `eikSearch` (от Стартер нагоре); виж `src/lib/subscription-plans.ts`.

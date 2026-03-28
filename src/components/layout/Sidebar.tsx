@@ -208,7 +208,7 @@ export function Sidebar() {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm font-medium transition-all duration-200 sm:gap-3 sm:px-3 sm:py-2",
+                  "group flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm font-medium transition-all duration-200 sm:gap-3 sm:px-3 sm:py-2",
                   active 
                     ? "bg-primary/10 text-primary" 
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"

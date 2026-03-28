@@ -73,6 +73,7 @@ import {
 } from "@/components/ui/table";
 import { normalizeInvoiceStatus } from "@/lib/invoice-status";
 import { InvoiceWorkspaceSetup } from "@/components/invoice/InvoiceWorkspaceSetup";
+import { AppSectionKicker } from "@/components/app/AppSectionKicker";
 
 interface Invoice {
   id: string;
@@ -475,12 +476,13 @@ export default function InvoicesClient({
 
   if (shouldShowSetup) {
     return (
-      <div className="space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight">Фактури</h1>
-            <p className="text-muted-foreground">
-              Подгответе акаунта си и след това ще получите пълен достъп до работното пространство за фактури.
+      <div className="app-page-shell">
+        <div className="page-header">
+          <div className="min-w-0 flex-1 space-y-2">
+            <AppSectionKicker icon={FileText}>Документи</AppSectionKicker>
+            <h1 className="page-title">Фактури</h1>
+            <p className="card-description">
+              Подгответе акаунта си — след това ще имате пълен достъп до създаване, филтри и управление на фактури.
             </p>
           </div>
         </div>
@@ -516,6 +518,7 @@ export default function InvoicesClient({
       {/* Header */}
       <div className="page-header">
         <div className="min-w-0 flex-1 space-y-2">
+          <AppSectionKicker icon={FileText}>Документи</AppSectionKicker>
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="page-title">Фактури</h1>
             {isFree && !isLoadingUsage && (

@@ -8,13 +8,15 @@ import {
   Plus,
   MinusCircle,
   PlusCircle,
+  Zap,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AppSectionKicker } from "@/components/app/AppSectionKicker";
 
 const linkClass =
-  "flex items-center w-full p-2 sm:p-2.5 rounded-lg sm:rounded-xl hover:bg-muted/50 transition-colors group";
+  "flex items-center w-full rounded-xl border border-transparent p-2 sm:p-2.5 transition-colors hover:border-border/60 hover:bg-muted/50";
 
 export function DashboardQuickActions({
   hasInvoiceWorkspaceSetup = true,
@@ -34,8 +36,13 @@ export function DashboardQuickActions({
 
   if (isLoadingUsage) {
     return (
-      <Card className="lg:col-span-1 border border-border/50 shadow-md">
-        <CardHeader className="pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
+      <Card className="relative overflow-hidden lg:col-span-1 border border-border/50 shadow-md">
+        <div
+          className="absolute left-0 right-0 top-0 h-[3px] bg-linear-to-r from-emerald-500 via-teal-500 to-cyan-500"
+          aria-hidden
+        />
+        <CardHeader className="space-y-2 pb-3 px-3 pt-4 sm:px-6 sm:pt-6">
+          <Skeleton className="h-6 w-32 rounded-full" />
           <CardTitle className="card-title">Бързи действия</CardTitle>
           <CardDescription className="card-description">
             Често използвани операции
@@ -71,8 +78,13 @@ export function DashboardQuickActions({
   }
 
   return (
-    <Card className="lg:col-span-1 border border-border/50 shadow-md">
-      <CardHeader className="pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
+    <Card className="relative overflow-hidden lg:col-span-1 border border-border/50 shadow-md">
+      <div
+        className="absolute left-0 right-0 top-0 h-[3px] bg-linear-to-r from-emerald-500 via-teal-500 to-cyan-500"
+        aria-hidden
+      />
+      <CardHeader className="space-y-2 pb-3 px-3 pt-4 sm:px-6 sm:pt-6">
+        <AppSectionKicker icon={Zap}>Бърз достъп</AppSectionKicker>
         <CardTitle className="card-title">Бързи действия</CardTitle>
         <CardDescription className="card-description">
           Често използвани операции

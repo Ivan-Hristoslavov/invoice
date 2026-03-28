@@ -40,6 +40,23 @@ vi.mock("@/components/ui/pagination", () => ({
   ),
 }));
 
+vi.mock("@/components/ui/dropdown-menu", () => ({
+  DropdownMenu: ({ children }: { children?: React.ReactNode }) => (
+    <div data-testid="landing-dropdown">{children}</div>
+  ),
+  DropdownMenuTrigger: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuContent: ({ children }: { children?: React.ReactNode }) => (
+    <div role="menu">{children}</div>
+  ),
+  DropdownMenuItem: ({
+    children,
+    asChild,
+  }: {
+    children?: React.ReactNode;
+    asChild?: boolean;
+  }) => (asChild ? <>{children}</> : <div role="menuitem">{children}</div>),
+}));
+
 vi.mock("@heroui/react", () => ({
   Button: ({
     children,
@@ -58,17 +75,22 @@ vi.mock("@heroui/react", () => ({
       {children}
     </button>
   ),
-  Card: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-    <div {...props}>{children}</div>
+  Card: Object.assign(
+    ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+      <div {...props}>{children}</div>
+    ),
+    {
+      Header: ({ children, ...p }: React.HTMLAttributes<HTMLDivElement>) => <div {...p}>{children}</div>,
+      Title: ({ children, ...p }: React.HTMLAttributes<HTMLHeadingElement>) => <h3 {...p}>{children}</h3>,
+      Description: ({ children, ...p }: React.HTMLAttributes<HTMLParagraphElement>) => (
+        <p {...p}>{children}</p>
+      ),
+      Content: ({ children, ...p }: React.HTMLAttributes<HTMLDivElement>) => <div {...p}>{children}</div>,
+      Footer: ({ children, ...p }: React.HTMLAttributes<HTMLDivElement>) => <div {...p}>{children}</div>,
+    }
   ),
-  CardContent: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  Chip: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
     <div {...props}>{children}</div>
-  ),
-  CardFooter: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-    <div {...props}>{children}</div>
-  ),
-  Chip: ({ children, ...props }: React.HTMLAttributes<HTMLSpanElement>) => (
-    <span {...props}>{children}</span>
   ),
   Separator: (props: React.HTMLAttributes<HTMLHRElement>) => <hr {...props} />,
   Spinner: () => <span>loading</span>,
@@ -129,16 +151,10 @@ describe("HomePage", () => {
     expect(screen.getByText("7.50 €")).toBeInTheDocument();
   });
 
-  it("switches feature pages", async () => {
-    const user = userEvent.setup();
-
+  it("shows product feature grid without pagination", () => {
     render(<HomePageClient />);
 
-    expect(screen.getAllByText("Професионални фактури").length).toBeGreaterThan(0);
-
-    const pageButtons = screen.getAllByRole("button", { name: "2" });
-    await user.click(pageButtons[0]);
-
-    expect(screen.getAllByText("Финансови анализи").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Фактури и PDF").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Няколко фирми").length).toBeGreaterThan(0);
   });
 });

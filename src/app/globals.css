@@ -754,3 +754,15 @@
 .dark [data-slot="toast-description"] {
   color: hsl(var(--muted-foreground)) !important;
 }
+
+/* Лендинг: якоря и лепкав хедър — плавен скрол без да се скрива заглавието под бара */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

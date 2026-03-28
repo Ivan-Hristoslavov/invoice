@@ -3,8 +3,8 @@ import { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { 
-  FileText, 
+import {
+  FileText,
   Users,
   Building,
   Plus,
@@ -12,17 +12,17 @@ import {
   CheckCircle,
   XCircle,
   Eye,
-  MoreHorizontal,
-  Sparkles,
   ArrowUpRight,
   MinusCircle,
   PlusCircle,
   Activity,
   Hash,
+  LayoutDashboard,
+  Inbox,
+  Receipt,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { APP_NAME } from "@/config/constants";
 import { createAdminClient } from "@/lib/supabase/server";
 import { resolveSessionUser } from "@/lib/session-user";
@@ -32,6 +32,7 @@ import { StatsCard } from "@/components/dashboard/StatsCard";
 import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
 import { isIssuedLikeStatus, normalizeInvoiceStatus, type AppInvoiceStatus } from "@/lib/invoice-status";
 import { InvoiceWorkspaceSetup } from "@/components/invoice/InvoiceWorkspaceSetup";
+import { AppSectionKicker } from "@/components/app/AppSectionKicker";
 
 export const metadata: Metadata = {
   title: `Табло | ${APP_NAME}`,
@@ -364,10 +365,11 @@ export default async function DashboardPage() {
     <div className="space-y-4 sm:space-y-5">
       {/* Header */}
       <div className="page-header">
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 space-y-2">
+          <AppSectionKicker icon={LayoutDashboard}>Преглед</AppSectionKicker>
           <h1 className="page-title">Табло</h1>
-          <p className="card-description mt-1">
-            Ето преглед на фактурите и дейностите ви
+          <p className="card-description">
+            Фактури, суми и последни действия на един екран
           </p>
         </div>
         <Button 
@@ -424,14 +426,18 @@ export default async function DashboardPage() {
         <DashboardQuickActions hasInvoiceWorkspaceSetup={hasInvoiceWorkspaceSetup} />
 
         {/* Recent Invoices */}
-        <Card className="lg:col-span-2 border border-border/50 shadow-md">
-          <CardHeader className="flex flex-row items-center justify-between px-3 pb-3 pt-3 sm:px-6 sm:pb-4 sm:pt-6">
-            <div className="min-w-0 flex-1">
-              <Badge variant="info" className="mb-2">
-                Последни записи
-              </Badge>
+        <Card className="relative overflow-hidden lg:col-span-2 border border-border/50 shadow-md">
+          <div
+            className="absolute left-0 right-0 top-0 h-[3px] bg-linear-to-r from-emerald-500 via-teal-500 to-cyan-500"
+            aria-hidden
+          />
+          <CardHeader className="flex flex-row items-center justify-between px-3 pb-3 pt-4 sm:px-6 sm:pb-4 sm:pt-6">
+            <div className="min-w-0 flex-1 space-y-2">
+              <AppSectionKicker icon={Inbox}>Последни записи</AppSectionKicker>
               <CardTitle className="card-title">Последни фактури</CardTitle>
-              <CardDescription className="card-description">Най-новите фактури</CardDescription>
+              <CardDescription className="card-description">
+                Най-новите документи към клиентите ви
+              </CardDescription>
             </div>
             <Button variant="ghost" size="sm" asChild className="tiny-text shrink-0">
               <Link href="/invoices" className="flex items-center gap-1">
@@ -442,8 +448,8 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent className="px-3 pb-3 sm:px-5 sm:pb-5">
             {recentInvoices.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+              <div className="flex flex-col items-center justify-center py-14 text-center sm:py-16">
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-border/60 bg-muted/60 shadow-inner">
                   <FileText className="h-8 w-8 text-muted-foreground" />
                 </div>
                 <p className="mb-1 text-lg font-semibold">Все още няма фактури</p>
@@ -529,13 +535,19 @@ export default async function DashboardPage() {
       {/* Summary counts + Activity */}
       <div className="grid gap-4 sm:gap-5 lg:grid-cols-3">
         {/* Credit & Debit Note Summary */}
-        <Card className="lg:col-span-1 border border-border/50 shadow-md">
-          <CardHeader className="pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
-            <Badge variant="warning" className="mb-2">
-              Финансови документи
-            </Badge>
-            <CardTitle className="card-title">Известия</CardTitle>
-            <CardDescription className="card-description">Кредитни и дебитни известия</CardDescription>
+        <Card className="relative overflow-hidden lg:col-span-1 border border-border/50 shadow-md">
+          <div
+            className="absolute left-0 right-0 top-0 h-[3px] bg-linear-to-r from-rose-500 via-red-500 to-orange-500"
+            aria-hidden
+          />
+          <CardHeader className="pb-3 px-3 pt-4 sm:px-6 sm:pt-6">
+            <div className="space-y-2">
+              <AppSectionKicker icon={Receipt}>Финансови документи</AppSectionKicker>
+              <CardTitle className="card-title">Известия</CardTitle>
+              <CardDescription className="card-description">
+                Кредитни и дебитни известия
+              </CardDescription>
+            </div>
           </CardHeader>
           <CardContent className="space-y-3 px-3 sm:px-6 pb-3 sm:pb-6">
             <Link
@@ -572,14 +584,18 @@ export default async function DashboardPage() {
         </Card>
 
         {/* Recent Activity (Audit Log) */}
-        <Card className="lg:col-span-2 border border-border/50 shadow-md">
-          <CardHeader className="flex flex-row items-center justify-between pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
-            <div className="min-w-0 flex-1">
-              <Badge variant="secondary" className="mb-2">
-                Проследяване
-              </Badge>
+        <Card className="relative overflow-hidden lg:col-span-2 border border-border/50 shadow-md">
+          <div
+            className="absolute left-0 right-0 top-0 h-[3px] bg-linear-to-r from-violet-500 via-indigo-500 to-blue-500"
+            aria-hidden
+          />
+          <CardHeader className="flex flex-row items-center justify-between pb-3 px-3 pt-4 sm:px-6 sm:pt-6">
+            <div className="min-w-0 flex-1 space-y-2">
+              <AppSectionKicker icon={Activity}>Проследяване</AppSectionKicker>
               <CardTitle className="card-title">Последна активност</CardTitle>
-              <CardDescription className="card-description">Скорошни действия в системата</CardDescription>
+              <CardDescription className="card-description">
+                Скорошни действия в акаунта ви
+              </CardDescription>
             </div>
             <Button variant="ghost" size="sm" asChild className="tiny-text shrink-0">
               <Link href="/settings/audit-logs" className="flex items-center gap-1">
@@ -590,8 +606,8 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             {!auditLogs || auditLogs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+              <div className="flex flex-col items-center justify-center py-14 text-center sm:py-16">
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-border/60 bg-muted/60 shadow-inner">
                   <Activity className="h-8 w-8 text-muted-foreground" />
                 </div>
                 <p className="mb-1 text-lg font-semibold">Няма активност</p>

@@ -28,7 +28,7 @@ export default function APIPage() {
             API Документация
           </h1>
           <p className="text-xl text-muted-foreground">
-            Интегрирайте {APP_NAME} във вашите собствени системи чрез RESTful API
+            Свързване с ваши системи — когато пуснем публичното API, ще е описано тук
           </p>
         </div>
 
@@ -40,7 +40,7 @@ export default function APIPage() {
               <CardTitle>API в разработка</CardTitle>
             </div>
             <CardDescription>
-              Нашият RESTful API е в процес на разработка и ще бъде достъпен скоро.
+              Работим по API за фактури и данни — ще обявим, кога е готово за ползване.
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   ChevronRight,
   Check,
   X,
-  Sparkles,
   Zap,
   Shield,
   BarChart3,
@@ -18,14 +17,26 @@ import {
   Star,
   Crown,
   CreditCard,
+  Menu,
+  Mail,
+  CircleAlert,
+  Percent,
 } from "lucide-react";
+import { Chip } from "@heroui/react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { APP_NAME } from "@/config/constants";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { BackgroundShapes } from "@/components/ui/background-shapes";
 import { shouldReduceBrowserEffects } from "@/lib/browser-effects";
 import { cn } from "@/lib/utils";
-import { Pagination } from "@/components/ui/pagination";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { SUBSCRIPTION_PLANS } from "@/lib/subscription-plans";
 import {
   paymentMessage,
@@ -33,81 +44,37 @@ import {
   shouldShowPublicLegalField,
 } from "@/config/public-business";
 
-function HCard({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div
-      className={cn(
-        "rounded-[1.75rem] border border-border/60 bg-card/95 text-card-foreground",
-        className
-      )}
-      {...props}
-    />
+/**
+ * Якорни линкове: `/#id` (не само `#id`), за да не се трупат фрагменти в Next.js.
+ * По-малко линкове от секции — `data-landing-spy` групира няколко блока под един таб.
+ */
+const LANDING_NAV = [
+  { href: "/#top", label: "Начало", spy: "top" },
+  { href: "/#product", label: "Продукт", spy: "product" },
+  { href: "/#pricing", label: "Цени", spy: "pricing" },
+  { href: "/#contact", label: "Контакт", spy: "contact" },
+] as const;
+
+type LandingNavSpy = (typeof LANDING_NAV)[number]["spy"];
+
+function landingNavLinkVisual(isActive: boolean) {
+  return cn(
+    "rounded-full px-3 py-1.5 font-medium outline-none transition-[color,background-color,box-shadow] duration-200",
+    "focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+    isActive
+      ? "bg-emerald-600 text-white shadow-sm dark:bg-emerald-500 dark:text-white"
+      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
   );
 }
 
-function HCardContent({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={className} {...props} />;
-}
+const LANDING_SCROLL_MARGIN = "scroll-mt-28 sm:scroll-mt-32";
 
-function HCardFooter({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("flex items-center", className)} {...props} />;
-}
-
-function Chip({
-  className,
-  color = "default",
-  variant = "soft",
-  size = "md",
-  ...props
-}: React.HTMLAttributes<HTMLSpanElement> & {
-  color?: "default" | "accent" | "warning" | "success";
-  variant?: "soft" | "solid" | "outline";
-  size?: "sm" | "md";
-}) {
-  const palette = {
-    default:
-      variant === "outline"
-        ? "border-border/70 text-foreground"
-        : "bg-muted text-muted-foreground",
-    accent:
-      variant === "outline"
-        ? "border-cyan-400/40 text-cyan-600 dark:text-cyan-300"
-        : "bg-cyan-500/10 text-cyan-700 dark:text-cyan-300",
-    warning:
-      variant === "outline"
-        ? "border-amber-400/40 text-amber-700 dark:text-amber-300"
-        : "bg-amber-500/10 text-amber-700 dark:text-amber-300",
-    success:
-      variant === "outline"
-        ? "border-emerald-400/40 text-emerald-700 dark:text-emerald-300"
-        : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-  } as const;
-
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full border px-2.5 py-1 font-medium",
-        size === "sm" ? "text-[10px]" : "text-xs sm:text-sm",
-        palette[color],
-        className
-      )}
-      {...props}
-    />
-  );
-}
-
-function Separator({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("h-px w-full bg-border/60", className)} {...props} />;
-}
+/** Външна зона по таб (рамка + фон), за да се вижда къде започва и свършва блокът. */
+const LANDING_ZONE_OUTER = "border-t border-border/70 px-4 py-8 sm:py-10";
+const LANDING_ZONE_PANEL =
+  "rounded-2xl border border-border/60 bg-card/80 shadow-sm backdrop-blur-sm dark:bg-card/50";
+const LANDING_ZONE_LABEL =
+  "text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400";
 
 type PlanKey = "FREE" | "STARTER" | "PRO" | "BUSINESS";
 
@@ -128,44 +95,38 @@ interface PricingPlan {
 const features = [
   {
     icon: FileText,
-    title: "Професионални фактури",
-    description:
-      "Създавайте елегантни фактури с персонализиран дизайн, автоматично номериране и PDF експорт.",
+    title: "Фактури и PDF",
+    description: "Шаблони, номерация и PDF без объркване.",
     color: "from-blue-500 to-cyan-500",
   },
   {
     icon: Zap,
-    title: "Бързо и лесно",
-    description:
-      "Интуитивен интерфейс за създаване на фактури за минути. Спестете време с шаблони.",
+    title: "Бърз старт",
+    description: "Данните веднъж — после само избор от списъци.",
     color: "from-amber-500 to-orange-500",
   },
   {
     icon: Shield,
-    title: "НАП съвместимост",
-    description:
-      "Пълна съвместимост с българските данъчни изисквания и автоматично генериране на номера.",
+    title: "Реквизити за България",
+    description: "ЕИК, ДДС и текстове за счетоводство и НАП.",
     color: "from-emerald-500 to-teal-500",
   },
   {
     icon: BarChart3,
-    title: "Финансови анализи",
-    description:
-      "Подробни отчети и статистики за вашия бизнес в реално време.",
+    title: "Преглед в цифри",
+    description: "Приходи и фактури в изчакване.",
     color: "from-violet-500 to-purple-500",
   },
   {
     icon: Users,
-    title: "Управление на клиенти",
-    description:
-      "Централизирана база данни с клиенти, история на фактури и бързо търсене.",
+    title: "Клиенти на едно място",
+    description: "Списък, история и търсене.",
     color: "from-rose-500 to-pink-500",
   },
   {
     icon: Building,
-    title: "Мулти-компании",
-    description:
-      "Управлявайте множество фирми от един акаунт с различни настройки.",
+    title: "Няколко фирми",
+    description: "Един акаунт, отделни настройки за всяка фирма.",
     color: "from-indigo-500 to-blue-500",
   },
 ] as const;
@@ -287,97 +248,33 @@ const testimonials = [
     initials: "ТФ",
     gradient: "from-violet-500 to-purple-500",
   },
-  {
-    name: "Услуги и консултации",
-    role: "Малък растящ екип",
-    content:
-      "По-стабилен процес от оферта до фактура с по-малко пропуски в административната част.",
-    initials: "УК",
-    gradient: "from-amber-500 to-orange-500",
-  },
-  {
-    name: "Микро компания",
-    role: "Собственик + външен счетоводител",
-    content:
-      "По-лесно предаване на информация към счетоводството и по-малко корекции на вече издадени документи.",
-    initials: "МК",
-    gradient: "from-cyan-500 to-blue-500",
-  },
-  {
-    name: "Агенция",
-    role: "Повтаряеми месечни фактури",
-    content:
-      "По-добра дисциплина при месечните цикли и по-ясни лимити по план при растеж на обема.",
-    initials: "АГ",
-    gradient: "from-rose-500 to-pink-500",
-  },
-] as const;
-
-const quickHighlights = [
-  {
-    title: "За 2-3 минути",
-    description: "Създаване на фактура с готови стъпки и автоматични данни.",
-  },
-  {
-    title: "Подредена информация",
-    description: "Клиенти, продукти, компании и документи на едно място.",
-  },
-  {
-    title: "Подходящо за България",
-    description: "Съобразено с местните изисквания и работен процес.",
-  },
-  {
-    title: "Лесно за екип",
-    description: "Ясни роли, история и достъп до важните действия.",
-  },
 ] as const;
 
 const workflowSteps = [
   {
-    title: "Добавете фирма и клиенти",
-    description: "Запазете основните данни веднъж и ги използвайте многократно.",
+    title: "Фирма и клиенти",
+    description: "Въвеждате данните веднъж — после само избирате от списъка.",
     icon: Building,
     color: "from-slate-500 to-slate-600",
   },
   {
-    title: "Създайте фактура",
-    description: "Изберете клиент, добавете артикули и генерирайте документа.",
+    title: "Нова фактура",
+    description: "Клиент, редове, ДДС — готово за изпращане, PDF или имейл.",
     icon: FileText,
     color: "from-blue-500 to-indigo-600",
   },
   {
-    title: "Проследете статуса",
-    description: "Следете издадени, платени, анулирани и сторнирани документи.",
+    title: "Статус и история",
+    description: "Платени, чакащи и корекции с известия.",
     icon: BarChart3,
     color: "from-emerald-500 to-teal-600",
   },
 ] as const;
 
 const heroHighlights = [
-  { value: "EUR", label: "Ясно ценообразуване в евро" },
-  { value: "BG", label: "Съобразено с българския пазар" },
-  { value: "Stripe", label: "Сигурно абонаментно плащане" },
-] as const;
-
-const caseBasedSegments = [
-  {
-    title: "За счетоводни къщи",
-    points: ["Управление на множество фирми", "Аудитна история на документи", "Ясни роли в екипа"],
-    ctaHref: "/signup?plan=BUSINESS",
-    ctaLabel: "Започни с Business",
-  },
-  {
-    title: "За фрийлансъри",
-    points: ["Бързо издаване на фактура", "Готови клиентски и продуктови шаблони", "Прост процес без излишни менюта"],
-    ctaHref: "/signup?plan=STARTER",
-    ctaLabel: "Започни със Starter",
-  },
-  {
-    title: "За търговци",
-    points: ["Следене на издадени и платени фактури", "PDF/CSV експорт", "Ясна история по клиент и документ"],
-    ctaHref: "/signup?plan=PRO",
-    ctaLabel: "Започни с Pro",
-  },
+  { value: "EUR", label: "Цени в евро" },
+  { value: "BG", label: "За българския пазар" },
+  { value: "Stripe", label: "Абонамент през Stripe" },
 ] as const;
 
 const pricingTrustNotes = [
@@ -389,36 +286,34 @@ const pricingTrustNotes = [
 
 const faqItems = [
   {
-    q: "Какво е Invoicy?",
-    a: "Invoicy е софтуер за издаване на фактури, предназначен за български бизнеси. Помагаме ви да създавате професионални фактури, да ги изпращате по имейл и да следите кой ви дължи пари.",
+    q: "Какво е Invoicy и за какво служи?",
+    a: "Уеб приложение за фактури: издавате документи, изпращате ги и следите кой още не е платил. Не е банка и не приема плащания вместо вас.",
   },
   {
-    q: "Мога ли да приемам плащания чрез Invoicy?",
-    a: "Не, Invoicy не е платежна система и не обработва плащания. Ние ви помагаме да издавате фактури, но плащанията се извършват директно между вас и клиентите ви.",
+    q: "Клиентът плаща през Invoicy ли?",
+    a: "Не. Плащанията са между вас и клиента (банка, наложен платеж и т.н.). Invoicy е за документите и проследяването им.",
   },
   {
-    q: "Какво представлява кредитното известие?",
-    a: "Кредитното известие е документ, който се издава за сторниране или коригиране на издадена фактура. Например, ако клиент върне стока или има грешка във фактурата.",
+    q: "Какво е кредитно известие?",
+    a: "Документ за намаляване или отмяна на сума от вече издадена фактура — например при връщане на стока или грешка в сумата.",
   },
   {
-    q: "Съвместима ли е системата с изискванията на НАП?",
-    a: "Да, Invoicy е напълно съвместима с българските данъчни изисквания. Фактурите съдържат всички задължителни реквизити съгласно ЗДДС и Закона за счетоводството.",
+    q: "Подходящо ли е за НАП?",
+    a: "Фактурите са с нужните реквизити по българското законодателство. За конкретен случай винаги може да се консултирате със счетоводител.",
   },
   {
-    q: "Мога ли да използвам системата за няколко фирми?",
-    a: "Да, в зависимост от вашия план можете да управлявате от 1 до неограничен брой компании от един акаунт.",
-  },
-  {
-    q: "Има ли дългосрочен договор и как спирам абонамента?",
-    a: "Не, няма дългосрочен договор. Можете да промените или спрете плана си от настройките на абонамента по всяко време.",
+    q: "Няколко фирми в един акаунт?",
+    a: "Да — според плана може да имате от една до повече фирми под един вход.",
   },
 ] as const;
 
+const LANDING_HEADER_SCROLL_COMPACT = 48;
+
 export default function HomePage() {
   const [isYearly, setIsYearly] = useState(false);
-  const [featurePage, setFeaturePage] = useState(1);
-  const [testimonialPage, setTestimonialPage] = useState(1);
   const [shouldReduceEffects, setShouldReduceEffects] = useState(false);
+  const [isHeaderCompact, setIsHeaderCompact] = useState(false);
+  const [activeLandingSpy, setActiveLandingSpy] = useState<LandingNavSpy>("top");
 
   useEffect(() => {
     const updateEffects = () => {
@@ -430,24 +325,65 @@ export default function HomePage() {
     return () => window.removeEventListener("resize", updateEffects);
   }, []);
 
-  const featuresPerPage = 3;
-  const testimonialsPerPage = 3;
-  const paginatedFeatures = useMemo(
-    () =>
-      features.slice(
-        (featurePage - 1) * featuresPerPage,
-        featurePage * featuresPerPage
-      ),
-    [featurePage]
-  );
-  const paginatedTestimonials = useMemo(
-    () =>
-      testimonials.slice(
-        (testimonialPage - 1) * testimonialsPerPage,
-        testimonialPage * testimonialsPerPage
-      ),
-    [testimonialPage]
-  );
+  useEffect(() => {
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const y = window.scrollY ?? document.documentElement.scrollTop ?? 0;
+        setIsHeaderCompact(y > LANDING_HEADER_SCROLL_COMPACT);
+        ticking = false;
+      });
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const spySelector = "[data-landing-spy]";
+
+    function readSpyFromHash(): LandingNavSpy | null {
+      const raw = window.location.hash.replace(/^#/, "");
+      if (!raw) return null;
+      const match = LANDING_NAV.find((item) => item.href === `/#${raw}`);
+      return match ? match.spy : null;
+    }
+
+    function updateActiveFromScroll() {
+      const header = document.querySelector("header");
+      const headerH = header?.getBoundingClientRect().height ?? 64;
+      const y = window.scrollY + headerH + 16;
+      const nodes = document.querySelectorAll<HTMLElement>(spySelector);
+      let next: LandingNavSpy = "top";
+      for (const el of nodes) {
+        const spy = el.dataset.landingSpy as LandingNavSpy | undefined;
+        if (!spy) continue;
+        const top = el.getBoundingClientRect().top + window.scrollY;
+        if (top <= y) next = spy;
+      }
+      setActiveLandingSpy((prev) => (prev === next ? prev : next));
+    }
+
+    function syncFromHash() {
+      const fromHash = readSpyFromHash();
+      if (fromHash) setActiveLandingSpy(fromHash);
+      else updateActiveFromScroll();
+    }
+
+    syncFromHash();
+    requestAnimationFrame(updateActiveFromScroll);
+
+    window.addEventListener("scroll", updateActiveFromScroll, { passive: true });
+    window.addEventListener("hashchange", syncFromHash);
+    window.addEventListener("resize", updateActiveFromScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", updateActiveFromScroll);
+      window.removeEventListener("hashchange", syncFromHash);
+      window.removeEventListener("resize", updateActiveFromScroll);
+    };
+  }, []);
 
   return (
     <>
@@ -475,7 +411,7 @@ export default function HomePage() {
               worstRating: "1",
             },
             description:
-              "Професионална система за фактуриране за български бизнеси с пълна НАП съвместимост",
+              "Фактури и известия за български фирми — ясни реквизити и проследяване на документи",
             url: process.env.NEXT_PUBLIC_APP_URL || "https://invoicy.bg",
             inLanguage: "bg-BG",
           }),
@@ -488,441 +424,350 @@ export default function HomePage() {
           reduceEffects={shouldReduceEffects}
         />
 
-        {/* ── Header ── */}
-        <header className="sticky top-0 z-50 w-full rounded-none border-x-0 border-t-0 glass-card">
-          <div className="container mx-auto flex h-14 items-center justify-between px-3 sm:h-16 sm:px-4 md:px-6">
+        {/* ── Header: fixed + компактен режим при скрол ── */}
+        <header
+          className={cn(
+            "fixed inset-x-0 top-0 z-50 w-full rounded-none border-x-0 border-t-0 glass-card supports-backdrop-filter:bg-background/80",
+            shouldReduceEffects
+              ? "transition-none"
+              : "transition-[box-shadow,background-color,border-color,backdrop-filter] duration-300 ease-out",
+            isHeaderCompact
+              ? "border-b border-border/70 bg-card/95 shadow-lg shadow-black/5 backdrop-blur-md dark:border-border/80 dark:bg-card/90 dark:shadow-black/20"
+              : "border-b border-transparent shadow-sm"
+          )}
+        >
+          <div
+            className={cn(
+              "container mx-auto grid grid-cols-[1fr_auto] items-center gap-2 px-3 sm:gap-3 sm:px-4 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:px-6",
+              shouldReduceEffects ? "" : "transition-[min-height,gap] duration-300 ease-out",
+              isHeaderCompact ? "min-h-11 py-1 sm:min-h-12" : "min-h-14 py-0 sm:min-h-16"
+            )}
+          >
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
+              initial={{ opacity: 0, x: -12 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-2"
+              className="flex min-w-0 items-center justify-self-start gap-1.5 sm:gap-2"
             >
-              <Link href="/" className="flex h-7 w-7 items-center justify-center rounded-lg overflow-hidden sm:h-8 sm:w-8" aria-label="Начало">
-                <div className="flex h-full w-full items-center justify-center rounded-lg gradient-primary shadow-md">
-                  <FileText className="h-4 w-4 text-white sm:h-5 sm:w-5" aria-hidden />
-                </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  className={cn(
+                    "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg md:hidden",
+                    "text-muted-foreground outline-none transition-colors",
+                    "hover:bg-accent hover:text-accent-foreground",
+                    "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  )}
+                  aria-label="Отвори навигацията"
+                >
+                  <Menu className="h-5 w-5" aria-hidden />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="min-w-48">
+                  {LANDING_NAV.map((item) => (
+                    <DropdownMenuItem key={item.spy} asChild>
+                      <Link
+                        href={item.href}
+                        scroll
+                        className={cn(
+                          "w-full cursor-pointer",
+                          landingNavLinkVisual(activeLandingSpy === item.spy)
+                        )}
+                        aria-current={activeLandingSpy === item.spy ? "page" : undefined}
+                        onClick={() => setActiveLandingSpy(item.spy)}
+                      >
+                        {item.label}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Link
+                href="/#top"
+                className={cn(
+                  "flex min-w-0 items-center gap-1.5 rounded-lg outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring sm:gap-2",
+                  !shouldReduceEffects && "transition-[gap] duration-300 ease-out"
+                )}
+                aria-label="Към началото на страницата"
+              >
+                <span
+                  className={cn(
+                    "flex shrink-0 items-center justify-center overflow-hidden rounded-lg gradient-primary shadow-md transition-[width,height,border-radius] duration-300 ease-out",
+                    isHeaderCompact ? "h-6 w-6 rounded-md sm:h-7 sm:w-7" : "h-7 w-7 sm:h-8 sm:w-8"
+                  )}
+                >
+                  <FileText
+                    className={cn(
+                      "text-white transition-[width,height] duration-300 ease-out",
+                      isHeaderCompact ? "h-3.5 w-3.5 sm:h-4 sm:w-4" : "h-4 w-4 sm:h-5 sm:w-5"
+                    )}
+                    aria-hidden
+                  />
+                </span>
+                <span
+                  className={cn(
+                    "truncate font-bold tracking-tight transition-[font-size] duration-300 ease-out",
+                    isHeaderCompact ? "text-sm sm:text-lg" : "text-base sm:text-xl"
+                  )}
+                >
+                  {APP_NAME}
+                </span>
               </Link>
-              <span className="max-w-28 truncate text-base font-bold tracking-tight sm:max-w-none sm:text-xl">
-                {APP_NAME}
-              </span>
             </motion.div>
-            <nav className="hidden lg:flex items-center gap-5 text-sm text-muted-foreground">
-              <Link href="#features" className="hover:text-foreground transition-colors">Функции</Link>
-              <Link href="#pricing" className="hover:text-foreground transition-colors">Цени</Link>
-              <Link href="#faq" className="hover:text-foreground transition-colors">FAQ</Link>
-              <Link href="/contact" className="hover:text-foreground transition-colors">Контакт</Link>
+
+            <nav
+              className={cn(
+                "col-start-2 row-start-1 hidden items-center justify-center text-muted-foreground transition-[gap] duration-300 ease-out md:flex",
+                isHeaderCompact ? "gap-3 text-xs lg:gap-5" : "gap-4 text-sm lg:gap-8"
+              )}
+              aria-label="Секции на страницата"
+            >
+              {LANDING_NAV.map((item) => {
+                const isActive = activeLandingSpy === item.spy;
+                return (
+                  <Link
+                    key={item.spy}
+                    href={item.href}
+                    scroll
+                    className={cn("whitespace-nowrap", landingNavLinkVisual(isActive))}
+                    aria-current={isActive ? "page" : undefined}
+                    onClick={() => setActiveLandingSpy(item.spy)}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
             </nav>
+
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 12 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-1.5 sm:gap-3"
+              className={cn(
+                "col-start-2 flex shrink-0 items-center justify-end justify-self-end transition-[gap] duration-300 ease-out md:col-start-3 md:row-start-1",
+                isHeaderCompact ? "gap-0.5 sm:gap-1.5" : "gap-1 sm:gap-2"
+              )}
             >
               <ThemeToggle />
-              <Button variant="ghost" size="sm" asChild className="hidden sm:flex">
+              <Button
+                variant="ghost"
+                size="sm"
+                asChild
+                className={cn(
+                  "hidden sm:flex",
+                  isHeaderCompact && "h-8 px-2 text-xs"
+                )}
+              >
                 <Link href="/signin">Вход</Link>
               </Button>
               <Button
                 size="sm"
                 asChild
-                className="h-9 px-3 text-xs gradient-primary hover:opacity-90 text-white border-0 sm:h-10 sm:px-4 sm:text-sm"
+                className={cn(
+                  "gradient-primary border-0 text-white hover:opacity-90",
+                  "transition-[height,padding,font-size] duration-300 ease-out",
+                  isHeaderCompact
+                    ? "h-8 px-2.5 text-[11px] sm:h-9 sm:px-3 sm:text-xs"
+                    : "h-9 px-2.5 text-xs sm:h-10 sm:px-4 sm:text-sm"
+                )}
               >
                 <Link href="/signup" className="flex items-center whitespace-nowrap">
                   <span className="sm:hidden">Старт</span>
-                  <span className="hidden sm:inline">Започнете безплатно</span>
-                  <ArrowRight className="ml-1.5 h-3.5 w-3.5 sm:ml-2 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">
+                    {isHeaderCompact ? "Започнете" : "Започнете безплатно"}
+                  </span>
+                  <ArrowRight
+                    className={cn(
+                      "transition-[width,height,margin] duration-300 ease-out",
+                      isHeaderCompact
+                        ? "ml-0.5 h-3 w-3 sm:ml-1 sm:h-3.5 sm:w-3.5"
+                        : "ml-1 h-3.5 w-3.5 sm:ml-2 sm:h-4 sm:w-4"
+                    )}
+                  />
                 </Link>
               </Button>
             </motion.div>
           </div>
         </header>
+        {/* Отстъп = височина на header (синхрон с компактен режим) */}
+        <div
+          className={cn(
+            "shrink-0 transition-[height] duration-300 ease-out",
+            shouldReduceEffects && "transition-none",
+            isHeaderCompact ? "h-11 sm:h-12" : "h-14 sm:h-16"
+          )}
+          aria-hidden
+        />
 
         {/* ── Hero ── */}
-        <section id="features" className="px-4 py-5 sm:py-10">
+        <section
+          id="top"
+          data-landing-spy="top"
+          className={cn(LANDING_SCROLL_MARGIN, "border-b border-border/50 bg-background px-4 py-8 sm:py-10")}
+        >
           <div className="container mx-auto max-w-6xl">
-            <div className="text-center">
-              <HCard className="border border-border/50 bg-card shadow-md sm:shadow-xl">
-                <HCardContent className="p-3.5 sm:p-6 md:p-8">
-                  <div className="mb-5 flex justify-center sm:mb-6">
-                    <Chip
-                      variant="soft"
-                      color="accent"
-                      className="tiny-text max-w-full px-3 py-1"
-                    >
-                      <Sparkles className="mr-1.5 h-3.5 w-3.5 shrink-0" />
-                      <span className="max-[359px]:hidden">
-                        Ново: Автоматично генериране на НАП номера
-                      </span>
-                      <span className="hidden max-[359px]:inline">
-                        Ново: НАП номера
-                      </span>
-                    </Chip>
-                  </div>
-
-                  <h1
-                    className="hero-title mx-auto mb-3 max-w-[13ch] text-foreground sm:mb-4 sm:max-w-4xl"
-                    style={{ textShadow: "0 6px 30px rgba(15, 23, 42, 0.24)" }}
+            <div className="rounded-2xl border border-border/60 bg-card/90 p-5 text-center shadow-sm sm:p-8 md:p-10 dark:bg-card/70">
+              <p className={LANDING_ZONE_LABEL}>Начало</p>
+              <h1
+                className="hero-title mx-auto mt-3 mb-3 max-w-[13ch] text-foreground sm:mb-4 sm:max-w-4xl"
+                style={{ textShadow: "0 6px 30px rgba(15, 23, 42, 0.24)" }}
+              >
+                <span className="block sm:inline">Фактурирайте </span>
+                <span className="gradient-primary-text block sm:inline">професионално</span>
+                <span className="block sm:inline"> за минути</span>
+              </h1>
+              <p className="card-description mx-auto mb-6 max-w-xl text-base sm:text-lg">
+                Фактури и известия за България. Без плащания през нас — само документи и проследяване.
+              </p>
+              <div className="mx-auto mb-8 flex w-full max-w-md flex-col items-stretch justify-center gap-2 sm:max-w-none sm:flex-row sm:gap-3">
+                <Button
+                  size="sm"
+                  asChild
+                  className="h-11 w-full border-0 px-4 text-sm text-white shadow-md gradient-primary hover:opacity-90 sm:h-10 sm:w-auto sm:px-5 sm:shadow-lg"
+                >
+                  <Link href="/signup" className="flex items-center justify-center whitespace-nowrap">
+                    Започнете безплатно
+                    <ChevronRight className="ml-1.5 h-3.5 w-3.5 sm:ml-2 sm:h-4 sm:w-4" />
+                  </Link>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  asChild
+                  className="h-11 w-full border-slate-300 px-4 text-sm dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 sm:h-10 sm:w-auto sm:px-5"
+                >
+                  <Link href="/signin" className="flex items-center justify-center whitespace-nowrap">
+                    Вход
+                  </Link>
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3 sm:gap-4">
+                {heroHighlights.map((stat) => (
+                  <div
+                    key={stat.label}
+                    className="rounded-xl border border-border/50 bg-muted/30 px-4 py-3 shadow-xs"
                   >
-                    <span className="block sm:inline">Фактурирайте </span>
-                    <span className="gradient-primary-text block sm:inline">професионално</span>
-                    <span className="block sm:inline"> за минути</span>
-                  </h1>
-
-                  <p className="lead-text mx-auto mb-5 max-w-2xl sm:mb-6">
-                    Софтуер за издаване на фактури, създаден за български бизнеси.
-                    Създавайте професионални фактури, изпращайте ги по имейл и следете статуса им.
-                  </p>
-
-                  <div className="mx-auto mb-5 flex w-full max-w-md flex-col items-stretch justify-center gap-2 sm:mb-8 sm:max-w-none sm:flex-row sm:gap-3">
-                    <Button
-                      size="sm"
-                      asChild
-                      className="h-11 w-full border-0 px-4 text-sm text-white shadow-md gradient-primary hover:opacity-90 sm:h-10 sm:w-auto sm:px-5 sm:shadow-lg"
-                    >
-                      <Link href="/signup" className="flex items-center justify-center whitespace-nowrap">
-                        Започнете безплатно
-                        <ChevronRight className="ml-1.5 h-3.5 w-3.5 sm:ml-2 sm:h-4 sm:w-4" />
-                      </Link>
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      asChild
-                      className="h-11 w-full border-slate-300 px-4 text-sm dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 sm:h-10 sm:w-auto sm:px-5"
-                    >
-                      <Link href="/signin" className="flex items-center justify-center whitespace-nowrap">
-                        Вече имам акаунт
-                      </Link>
-                    </Button>
+                    <div className="metric-value gradient-primary-text">{stat.value}</div>
+                    <div className="metric-label mt-1">{stat.label}</div>
                   </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
 
-                  <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3 sm:gap-4">
-                    {heroHighlights.map((stat) => (
-                      <div
-                        key={stat.label}
-                        className="rounded-2xl border border-border/50 bg-background/60 px-4 py-4 shadow-xs"
+        <section
+          id="product"
+          data-landing-spy="product"
+          className={cn(LANDING_SCROLL_MARGIN, LANDING_ZONE_OUTER, "bg-muted/20 dark:bg-muted/10")}
+        >
+          <div className="container mx-auto max-w-6xl">
+            <div className={cn(LANDING_ZONE_PANEL, "p-5 sm:p-8 md:p-10")}>
+              <header className="border-b border-border/50 pb-8 text-center sm:pb-10">
+                <p className={LANDING_ZONE_LABEL}>Продукт</p>
+                <h2 className="section-title mt-3">Какво прави {APP_NAME}</h2>
+                <p className="card-description mx-auto mt-3 max-w-lg">
+                  Всичко за ежедневна работа с фактури и известия.
+                </p>
+              </header>
+
+              <div className="mt-8 space-y-10 sm:mt-10 sm:space-y-12">
+                <div>
+                  <h3 className="card-title mb-4 text-center sm:text-left">Възможности</h3>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {features.map((feature) => (
+                      <Card
+                        key={feature.title}
+                        className="border border-border/50 bg-background/60 shadow-xs"
                       >
-                        <div className="metric-value gradient-primary-text">
-                          {stat.value}
-                        </div>
-                        <div className="metric-label mt-1">
-                          {stat.label}
-                        </div>
-                      </div>
+                        <CardContent className="flex gap-3 p-4 sm:p-4">
+                          <div
+                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br ${feature.color} shadow-xs`}
+                          >
+                            <feature.icon className="h-5 w-5 text-white" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="card-title mb-1">{feature.title}</p>
+                            <p className="card-description">{feature.description}</p>
+                          </div>
+                        </CardContent>
+                      </Card>
                     ))}
                   </div>
-                </HCardContent>
-              </HCard>
-            </div>
-          </div>
-        </section>
-
-        {/* ── What we do (Какво прави Invoicy) ── */}
-        <section className="px-4 py-5 sm:py-9">
-          <div className="container mx-auto max-w-6xl">
-            <div className="mb-4 text-center sm:mb-5">
-              <Chip variant="soft" color="accent" className="mb-4">
-                Какво прави {APP_NAME}
-              </Chip>
-              <h2 className="section-title mb-2 sm:mb-3">
-                Всичко необходимо за професионално фактуриране на едно място
-              </h2>
-              <p className="lead-text mx-auto max-w-2xl">
-                Създавайте фактури, кредитни и дебитни известия, управлявайте клиенти и фирми, изпращайте документи по имейл и следете статуси — в съответствие с българските изисквания.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 mb-6">
-              {[
-                { text: "Издаване на фактури с автоматично номериране и НАП-съвместими реквизити", icon: FileText },
-                { text: "Управление на клиенти и компании с ЕИК/Булстат и данъчни полета", icon: Building },
-                { text: "Кредитни и дебитни известия за сторниране и коригиране", icon: CreditCard },
-                { text: "PDF и CSV експорт, изпращане на фактури по имейл (PRO/Business)", icon: Zap },
-                { text: "Екип с роли — собственик, администратор, счетоводител, наблюдател", icon: Users },
-                { text: "История на промените и аудит за всяка фактура", icon: Shield },
-              ].map((item) => (
-                <div
-                  key={item.text}
-                  className="flex items-start gap-3 rounded-2xl border border-border/60 bg-card/95 px-4 py-3.5 shadow-sm"
-                >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <item.icon className="h-5 w-5" />
-                  </div>
-                  <p className="small-text font-medium text-foreground leading-snug pt-1.5">{item.text}</p>
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
 
-        <section className="px-4 py-5 sm:py-9">
-          <div className="container mx-auto max-w-6xl">
-            <div className="mb-4 text-center sm:mb-5">
-              <Chip variant="soft" color="default" className="mb-4">
-                Основни акценти
-              </Chip>
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {quickHighlights.map((item) => (
-                <HCard key={item.title} className="border border-border/50 bg-card shadow-xs sm:shadow-sm">
-                  <HCardContent className="p-3.5 sm:p-5">
-                    <p className="card-title mb-1.5">{item.title}</p>
-                    <p className="card-description">{item.description}</p>
-                  </HCardContent>
-                </HCard>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── Who Is It For ── */}
-        <section className="px-4 py-5 sm:py-10">
-          <div className="container mx-auto max-w-6xl">
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <HCard className="border border-amber-400/30 bg-card shadow-md sm:border-2 sm:shadow-xl">
-                <HCardContent className="relative overflow-hidden p-3.5 sm:p-6 md:p-8">
-                  <div className="absolute left-1/2 top-0 h-28 w-40 -translate-x-1/2 rounded-full bg-amber-500/10 blur-3xl" />
-                  <div className="relative text-center">
-                    <div className="mb-4 flex justify-center">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-amber-500/95 to-orange-500/95 shadow-sm sm:h-16 sm:w-16 sm:rounded-2xl sm:shadow-lg sm:shadow-amber-500/25">
-                        <FileText className="h-6 w-6 text-white sm:h-8 sm:w-8" />
-                      </div>
-                    </div>
-
-                    <Chip variant="soft" color="warning" className="mb-4">
-                      За кого е {APP_NAME}
-                    </Chip>
-
-                    <h2 className="section-title mb-2 sm:mb-3 md:text-3xl">
-                      Създаден за реални бизнеси, не за сложни системи
-                    </h2>
-                    <p className="lead-text mx-auto mb-5 max-w-3xl sm:mb-6">
-                      {APP_NAME} е система за <strong>издаване на фактури</strong>, а не за обработка
-                      на плащания. Приложението е идеално за:
-                    </p>
-
-                    <div className="mb-5 grid grid-cols-1 gap-2.5 text-left sm:mb-6 sm:grid-cols-2 sm:gap-3">
-                      {[
-                        "Фрийлансъри и самонаети лица",
-                        "Малки и средни предприятия",
-                        "Счетоводители и счетоводни къщи",
-                        "Консултанти и агенции",
-                        "Занаятчии и услуги",
-                        "Търговци и дистрибутори",
-                      ].map((item) => (
-                        <div
-                          key={item}
-                          className="flex items-center gap-3 rounded-2xl border border-border/60 bg-background/55 px-4 py-3 shadow-xs transition-colors hover:bg-background/75"
-                        >
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/15">
-                            <Check className="h-4 w-4 text-emerald-600" />
+                <div>
+                  <h3 className="card-title mb-4 text-center sm:text-left">За кого</h3>
+                  <Card className="border border-amber-400/35 bg-card">
+                    <CardContent className="space-y-4 p-4 sm:p-5">
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-2.5">
+                        {[
+                          "Фрийлансъри и МСП",
+                          "Счетоводни къщи",
+                          "Консултанти и агенции",
+                          "Търговия и услуги",
+                        ].map((item) => (
+                          <div
+                            key={item}
+                            className="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 px-3 py-2"
+                          >
+                            <Check className="h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
+                            <span className="small-text font-medium">{item}</span>
                           </div>
-                          <span className="small-text font-medium text-foreground">{item}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="mx-auto max-w-3xl rounded-2xl border border-amber-400/30 bg-linear-to-br from-amber-500/10 via-amber-500/5 to-orange-500/10 p-4 text-left sm:p-5">
-                      <div className="mb-2 flex justify-center sm:justify-start">
-                        <Chip size="sm" color="warning" variant="outline">
-                          Важно
-                        </Chip>
+                        ))}
                       </div>
-                    <p className="small-text text-amber-800 dark:text-amber-200">{paymentMessage.short}</p>
-                    <p className="small-text mt-2 text-amber-800 dark:text-amber-200">{paymentMessage.subscription}</p>
-                    <p className="small-text mt-1 text-amber-800 dark:text-amber-200">{paymentMessage.clientInvoices}</p>
-                    </div>
+                      <div className="flex gap-2 rounded-lg border border-amber-400/30 bg-amber-500/10 p-3 dark:bg-amber-500/5">
+                        <CircleAlert
+                          className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-300"
+                          aria-hidden
+                        />
+                        <p className="small-text leading-relaxed text-amber-950 dark:text-amber-100">
+                          {paymentMessage.short} {paymentMessage.subscription}{" "}
+                          {paymentMessage.clientInvoices}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div>
+                  <h3 className="card-title mb-4 text-center sm:text-left">Три стъпки</h3>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                    {workflowSteps.map((step, index) => (
+                      <Card key={step.title} className="border border-border/50 bg-background/60 shadow-xs">
+                        <CardContent className="p-4 sm:p-5">
+                          <div className="mb-3 flex items-center gap-3">
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-bold text-muted-foreground">
+                              {index + 1}
+                            </span>
+                            <div
+                              className={`flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br ${step.color}`}
+                            >
+                              <step.icon className="h-4 w-4 text-white" />
+                            </div>
+                          </div>
+                          <p className="card-title mb-1">{step.title}</p>
+                          <p className="card-description">{step.description}</p>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
-                </HCardContent>
-              </HCard>
-            </motion.div>
-          </div>
-        </section>
-
-        <section className="px-4 py-5 sm:py-10">
-          <div className="container mx-auto max-w-6xl">
-            <div className="mb-5 text-center sm:mb-8">
-              <Chip variant="soft" color="success" className="mb-4">
-                По бизнес тип
-              </Chip>
-              <h2 className="marketing-title mb-2.5 sm:mb-4">Избери подход според твоя модел</h2>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              {caseBasedSegments.map((segment) => (
-                <HCard key={segment.title} className="border border-border/50 bg-card shadow-sm">
-                  <HCardContent className="p-4 sm:p-5">
-                    <h3 className="card-title mb-3">{segment.title}</h3>
-                    <ul className="mb-5 space-y-2">
-                      {segment.points.map((point) => (
-                        <li key={point} className="flex items-start gap-2">
-                          <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                          <span className="card-description">{point}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <Button asChild variant="outline" className="w-full">
-                      <Link href={segment.ctaHref}>{segment.ctaLabel}</Link>
-                    </Button>
-                  </HCardContent>
-                </HCard>
-              ))}
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="px-4 py-5 sm:py-10">
-          <div className="container mx-auto max-w-6xl">
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="mb-5 text-center sm:mb-8"
-            >
-              <Chip variant="soft" color="warning" className="mb-4">
-                Как работи
-              </Chip>
-              <h2 className="marketing-title mb-2.5 sm:mb-4">
-                Подреден процес без излишна сложност
-              </h2>
-              <p className="lead-text mx-auto max-w-2xl">
-                Влизате, настройвате основните данни и започвате да издавате документи още в първия ден.
-              </p>
-            </motion.div>
-
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              {workflowSteps.map((step, index) => (
-                <HCard key={step.title} className="border border-border/50 bg-card shadow-xs sm:shadow-sm">
-                  <HCardContent className="p-3.5 sm:p-5">
-                    <div className="mb-3 flex items-center justify-between sm:mb-4">
-                      <div className={`flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br ${step.color} shadow-xs sm:h-10 sm:w-10 sm:shadow-sm`}>
-                        <step.icon className="h-4.5 w-4.5 text-white sm:h-5 sm:w-5" />
-                      </div>
-                      <Chip variant="soft" color="default" size="sm">
-                        Стъпка {index + 1}
-                      </Chip>
-                    </div>
-                    <h3 className="card-title mb-1.5">{step.title}</h3>
-                    <p className="card-description">{step.description}</p>
-                  </HCardContent>
-                </HCard>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── Features ── */}
-        <section className="px-4 py-5 sm:py-10">
-          <div className="container mx-auto max-w-6xl">
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="mb-5 text-center sm:mb-8"
-            >
-              <Chip variant="soft" color="accent" className="mb-4">
-                Функции
-              </Chip>
-              <h2 className="marketing-title mt-3 mb-2.5 sm:mb-4">
-                Всичко необходимо за вашия бизнес
-              </h2>
-              <p className="lead-text mx-auto max-w-2xl">
-                Пълен набор от инструменти за професионално фактуриране и
-                управление на финансите
-              </p>
-            </motion.div>
-
-            <div className="grid grid-cols-1 gap-3 md:hidden">
-              {paginatedFeatures.map((feature, index) => (
-                <motion.div
-                  key={feature.title}
-                  initial={{ opacity: 0, y: 40 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                >
-                  <HCard
-                    className="group h-full border border-border/50 bg-card shadow-xs transition-shadow duration-300 hover:shadow-md sm:shadow-sm sm:hover:shadow-lg"
-                  >
-                    <HCardContent className="p-3.5 sm:p-5">
-                      <div
-                        className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br ${feature.color} shadow-xs transition-transform duration-300 group-hover:scale-105 sm:mb-4 sm:h-10 sm:w-10 sm:shadow-sm`}
-                      >
-                        <feature.icon className="h-4.5 w-4.5 text-white sm:h-5 sm:w-5" />
-                      </div>
-                      <h3 className="card-title mb-1.5">
-                        {feature.title}
-                      </h3>
-                      <p className="card-description">
-                        {feature.description}
-                      </p>
-                    </HCardContent>
-                  </HCard>
-                </motion.div>
-              ))}
-            </div>
-            <div className="mt-6 flex justify-center md:hidden">
-              <Pagination
-                currentPage={featurePage}
-                totalPages={Math.ceil(features.length / featuresPerPage)}
-                onPageChange={setFeaturePage}
-                size="sm"
-              />
-            </div>
-            <div className="hidden gap-4 md:grid md:grid-cols-2 xl:grid-cols-3">
-              {features.map((feature, index) => (
-                <motion.div
-                  key={feature.title}
-                  initial={{ opacity: 0, y: 40 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6, delay: index * 0.08 }}
-                >
-                  <HCard className="group h-full border border-border/50 bg-card shadow-sm transition-shadow duration-300 hover:shadow-lg">
-                    <HCardContent className="p-5">
-                      <div
-                        className={`mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br ${feature.color} shadow-sm transition-transform duration-300 group-hover:scale-105`}
-                      >
-                        <feature.icon className="h-5 w-5 text-white" />
-                      </div>
-                      <h3 className="card-title mb-2">{feature.title}</h3>
-                      <p className="marketing-copy">
-                        {feature.description}
-                      </p>
-                    </HCardContent>
-                  </HCard>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── Pricing ── */}
-        <section id="pricing" className="px-4 py-5 sm:py-10">
+        <section
+          id="pricing"
+          data-landing-spy="pricing"
+          className={cn(LANDING_SCROLL_MARGIN, LANDING_ZONE_OUTER, "bg-background")}
+        >
           <div className="container mx-auto max-w-7xl">
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="mb-5 text-center sm:mb-8"
-            >
-              <Chip variant="soft" color="success" className="mb-4">
-                Ценообразуване
-              </Chip>
-              <h2 className="marketing-title mt-3 mb-2.5 sm:mb-4">
-                Прозрачни цени без изненади
-              </h2>
-              <p className="lead-text mx-auto mb-5 max-w-2xl sm:mb-8">
-                Изберете плана, който отговаря на нуждите на вашия бизнес
-              </p>
-
-              {/* Monthly / Yearly toggle */}
-              <div className="inline-flex items-center gap-2 rounded-full border border-border/50 bg-muted/60 px-3 py-2 sm:gap-3 sm:px-5 sm:py-3">
+            <div className={cn(LANDING_ZONE_PANEL, "p-5 sm:p-8")}>
+              <div className="mb-6 text-center sm:mb-8">
+                <p className={LANDING_ZONE_LABEL}>Цени</p>
+                <h2 className="section-title mt-3">Планове</h2>
+                <p className="card-description mx-auto mt-2 max-w-md">
+                  Месечно или годишно · EUR · без скрити такси за софтуера
+                </p>
+              <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-border/50 bg-muted/60 px-3 py-2 sm:gap-3 sm:px-5 sm:py-3">
                 <span
                   className={cn(
                     "text-xs font-medium transition-colors sm:text-sm",
@@ -954,17 +799,13 @@ export default function HomePage() {
                   )}
                 >
                   Годишно
-                  <Chip
-                    size="sm"
-                    color="success"
-                    variant="soft"
-                    className="tiny-text h-5"
-                  >
+                  <Chip size="sm" color="success" variant="soft" className="tiny-text h-5 gap-1 px-2">
+                    <Percent className="h-3 w-3 shrink-0" aria-hidden />
                     -17%
                   </Chip>
                 </span>
               </div>
-            </motion.div>
+              </div>
 
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
               {pricingPlans.map((plan, index) => {
@@ -986,7 +827,7 @@ export default function HomePage() {
                       plan.popular && "xl:-mt-3 xl:mb-3"
                     )}
                   >
-                    <HCard
+                    <Card
                         className={cn(
                           "relative flex h-full flex-col overflow-hidden border bg-card",
                         plan.popular
@@ -1004,7 +845,7 @@ export default function HomePage() {
                       {/* Gradient top bar */}
                       <div className={`h-1 w-full shrink-0 bg-linear-to-r ${plan.gradient}`} />
 
-                      <HCardContent className="flex flex-1 flex-col p-3.5 sm:p-5">
+                      <CardContent className="flex flex-1 flex-col p-3.5 sm:p-5">
                         {/* Header */}
                         <div className="mb-4 flex items-start justify-between gap-2">
                           <div className="flex items-center gap-2.5 sm:gap-3">
@@ -1023,7 +864,8 @@ export default function HomePage() {
                             </div>
                           </div>
                           {plan.popular && (
-                            <Chip size="sm" color="success" variant="soft" className="tiny-text shrink-0">
+                            <Chip size="sm" color="success" variant="soft" className="tiny-text shrink-0 gap-1">
+                              <Star className="h-3 w-3 shrink-0 fill-current" aria-hidden />
                               Популярен
                             </Chip>
                           )}
@@ -1089,9 +931,9 @@ export default function HomePage() {
                             </li>
                           ))}
                         </ul>
-                      </HCardContent>
+                      </CardContent>
 
-                      <HCardFooter className="px-3.5 pb-3.5 pt-0 sm:px-5 sm:pb-5">
+                      <CardFooter className="px-3.5 pb-3.5 pt-0 sm:px-5 sm:pb-5">
                         <Button
                           asChild
                           className={cn(
@@ -1105,280 +947,108 @@ export default function HomePage() {
                             {plan.cta}
                           </Link>
                         </Button>
-                      </HCardFooter>
-                    </HCard>
+                      </CardFooter>
+                    </Card>
                   </motion.div>
                 );
               })}
             </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="mt-8 text-center sm:mt-10"
-            >
-              <p className="card-description mx-auto max-w-2xl">
-                Всички планове включват софтуер за издаване на фактури. Не
-                предлагаме обработка на плащания — вашите клиенти плащат
-                директно на вас.
-              </p>
-              <p className="card-description mx-auto mt-2 max-w-2xl">
-                Всички цени са в EUR. Таксуването е за избрания период (месец
-                или година), а планът може да се промени при растеж на екипа.
-              </p>
-            </motion.div>
-            <div className="mt-5 grid grid-cols-1 gap-2 sm:mt-6 sm:grid-cols-2 lg:grid-cols-4">
-              {pricingTrustNotes.map((note) => (
-                <div
-                  key={note}
-                  className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/80 px-3 py-2.5"
-                >
-                  <Check className="h-4 w-4 shrink-0 text-emerald-600" />
-                  <span className="small-text text-foreground">{note}</span>
-                </div>
+            <Separator className="my-8 sm:my-10" />
+
+            <h3 className="card-title mb-4 text-center">Отзиви</h3>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              {testimonials.map((t) => (
+                <Card key={t.name} className="border border-border/50 bg-background/60 shadow-xs">
+                  <CardContent className="p-4 sm:p-5">
+                    <p className="small-text mb-3 leading-relaxed text-foreground/90">
+                      &ldquo;{t.content}&rdquo;
+                    </p>
+                    <div className="flex items-center gap-3 border-t border-border/40 pt-3">
+                      <div
+                        className={cn(
+                          "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-linear-to-br text-xs font-bold text-white",
+                          t.gradient
+                        )}
+                      >
+                        {t.initials}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="card-title text-sm leading-tight">{t.name}</p>
+                        <p className="card-description text-xs">{t.role}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
+            </div>
+
+            <p className="small-text mx-auto mt-8 max-w-2xl text-center leading-relaxed text-muted-foreground">
+              {pricingTrustNotes.join(" · ")}. Плащанията са между вас и клиента — софтуерът е само за
+              документи.
+            </p>
             </div>
           </div>
         </section>
 
-        {/* ── Testimonials ── */}
-        <section id="faq" className="px-4 py-5 sm:py-10">
-          <div className="container mx-auto max-w-6xl">
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="mb-5 text-center sm:mb-8"
-            >
-              <Chip variant="soft" color="warning" className="mb-4">
-                Отзиви
-              </Chip>
-              <h2 className="marketing-title mt-3 mb-2.5 sm:mb-4">
-                Реални бизнес сценарии
-              </h2>
-              <p className="lead-text mx-auto max-w-2xl">
-                Типични резултати, които бизнесите търсят при внедряване на {APP_NAME}
-              </p>
-            </motion.div>
+        <section
+          id="contact"
+          data-landing-spy="contact"
+          className={cn(LANDING_SCROLL_MARGIN, LANDING_ZONE_OUTER, "bg-muted/25 dark:bg-muted/10")}
+        >
+          <div className="container mx-auto max-w-3xl">
+            <div className={cn(LANDING_ZONE_PANEL, "p-5 sm:p-8")}>
+              <header className="border-b border-border/50 pb-8 text-center">
+                <p className={LANDING_ZONE_LABEL}>Контакт</p>
+                <h2 className="section-title mt-3">Въпроси и връзка</h2>
+                <p className="card-description mx-auto mt-2 max-w-md">
+                  Често задавани въпроси, имейл и старт в акаунт — в една зона.
+                </p>
+              </header>
 
-            <div className="grid grid-cols-1 gap-3 md:hidden">
-              {paginatedTestimonials.map((testimonial, index) => (
-                <motion.div
-                  key={testimonial.name}
-                  initial={{ opacity: 0, y: 40 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                >
-                  <HCard
-                    className="relative h-full overflow-hidden border border-border/50 bg-card shadow-xs transition-shadow duration-300 hover:shadow-md sm:shadow-sm sm:hover:shadow-lg"
+              <div id="faq" className={cn(LANDING_SCROLL_MARGIN, "mt-8")}>
+                <h3 className="card-title mb-4 text-center sm:text-left">Често задавани</h3>
+                <dl className="space-y-5">
+                  {faqItems.map((faq) => (
+                    <div key={faq.q} className="border-b border-border/40 pb-5 last:border-0 last:pb-0">
+                      <dt className="card-title mb-1.5 text-base">{faq.q}</dt>
+                      <dd className="card-description m-0">{faq.a}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+
+              <Separator className="my-8" />
+
+              <div className="text-center">
+                <div className="mb-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+                  <Mail className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                  <a
+                    href={`mailto:${publicBusinessProfile.supportEmail}`}
+                    className="font-medium text-primary underline-offset-4 hover:underline"
                   >
-                    <div
-                      className={`absolute top-0 left-0 right-0 h-[3px] bg-linear-to-r ${testimonial.gradient}`}
-                    />
-                    <HCardContent className="p-3.5 sm:p-5">
-                      <div className="mb-3 sm:mb-4">
-                        <svg
-                          className="h-8 w-8 text-emerald-500/20 sm:h-10 sm:w-10"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
-                        </svg>
-                      </div>
-                      <p className="marketing-copy mb-4 text-foreground/90 sm:mb-6">
-                        &ldquo;{testimonial.content}&rdquo;
-                      </p>
-                      <div className="flex items-center gap-3 border-t border-border/50 pt-4">
-                        <div
-                          className={cn(
-                            "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-linear-to-br text-xs font-bold text-white sm:h-10 sm:w-10 sm:text-sm",
-                            testimonial.gradient
-                          )}
-                        >
-                          {testimonial.initials}
-                        </div>
-                        <div>
-                          <div className="card-title text-foreground">
-                            {testimonial.name}
-                          </div>
-                          <div className="card-description">
-                            {testimonial.role}
-                          </div>
-                        </div>
-                      </div>
-                    </HCardContent>
-                  </HCard>
-                </motion.div>
-              ))}
+                    {publicBusinessProfile.supportEmail}
+                  </a>
+                  <span aria-hidden>·</span>
+                  <span>отговор {publicBusinessProfile.supportResponseHours}</span>
+                  <span aria-hidden>·</span>
+                  <Link href="/contact" className="font-medium text-primary underline-offset-4 hover:underline">
+                    контактна форма
+                  </Link>
+                </div>
+                <div className="mx-auto flex w-full max-w-sm flex-col justify-center gap-2 sm:max-w-none sm:flex-row sm:gap-3">
+                  <Button asChild className="gradient-primary border-0 text-white hover:opacity-90">
+                    <Link href="/signup" className="flex items-center justify-center gap-2">
+                      Започнете безплатно
+                      <ArrowRight className="h-4 w-4" aria-hidden />
+                    </Link>
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <Link href="/signin">Вход</Link>
+                  </Button>
+                </div>
+              </div>
             </div>
-            <div className="mt-6 flex justify-center md:hidden">
-              <Pagination
-                currentPage={testimonialPage}
-                totalPages={Math.ceil(testimonials.length / testimonialsPerPage)}
-                onPageChange={setTestimonialPage}
-                size="sm"
-              />
-            </div>
-            <div className="hidden gap-4 md:grid md:grid-cols-2 xl:grid-cols-3">
-              {testimonials.map((testimonial, index) => (
-                <motion.div
-                  key={testimonial.name}
-                  initial={{ opacity: 0, y: 40 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6, delay: index * 0.08 }}
-                >
-                  <HCard className="relative h-full overflow-hidden border border-border/50 bg-card shadow-sm transition-shadow duration-300 hover:shadow-lg">
-                    <div
-                      className={`absolute left-0 right-0 top-0 h-[3px] bg-linear-to-r ${testimonial.gradient}`}
-                    />
-                    <HCardContent className="p-5">
-                      <div className="mb-4">
-                        <svg
-                          className="h-10 w-10 text-emerald-500/20"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
-                        </svg>
-                      </div>
-                      <p className="marketing-copy mb-6 text-foreground/90">
-                        &ldquo;{testimonial.content}&rdquo;
-                      </p>
-                      <div className="flex items-center gap-3 border-t border-border/50 pt-4">
-                        <div
-                          className={cn(
-                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-br text-sm font-bold text-white",
-                            testimonial.gradient
-                          )}
-                        >
-                          {testimonial.initials}
-                        </div>
-                        <div>
-                          <div className="card-title text-foreground">
-                            {testimonial.name}
-                          </div>
-                          <div className="card-description">
-                            {testimonial.role}
-                          </div>
-                        </div>
-                      </div>
-                    </HCardContent>
-                  </HCard>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── FAQ ── */}
-        <section className="px-4 py-5 sm:py-10">
-          <div className="container mx-auto max-w-4xl">
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="mb-5 text-center sm:mb-8"
-            >
-              <Chip variant="soft" color="default" className="mb-4">
-                Въпроси
-              </Chip>
-              <h2 className="marketing-title mt-3 mb-2.5 sm:mb-4">
-                Често задавани въпроси
-              </h2>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="space-y-2.5 sm:space-y-4"
-            >
-              {faqItems.map((faq, index) => (
-                <motion.div
-                  key={faq.q}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: index * 0.07 }}
-                >
-                  <HCard className="border border-border/50 bg-card shadow-xs transition-shadow hover:shadow-sm sm:shadow-sm sm:hover:shadow-md">
-                    <HCardContent className="p-3.5 sm:p-5">
-                      <h3 className="card-title mb-1.5 flex items-center gap-2">
-                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
-                          {index + 1}
-                        </span>
-                        {faq.q}
-                      </h3>
-                      <p className="card-description pl-7">
-                        {faq.a}
-                      </p>
-                    </HCardContent>
-                  </HCard>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </section>
-
-        {/* ── CTA ── */}
-        <section className="px-4 py-6 sm:py-10">
-          <div className="container mx-auto max-w-4xl">
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <HCard className="relative overflow-hidden border border-emerald-500/20 bg-card shadow-md sm:border-2 sm:shadow-2xl">
-                {/* Decorative gradient background */}
-                <div className="pointer-events-none absolute inset-0 bg-linear-to-br from-emerald-500/3 via-teal-500/3 to-cyan-500/3 sm:from-emerald-500/5 sm:via-teal-500/5 sm:to-cyan-500/5" />
-                <div className="absolute top-0 left-0 right-0 h-[3px] bg-linear-to-r from-emerald-500 via-teal-500 to-cyan-500 sm:h-1" />
-                <HCardContent className="relative z-10 p-4 text-center sm:p-8 md:p-10">
-                  <h2 className="marketing-title mb-2 sm:mb-4">
-                    Готови ли сте да започнете?
-                  </h2>
-                  <p className="lead-text mx-auto mb-5 max-w-md sm:mb-8 sm:max-w-xl">
-                    Започнете с безплатен план и преминете към платен, когато
-                    обемът на документите ви нарасне.
-                  </p>
-                  <div className="mx-auto flex w-full max-w-xs flex-col justify-center gap-3 sm:max-w-none sm:flex-row sm:gap-4">
-                    <Button
-                      size="default"
-                      asChild
-                      className="h-11 w-full px-4 text-sm gradient-primary text-white border-0 shadow-md hover:opacity-90 sm:h-11 sm:w-auto sm:px-6 sm:shadow-lg"
-                    >
-                      <Link
-                        href="/signup"
-                        className="flex items-center justify-center whitespace-nowrap"
-                      >
-                        Започнете безплатно
-                        <ArrowRight className="ml-1.5 h-4 w-4 sm:ml-2 sm:h-5 sm:w-5" />
-                      </Link>
-                    </Button>
-                    <Button
-                      size="default"
-                      variant="outline"
-                      asChild
-                      className="h-11 w-full px-4 text-sm sm:h-11 sm:w-auto sm:px-6"
-                    >
-                      <Link
-                        href="/signin"
-                        className="flex items-center justify-center whitespace-nowrap"
-                      >
-                        Вход в системата
-                      </Link>
-                    </Button>
-                  </div>
-                </HCardContent>
-              </HCard>
-            </motion.div>
           </div>
         </section>
 
@@ -1405,8 +1075,7 @@ export default function HomePage() {
                   <span className="section-title">{APP_NAME}</span>
                 </div>
                 <p className="card-description">
-                  Софтуер за издаване на фактури за български бизнеси. Не
-                  обработваме плащания.
+                  Фактури и известия за български фирми. Не приемаме плащания вместо вас.
                 </p>
                 <div className="mt-4 space-y-1 text-xs text-muted-foreground">
                   <p>{publicBusinessProfile.supportEmail}</p>
@@ -1426,18 +1095,34 @@ export default function HomePage() {
                 <ul className="space-y-2.5 small-text sm:space-y-3">
                   <li>
                     <Link
-                      href="/features"
+                      href="/#top"
                       className="text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      Функции
+                      Начало
                     </Link>
                   </li>
                   <li>
                     <Link
-                      href="#pricing"
+                      href="/#product"
                       className="text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      Ценообразуване
+                      Продукт
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/features"
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Възможности
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/#pricing"
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Цени
                     </Link>
                   </li>
                   <li>
@@ -1479,7 +1164,7 @@ export default function HomePage() {
                   </li>
                   <li>
                     <Link
-                      href="/contact"
+                      href="/#contact"
                       className="text-muted-foreground hover:text-foreground transition-colors"
                     >
                       Контакти

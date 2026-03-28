@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Building, Plus, Search, FileText, CheckCircle2, LayoutGrid, List, Pencil } from "lucide-react";
+import { AppSectionKicker } from "@/components/app/AppSectionKicker";
 import { Card, CardContent } from "@/components/ui/card";
 import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
 import { Button } from "@/components/ui/button";
@@ -83,7 +84,7 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
   const totalInvoices = Object.values(invoiceCounts).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="app-page-shell">
       {/* Subscription Warning Banner */}
       {!canCreateCompany && (
         <LimitBanner
@@ -96,44 +97,44 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
       )}
 
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex-1">
-          <Badge variant="info" className="mb-2">
-            Фирмени профили
-          </Badge>
+      <div className="page-header">
+        <div className="min-w-0 flex-1 space-y-2">
+          <AppSectionKicker icon={Building}>Фирмени профили</AppSectionKicker>
           <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Компании</h1>
+            <h1 className="page-title">Компании</h1>
             {!isLoadingUsage && companyUsage.limit !== Infinity && (
-              <UsageCounter 
-                used={companyUsage.used} 
+              <UsageCounter
+                used={companyUsage.used}
                 limit={companyUsage.limit}
                 label=""
               />
             )}
           </div>
-          <p className="text-muted-foreground mt-1">
+          <p className="card-description">
             Добавете фирмите веднъж — данните се ползват при всяка фактура
           </p>
         </div>
-        {!isLoadingUsage && canCreateCompany && (
-          <Button 
-            asChild 
-            size="3" 
-            variant="solid" 
-            color="green"
-            className="w-full shadow-lg sm:w-auto"
-          >
-            <Link href="/companies/new" className="flex items-center whitespace-nowrap">
-              <Plus className="mr-2 h-5 w-5" />
+        <div className="page-header-actions w-full sm:w-auto">
+          {!isLoadingUsage && canCreateCompany && (
+            <Button
+              asChild
+              size="3"
+              variant="solid"
+              color="green"
+              className="w-full shadow-lg sm:w-auto"
+            >
+              <Link href="/companies/new" className="flex items-center whitespace-nowrap">
+                <Plus className="mr-2 h-5 w-5" />
+                Нова компания
+              </Link>
+            </Button>
+          )}
+          {!isLoadingUsage && !canCreateCompany && (
+            <LockedButton requiredPlan={isFree ? "PRO" : "BUSINESS"}>
               Нова компания
-            </Link>
-          </Button>
-        )}
-        {!isLoadingUsage && !canCreateCompany && (
-          <LockedButton requiredPlan={isFree ? "PRO" : "BUSINESS"}>
-            Нова компания
-          </LockedButton>
-        )}
+            </LockedButton>
+          )}
+        </div>
       </div>
 
       {/* Stats */}

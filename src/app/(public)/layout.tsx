@@ -1,4 +1,5 @@
 import { BackgroundShapes } from "@/components/ui/background-shapes";
+import { PublicPageFrame } from "@/components/marketing/PublicPageFrame";
 
 export default function PublicLayout({
   children,
@@ -8,7 +9,7 @@ export default function PublicLayout({
   return (
     <div className="min-h-screen relative">
       <BackgroundShapes variant="default" />
-      {children}
+      <PublicPageFrame>{children}</PublicPageFrame>
     </div>
   );
 } 
