@@ -1,17 +1,16 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, Mail, Phone, MapPin, Send } from "lucide-react";
+import { ArrowLeft, Mail, Phone, MapPin, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { APP_NAME } from "@/config/constants";
+import { publicBusinessProfile } from "@/config/public-business";
+import { ContactRequestForm } from "@/components/marketing/ContactRequestForm";
 
 export const metadata: Metadata = genMeta({
   title: "Контакти",
-  description: "Свържете се с екипа на Invoicy. Отговорим на всички ваши въпроси",
+  description: "Свържете се с екипа на Invoicy. Отговаряме на всички ваши въпроси",
 });
 
 export default function ContactPage() {
@@ -38,34 +37,13 @@ export default function ContactPage() {
           {/* Contact Form */}
           <Card className="border-0 shadow-lg">
             <CardHeader>
-              <CardTitle>Изпратете ни съобщение</CardTitle>
+              <CardTitle>Изпратете запитване</CardTitle>
               <CardDescription>
-                Попълнете формата и ще се свържем с вас възможно най-скоро
+                Попълнете формата и ще отговорим {publicBusinessProfile.supportResponseHours}.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Име</Label>
-                  <Input id="name" placeholder="Вашето име" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Имейл</Label>
-                  <Input id="email" type="email" placeholder="vasheto@email.com" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="subject">Тема</Label>
-                  <Input id="subject" placeholder="Тема на съобщението" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="message">Съобщение</Label>
-                  <Textarea id="message" placeholder="Вашето съобщение..." rows={6} required />
-                </div>
-                <Button type="submit" className="w-full">
-                  <Send className="mr-2 h-4 w-4" />
-                  Изпрати съобщение
-                </Button>
-              </form>
+              <ContactRequestForm />
             </CardContent>
           </Card>
 
@@ -80,35 +58,37 @@ export default function ContactPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-start gap-4">
-                  <div className="h-10 w-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center flex-shrink-0">
+                  <div className="h-10 w-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center shrink-0">
                     <Mail className="h-5 w-5 text-emerald-600" />
                   </div>
                   <div>
                     <div className="font-semibold mb-1">Имейл</div>
-                    <a href="mailto:info@invoicy.bg" className="text-muted-foreground hover:text-emerald-600 transition-colors">
-                      info@invoicy.bg
+                    <a href={`mailto:${publicBusinessProfile.supportEmail}`} className="text-muted-foreground hover:text-emerald-600 transition-colors">
+                      {publicBusinessProfile.supportEmail}
                     </a>
                   </div>
                 </div>
-                <div className="flex items-start gap-4">
-                  <div className="h-10 w-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center flex-shrink-0">
-                    <Phone className="h-5 w-5 text-emerald-600" />
+                {publicBusinessProfile.supportPhone ? (
+                  <div className="flex items-start gap-4">
+                    <div className="h-10 w-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center shrink-0">
+                      <Phone className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <div className="font-semibold mb-1">Телефон</div>
+                      <a href={`tel:${publicBusinessProfile.supportPhone.replace(/\s+/g, "")}`} className="text-muted-foreground hover:text-emerald-600 transition-colors">
+                        {publicBusinessProfile.supportPhone}
+                      </a>
+                    </div>
                   </div>
-                  <div>
-                    <div className="font-semibold mb-1">Телефон</div>
-                    <a href="tel:+359888123456" className="text-muted-foreground hover:text-emerald-600 transition-colors">
-                      +359 888 123 456
-                    </a>
-                  </div>
-                </div>
+                ) : null}
                 <div className="flex items-start gap-4">
-                  <div className="h-10 w-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center flex-shrink-0">
+                  <div className="h-10 w-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center shrink-0">
                     <MapPin className="h-5 w-5 text-emerald-600" />
                   </div>
                   <div>
                     <div className="font-semibold mb-1">Адрес</div>
                     <p className="text-muted-foreground">
-                      София, България
+                      {publicBusinessProfile.legalAddress || "България"}
                     </p>
                   </div>
                 </div>
@@ -117,7 +97,7 @@ export default function ContactPage() {
 
             <Card className="border-0 shadow-lg">
               <CardHeader>
-                <CardTitle>Работно време</CardTitle>
+                <CardTitle>Поддръжка и демо</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2 text-sm">
@@ -125,9 +105,20 @@ export default function ContactPage() {
                     <span className="text-muted-foreground">Понеделник - Петък</span>
                     <span className="font-medium">09:00 - 18:00</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Събота - Неделя</span>
-                    <span className="font-medium">Почивни дни</span>
+                  <div className="flex items-start gap-2 pt-2">
+                    <CalendarClock className="h-4 w-4 mt-0.5 text-emerald-600" />
+                    <div>
+                      <p className="text-muted-foreground">
+                        Отговор на запитвания: {publicBusinessProfile.supportResponseHours}
+                      </p>
+                      {publicBusinessProfile.calendlyDemoUrl ? (
+                        <Button size="sm" variant="outline" asChild className="mt-3">
+                          <Link href={publicBusinessProfile.calendlyDemoUrl} target="_blank" rel="noopener noreferrer">
+                            Заяви 15-мин демо
+                          </Link>
+                        </Button>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               </CardContent>

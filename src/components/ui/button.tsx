@@ -1,9 +1,19 @@
 "use client";
 
 import * as React from "react";
-import { Slot } from "@radix-ui/react-slot";
 import { Button as HeroUIButton, Spinner, buttonVariants } from "@heroui/react";
 import { cn } from "@/lib/utils";
+
+function mergeRefs<T>(...refs: (React.Ref<T> | undefined)[]) {
+  return (value: T) => {
+    refs.forEach((ref) => {
+      if (typeof ref === "function") ref(value);
+      else if (ref && typeof ref === "object" && "current" in ref) {
+        (ref as React.MutableRefObject<T | null>).current = value;
+      }
+    });
+  };
+}
 
 export interface ButtonProps {
   variant?:
@@ -95,25 +105,35 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       className
     );
 
-    if (isAsChild) {
-      return (
-        <Slot
-          ref={ref as never}
-          className={sharedClassName}
-          aria-disabled={disabled || loading ? true : undefined}
-          onClick={disabled || loading ? (e) => e.preventDefault() : (onClick as never)}
-          {...props}
-        >
-          {loading ? (
-            <span className="inline-flex items-center justify-center gap-1.5">
-              <Spinner size="sm" className="mr-1" />
-              {children}
-            </span>
-          ) : (
-            children
-          )}
-        </Slot>
-      );
+    if (isAsChild && React.isValidElement(children)) {
+      const child = children as React.ReactElement<Record<string, unknown>>;
+      const childProps = child.props as {
+        className?: string;
+        onClick?: React.MouseEventHandler<HTMLElement>;
+        children?: React.ReactNode;
+      };
+      const mergedOnClick: React.MouseEventHandler<HTMLElement> | undefined = disabled || loading
+        ? (e) => e.preventDefault()
+        : (e) => {
+            onClick?.(e as React.MouseEvent<HTMLButtonElement>);
+            childProps.onClick?.(e);
+          };
+      return React.cloneElement(child, {
+        ...props,
+        ...child.props,
+        ref: mergeRefs(ref as React.Ref<HTMLButtonElement>, (child as React.ReactElement & { ref?: React.Ref<HTMLButtonElement> }).ref),
+        className: cn(sharedClassName, childProps.className),
+        "aria-disabled": disabled || loading ? true : undefined,
+        onClick: mergedOnClick,
+        children: loading ? (
+          <span className="inline-flex items-center justify-center gap-1.5">
+            <Spinner size="sm" className="mr-1" />
+            {childProps.children}
+          </span>
+        ) : (
+          childProps.children
+        ),
+      } as Record<string, unknown>);
     }
 
     return (

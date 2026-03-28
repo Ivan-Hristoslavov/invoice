@@ -4,7 +4,7 @@ import * as React from "react";
 import { RadioGroup as HeroUIRadioGroup, Radio } from "@heroui/react";
 import { cn } from "@/lib/utils";
 
-// Wrapper maintaining shadcn/Radix API: value + onValueChange
+// Wrapper: controlled value + onValueChange mapped to HeroUI RadioGroup
 const RadioGroup = React.forwardRef<
   HTMLDivElement,
   Omit<React.ComponentProps<typeof HeroUIRadioGroup>, "onChange"> & {

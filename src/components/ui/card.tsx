@@ -10,7 +10,7 @@ const Card = React.forwardRef<
     variant?: "default" | "secondary" | "tertiary" | "transparent" | "elevated" | "outlined" | "flat";
   }
 >(({ className, variant, ...props }, ref) => {
-  // Map legacy/shadcn variant names to HeroUI variant names
+  // Map app variant names to HeroUI Card variants
   const heroVariant =
     variant === "elevated" ? "default" :
     variant === "outlined" ? "secondary" :

@@ -263,7 +263,7 @@ function StepAccordionTrigger({
   );
 }
 
-// Invoice item card component using Radix UI style
+// Invoice line item card (compact layout)
 function InvoiceItemCard({
   item,
   index,

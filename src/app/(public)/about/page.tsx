@@ -87,19 +87,19 @@ export default function AboutPage() {
           ))}
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-6 mb-12">
+        {/* Trust Principles */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
           <div className="text-center">
-            <div className="text-4xl font-bold text-emerald-600 mb-2">1000+</div>
-            <div className="text-sm text-muted-foreground">Активни потребители</div>
+            <div className="text-2xl font-bold text-emerald-600 mb-2">Прозрачност</div>
+            <div className="text-sm text-muted-foreground">Ясни планове, условия и лимити</div>
           </div>
           <div className="text-center">
-            <div className="text-4xl font-bold text-emerald-600 mb-2">50K+</div>
-            <div className="text-sm text-muted-foreground">Създадени фактури</div>
+            <div className="text-2xl font-bold text-emerald-600 mb-2">Сигурност</div>
+            <div className="text-sm text-muted-foreground">Надеждна платформа и GDPR съответствие</div>
           </div>
           <div className="text-center">
-            <div className="text-4xl font-bold text-emerald-600 mb-2">99.9%</div>
-            <div className="text-sm text-muted-foreground">Uptime</div>
+            <div className="text-2xl font-bold text-emerald-600 mb-2">Локален фокус</div>
+            <div className="text-sm text-muted-foreground">Създадено за български бизнес и практика</div>
           </div>
         </div>
 

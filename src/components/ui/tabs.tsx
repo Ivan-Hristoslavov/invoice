@@ -4,7 +4,7 @@ import * as React from "react";
 import { Tabs as HeroUITabs } from "@heroui/react";
 import { cn } from "@/lib/utils";
 
-// Map shadcn Tabs API (value/defaultValue) to HeroUI Tabs (selectedKey/defaultSelectedKey)
+// Map controlled value/defaultValue to HeroUI Tabs (selectedKey/defaultSelectedKey)
 const Tabs = React.forwardRef<
   HTMLDivElement,
   Omit<React.ComponentProps<typeof HeroUITabs>, "selectedKey" | "defaultSelectedKey" | "onSelectionChange"> & {

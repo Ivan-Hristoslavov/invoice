@@ -8,7 +8,7 @@ const TooltipProvider = ({ children }: { children?: React.ReactNode }) => (
   <>{children}</>
 );
 
-// Map shadcn `delayDuration` → HeroUI `delay`
+// Map delayDuration → HeroUI Tooltip delay
 const Tooltip = React.forwardRef<
   object,
   React.ComponentProps<typeof HeroUITooltip> & { delayDuration?: number }
@@ -31,7 +31,7 @@ const TooltipTrigger = React.forwardRef<
 ));
 TooltipTrigger.displayName = "TooltipTrigger";
 
-// Accept `side` for shadcn compat but ignore it (HeroUI uses `placement` on root Tooltip)
+// Accept side for API compatibility; HeroUI uses placement on the root Tooltip
 const TooltipContent = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<typeof HeroUITooltip.Content> & {

@@ -1,33 +1,28 @@
 import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
-const alertVariants = cva(
-  "relative w-full rounded-lg border p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground",
-  {
-    variants: {
-      variant: {
-        default: "bg-background text-foreground",
-        destructive:
-          "bg-red-100 border-2 border-red-300 text-red-800 dark:bg-red-950/95 dark:border-red-700 dark:text-red-100 [&>svg]:text-red-600 dark:[&>svg]:text-red-400",
-        warning:
-          "bg-yellow-50 border-2 border-yellow-300 text-yellow-800 dark:bg-yellow-950/95 dark:border-yellow-700 dark:text-yellow-100 [&>svg]:text-yellow-600 dark:[&>svg]:text-yellow-400",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-    },
-  }
-);
+const alertVariantClass: Record<"default" | "destructive" | "warning", string> = {
+  default:
+    "bg-background text-foreground",
+  destructive:
+    "bg-red-100 border-2 border-red-300 text-red-800 dark:bg-red-950/95 dark:border-red-700 dark:text-red-100 [&>svg]:text-red-600 dark:[&>svg]:text-red-400",
+  warning:
+    "bg-yellow-50 border-2 border-yellow-300 text-yellow-800 dark:bg-yellow-950/95 dark:border-yellow-700 dark:text-yellow-100 [&>svg]:text-yellow-600 dark:[&>svg]:text-yellow-400",
+};
+
+const alertBaseClass =
+  "relative w-full rounded-lg border p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground";
 
 const Alert = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof alertVariants>
->(({ className, variant, ...props }, ref) => (
+  React.HTMLAttributes<HTMLDivElement> & {
+    variant?: keyof typeof alertVariantClass;
+  }
+>(({ className, variant = "default", ...props }, ref) => (
   <div
     ref={ref}
     role="alert"
-    className={cn(alertVariants({ variant }), className)}
+    className={cn(alertBaseClass, alertVariantClass[variant], className)}
     {...props}
   />
 ));

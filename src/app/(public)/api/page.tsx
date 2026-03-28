@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { APP_NAME } from "@/config/constants";
+import { paymentMessage } from "@/config/public-business";
 
 export const metadata: Metadata = genMeta({
   title: "API Документация",
@@ -64,6 +65,20 @@ export default function APIPage() {
                 <span>Извличате отчети и статистики</span>
               </li>
             </ul>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-lg mb-8">
+          <CardHeader>
+            <CardTitle>Плащания и отговорност</CardTitle>
+            <CardDescription>
+              Прозрачност за начина, по който работим.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-muted-foreground">
+            <p>{paymentMessage.short}</p>
+            <p>{paymentMessage.subscription}</p>
+            <p>{paymentMessage.clientInvoices}</p>
           </CardContent>
         </Card>
 

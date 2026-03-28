@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,39 +8,37 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  defaultLocale String    @default("en")
-  
-  // Stripe related fields
-  stripeCustomerId String?  @unique
-  
-  // Invoice preferences
-  defaultVatRate Decimal  @default(20.00) @db.Decimal(5, 2)
-  startingInvoiceNumber Int?  // Starting invoice number for migration from other apps (e.g., 1 for 0000000001)
-  
-  accounts      Account[]
-  sessions      Session[]
-  companies     Company[]
-  clients       Client[]
-  products      Product[]
-  invoices      Invoice[]
-  documents     Document[]
-  userRoles     UserRole[]
-  subscriptions Subscription[]
-  creditNotes   CreditNote[]
-  debitNotes    DebitNote[]
-  invoiceSequences InvoiceSequence[]
-  auditLogs     AuditLog[]
-  passwordResetTokens PasswordResetToken[]
-  sentTeamInvites TeamInvite[] @relation("TeamInviteInvitedBy")
-  acceptedTeamInvites TeamInvite[] @relation("TeamInviteInvitedUser")
+  id                                String            @id @default(cuid())
+  name                              String?
+  email                             String?           @unique
+  emailVerified                     DateTime?
+  image                             String?
+  password                          String?
+  createdAt                         DateTime          @default(now())
+  updatedAt                         DateTime          @updatedAt
+  defaultLocale                     String            @default("en")
+  stripeCustomerId                  String?           @unique
+  defaultVatRate                    Decimal           @default(20.00) @db.Decimal(5, 2)
+  startingInvoiceNumber             Int?
+  phone                             String?
+  profileCompletedAt                DateTime?
+  accounts                          Account[]
+  auditLogs                         AuditLog[]
+  Client_Client_createdByIdToUser   Client[]          @relation("Client_createdByIdToUser")
+  clients                           Client[]
+  companies                         Company[]
+  creditNotes                       CreditNote[]
+  debitNotes                        DebitNote[]
+  documents                         Document[]
+  Invoice_Invoice_createdByIdToUser Invoice[]         @relation("Invoice_createdByIdToUser")
+  invoices                          Invoice[]
+  invoiceSequences                  InvoiceSequence[]
+  products                          Product[]
+  sessions                          Session[]
+  subscriptions                     Subscription[]
+  sentTeamInvites                   TeamInvite[]      @relation("TeamInviteInvitedBy")
+  acceptedTeamInvites               TeamInvite[]      @relation("TeamInviteInvitedUser")
+  userRoles                         UserRole[]
 }
 
 model Account {
@@ -55,17 +47,17 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Session {
@@ -74,6 +66,8 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model VerificationToken {
@@ -84,195 +78,170 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-model PasswordResetToken {
-  id        String   @id @default(cuid())
-  token     String   @unique
-  userId    String
-  expires   DateTime
-  createdAt DateTime @default(now())
-
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([token])
-  @@index([userId])
-}
-
-// Invoice-related models
-
 model Company {
-  id                String    @id @default(cuid())
-  name              String
-  email             String?
-  phone             String?
-  address           String?
-  city              String?
-  state             String?
-  zipCode           String?
-  country           String?
-  vatNumber         String?   // VAT number for EU companies
-  taxIdNumber       String?   // Tax ID for other regions
-  registrationNumber String?  // Company registration number
-  bankName          String?
-  bankAccount       String?
-  bankSwift         String?
-  bankIban          String?
-  logo              String?
-  stripeAccountId   String?   // Stripe Connect Account ID
+  id                      String            @id @default(cuid())
+  name                    String
+  email                   String?
+  phone                   String?
+  address                 String?
+  city                    String?
+  state                   String?
+  zipCode                 String?
+  country                 String?
+  vatNumber               String?
+  taxIdNumber             String?
+  registrationNumber      String?
+  bankName                String?
+  bankAccount             String?
+  bankSwift               String?
+  bankIban                String?
+  logo                    String?
+  stripeAccountId         String?
+  bulstatNumber           String?
+  vatRegistered           Boolean           @default(false)
+  vatRegistrationNumber   String?
+  mol                     String?
+  accountablePerson       String?
+  napUserName             String?
+  napPassword             String?
+  certificateSerialNumber String?
+  certificateThumbprint   String?
+  uicType                 String?           @default("BULSTAT")
+  taxComplianceSystem     String?           @default("general")
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+  userId                  String
+  user                    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creditNotes             CreditNote[]
+  debitNotes              DebitNote[]
+  invoices                Invoice[]
+  invoiceSequences        InvoiceSequence[]
+  teamInvites             TeamInvite[]
+  userRoles               UserRole[]
 
-  // Bulgarian-specific fields
-  bulstatNumber     String?   // Bulgarian company identifier (ЕИК/БУЛСТАТ)
-  vatRegistered     Boolean   @default(false) // Whether company is VAT registered (Регистрация по ЗДДС)
-  vatRegistrationNumber String? // VAT registration number (№ по ЗДДС)
-  mol               String?   // MOL - Manager/Representative (Представляващ/МОЛ)
-  accountablePerson String?   // Person responsible for the accounting
-  napUserName       String?   // Username for the NAP portal
-  napPassword       String?   // Encrypted password for NAP portal
-  certificateSerialNumber String? // Certificate serial number for e-signing
-  certificateThumbprint String?  // Certificate thumbprint
-  uicType           String?   @default("BULSTAT") // Valid values: "BULSTAT" or "EGN"
-
-  taxComplianceSystem String?  @default("general") // Tax system: "bulgarian", "eu", or "general"
-
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  userId            String
-
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  invoices          Invoice[]
-  creditNotes       CreditNote[]
-  debitNotes        DebitNote[]
-  invoiceSequences  InvoiceSequence[]
-  userRoles         UserRole[]
-  teamInvites       TeamInvite[]
-
-  @@index([userId])
-}
-
-model Client {
-  id                String    @id @default(cuid())
-  name              String
-  email             String?
-  phone             String?
-  address           String?
-  city              String?
-  state             String?
-  zipCode           String?
-  country           String?
-  vatNumber         String?   // VAT number for EU companies
-  taxIdNumber       String?   // Tax ID for other regions
-  
-  // Bulgarian-specific fields
-  bulstatNumber     String?   // Bulgarian company identifier (ЕИК/БУЛСТАТ)
-  vatRegistered     Boolean   @default(false) // Whether client is VAT registered
-  vatRegistrationNumber String? // VAT registration number (№ по ЗДДС)
-  mol               String?   // MOL - Manager/Representative
-  uicType           String?   @default("BULSTAT") // Valid values: "BULSTAT" or "EGN"
-  
-  taxComplianceSystem String?  @default("general") // Tax system: "bulgarian", "eu", or "general"
-  
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  userId            String
-  locale            String    @default("en") // Client preferred locale
-
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  invoices          Invoice[]
-  creditNotes       CreditNote[]
-  debitNotes        DebitNote[]
-
-  @@index([userId])
   @@index([userId, name])
 }
 
-model Product {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  price       Decimal  @db.Decimal(10, 2)
-  unit        String   @default("piece")
-  taxRate     Decimal  @default(0) @db.Decimal(5, 2)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  userId      String
-  
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  invoiceItems InvoiceItem[]
+model Client {
+  id                            String       @id @default(cuid())
+  name                          String
+  email                         String?
+  phone                         String?
+  address                       String?
+  city                          String?
+  state                         String?
+  zipCode                       String?
+  country                       String?
+  vatNumber                     String?
+  taxIdNumber                   String?
+  bulstatNumber                 String?
+  vatRegistered                 Boolean      @default(false)
+  vatRegistrationNumber         String?
+  mol                           String?
+  uicType                       String?      @default("BULSTAT")
+  taxComplianceSystem           String?      @default("general")
+  createdAt                     DateTime     @default(now())
+  updatedAt                     DateTime     @updatedAt
+  userId                        String
+  locale                        String       @default("en")
+  createdById                   String?
+  User_Client_createdByIdToUser User?        @relation("Client_createdByIdToUser", fields: [createdById], references: [id])
+  user                          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creditNotes                   CreditNote[]
+  debitNotes                    DebitNote[]
+  invoices                      Invoice[]
 
-  // Product translations
+  @@index([userId, name])
+  @@index([createdById])
+}
+
+model Product {
+  id           String               @id @default(cuid())
+  name         String
+  description  String?
+  price        Decimal              @db.Decimal(10, 2)
+  unit         String               @default("piece")
+  taxRate      Decimal              @default(0) @db.Decimal(5, 2)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  userId       String
+  isActive     Boolean              @default(true)
+  invoiceItems InvoiceItem[]
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   translations ProductTranslation[]
 
-  @@index([userId])
   @@index([userId, name])
 }
 
 model ProductTranslation {
-  id          String @id @default(cuid())
+  id          String  @id @default(cuid())
   productId   String
   locale      String
   name        String
   description String?
   unit        String?
-  
   product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
+
   @@unique([productId, locale])
 }
 
 model Invoice {
-  id              String   @id @default(cuid())
-  invoiceNumber   String
-  clientId        String
-  companyId       String
-  userId          String
-  issueDate       DateTime
-  dueDate         DateTime
-  status          InvoiceStatus @default(DRAFT)
-  subtotal        Decimal  @db.Decimal(10, 2)
-  taxAmount       Decimal  @db.Decimal(10, 2)
-  discount        Decimal? @db.Decimal(10, 2)
-  total           Decimal  @db.Decimal(10, 2)
-  notes           String?
-  termsAndConditions String?
-  currency        String   @default("EUR")
-  locale          String   @default("en") // Invoice language
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Bulgarian tax authority (НАП) specific fields
-  bulstatNumber   String?  // Bulgarian BULSTAT/EIK
-  isOriginal      Boolean  @default(true) // Whether this is the original or a copy
-  uniqueNapId     String?  // Unique identifier for НАП
-  placeOfIssue    String?  // Required place where invoice was issued
-  paymentMethod   String?  // Начин на плащане (информативно поле): банков превод, по договор, и т.н.
-  supplyDate      DateTime? // Date of supply/service delivery (дата на данъчно събитие)
-  isEInvoice      Boolean  @default(false) // Whether this is an electronic invoice
-  napStatus       String?  // Status of the invoice in the НАП system
-  sellerSnapshot  Json?
-  buyerSnapshot   Json?
-  itemsSnapshot   Json?
-  
-  // Immutable: invoices cannot be edited after creation, only cancelled → credit note
-  cancelledAt     DateTime? // When invoice was cancelled
-  cancelledBy     String?   // User ID who cancelled
-  creditNoteId    String?   @unique // Reference to credit note if cancelled
-  invoiceSequenceId String? @unique // Reference to the sequence used for numbering
-  
-  client          Client   @relation(fields: [clientId], references: [id])
-  company         Company  @relation(fields: [companyId], references: [id])
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items           InvoiceItem[]
-  documents       Document[]
-  sequence        InvoiceSequence? @relation(fields: [invoiceSequenceId], references: [id]) // Sequence used for numbering
-  creditNote      CreditNote? // Credit note created from this invoice
-  debitNotes      DebitNote[] // Debit notes related to this invoice
-  auditLogs       AuditLog[]
+  id                                          String           @id @default(cuid())
+  invoiceNumber                               String
+  clientId                                    String
+  companyId                                   String
+  userId                                      String
+  issueDate                                   DateTime
+  dueDate                                     DateTime
+  status                                      InvoiceStatus    @default(DRAFT)
+  paidAt                                      DateTime?
+  subtotal                                    Decimal          @db.Decimal(10, 2)
+  taxAmount                                   Decimal          @db.Decimal(10, 2)
+  discount                                    Decimal?         @db.Decimal(10, 2)
+  total                                       Decimal          @db.Decimal(10, 2)
+  notes                                       String?
+  termsAndConditions                          String?
+  currency                                    String           @default("USD")
+  locale                                      String           @default("en")
+  createdAt                                   DateTime         @default(now())
+  updatedAt                                   DateTime         @updatedAt
+  bulstatNumber                               String?
+  isOriginal                                  Boolean          @default(true)
+  uniqueNapId                                 String?
+  placeOfIssue                                String?
+  paymentMethod                               String?
+  supplyDate                                  DateTime?
+  isEInvoice                                  Boolean          @default(false)
+  napStatus                                   String?
+  cancelledAt                                 DateTime?
+  cancelledBy                                 String?
+  creditNoteId                                String?          @unique
+  invoiceSequenceId                           String?          @unique
+  sellerSnapshot                              Json?
+  buyerSnapshot                               Json?
+  itemsSnapshot                               Json?
+  createdById                                 String?
+  auditLogs                                   AuditLog[]
+  creditNote                                  CreditNote?
+  debitNotes                                  DebitNote[]
+  documents                                   Document[]
+  client                                      Client           @relation(fields: [clientId], references: [id])
+  company                                     Company          @relation(fields: [companyId], references: [id])
+  User_Invoice_createdByIdToUser              User?            @relation("Invoice_createdByIdToUser", fields: [createdById], references: [id])
+  CreditNote_Invoice_creditNoteIdToCreditNote CreditNote?      @relation("Invoice_creditNoteIdToCreditNote", fields: [creditNoteId], references: [id])
+  sequence                                    InvoiceSequence? @relation(fields: [invoiceSequenceId], references: [id])
+  user                                        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items                                       InvoiceItem[]
+  /// Legacy table; not exposed on Prisma Client (see model Payment @@ignore)
+  payments                                    Payment[]       @ignore
 
   @@unique([invoiceNumber, userId])
+  @@unique([invoiceNumber, companyId])
   @@index([userId, status])
-  @@index([userId, issueDate])
-  @@index([companyId, status])
+  @@index([userId, issueDate(sort: Desc)])
   @@index([clientId])
+  @@index([companyId])
+  @@index([createdById])
 }
 
 model InvoiceItem {
@@ -282,149 +251,164 @@ model InvoiceItem {
   description String
   quantity    Decimal  @db.Decimal(10, 2)
   unitPrice   Decimal  @db.Decimal(10, 2)
-  unit        String?  @default("бр.")
   taxRate     Decimal  @default(0) @db.Decimal(5, 2)
   subtotal    Decimal  @db.Decimal(10, 2)
   taxAmount   Decimal  @db.Decimal(10, 2)
   total       Decimal  @db.Decimal(10, 2)
-  
+  unit        String?  @default("бр.")
   invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   product     Product? @relation(fields: [productId], references: [id])
+
+  @@index([invoiceId])
+  @@index([productId])
 }
 
-// InvoiceSequence: Manages sequential numbering per company/year
 model InvoiceSequence {
-  id          String   @id @default(cuid())
-  companyId   String
-  userId      String
-  year        Int      // Calendar year (e.g., 2026)
-  sequence    Int      @default(1) // Current sequence number
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  invoice     Invoice? @relation // The invoice using this sequence
-  
+  id        String   @id @default(cuid())
+  companyId String
+  year      Int
+  sequence  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+  invoice   Invoice?
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
   @@unique([companyId, year])
+  @@index([userId, companyId, year])
+  @@index([userId])
 }
 
-// CreditNote: Created when an invoice is cancelled or manually
 model CreditNote {
-  id              String   @id @default(cuid())
-  creditNoteNumber String   @unique
-  invoiceId       String?  @unique // Optional reference to cancelled invoice (can be created manually)
-  companyId       String
-  clientId        String
-  userId           String
-  issueDate        DateTime
-  reason           String?  // Reason for credit note
-  subtotal         Decimal  @db.Decimal(10, 2)
-  taxAmount        Decimal  @db.Decimal(10, 2)
-  total            Decimal  @db.Decimal(10, 2)
-  currency         String   @default("EUR")
-  notes            String?
-  sellerSnapshot   Json?
-  buyerSnapshot    Json?
-  itemsSnapshot    Json?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  
-  invoice          Invoice? @relation(fields: [invoiceId], references: [id])
-  company          Company  @relation(fields: [companyId], references: [id])
-  client           Client   @relation(fields: [clientId], references: [id])
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items            CreditNoteItem[]
-  
+  id                                       String           @id @default(cuid())
+  creditNoteNumber                         String           @unique
+  invoiceId                                String?          @unique
+  companyId                                String
+  clientId                                 String
+  userId                                   String
+  issueDate                                DateTime
+  reason                                   String?
+  subtotal                                 Decimal          @db.Decimal(10, 2)
+  taxAmount                                Decimal          @db.Decimal(10, 2)
+  total                                    Decimal          @db.Decimal(10, 2)
+  currency                                 String           @default("EUR")
+  notes                                    String?
+  createdAt                                DateTime         @default(now())
+  updatedAt                                DateTime         @updatedAt
+  sellerSnapshot                           Json?
+  buyerSnapshot                            Json?
+  itemsSnapshot                            Json?
+  client                                   Client           @relation(fields: [clientId], references: [id])
+  company                                  Company          @relation(fields: [companyId], references: [id])
+  invoice                                  Invoice?         @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  user                                     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items                                    CreditNoteItem[]
+  Invoice_Invoice_creditNoteIdToCreditNote Invoice?         @relation("Invoice_creditNoteIdToCreditNote")
+
   @@unique([creditNoteNumber, companyId])
+  @@index([invoiceId])
+  @@index([userId, issueDate(sort: Desc)])
 }
 
 model CreditNoteItem {
-  id            String   @id @default(cuid())
-  creditNoteId  String
-  description   String
-  quantity      Decimal  @db.Decimal(10, 2)
-  unitPrice     Decimal  @db.Decimal(10, 2)
-  unit          String?  @default("бр.")
-  taxRate       Decimal  @default(0) @db.Decimal(5, 2)
-  subtotal      Decimal  @db.Decimal(10, 2)
-  taxAmount     Decimal  @db.Decimal(10, 2)
-  total         Decimal  @db.Decimal(10, 2)
-  
-  creditNote    CreditNote @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
+  id           String     @id @default(cuid())
+  creditNoteId String
+  description  String
+  quantity     Decimal    @db.Decimal(10, 2)
+  unitPrice    Decimal    @db.Decimal(10, 2)
+  taxRate      Decimal    @default(0) @db.Decimal(5, 2)
+  subtotal     Decimal    @db.Decimal(10, 2)
+  taxAmount    Decimal    @db.Decimal(10, 2)
+  total        Decimal    @db.Decimal(10, 2)
+  unit         String?    @default("бр.")
+  creditNote   CreditNote @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
+
+  @@index([creditNoteId])
 }
 
-// DebitNote: Created when replacing a product but customer needs to pay more
 model DebitNote {
-  id              String   @id @default(cuid())
-  debitNoteNumber String   @unique
-  invoiceId       String?  // Optional reference to related invoice
+  id              String          @id @default(cuid())
+  debitNoteNumber String          @unique
+  invoiceId       String?
   companyId       String
   clientId        String
-  userId           String
-  issueDate        DateTime
-  reason           String?  // Reason for debit note (e.g., product replacement with additional payment)
-  subtotal         Decimal  @db.Decimal(10, 2)
-  taxAmount        Decimal  @db.Decimal(10, 2)
-  total            Decimal  @db.Decimal(10, 2)
-  currency         String   @default("EUR")
-  notes            String?
-  sellerSnapshot   Json?
-  buyerSnapshot    Json?
-  itemsSnapshot    Json?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  
-  invoice          Invoice?  @relation(fields: [invoiceId], references: [id])
-  company          Company  @relation(fields: [companyId], references: [id])
-  client           Client   @relation(fields: [clientId], references: [id])
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items            DebitNoteItem[]
-  
+  userId          String
+  issueDate       DateTime
+  reason          String?
+  subtotal        Decimal         @db.Decimal(10, 2)
+  taxAmount       Decimal         @db.Decimal(10, 2)
+  total           Decimal         @db.Decimal(10, 2)
+  currency        String          @default("EUR")
+  notes           String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  sellerSnapshot  Json?
+  buyerSnapshot   Json?
+  itemsSnapshot   Json?
+  client          Client          @relation(fields: [clientId], references: [id])
+  company         Company         @relation(fields: [companyId], references: [id])
+  invoice         Invoice?        @relation(fields: [invoiceId], references: [id])
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items           DebitNoteItem[]
+
   @@unique([debitNoteNumber, companyId])
+  @@index([invoiceId])
+  @@index([userId, issueDate(sort: Desc)])
 }
 
 model DebitNoteItem {
-  id            String   @id @default(cuid())
-  debitNoteId  String
-  description   String
-  quantity      Decimal  @db.Decimal(10, 2)
-  unitPrice     Decimal  @db.Decimal(10, 2)
-  unit          String?  @default("бр.")
-  taxRate       Decimal  @default(0) @db.Decimal(5, 2)
-  subtotal      Decimal  @db.Decimal(10, 2)
-  taxAmount     Decimal  @db.Decimal(10, 2)
-  total         Decimal  @db.Decimal(10, 2)
-  
-  debitNote    DebitNote @relation(fields: [debitNoteId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  debitNoteId String
+  description String
+  quantity    Decimal   @db.Decimal(10, 2)
+  unitPrice   Decimal   @db.Decimal(10, 2)
+  taxRate     Decimal   @default(0) @db.Decimal(5, 2)
+  subtotal    Decimal   @db.Decimal(10, 2)
+  taxAmount   Decimal   @db.Decimal(10, 2)
+  total       Decimal   @db.Decimal(10, 2)
+  unit        String?   @default("бр.")
+  debitNote   DebitNote @relation(fields: [debitNoteId], references: [id], onDelete: Cascade)
+
+  @@index([debitNoteId])
 }
 
-// AuditLog: Tracks all changes to invoices and system events
 model AuditLog {
-  id          String   @id @default(cuid())
-  userId      String
-  invoiceId   String?
-  action      String   // CREATE, UPDATE, CANCEL, SEND, EXPORT, etc.
-  entityType  String   // INVOICE, CREDIT_NOTE, CLIENT, COMPANY, etc.
-  entityId    String?
-  changes     String?  @db.Text // JSON string of changes
-  ipAddress   String?
-  userAgent   String?
-  createdAt   DateTime @default(now())
-  
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  invoice     Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  id         String   @id @default(cuid())
+  userId     String
+  invoiceId  String?
+  action     String
+  entityType String
+  entityId   String?
+  changes    String?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  invoice    Invoice? @relation(fields: [invoiceId], references: [id])
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([userId, createdAt(sort: Desc)])
 }
 
-enum InvoiceStatus {
-  DRAFT      // Draft invoice, can be edited
-  ISSUED     // Invoice issued (immutable, cannot be edited)
-  VOIDED     // Draft invoice voided (marked as cancelled before issuing, kept in database)
-  CANCELLED  // Issued invoice cancelled, credit note created
-}
+model Payment {
+  id                String        @id @default(cuid())
+  invoiceId         String
+  amount            Decimal       @db.Decimal(10, 2)
+  paymentDate       DateTime
+  paymentMethod     PaymentMethod
+  transactionId     String?
+  reference         String?
+  notes             String?
+  refundedPaymentId String?
+  status            String?
+  createdAt         DateTime      @default(now())
+  Invoice           Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
-// PaymentMethod enum removed - payment method is now just a text field in Invoice
-// Allowed values: "Банков превод", "По договор", etc. (informative only, no logic)
+  @@index([invoiceId])
+  @@map("Payment")
+  @@ignore
+}
 
 model Document {
   id        String   @id @default(cuid())
@@ -435,28 +419,19 @@ model Document {
   invoiceId String
   userId    String
   createdAt DateTime @default(now())
-  
   invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
 
-// User roles and permissions models
-
-enum Role {
-  ADMIN     // System admin with full access
-  OWNER     // Business owner with full access to their companies
-  MANAGER   // Company manager with access to most features
-  ACCOUNTANT // Can manage invoices and financials
-  VIEWER    // Read-only access
+  @@index([invoiceId])
+  @@index([userId, createdAt(sort: Desc)])
 }
 
 model Permission {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
+  id              String           @id @default(cuid())
+  name            String           @unique
+  description     String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
   rolePermissions RolePermission[]
 }
 
@@ -464,33 +439,33 @@ model UserRole {
   id        String   @id @default(cuid())
   userId    String
   role      Role     @default(VIEWER)
-  companyId String?  // If null, role applies across the system
+  companyId String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
+  company   Company? @relation(fields: [companyId], references: [id])
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
 
   @@unique([userId, companyId])
+  @@index([companyId])
+  @@index([userId])
 }
 
 model TeamInvite {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   companyId       String
   email           String
-  role            Role     @default(VIEWER)
-  token           String   @unique
-  status          String   @default("PENDING")
+  role            Role      @default(VIEWER)
+  token           String    @unique
+  status          String    @default("PENDING")
   invitedByUserId String
   invitedUserId   String?
   expiresAt       DateTime
   acceptedAt      DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  invitedBy       User     @relation("TeamInviteInvitedBy", fields: [invitedByUserId], references: [id], onDelete: Cascade)
-  invitedUser     User?    @relation("TeamInviteInvitedUser", fields: [invitedUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invitedBy       User      @relation("TeamInviteInvitedBy", fields: [invitedByUserId], references: [id], onDelete: Cascade)
+  invitedUser     User?     @relation("TeamInviteInvitedUser", fields: [invitedUserId], references: [id])
 
   @@index([companyId, status])
   @@index([email, status])
@@ -502,59 +477,109 @@ model RolePermission {
   permissionId String
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
-
   permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@unique([role, permissionId])
 }
 
-// Subscription models
 model Subscription {
-  id                   String            @id @default(cuid())
+  id                   String                @id @default(cuid())
   userId               String
-  stripeSubscriptionId String            @unique
+  stripeSubscriptionId String                @unique
   status               SubscriptionStatus
   plan                 SubscriptionPlan
   priceId              String
-  quantity             Int               @default(1)
-  cancelAtPeriodEnd    Boolean           @default(false)
+  quantity             Int                   @default(1)
+  cancelAtPeriodEnd    Boolean               @default(false)
   currentPeriodStart   DateTime
   currentPeriodEnd     DateTime
-  createdAt            DateTime          @default(now())
-  updatedAt            DateTime          @updatedAt
-  
-  // Payment history for this subscription
-  paymentHistory       SubscriptionPayment[]
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   history              SubscriptionHistory[]
-  
-  // Relation to User
-  user                 User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  paymentHistory       SubscriptionPayment[]
+
+  @@index([userId, status])
 }
 
 model SubscriptionPayment {
-  id                   String            @id @default(cuid())
-  subscriptionId       String
-  stripeInvoiceId      String            @unique
-  amount               Decimal           @db.Decimal(10, 2)
-  currency             String            @default("USD")
-  status               PaymentStatus
-  paymentMethod        String?
-  paymentIntentId      String?
-  createdAt            DateTime          @default(now())
-  
-  // Relation to Subscription
-  subscription         Subscription      @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  id              String        @id @default(cuid())
+  subscriptionId  String
+  stripeInvoiceId String        @unique
+  amount          Decimal       @db.Decimal(10, 2)
+  currency        String        @default("USD")
+  status          PaymentStatus
+  paymentMethod   String?
+  paymentIntentId String?
+  createdAt       DateTime      @default(now())
+  subscription    Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
 }
 
 model SubscriptionHistory {
-  id                   String            @id @default(cuid())
-  subscriptionId       String
-  status               SubscriptionStatus
-  event                String
-  createdAt            DateTime          @default(now())
-  
-  // Relation to Subscription
-  subscription         Subscription      @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  id             String             @id @default(cuid())
+  subscriptionId String
+  status         SubscriptionStatus
+  event          String
+  createdAt      DateTime           @default(now())
+  subscription   Subscription       @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+}
+
+model WebhookEventLog {
+  id          String   @id @default(cuid())
+  eventType   String
+  eventId     String
+  status      String
+  payload     String
+  processedAt DateTime @default(now())
+
+  @@index([eventType, status])
+  @@index([eventId])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model StripePrice {
+  id            String   @id
+  plan          String
+  interval      String
+  stripePriceId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now())
+
+  @@unique([plan, interval])
+}
+
+enum InvoiceStatus {
+  DRAFT
+  UNPAID
+  PAID
+  OVERDUE
+  CANCELLED
+  VOIDED
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  CASH
+  CREDIT_CARD
+  APPLE_PAY
+  GOOGLE_PAY
+  WIRE_TRANSFER
+  OTHER
+
+  @@map("PaymentMethod")
+}
+
+enum Role {
+  ADMIN
+  OWNER
+  MANAGER
+  ACCOUNTANT
+  VIEWER
 }
 
 enum SubscriptionStatus {
@@ -569,10 +594,10 @@ enum SubscriptionStatus {
 }
 
 enum SubscriptionPlan {
-  FREE      // Free plan: 3 invoices/month, 1 company, 5 clients, 10 products, no logo, no export
-  STARTER   // Starter plan: 15 invoices/month, 1 company, 25 clients, 50 products, CSV export
-  PRO       // Pro plan: unlimited invoices, 3 companies, 100 clients, 200 products, logo, PDF+CSV, email
-  BUSINESS  // Business plan: unlimited everything, 10 companies, logo, export, email, 5 users, API
+  FREE
+  STARTER
+  PRO
+  BUSINESS
 }
 
 enum PaymentStatus {
@@ -582,17 +607,4 @@ enum PaymentStatus {
   PENDING
   REFUNDED
   VOID
-}
-
-// Webhook Event Logging
-model WebhookEventLog {
-  id          String   @id @default(cuid())
-  eventType   String
-  eventId     String
-  status      String   // SUCCESS or FAILED
-  payload     String   @db.Text // JSON payload
-  processedAt DateTime @default(now())
-  
-  @@index([eventType, status])
-  @@index([eventId])
 }

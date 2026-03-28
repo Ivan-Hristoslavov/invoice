@@ -27,6 +27,11 @@ import { shouldReduceBrowserEffects } from "@/lib/browser-effects";
 import { cn } from "@/lib/utils";
 import { Pagination } from "@/components/ui/pagination";
 import { SUBSCRIPTION_PLANS } from "@/lib/subscription-plans";
+import {
+  paymentMessage,
+  publicBusinessProfile,
+  shouldShowPublicLegalField,
+} from "@/config/public-business";
 
 function HCard({
   className,
@@ -117,6 +122,7 @@ interface PricingPlan {
   popular?: boolean;
   features: { text: string; included: boolean }[];
   cta: string;
+  ctaHref: string;
 }
 
 const features = [
@@ -185,6 +191,7 @@ const pricingPlans: PricingPlan[] = [
       { text: "Имейл изпращане", included: false },
     ],
     cta: "Започни безплатно",
+    ctaHref: "/signup?plan=FREE",
   },
   {
     key: "STARTER",
@@ -206,6 +213,7 @@ const pricingPlans: PricingPlan[] = [
       { text: "Имейл изпращане", included: false },
     ],
     cta: "Опитай безплатно",
+    ctaHref: "/signup?plan=STARTER",
   },
   {
     key: "PRO",
@@ -228,6 +236,7 @@ const pricingPlans: PricingPlan[] = [
       { text: "Имейл изпращане", included: true },
     ],
     cta: "14-дневен пробен период",
+    ctaHref: "/signup?plan=PRO",
   },
   {
     key: "BUSINESS",
@@ -249,63 +258,58 @@ const pricingPlans: PricingPlan[] = [
       { text: "Персонализация", included: true },
     ],
     cta: "Свържете се с нас",
+    ctaHref: "/contact",
   },
 ];
 
 const testimonials = [
   {
-    name: "Иван Петров",
-    role: "Управител, ИТ Консулт ЕООД",
+    name: "Счетоводна къща",
+    role: "Екип с множество фирми",
     content:
-      "Спестих над 10 часа седмично от административни задачи. Фактурите са професионални и клиентите са доволни.",
-    initials: "ИП",
+      "По-бърза обработка на месечните документи и по-малко ръчна работа при издаване и проследяване.",
+    initials: "СК",
     gradient: "from-blue-500 to-cyan-500",
-    rating: 5,
   },
   {
-    name: "Мария Георгиева",
-    role: "Счетоводител",
+    name: "Фрийланс бизнес",
+    role: "1 човек, услужна дейност",
     content:
-      "Най-добрата система за фактуриране, която съм използвала. НАП съвместимостта е безупречна.",
-    initials: "МГ",
+      "По-бързо издаване на фактури и по-ясен контрол кои документи са платени и кои са в изчакване.",
+    initials: "ФБ",
     gradient: "from-emerald-500 to-teal-500",
-    rating: 5,
   },
   {
-    name: "Георги Димитров",
-    role: "Фрийлансър",
+    name: "Търговска фирма",
+    role: "Екип с активни клиенти",
     content:
-      "Простичко и ефективно. Създавам фактури за минути и ги изпращам директно на клиентите.",
-    initials: "ГД",
+      "По-добра проследимост на документи, клиенти и суми с подредена история на действията.",
+    initials: "ТФ",
     gradient: "from-violet-500 to-purple-500",
-    rating: 5,
   },
   {
-    name: "Десислава Николова",
-    role: "Собственик, онлайн магазин",
+    name: "Услуги и консултации",
+    role: "Малък растящ екип",
     content:
-      "Намирам всичко важно веднага. Клиенти, фактури и статуси са подредени много по-ясно от предишния ни софтуер.",
-    initials: "ДН",
+      "По-стабилен процес от оферта до фактура с по-малко пропуски в административната част.",
+    initials: "УК",
     gradient: "from-amber-500 to-orange-500",
-    rating: 5,
   },
   {
-    name: "Николай Стоянов",
-    role: "Консултант",
+    name: "Микро компания",
+    role: "Собственик + външен счетоводител",
     content:
-      "Най-много ми харесва, че интерфейсът е лек и разбираем. Не губя време в излишни менюта и настройки.",
-    initials: "НС",
+      "По-лесно предаване на информация към счетоводството и по-малко корекции на вече издадени документи.",
+    initials: "МК",
     gradient: "from-cyan-500 to-blue-500",
-    rating: 5,
   },
   {
-    name: "Елена Василева",
-    role: "Управител, маркетинг агенция",
+    name: "Агенция",
+    role: "Повтаряеми месечни фактури",
     content:
-      "Работата с няколко клиента и няколко компании е подредена добре. Отчетите и историята на документите са много полезни.",
-    initials: "ЕВ",
+      "По-добра дисциплина при месечните цикли и по-ясни лимити по план при растеж на обема.",
+    initials: "АГ",
     gradient: "from-rose-500 to-pink-500",
-    rating: 5,
   },
 ] as const;
 
@@ -349,10 +353,38 @@ const workflowSteps = [
   },
 ] as const;
 
-const heroStats = [
-  { value: "1000+", label: "Активни потребители" },
-  { value: "50K+", label: "Създадени фактури" },
-  { value: "99.9%", label: "Uptime" },
+const heroHighlights = [
+  { value: "EUR", label: "Ясно ценообразуване в евро" },
+  { value: "BG", label: "Съобразено с българския пазар" },
+  { value: "Stripe", label: "Сигурно абонаментно плащане" },
+] as const;
+
+const caseBasedSegments = [
+  {
+    title: "За счетоводни къщи",
+    points: ["Управление на множество фирми", "Аудитна история на документи", "Ясни роли в екипа"],
+    ctaHref: "/signup?plan=BUSINESS",
+    ctaLabel: "Започни с Business",
+  },
+  {
+    title: "За фрийлансъри",
+    points: ["Бързо издаване на фактура", "Готови клиентски и продуктови шаблони", "Прост процес без излишни менюта"],
+    ctaHref: "/signup?plan=STARTER",
+    ctaLabel: "Започни със Starter",
+  },
+  {
+    title: "За търговци",
+    points: ["Следене на издадени и платени фактури", "PDF/CSV експорт", "Ясна история по клиент и документ"],
+    ctaHref: "/signup?plan=PRO",
+    ctaLabel: "Започни с Pro",
+  },
+] as const;
+
+const pricingTrustNotes = [
+  "Без дългосрочен договор",
+  "Смяна на план според нуждите",
+  "Отказ по всяко време от настройките",
+  "Поддръжка по имейл в работни дни",
 ] as const;
 
 const faqItems = [
@@ -375,6 +407,10 @@ const faqItems = [
   {
     q: "Мога ли да използвам системата за няколко фирми?",
     a: "Да, в зависимост от вашия план можете да управлявате от 1 до неограничен брой компании от един акаунт.",
+  },
+  {
+    q: "Има ли дългосрочен договор и как спирам абонамента?",
+    a: "Не, няма дългосрочен договор. Можете да промените или спрете плана си от настройките на абонамента по всяко време.",
   },
 ] as const;
 
@@ -446,7 +482,7 @@ export default function HomePage() {
         }}
       />
 
-      <div className="min-h-screen overflow-x-hidden flex flex-col">
+      <div className="min-h-screen overflow-x-hidden flex flex-col pb-20 sm:pb-0">
         <BackgroundShapes
           variant={shouldReduceEffects ? "subtle" : "vibrant"}
           reduceEffects={shouldReduceEffects}
@@ -469,6 +505,12 @@ export default function HomePage() {
                 {APP_NAME}
               </span>
             </motion.div>
+            <nav className="hidden lg:flex items-center gap-5 text-sm text-muted-foreground">
+              <Link href="#features" className="hover:text-foreground transition-colors">Функции</Link>
+              <Link href="#pricing" className="hover:text-foreground transition-colors">Цени</Link>
+              <Link href="#faq" className="hover:text-foreground transition-colors">FAQ</Link>
+              <Link href="/contact" className="hover:text-foreground transition-colors">Контакт</Link>
+            </nav>
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -494,7 +536,7 @@ export default function HomePage() {
         </header>
 
         {/* ── Hero ── */}
-        <section className="px-4 py-5 sm:py-10">
+        <section id="features" className="px-4 py-5 sm:py-10">
           <div className="container mx-auto max-w-6xl">
             <div className="text-center">
               <HCard className="border border-border/50 bg-card shadow-md sm:shadow-xl">
@@ -553,7 +595,7 @@ export default function HomePage() {
                   </div>
 
                   <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3 sm:gap-4">
-                    {heroStats.map((stat) => (
+                    {heroHighlights.map((stat) => (
                       <div
                         key={stat.label}
                         className="rounded-2xl border border-border/50 bg-background/60 px-4 py-4 shadow-xs"
@@ -688,16 +730,46 @@ export default function HomePage() {
                           Важно
                         </Chip>
                       </div>
-                      <p className="small-text text-amber-800 dark:text-amber-200">
-                        {APP_NAME} <strong>не обработва плащания</strong> и не е платежна система.
-                        Ние ви помагаме да създавате професионални фактури. Плащанията се извършват
-                        директно между вас и вашите клиенти.
-                      </p>
+                    <p className="small-text text-amber-800 dark:text-amber-200">{paymentMessage.short}</p>
+                    <p className="small-text mt-2 text-amber-800 dark:text-amber-200">{paymentMessage.subscription}</p>
+                    <p className="small-text mt-1 text-amber-800 dark:text-amber-200">{paymentMessage.clientInvoices}</p>
                     </div>
                   </div>
                 </HCardContent>
               </HCard>
             </motion.div>
+          </div>
+        </section>
+
+        <section className="px-4 py-5 sm:py-10">
+          <div className="container mx-auto max-w-6xl">
+            <div className="mb-5 text-center sm:mb-8">
+              <Chip variant="soft" color="success" className="mb-4">
+                По бизнес тип
+              </Chip>
+              <h2 className="marketing-title mb-2.5 sm:mb-4">Избери подход според твоя модел</h2>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              {caseBasedSegments.map((segment) => (
+                <HCard key={segment.title} className="border border-border/50 bg-card shadow-sm">
+                  <HCardContent className="p-4 sm:p-5">
+                    <h3 className="card-title mb-3">{segment.title}</h3>
+                    <ul className="mb-5 space-y-2">
+                      {segment.points.map((point) => (
+                        <li key={point} className="flex items-start gap-2">
+                          <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                          <span className="card-description">{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <Button asChild variant="outline" className="w-full">
+                      <Link href={segment.ctaHref}>{segment.ctaLabel}</Link>
+                    </Button>
+                  </HCardContent>
+                </HCard>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -1029,7 +1101,7 @@ export default function HomePage() {
                           )}
                           variant={plan.popular ? "default" : "outline"}
                         >
-                          <Link href={`/signup?plan=${plan.key}`} className="flex items-center justify-center whitespace-nowrap">
+                          <Link href={plan.ctaHref} className="flex items-center justify-center whitespace-nowrap">
                             {plan.cta}
                           </Link>
                         </Button>
@@ -1052,12 +1124,27 @@ export default function HomePage() {
                 предлагаме обработка на плащания — вашите клиенти плащат
                 директно на вас.
               </p>
+              <p className="card-description mx-auto mt-2 max-w-2xl">
+                Всички цени са в EUR. Таксуването е за избрания период (месец
+                или година), а планът може да се промени при растеж на екипа.
+              </p>
             </motion.div>
+            <div className="mt-5 grid grid-cols-1 gap-2 sm:mt-6 sm:grid-cols-2 lg:grid-cols-4">
+              {pricingTrustNotes.map((note) => (
+                <div
+                  key={note}
+                  className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/80 px-3 py-2.5"
+                >
+                  <Check className="h-4 w-4 shrink-0 text-emerald-600" />
+                  <span className="small-text text-foreground">{note}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
         {/* ── Testimonials ── */}
-        <section className="px-4 py-5 sm:py-10">
+        <section id="faq" className="px-4 py-5 sm:py-10">
           <div className="container mx-auto max-w-6xl">
             <motion.div
               initial={{ opacity: 0, y: 40 }}
@@ -1070,10 +1157,10 @@ export default function HomePage() {
                 Отзиви
               </Chip>
               <h2 className="marketing-title mt-3 mb-2.5 sm:mb-4">
-                Доволни клиенти
+                Реални бизнес сценарии
               </h2>
               <p className="lead-text mx-auto max-w-2xl">
-                Вижте какво казват нашите потребители за {APP_NAME}
+                Типични резултати, които бизнесите търсят при внедряване на {APP_NAME}
               </p>
             </motion.div>
 
@@ -1101,14 +1188,6 @@ export default function HomePage() {
                         >
                           <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
                         </svg>
-                      </div>
-                      <div className="mb-3 flex gap-1 sm:mb-4">
-                        {[...Array(testimonial.rating)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className="h-4 w-4 fill-amber-400 text-amber-400 sm:h-5 sm:w-5"
-                          />
-                        ))}
                       </div>
                       <p className="marketing-copy mb-4 text-foreground/90 sm:mb-6">
                         &ldquo;{testimonial.content}&rdquo;
@@ -1166,14 +1245,6 @@ export default function HomePage() {
                         >
                           <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
                         </svg>
-                      </div>
-                      <div className="mb-4 flex gap-1">
-                        {[...Array(testimonial.rating)].map((_, starIndex) => (
-                          <Star
-                            key={starIndex}
-                            className="h-5 w-5 fill-amber-400 text-amber-400"
-                          />
-                        ))}
                       </div>
                       <p className="marketing-copy mb-6 text-foreground/90">
                         &ldquo;{testimonial.content}&rdquo;
@@ -1274,8 +1345,8 @@ export default function HomePage() {
                     Готови ли сте да започнете?
                   </h2>
                   <p className="lead-text mx-auto mb-5 max-w-md sm:mb-8 sm:max-w-xl">
-                    Присъединете се към хилядите бизнеси, които вече използват{" "}
-                    {APP_NAME} за професионално фактуриране.
+                    Започнете с безплатен план и преминете към платен, когато
+                    обемът на документите ви нарасне.
                   </p>
                   <div className="mx-auto flex w-full max-w-xs flex-col justify-center gap-3 sm:max-w-none sm:flex-row sm:gap-4">
                     <Button
@@ -1311,6 +1382,17 @@ export default function HomePage() {
           </div>
         </section>
 
+        <div className="fixed inset-x-3 bottom-3 z-40 sm:hidden">
+          <div className="rounded-2xl border border-border/70 bg-background/95 p-2 shadow-lg backdrop-blur">
+            <Button asChild className="h-11 w-full gradient-primary text-white border-0">
+              <Link href="/signup" className="flex items-center justify-center">
+                Започнете безплатно
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+
         {/* ── Footer ── */}
         <footer className="mt-auto border-t border-x-0 border-b-0 px-4 py-6 rounded-none glass-card sm:py-10">
           <div className="container mx-auto max-w-6xl">
@@ -1326,6 +1408,18 @@ export default function HomePage() {
                   Софтуер за издаване на фактури за български бизнеси. Не
                   обработваме плащания.
                 </p>
+                <div className="mt-4 space-y-1 text-xs text-muted-foreground">
+                  <p>{publicBusinessProfile.supportEmail}</p>
+                  {shouldShowPublicLegalField(publicBusinessProfile.legalCompanyName) ? (
+                    <p>{publicBusinessProfile.legalCompanyName}</p>
+                  ) : null}
+                  {shouldShowPublicLegalField(publicBusinessProfile.legalCompanyId) ? (
+                    <p>ЕИК: {publicBusinessProfile.legalCompanyId}</p>
+                  ) : null}
+                  {shouldShowPublicLegalField(publicBusinessProfile.legalVatId) ? (
+                    <p>ДДС №: {publicBusinessProfile.legalVatId}</p>
+                  ) : null}
+                </div>
               </div>
               <div>
                 <h4 className="marketing-kicker mb-3 sm:mb-4">Продукт</h4>
@@ -1436,39 +1530,45 @@ export default function HomePage() {
                 © {new Date().getFullYear()} {APP_NAME}. Всички права запазени.
               </p>
               <div className="flex items-center gap-3 sm:gap-4">
-                <Link
-                  href="https://www.facebook.com/invoicy.bg"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Facebook"
-                >
+                {publicBusinessProfile.facebookUrl ? (
+                  <Link
+                    href={publicBusinessProfile.facebookUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Facebook"
+                  >
                   <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                   </svg>
-                </Link>
-                <Link
-                  href="https://twitter.com/invoicy_bg"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Twitter"
-                >
+                  </Link>
+                ) : null}
+                {publicBusinessProfile.xUrl ? (
+                  <Link
+                    href={publicBusinessProfile.xUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="X"
+                  >
                   <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
                   </svg>
-                </Link>
-                <Link
-                  href="https://www.linkedin.com/company/invoicy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="LinkedIn"
-                >
+                  </Link>
+                ) : null}
+                {publicBusinessProfile.linkedinUrl ? (
+                  <Link
+                    href={publicBusinessProfile.linkedinUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="LinkedIn"
+                  >
                   <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
                   </svg>
-                </Link>
+                  </Link>
+                ) : null}
               </div>
             </div>
           </div>

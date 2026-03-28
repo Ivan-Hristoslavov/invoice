@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { APP_NAME } from "@/config/constants";
+import { paymentMessage } from "@/config/public-business";
 
 export const metadata: Metadata = genMeta({
   title: "Интеграции",
@@ -15,7 +16,7 @@ const integrations = [
   {
     icon: CreditCard,
     title: "Stripe",
-    description: "Приемайте плащания директно чрез Stripe. Автоматично проследяване на плащанията.",
+    description: "Сигурно процесиране на абонаментни плащания за Invoicy чрез Stripe Checkout.",
     status: "Достъпно",
     comingSoon: false
   },
@@ -68,6 +69,20 @@ export default function IntegrationsPage() {
             Свържете {APP_NAME} с вашите любими инструменти за по-ефективна работа
           </p>
         </div>
+
+        <Card className="mb-10 border-0 shadow-lg">
+          <CardHeader>
+            <CardTitle>Как работят плащанията</CardTitle>
+            <CardDescription>
+              Ясно и последователно за всички клиенти.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-muted-foreground">
+            <p>{paymentMessage.short}</p>
+            <p>{paymentMessage.subscription}</p>
+            <p>{paymentMessage.clientInvoices}</p>
+          </CardContent>
+        </Card>
 
         {/* Integrations Grid */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
