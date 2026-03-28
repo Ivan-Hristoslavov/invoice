@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 interface UserRoleActionsProps {
   userId: string;
@@ -123,14 +123,11 @@ export default function UserRoleActions({
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            className="inline-flex min-h-10 items-center justify-center rounded-2xl px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <UserCog className="h-4 w-4" />
-            <span className="sr-only">Действия с потребител</span>
-          </button>
+        <DropdownMenuTrigger
+          aria-label="Действия с потребител"
+          className="inline-flex min-h-9 items-center justify-center rounded-xl px-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <UserCog className="h-4 w-4" aria-hidden />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Действия с потребител</DropdownMenuLabel>

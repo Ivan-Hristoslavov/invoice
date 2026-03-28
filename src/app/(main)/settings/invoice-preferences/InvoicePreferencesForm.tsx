@@ -20,7 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { DEFAULT_VAT_RATE } from "@/config/constants";
 
 const preferencesSchema = z.object({

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Paperclip, File, Image, FileText, X, Upload, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { getDocuments, uploadDocument, deleteDocument } from "@/lib/services/document-service";
 import {
   ALLOWED_ATTACHMENT_MIME_TYPES,

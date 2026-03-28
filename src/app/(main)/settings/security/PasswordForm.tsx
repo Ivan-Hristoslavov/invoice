@@ -15,7 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, "Current password is required"),

@@ -49,11 +49,10 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { DEFAULT_VAT_RATE } from "@/config/constants";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { UsageCounter, LimitBanner } from "@/components/ui/pro-feature-lock";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FormDatePicker } from "@/components/ui/date-picker";
 import { InvoiceWorkspaceSetup } from "@/components/invoice/InvoiceWorkspaceSetup";
 import { FullPageLoader, LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -847,17 +846,22 @@ function NewInvoiceContent() {
         throw new Error(errorMessage);
       }
       
-      const created = await response.json();
+      const payload = await response.json();
+      // POST /api/invoices returns formatApiResponse(invoice) → { success, data }
+      const createdInvoice = (payload?.data ?? payload) as { id?: string };
+      const newInvoiceId = createdInvoice?.id;
+      if (!newInvoiceId) {
+        console.error("Create invoice: missing id in response", payload);
+        toast.error("Фактурата е създадена, но не можем да я отворим. Вижте списъка с фактури.");
+        refreshUsage();
+        router.push("/invoices");
+        return;
+      }
       // Refresh usage data after successful creation
       refreshUsage();
 
-      const invoiceUrl = `/invoices/${created.id}`;
-      toast.success("Фактурата е създадена успешно!", {
-        action: {
-          label: "Виж фактурата",
-          onClick: () => router.push(invoiceUrl),
-        },
-      });
+      const invoiceUrl = `/invoices/${newInvoiceId}`;
+      toast.success("Фактурата е създадена успешно!");
       router.push(invoiceUrl);
     } catch (error: any) {
       console.error("Error creating invoice:", error);

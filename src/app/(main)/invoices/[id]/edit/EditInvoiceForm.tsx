@@ -52,7 +52,7 @@ import {
 } from "@/components/ui/select";
 import { FormDatePicker } from "@/components/ui/date-picker";
 import { Loading } from "@/components/ui/loading";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 interface EditInvoiceFormProps {
   invoiceId: string;

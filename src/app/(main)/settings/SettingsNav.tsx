@@ -74,7 +74,7 @@ export function SettingsNav() {
       <Tabs value={selectedKey} onValueChange={handleTabChange} className="w-full">
         <TabsList
           className={cn(
-            "w-full flex flex-row flex-nowrap gap-0 rounded-xl border border-border/60 bg-card p-1",
+            "w-full min-w-0 flex flex-row flex-nowrap gap-0 rounded-xl border border-border/60 bg-card p-1 px-0.5 sm:px-1",
             "min-h-10 overflow-x-auto overflow-y-hidden",
             "[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           )}
@@ -89,10 +89,11 @@ export function SettingsNav() {
                 value={item.id}
                 isDisabled={isPending}
                 className={cn(
-                  "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  "shrink-0 flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors sm:px-3",
                   "data-[selected=true]:bg-primary data-[selected=true]:text-primary-foreground",
-                  "data-[selected=false]:text-slate-100 text-slate-100",
-                  "disabled:opacity-70 disabled:pointer-events-none"
+                  "data-[selected=false]:text-foreground/65 dark:data-[selected=false]:text-foreground/55",
+                  "data-[selected=true]:[&_span]:text-primary-foreground data-[selected=false]:[&_span]:text-inherit",
+                  "disabled:pointer-events-none disabled:opacity-70"
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" />

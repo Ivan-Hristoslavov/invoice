@@ -16,7 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Името трябва да е поне 2 символа"),

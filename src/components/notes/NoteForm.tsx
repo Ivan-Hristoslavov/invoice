@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { DEFAULT_VAT_RATE } from "@/config/constants";
 import { Badge } from "@/components/ui/badge";
 import React from "react";

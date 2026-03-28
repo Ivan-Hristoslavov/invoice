@@ -1,8 +1,10 @@
-"use client"
+"use client";
 
-import React from 'react';
-import { cn } from '@/lib/utils';
-import { FullPageLoader, LoadingSpinner } from '@/components/ui/loading-spinner';
+import React from "react";
+import { Spinner } from "@heroui/react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { FullPageLoader, LoadingSpinner } from "@/components/ui/loading-spinner";
 
 interface LoadingProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Вид на индикатора - може да бъде 'spinner', 'dots', или 'pulse' */
@@ -97,6 +99,11 @@ export function Loading({
   return content;
 }
 
+type LoadingButtonProps = React.ComponentProps<typeof Button> & {
+  isLoading?: boolean;
+  loadingText?: string;
+};
+
 export function LoadingButton({
   isLoading,
   children,
@@ -104,30 +111,17 @@ export function LoadingButton({
   className,
   loadingText = "Обработка...",
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  isLoading?: boolean;
-  loadingText?: string;
-}) {
+}: LoadingButtonProps) {
   return (
-    <button
-      className={cn(
-        "inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors",
-        "bg-primary text-primary-foreground hover:bg-primary/90",
-        "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
-        "disabled:opacity-50 disabled:pointer-events-none",
-        className
-      )}
-      disabled={disabled || isLoading}
-      {...props}
-    >
+    <Button disabled={disabled || isLoading} className={cn("inline-flex items-center gap-2", className)} {...props}>
       {isLoading ? (
         <>
-          <span className="mr-2 inline-block w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></span>
+          <Spinner size="sm" color="current" className="shrink-0" />
           {loadingText}
         </>
       ) : (
         children
       )}
-    </button>
+    </Button>
   );
 } 

@@ -3,7 +3,7 @@ import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const kickerClass =
-  "inline-flex max-w-full items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/[0.08] px-2.5 py-1 text-[11px] font-medium text-emerald-800 shadow-sm ring-1 ring-emerald-500/10 dark:border-emerald-500/35 dark:bg-emerald-500/15 dark:text-emerald-100 dark:ring-emerald-400/15 sm:gap-2 sm:px-3 sm:py-1 sm:text-xs";
+  "inline-flex max-w-full items-center gap-1 rounded-md border border-emerald-500/20 bg-emerald-500/[0.06] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/12 dark:text-emerald-100 sm:text-[11px]";
 
 /**
  * Малък зелен етикет с икона — визуално съгласуван с marketing chip-овете,
@@ -20,10 +20,7 @@ export function AppSectionKicker({
 }) {
   return (
     <span className={cn(kickerClass, className)}>
-      <Icon
-        className="h-3.5 w-3.5 shrink-0 text-emerald-700 opacity-90 dark:text-emerald-300 sm:h-4 sm:w-4"
-        aria-hidden
-      />
+      <Icon className="h-3 w-3 shrink-0 text-emerald-700 dark:text-emerald-300 sm:h-3.5 sm:w-3.5" aria-hidden />
       {children}
     </span>
   );

@@ -5,17 +5,6 @@ import { Dropdown, Separator } from "@heroui/react";
 import { Check, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-function mergeRefs<T>(...refs: (React.Ref<T> | undefined)[]) {
-  return (value: T) => {
-    refs.forEach((ref) => {
-      if (typeof ref === "function") ref(value);
-      else if (ref && typeof ref === "object" && "current" in ref) {
-        (ref as React.MutableRefObject<T | null>).current = value;
-      }
-    });
-  };
-}
-
 const ITEM_CLASS =
   "relative flex cursor-default select-none items-center rounded-lg px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50";
 
@@ -33,37 +22,21 @@ const DropdownMenu = ({ open, onOpenChange, children, ...props }: DropdownMenuPr
 );
 DropdownMenu.displayName = "DropdownMenu";
 
+/**
+ * HeroUI Dropdown.Trigger винаги рендерира един <button> (react-aria).
+ * Не подавайте вътрешен <Button> — това дава button в button и hydration грешка.
+ * Стиловете подайте през className; съдържанието — икони/текст без допълнителен бутон.
+ */
 const DropdownMenuTrigger = React.forwardRef<
   HTMLButtonElement,
-  Omit<React.ComponentProps<typeof Dropdown.Trigger>, "children"> & {
-    asChild?: boolean;
+  Omit<React.ComponentProps<typeof Dropdown.Trigger>, "children" | "asChild"> & {
     children?: React.ReactNode;
   }
->(({ asChild, children, className, ...props }, ref) => {
-  if (asChild && React.isValidElement(children)) {
-    const child = children as React.ReactElement<Record<string, unknown>>;
-    return (
-      <Dropdown.Trigger className={className} {...props}>
-        {(triggerProps: unknown) =>
-          React.cloneElement(child, {
-            ...(triggerProps as Record<string, unknown>),
-            ...child.props,
-            ref: mergeRefs(
-              ref as React.Ref<HTMLButtonElement>,
-              (child as React.ReactElement & { ref?: React.Ref<HTMLButtonElement> }).ref
-            ),
-            className: cn((child.props as { className?: string }).className, className),
-          } as Record<string, unknown>)
-        }
-      </Dropdown.Trigger>
-    );
-  }
-  return (
-    <Dropdown.Trigger ref={ref} className={className} {...props}>
-      {children}
-    </Dropdown.Trigger>
-  );
-});
+>(({ children, className, ...props }, ref) => (
+  <Dropdown.Trigger ref={ref} className={className} {...props}>
+    {children}
+  </Dropdown.Trigger>
+));
 DropdownMenuTrigger.displayName = "DropdownMenuTrigger";
 
 function mapAlignToPlacement(align?: "start" | "end" | "center"): "bottom start" | "bottom end" | "bottom" {

@@ -18,7 +18,7 @@ import {
   AlertCircle,
   CheckCircle2,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input, NumericInput } from "@/components/ui/input";
@@ -136,7 +136,6 @@ export default function NewProductPage() {
 
       toast.success("Продуктът е създаден", {
         description: data.name,
-        action: { label: "Виж продукти", onClick: () => router.push("/products") },
       });
       router.push("/products");
     } catch (error) {

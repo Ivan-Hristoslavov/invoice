@@ -1,29 +1,31 @@
 "use client";
 
 import * as React from "react";
+import { ProgressBar } from "@heroui/react";
 import { cn } from "@/lib/utils";
 
-export interface ProgressProps extends React.HTMLAttributes<HTMLDivElement> {
+/**
+ * @see https://heroui.com/docs/react/components/progress-bar
+ */
+export interface ProgressProps {
   value?: number;
   max?: number;
+  className?: string;
 }
 
 const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
-  ({ className, value = 0, max = 100, ...props }, ref) => (
-    <div
+  ({ className, value = 0, max = 100 }, ref) => (
+    <ProgressBar
       ref={ref}
-      role="progressbar"
-      aria-valuemin={0}
-      aria-valuemax={max}
-      aria-valuenow={value}
-      className={cn("relative h-2 w-full overflow-hidden rounded-full bg-muted", className)}
-      {...props}
+      value={Number(value)}
+      minValue={0}
+      maxValue={Number(max)}
+      className={cn("w-full", className)}
     >
-      <div
-        className="h-full bg-primary transition-all duration-300 ease-in-out"
-        style={{ width: `${Math.min(100, Math.max(0, (Number(value) / Number(max)) * 100))}%` }}
-      />
-    </div>
+      <ProgressBar.Track>
+        <ProgressBar.Fill />
+      </ProgressBar.Track>
+    </ProgressBar>
   )
 );
 Progress.displayName = "Progress";

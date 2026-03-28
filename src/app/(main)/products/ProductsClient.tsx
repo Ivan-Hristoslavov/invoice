@@ -2,9 +2,20 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Plus, Search, Lock, LayoutGrid, List, Euro, Percent, Package } from "lucide-react";
-import { formatPrice } from "@/lib/utils";
-import { Card, CardContent } from "@/components/ui/card";
+import { useRouter } from "next/navigation";
+import {
+  Plus,
+  Search,
+  Lock,
+  LayoutGrid,
+  List,
+  Euro,
+  Percent,
+  Package,
+  ChevronRight,
+} from "lucide-react";
+import { cn, formatPrice } from "@/lib/utils";
+import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +61,7 @@ export default function ProductsClient({
   isApproachingLimit,
   isAtLimit,
 }: ProductsClientProps) {
+  const router = useRouter();
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -79,7 +91,7 @@ export default function ProductsClient({
   const withTax = products.filter((p) => p.taxRate > 0).length;
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="min-w-0 space-y-4 sm:space-y-6">
       {/* Soft Upgrade Prompts */}
       {isApproachingLimit && (
         <LimitBanner
@@ -144,59 +156,60 @@ export default function ProductsClient({
         )}
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
+      {/* Stats — един ред × 3; min-w-0 за grid overflow */}
+      <div className="grid w-full min-w-0 grid-cols-3 gap-1 sm:gap-2">
+        <CardStatsMetric compact title="Общо продукти" value={totalProducts} icon={Package} />
         <CardStatsMetric
-          title="Общо продукти"
-          value={totalProducts}
-          icon={Package}
-          gradient="from-emerald-500 to-teal-600"
-        />
-        <CardStatsMetric
+          compact
           title="Средна цена"
           value={formatPrice(avgPrice)}
           valueSuffix="€"
           icon={Euro}
-          gradient="from-blue-500 to-indigo-600"
         />
         <CardStatsMetric
+          compact
           title="С ДДС"
           value={withTax}
-          valueClassName="text-violet-600"
+          valueClassName="text-violet-600 dark:text-violet-400"
           icon={Percent}
-          gradient="from-slate-500 to-slate-600"
         />
       </div>
 
       {/* Search & View Toggle */}
       <Card className="border-0 shadow-lg">
         <CardContent className="p-3 sm:p-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-            <div className="relative flex-1 w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-              <Input 
-                placeholder="Търсене по име или описание..." 
-                className="pl-10 h-11 border-border"
+          <div className="flex flex-col gap-3 min-[420px]:flex-row min-[420px]:items-center min-[420px]:gap-3">
+            <div className="relative min-w-0 w-full flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Търсене по име или описание..."
+                className="h-10 min-h-11 border-border pl-10 text-base sm:h-11 sm:text-sm"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <div className="hidden items-center gap-1 rounded-lg bg-muted/50 p-1 sm:flex">
+            <div className="flex shrink-0 items-center justify-stretch gap-1 rounded-lg bg-muted/50 p-1 min-[420px]:justify-center">
               <Button
                 variant={viewMode === "cards" ? "default" : "ghost"}
                 size="sm"
+                type="button"
                 onClick={() => setViewMode("cards")}
-                className="h-9 px-3"
+                className="h-9 min-h-9 flex-1 px-2 min-[420px]:flex-none min-[420px]:px-3"
+                aria-pressed={viewMode === "cards"}
+                aria-label="Картичен изглед"
               >
-                <LayoutGrid className="h-4 w-4" />
+                <LayoutGrid className="mx-auto h-4 w-4" />
               </Button>
               <Button
                 variant={viewMode === "table" ? "default" : "ghost"}
                 size="sm"
+                type="button"
                 onClick={() => setViewMode("table")}
-                className="h-9 px-3"
+                className="h-9 min-h-9 flex-1 px-2 min-[420px]:flex-none min-[420px]:px-3"
+                aria-pressed={viewMode === "table"}
+                aria-label="Табличен изглед"
               >
-                <List className="h-4 w-4" />
+                <List className="mx-auto h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -223,42 +236,59 @@ export default function ProductsClient({
           </CardContent>
         </Card>
       ) : viewMode === "cards" ? (
-        /* Cards View */
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid min-w-0 grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
           {paginatedProducts.map((product) => (
-            <Link key={product.id} href={`/products/${product.id}`}>
-              <Card className="group h-full min-h-[112px] cursor-pointer border-0 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-                <CardContent className="flex h-full flex-col items-center p-4 text-center sm:p-5">
-                  {/* Name */}
-                  <div className="flex w-full items-center justify-center gap-2">
-                    <h3 className="truncate text-sm font-semibold transition-colors group-hover:text-primary sm:text-base">
-                      {product.name}
-                    </h3>
-                    {product.isActive === false && (
-                      <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
-                        Архивиран
-                      </Badge>
-                    )}
-                  </div>
-                  
-                  {/* Description */}
-                  {product.description && (
-                    <p className="mt-1 line-clamp-1 w-full text-[11px] text-muted-foreground sm:text-xs">
-                      {product.description}
-                    </p>
-                  )}
-                  
-                  {/* Price */}
-                  <div className="mt-auto flex w-full items-center justify-center gap-1.5 border-t pt-3">
-                    <span className="text-base font-bold sm:text-lg">
-                      {formatPrice(product.price)} €
-                    </span>
-                    <span className="text-xs text-muted-foreground">/ {product.unit}</span>
-                    {product.taxRate > 0 && (
-                      <Badge variant="secondary" className="text-xs ml-1">
-                        {product.taxRate}%
-                      </Badge>
-                    )}
+            <Link key={product.id} href={`/products/${product.id}`} className="block h-full min-w-0">
+              <Card
+                variant="secondary"
+                className="group h-full cursor-pointer rounded-xl border border-border/50 bg-card/90 shadow-none ring-0 transition-[border-color,background-color,box-shadow] hover:border-primary/35 hover:bg-muted/25 hover:shadow-sm"
+              >
+                <CardContent className="!p-0">
+                  {/* Мобилен: вертикален блок; sm+: хоризонтален ред */}
+                  <div className="flex flex-col gap-2.5 p-3 sm:flex-row sm:items-stretch sm:gap-3 sm:p-3.5">
+                    <div className="flex min-w-0 items-start gap-3 sm:min-w-0 sm:flex-1">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary sm:h-[52px] sm:w-[52px]">
+                        <Package className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <CardTitle className="line-clamp-2 text-sm font-semibold leading-snug text-foreground group-hover:text-primary sm:text-base">
+                            {product.name}
+                          </CardTitle>
+                          {product.isActive === false && (
+                            <Badge
+                              variant="outline"
+                              className="shrink-0 border-amber-500/40 text-[9px] uppercase tracking-wide text-amber-800 dark:text-amber-200"
+                            >
+                              Архив
+                            </Badge>
+                          )}
+                        </div>
+                        <CardDescription className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground sm:mt-1.5">
+                          {product.description?.trim() || `Артикул · ${product.unit}`}
+                        </CardDescription>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 border-t border-border/40 pt-2.5 sm:w-[5.75rem] sm:min-w-[5.75rem] sm:flex-col sm:items-end sm:justify-center sm:border-l sm:border-t-0 sm:pt-0 sm:pl-3 sm:shrink-0">
+                      <div className="text-left sm:w-full sm:text-right">
+                        <span className="text-base font-bold tabular-nums text-foreground sm:text-lg">
+                          {formatPrice(product.price)}
+                          <span className="text-xs font-semibold text-muted-foreground"> €</span>
+                        </span>
+                        <p className="text-[11px] text-muted-foreground sm:mt-0.5">/ {product.unit}</p>
+                      </div>
+                      <div className="flex items-center gap-2 sm:flex-col sm:items-end sm:gap-1">
+                        {product.taxRate > 0 ? (
+                          <Badge variant="secondary" className="text-[10px] font-medium whitespace-nowrap">
+                            ДДС {product.taxRate}%
+                          </Badge>
+                        ) : null}
+                        <ChevronRight
+                          className="h-4 w-4 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5 group-hover:text-primary sm:hidden"
+                          aria-hidden
+                        />
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -266,72 +296,101 @@ export default function ProductsClient({
           ))}
         </div>
       ) : (
-        /* Table View */
-        <Card className="border-0 shadow-lg overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-b border-border/50">
-                <TableHead className="font-medium text-muted-foreground">Продукт</TableHead>
-                <TableHead className="font-medium text-muted-foreground">Описание</TableHead>
-                <TableHead className="font-medium text-muted-foreground text-right">Цена</TableHead>
-                <TableHead className="font-medium text-muted-foreground text-center">Единица</TableHead>
-                <TableHead className="font-medium text-muted-foreground text-center">ДДС</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedProducts.map((product) => (
-                <TableRow 
-                  key={product.id} 
-                  className="cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => window.location.href = `/products/${product.id}`}
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{product.name}</span>
+        <Table
+          variant="secondary"
+          stickyHeader
+          className="min-w-0 rounded-2xl border border-border/50 bg-card shadow-sm"
+          contentAriaLabel="Списък с продукти"
+          contentClassName="min-w-[680px]"
+          scrollContainerClassName="overflow-x-auto overscroll-x-contain"
+        >
+          <TableHeader
+            sticky
+            className="border-b border-border/50 bg-muted/40 backdrop-blur-sm dark:bg-muted/25"
+          >
+            <TableRow className="border-0 hover:bg-transparent">
+              <TableHead className="w-[36%] text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Продукт
+              </TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Описание
+              </TableHead>
+              <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Цена
+              </TableHead>
+              <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Мярка
+              </TableHead>
+              <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                ДДС
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedProducts.map((product, index) => (
+              <TableRow
+                key={product.id}
+                className={cn(
+                  "cursor-pointer border-b border-border/30 transition-colors last:border-0",
+                  "hover:bg-primary/[0.04] dark:hover:bg-primary/[0.07]",
+                  index % 2 === 1 && "bg-muted/20 dark:bg-muted/10"
+                )}
+                onClick={() => router.push(`/products/${product.id}`)}
+              >
+                <TableCell className="py-2 sm:py-3.5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <Package className="h-4 w-4" aria-hidden />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-foreground">{product.name}</p>
                       {product.isActive === false && (
-                        <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
-                          Архивиран
+                        <Badge variant="outline" className="mt-1 text-[10px] uppercase tracking-wide">
+                          Архив
                         </Badge>
                       )}
                     </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground max-w-[200px] truncate">
-                    {product.description || "-"}
-                  </TableCell>
-                  <TableCell className="text-right font-semibold">
+                  </div>
+                </TableCell>
+                <TableCell className="max-w-[220px] py-2 text-sm text-muted-foreground sm:py-3.5">
+                  <span className="line-clamp-2">{product.description || "—"}</span>
+                </TableCell>
+                <TableCell className="py-2 text-right sm:py-3.5">
+                  <span className="font-semibold tabular-nums text-foreground">
                     {formatPrice(product.price)} €
-                  </TableCell>
-                  <TableCell className="text-center text-muted-foreground">
-                    {product.unit}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {product.taxRate > 0 ? (
-                      <Badge variant="secondary" className="text-xs">
-                        {product.taxRate}%
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
+                  </span>
+                </TableCell>
+                <TableCell className="py-2 text-center text-sm text-muted-foreground sm:py-3.5">{product.unit}</TableCell>
+                <TableCell className="py-2 text-center sm:py-3.5">
+                  {product.taxRate > 0 ? (
+                    <Badge variant="secondary" className="font-medium tabular-nums">
+                      {product.taxRate}%
+                    </Badge>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-2">
-          <p className="text-sm text-muted-foreground">
+        <div className="flex flex-col items-center gap-3 pt-3 sm:flex-row sm:items-center sm:justify-between sm:pt-2">
+          <p className="order-2 text-center text-xs text-muted-foreground sm:order-1 sm:text-left sm:text-sm">
             {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)} от {filteredProducts.length} продукта
           </p>
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-            size="sm"
-          />
+          <div className="order-1 flex w-full justify-center overflow-x-auto pb-1 sm:order-2 sm:w-auto sm:justify-end sm:pb-0">
+            <Pagination
+              className="shrink-0"
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              size="sm"
+            />
+          </div>
         </div>
       )}
     </div>

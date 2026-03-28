@@ -3,7 +3,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Cookie, Shield } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@heroui/react";
+import { cn } from "@/lib/utils";
 
 const COOKIE_CONSENT_KEY = "cookie-consent";
 const COOKIE_CONSENT_EVENT = "cookie-consent-change";
@@ -128,35 +129,44 @@ export function CookieConsent() {
   if (!hasCheckedConsent || consent !== null) return null;
 
   return (
-    <div className="fixed inset-0 z-100 bg-black/75">
-      <div className="flex min-h-dvh items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-[2px] dark:bg-black/75"
+      role="presentation"
+    >
+      <div className="flex min-h-dvh w-full items-end justify-center p-0 sm:items-center sm:p-4">
         <div
           ref={dialogRef}
-          className="relative z-101 w-full max-w-xl rounded-3xl border border-slate-700 bg-slate-950 px-5 py-6 text-slate-50 shadow-2xl ring-1 ring-white/10 sm:px-7 sm:py-7"
+          className={cn(
+            "w-full max-w-xl rounded-t-2xl border border-border bg-background px-4 py-5 text-foreground shadow-2xl",
+            "sm:rounded-2xl sm:px-6 sm:py-6"
+          )}
           role="dialog"
           aria-modal="true"
           aria-labelledby="cookie-title"
           aria-describedby="cookie-desc"
           onKeyDown={handleDialogKeyDown}
         >
-          <div className="flex flex-col gap-5">
-            <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-500/15 ring-1 ring-amber-400/10">
-                <Cookie className="h-5 w-5 text-amber-400" />
+          <div className="flex flex-col gap-4">
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted">
+                <Cookie className="h-5 w-5 text-muted-foreground" aria-hidden />
               </div>
               <div className="min-w-0">
-                <h2 id="cookie-title" className="text-lg font-semibold tracking-tight text-white sm:text-xl">
+                <h2
+                  id="cookie-title"
+                  className="text-base font-semibold tracking-tight sm:text-lg"
+                >
                   Използваме бисквитки
                 </h2>
                 <p
                   id="cookie-desc"
-                  className="mt-2.5 max-w-136 text-sm leading-7 text-slate-300 sm:text-base"
+                  className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-[15px]"
                 >
-                  Използваме необходими бисквитки за вход и сигурност, а с ваше
-                  съгласие и допълнителни за по-добро изживяване.{" "}
+                  Използваме необходими бисквитки за вход и сигурност, а с ваше съгласие и
+                  допълнителни за по-добро изживяване.{" "}
                   <Link
                     href="/cookies"
-                    className="font-medium text-cyan-400 hover:underline underline-offset-4"
+                    className="font-medium text-primary underline-offset-4 hover:underline"
                   >
                     Научете повече
                   </Link>
@@ -164,28 +174,31 @@ export function CookieConsent() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3.5">
-              <p className="flex items-center gap-2.5 text-xs leading-5 text-slate-300 sm:text-sm">
-                <Shield className="h-4 w-4 shrink-0 text-cyan-400" />
-                Докато не изберете, достъпът до сайта остава ограничен.
-              </p>
-            </div>
+            <p className="flex items-start gap-2 text-xs leading-snug text-muted-foreground sm:text-sm">
+              <Shield className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+              <span>Докато не изберете, достъпът до сайта остава ограничен.</span>
+            </p>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="flex w-full flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:items-stretch sm:gap-3">
               <Button
                 ref={essentialButtonRef}
                 variant="outline"
-                onClick={handleEssentialOnly}
-                className="h-12 min-w-0 rounded-full border-slate-700 bg-slate-950 px-4 text-sm font-medium text-white hover:bg-slate-900"
+                size="md"
+                className="h-11 w-full min-h-11 flex-1 rounded-xl font-medium sm:h-10 sm:min-h-10"
+                onPress={handleEssentialOnly}
               >
                 Само необходими
               </Button>
               <Button
-                onClick={handleAcceptAll}
-                className="h-12 min-w-0 rounded-full px-4 text-sm font-medium text-white gradient-primary hover:opacity-90"
+                variant="primary"
+                size="md"
+                className="h-11 w-full min-h-11 flex-1 rounded-xl font-medium sm:h-10 sm:min-h-10"
+                onPress={handleAcceptAll}
               >
-                <Shield className="mr-2 h-4 w-4" />
-                Приемам всички
+                <span className="inline-flex items-center justify-center gap-2">
+                  <Shield className="h-4 w-4 shrink-0" aria-hidden />
+                  Приемам всички
+                </span>
               </Button>
             </div>
           </div>

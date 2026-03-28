@@ -136,6 +136,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       } as Record<string, unknown>);
     }
 
+    const heroUiProps = props as Partial<React.ComponentProps<typeof HeroUIButton>> & {
+      onPress?: (e: Parameters<NonNullable<React.ComponentProps<typeof HeroUIButton>["onPress"]>>[0]) => void;
+    };
+    const { onPress: onPressFromProps, ...restHeroProps } = heroUiProps;
+
     return (
       <HeroUIButton
         ref={ref}
@@ -146,12 +151,15 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         type={type}
         form={form}
         className={sharedClassName}
+        {...restHeroProps}
         onPress={
-          onClick
-            ? (e) => onClick(e as unknown as React.MouseEvent<HTMLButtonElement>)
+          onClick || onPressFromProps
+            ? (e) => {
+                onPressFromProps?.(e);
+                if (onClick) onClick(e as unknown as React.MouseEvent<HTMLButtonElement>);
+              }
             : undefined
         }
-        {...(props as Partial<React.ComponentProps<typeof HeroUIButton>>)}
       >
         {loading && <Spinner size="sm" className="mr-1" />}
         {children}

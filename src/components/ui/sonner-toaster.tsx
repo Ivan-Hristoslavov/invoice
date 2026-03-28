@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * HeroUI global toast region. Filename is historical; this is not the Sonner library.
+ * @see https://heroui.com/docs/react/components/toast
+ */
 import { Toast } from "@heroui/react";
 
 export function Toaster() {

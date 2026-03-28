@@ -55,7 +55,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { StatusChangeModal } from "@/components/invoice/StatusChangeModal";
 import { DeleteInvoiceModal } from "@/components/invoice/DeleteInvoiceModal";
 import { VoidInvoiceModal } from "@/components/invoice/VoidInvoiceModal";
@@ -405,32 +405,24 @@ export default function InvoicesClient({
   }, [invoices]);
 
   const statsCards = [
-    {
-      title: "Общо",
-      value: invoices.length,
-      icon: FileText,
-      gradient: "from-blue-500 to-indigo-600",
-    },
+    { title: "Общо", value: invoices.length, icon: FileText },
     {
       title: "Издадени",
       value: stats.issued,
       icon: CheckCircle,
-      gradient: "from-emerald-500 to-teal-600",
-      valueClassName: "text-emerald-600",
+      valueClassName: "text-emerald-600 dark:text-emerald-400",
     },
     {
       title: "Чернови",
       value: stats.draft,
       icon: Clock,
-      gradient: "from-amber-500 to-orange-600",
-      valueClassName: "text-amber-600",
+      valueClassName: "text-amber-600 dark:text-amber-400",
     },
     {
       title: "Стойност",
       value: formatPrice(stats.totalValue),
       valueSuffix: "€",
       icon: Download,
-      gradient: "from-slate-500 to-slate-600",
     },
   ];
 
@@ -579,7 +571,7 @@ export default function InvoicesClient({
       )}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+      <div className="mx-auto grid max-w-3xl grid-cols-2 gap-2 sm:max-w-4xl sm:gap-2.5 lg:max-w-none lg:grid-cols-4">
         {statsCards.map((stat) => (
           <div key={stat.title}>
             <CardStatsMetric
@@ -588,15 +580,14 @@ export default function InvoicesClient({
               valueSuffix={stat.valueSuffix}
               valueClassName={stat.valueClassName}
               icon={stat.icon}
-              gradient={stat.gradient}
             />
           </div>
         ))}
       </div>
 
       {/* Filters */}
-      <Card className="rounded-xl border border-border/50 shadow-md">
-        <CardContent className="p-2 sm:p-3">
+      <Card className="rounded-xl border border-border/40 shadow-sm">
+        <CardContent className="!p-2 sm:!p-2.5 md:!p-3">
           <div className="space-y-2 md:hidden">
             <div className="relative min-w-0">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -720,8 +711,8 @@ export default function InvoicesClient({
       </Card>
 
       {/* Invoices List */}
-      <Card className="border border-border/50 shadow-md">
-        <CardHeader className="pb-4">
+      <Card className="border border-border/40 shadow-sm">
+        <CardHeader className="space-y-1 pb-3 sm:pb-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <Badge variant="info" className="mb-2">
@@ -791,26 +782,29 @@ export default function InvoicesClient({
                   const statusConfig = getStatusConfig(normalizedStatus);
                   const StatusIcon = statusConfig.icon;
                   return (
-                    <div key={invoice.id} className="bg-muted/25 rounded-xl px-3 py-3 sm:px-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex min-w-0 items-start gap-3">
+                    <div key={invoice.id} className="rounded-xl border border-border/40 bg-muted/20 px-3 py-2.5 sm:px-3.5 sm:py-3">
+                      <div className="flex items-start justify-between gap-2.5">
+                        <div className="flex min-w-0 items-start gap-2.5">
                           <div
                             className={cn(
-                              "h-10 w-10 rounded-lg flex items-center justify-center",
-                            normalizedStatus === "ISSUED"
+                              "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+                              normalizedStatus === "ISSUED"
                                 ? "bg-emerald-500/10"
                                 : normalizedStatus === "DRAFT"
                                   ? "bg-amber-500/10"
                                   : "bg-red-500/10"
                             )}
                           >
-                            <StatusIcon className={`h-5 w-5 ${
-                              normalizedStatus === "ISSUED"
-                                ? 'text-emerald-600'
-                                : normalizedStatus === "DRAFT"
-                                ? 'text-amber-600'
-                                : 'text-red-600'
-                            }`} />
+                            <StatusIcon
+                              className={cn(
+                                "h-4 w-4",
+                                normalizedStatus === "ISSUED"
+                                  ? "text-emerald-600"
+                                  : normalizedStatus === "DRAFT"
+                                    ? "text-amber-600"
+                                    : "text-red-600"
+                              )}
+                            />
                           </div>
                           <div className="min-w-0">
                             <p className="truncate font-semibold text-sm">
@@ -848,22 +842,38 @@ export default function InvoicesClient({
                           </p>
                         </div>
                       </div>
-                      <div className="mt-2 flex items-center gap-0.5 border-t border-border/40 pt-2">
-                        {/* Inline: Преглед, Издай (draft), Редакция (draft) or Дублирай, then menu */}
-                        <div className="hidden min-[320px]:flex flex-1 items-center gap-0.5 min-w-0">
-                          <Button size="sm" variant="ghost" asChild className="min-h-0! h-6 flex-1 min-w-0 justify-center rounded-md px-1 py-1">
-                            <Link href={`/invoices/${invoice.id}`} className="text-muted-foreground hover:text-foreground" title="Преглед">
-                              <Eye className="h-3 w-3" />
+                      <div className="mt-2 flex items-center gap-1 border-t border-border/30 pt-2">
+                        <div className="hidden min-[320px]:flex min-w-0 flex-1 items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            asChild
+                            className="min-h-0! h-7 min-w-0 flex-1 justify-center rounded-lg bg-slate-100 px-1 py-1 text-slate-700 hover:bg-slate-200 dark:bg-slate-800/80 dark:text-slate-200 dark:hover:bg-slate-800"
+                            title="Преглед"
+                          >
+                            <Link href={`/invoices/${invoice.id}`}>
+                              <Eye className="h-3.5 w-3.5" />
                             </Link>
                           </Button>
                           {invoice.userId === currentUserId && normalizedStatus === "DRAFT" && (
                             <>
-                              <Button size="sm" className="min-h-0! h-6 flex-1 min-w-0 justify-center rounded-md border-0 px-1 py-1 text-white gradient-primary hover:opacity-90" onClick={() => openStatusModal(invoice, "ISSUED")} title="Издай">
-                                <FileCheck className="h-3 w-3" />
+                              <Button
+                                size="sm"
+                                className="min-h-0! h-7 min-w-0 flex-1 justify-center rounded-lg border-0 bg-emerald-600 px-1 py-1 text-white hover:bg-emerald-700"
+                                onClick={() => openStatusModal(invoice, "ISSUED")}
+                                title="Издай"
+                              >
+                                <FileCheck className="h-3.5 w-3.5" />
                               </Button>
-                              <Button size="sm" variant="ghost" asChild className="min-h-0! h-6 flex-1 min-w-0 justify-center rounded-md px-1 py-1">
-                                <Link href={`/invoices/${invoice.id}/edit`} className="text-muted-foreground hover:text-foreground" title="Редакция">
-                                  <Edit className="h-3 w-3" />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                asChild
+                                className="min-h-0! h-7 min-w-0 flex-1 justify-center rounded-lg bg-sky-500/15 px-1 py-1 text-sky-800 hover:bg-sky-500/25 dark:text-sky-200"
+                                title="Редакция"
+                              >
+                                <Link href={`/invoices/${invoice.id}/edit`}>
+                                  <Edit className="h-3.5 w-3.5" />
                                 </Link>
                               </Button>
                             </>
@@ -872,27 +882,26 @@ export default function InvoicesClient({
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="min-h-0! h-6 flex-1 min-w-0 justify-center rounded-md px-1 py-1 text-muted-foreground hover:text-foreground"
+                              className="min-h-0! h-7 min-w-0 flex-1 justify-center rounded-lg bg-violet-500/12 px-1 py-1 text-violet-800 hover:bg-violet-500/20 dark:text-violet-200"
                               onClick={() => handleDuplicate(invoice.id)}
                               title="Дублирай"
                             >
-                              <Copy className="h-3 w-3" />
+                              <Copy className="h-3.5 w-3.5" />
                             </Button>
                           )}
                         </div>
-                        {/* Narrow: single "Действия"; wider: icon-only menu */}
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="min-h-0! h-6 flex-1 min-[320px]:w-6 min-[320px]:flex-none min-[320px]:p-0 rounded-md px-2"
-                              title="Още действия"
-                            >
-                              <Edit className="h-3 w-3 shrink-0 min-[320px]:hidden" />
-                              <span className="text-[10px] font-medium min-[320px]:sr-only">Действия</span>
-                              <MoreHorizontal className="hidden min-[320px]:block h-3 w-3 shrink-0" />
-                            </Button>
+                          <DropdownMenuTrigger
+                            aria-label="Още действия"
+                            className={cn(
+                              "inline-flex h-7 min-h-0 flex-1 items-center justify-center gap-1 rounded-lg px-2 text-muted-foreground transition-colors",
+                              "min-[320px]:h-8 min-[320px]:w-8 min-[320px]:flex-none min-[320px]:px-0",
+                              "border border-border/50 bg-background/90 hover:bg-muted/70 hover:text-foreground"
+                            )}
+                          >
+                            <Edit className="h-3 w-3 shrink-0 min-[320px]:hidden" aria-hidden />
+                            <span className="text-[10px] font-medium min-[320px]:sr-only">Действия</span>
+                            <MoreHorizontal className="hidden h-3.5 w-3.5 shrink-0 min-[320px]:block" aria-hidden />
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-56">
                             <DropdownMenuItem asChild>
@@ -902,7 +911,7 @@ export default function InvoicesClient({
                               </Link>
                             </DropdownMenuItem>
                             {invoice.userId === currentUserId && normalizedStatus === "DRAFT" && (
-                              <DropdownMenuItem asChild>
+                              <DropdownMenuItem asChild className="min-[320px]:hidden">
                                 <Link href={`/invoices/${invoice.id}/edit`}>
                                   <Edit className="mr-2 h-4 w-4" />
                                   Редактиране
@@ -958,13 +967,14 @@ export default function InvoicesClient({
                   );
                 })}
               </div>
-              <div className="hidden md:block">
+              <div className="hidden min-w-0 overflow-x-auto md:block">
                 <Table
                   variant="secondary"
                   stickyHeader
                   contentAriaLabel="Списък с фактури"
                   contentClassName="min-w-[980px]"
-                  className="rounded-2xl border border-border/50 bg-transparent"
+                  scrollContainerClassName="overflow-x-auto overscroll-x-contain"
+                  className="min-w-0 rounded-2xl border border-border/50 bg-transparent"
                 >
                   <TableHeader className="bg-muted/35">
                     <TableHead isRowHeader className="px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground text-center">
@@ -1195,17 +1205,19 @@ export default function InvoicesClient({
                 </Table>
               </div>
               {filteredInvoices.length > ITEMS_PER_PAGE && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t">
-                  <p className="text-sm text-muted-foreground order-2 sm:order-1">
+                <div className="flex flex-col items-center gap-3 border-t px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-4">
+                  <p className="order-2 text-center text-xs text-muted-foreground sm:order-1 sm:text-left sm:text-sm">
                     Показване {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filteredInvoices.length)} от {filteredInvoices.length}
                   </p>
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={Math.ceil(filteredInvoices.length / ITEMS_PER_PAGE)}
-                    onPageChange={setCurrentPage}
-                    size="sm"
-                    className="order-1 sm:order-2"
-                  />
+                  <div className="order-1 flex w-full justify-center overflow-x-auto pb-0.5 sm:order-2 sm:w-auto sm:justify-end sm:pb-0">
+                    <Pagination
+                      className="shrink-0"
+                      currentPage={currentPage}
+                      totalPages={Math.ceil(filteredInvoices.length / ITEMS_PER_PAGE)}
+                      onPageChange={setCurrentPage}
+                      size="sm"
+                    />
+                  </div>
                 </div>
               )}
             </>

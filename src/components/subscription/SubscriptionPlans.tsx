@@ -10,7 +10,7 @@ import { useSubscriptionLimit } from '@/hooks/useSubscriptionLimit';
 import { AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CancellationSurvey } from './CancellationSurvey';
-import { toast } from 'sonner';
+import { toast } from "@/lib/toast";
 import { cn, formatPrice } from '@/lib/utils';
 import { SUBSCRIPTION_PLANS } from '@/lib/subscription-plans';
 

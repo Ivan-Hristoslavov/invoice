@@ -69,10 +69,9 @@ function landingNavLinkVisual(isActive: boolean) {
 
 const LANDING_SCROLL_MARGIN = "scroll-mt-28 sm:scroll-mt-32";
 
-/** Външна зона по таб (рамка + фон), за да се вижда къде започва и свършва блокът. */
-const LANDING_ZONE_OUTER = "border-t border-border/70 px-4 py-8 sm:py-10";
-const LANDING_ZONE_PANEL =
-  "rounded-2xl border border-border/60 bg-card/80 shadow-sm backdrop-blur-sm dark:bg-card/50";
+/** Секции без тежки рамки — само вертикален ритъм и контейнер. */
+const LANDING_ZONE_OUTER = "px-4 py-8 sm:py-10";
+const LANDING_ZONE_PANEL = "rounded-2xl border border-border/40 bg-card/70 shadow-sm dark:bg-card/40";
 const LANDING_ZONE_LABEL =
   "text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400";
 
@@ -419,10 +418,7 @@ export default function HomePage() {
       />
 
       <div className="min-h-screen overflow-x-hidden flex flex-col pb-20 sm:pb-0">
-        <BackgroundShapes
-          variant={shouldReduceEffects ? "subtle" : "vibrant"}
-          reduceEffects={shouldReduceEffects}
-        />
+        <BackgroundShapes variant="subtle" reduceEffects />
 
         {/* ── Header: fixed + компактен режим при скрол ── */}
         <header
@@ -599,10 +595,10 @@ export default function HomePage() {
         <section
           id="top"
           data-landing-spy="top"
-          className={cn(LANDING_SCROLL_MARGIN, "border-b border-border/50 bg-background px-4 py-8 sm:py-10")}
+          className={cn(LANDING_SCROLL_MARGIN, "bg-background px-4 py-8 sm:py-10")}
         >
           <div className="container mx-auto max-w-6xl">
-            <div className="rounded-2xl border border-border/60 bg-card/90 p-5 text-center shadow-sm sm:p-8 md:p-10 dark:bg-card/70">
+            <div className="mx-auto max-w-3xl px-1 text-center sm:px-4">
               <p className={LANDING_ZONE_LABEL}>Начало</p>
               <h1
                 className="hero-title mx-auto mt-3 mb-3 max-w-[13ch] text-foreground sm:mb-4 sm:max-w-4xl"
@@ -637,14 +633,11 @@ export default function HomePage() {
                   </Link>
                 </Button>
               </div>
-              <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3 sm:gap-4">
+              <div className="mx-auto mt-2 grid max-w-lg grid-cols-3 gap-2 sm:max-w-xl sm:gap-3">
                 {heroHighlights.map((stat) => (
-                  <div
-                    key={stat.label}
-                    className="rounded-xl border border-border/50 bg-muted/30 px-4 py-3 shadow-xs"
-                  >
-                    <div className="metric-value gradient-primary-text">{stat.value}</div>
-                    <div className="metric-label mt-1">{stat.label}</div>
+                  <div key={stat.label} className="rounded-xl bg-muted/40 px-2 py-2.5 sm:px-3 sm:py-3">
+                    <div className="text-sm font-semibold text-foreground sm:text-base">{stat.value}</div>
+                    <div className="metric-label mt-0.5 text-[11px] sm:text-xs">{stat.label}</div>
                   </div>
                 ))}
               </div>
@@ -655,11 +648,11 @@ export default function HomePage() {
         <section
           id="product"
           data-landing-spy="product"
-          className={cn(LANDING_SCROLL_MARGIN, LANDING_ZONE_OUTER, "bg-muted/20 dark:bg-muted/10")}
+          className={cn(LANDING_SCROLL_MARGIN, LANDING_ZONE_OUTER, "bg-muted/15 dark:bg-muted/5")}
         >
           <div className="container mx-auto max-w-6xl">
             <div className={cn(LANDING_ZONE_PANEL, "p-5 sm:p-8 md:p-10")}>
-              <header className="border-b border-border/50 pb-8 text-center sm:pb-10">
+              <header className="pb-6 text-center sm:pb-8">
                 <p className={LANDING_ZONE_LABEL}>Продукт</p>
                 <h2 className="section-title mt-3">Какво прави {APP_NAME}</h2>
                 <p className="card-description mx-auto mt-3 max-w-lg">
@@ -674,13 +667,11 @@ export default function HomePage() {
                     {features.map((feature) => (
                       <Card
                         key={feature.title}
-                        className="border border-border/50 bg-background/60 shadow-xs"
+                        className="border-0 bg-transparent shadow-none ring-1 ring-border/50 dark:ring-border/40"
                       >
-                        <CardContent className="flex gap-3 p-4 sm:p-4">
-                          <div
-                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br ${feature.color} shadow-xs`}
-                          >
-                            <feature.icon className="h-5 w-5 text-white" />
+                        <CardContent className="flex gap-3 p-3 sm:p-4">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                            <feature.icon className="h-4 w-4" aria-hidden />
                           </div>
                           <div className="min-w-0">
                             <p className="card-title mb-1">{feature.title}</p>
@@ -730,16 +721,17 @@ export default function HomePage() {
                   <h3 className="card-title mb-4 text-center sm:text-left">Три стъпки</h3>
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                     {workflowSteps.map((step, index) => (
-                      <Card key={step.title} className="border border-border/50 bg-background/60 shadow-xs">
-                        <CardContent className="p-4 sm:p-5">
-                          <div className="mb-3 flex items-center gap-3">
-                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-bold text-muted-foreground">
+                      <Card
+                        key={step.title}
+                        className="border-0 bg-transparent shadow-none ring-1 ring-border/50 dark:ring-border/40"
+                      >
+                        <CardContent className="p-3 sm:p-4">
+                          <div className="mb-2 flex items-center gap-2.5">
+                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">
                               {index + 1}
                             </span>
-                            <div
-                              className={`flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br ${step.color}`}
-                            >
-                              <step.icon className="h-4 w-4 text-white" />
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                              <step.icon className="h-4 w-4" aria-hidden />
                             </div>
                           </div>
                           <p className="card-title mb-1">{step.title}</p>

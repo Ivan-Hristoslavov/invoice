@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState } from 'react';
+import { Spinner } from '@heroui/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loading } from '@/components/ui/loading';
@@ -78,8 +79,8 @@ export default function UIExamples() {
               
               <div className="space-y-2">
                 <p className="text-sm font-medium">Бутон със зареждане</p>
-                <Button disabled className="inline-flex items-center">
-                  <span className="mr-2 inline-block w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></span>
+                <Button disabled className="inline-flex items-center gap-2">
+                  <Spinner size="sm" color="current" className="shrink-0" />
                   Обработка...
                 </Button>
               </div>
@@ -96,14 +97,22 @@ export default function UIExamples() {
                 heading="Няма резултати"
                 description="Не бяха намерени резултати, отговарящи на вашите критерии."
                 icon={FileIcon}
-                action={<button onClick={() => alert('Филтрите са изчистени')}>Изчистване на филтрите</button>}
+                action={
+                  <Button variant="outline" size="sm" onClick={() => alert("Филтрите са изчистени")}>
+                    Изчистване на филтрите
+                  </Button>
+                }
               />
 
               <EmptyState
                 icon={FileText}
                 heading="Нямате фактури"
                 description="Създайте първата си фактура, за да започнете да следите вашите плащания."
-                action={<button onClick={() => alert('Създаване на нова фактура')}>Създаване на фактура</button>}
+                action={
+                  <Button size="sm" onClick={() => alert("Създаване на нова фактура")}>
+                    Създаване на фактура
+                  </Button>
+                }
               />
             </CardContent>
           </Card>

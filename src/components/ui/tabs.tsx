@@ -43,10 +43,9 @@ const TabsTrigger = React.forwardRef<
   <HeroUITabs.Tab
     ref={ref as any}
     id={id ?? value ?? ""}
-    // По подразбиране всички табове са с бял текст,
-    // освен ако изрично не бъде override-нато.
     className={cn(
-      "data-[selected=false]:text-slate-100 hover:text-slate-100",
+      "transition-colors data-[selected=true]:text-primary-foreground data-[selected=false]:text-foreground/65 data-[selected=false]:hover:text-foreground dark:data-[selected=false]:text-foreground/55",
+      "[&_svg]:shrink-0 data-[selected=true]:[&_svg]:text-primary-foreground data-[selected=false]:[&_svg]:text-foreground/60",
       className
     )}
     {...props}

@@ -7,7 +7,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Building2, Mail, Phone, Save, Search } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useCompanyBookLookup } from "@/hooks/useCompanyBookLookup";
 import { Button } from "@/components/ui/button";
 import { Input, NumericInput } from "@/components/ui/input";

@@ -55,8 +55,8 @@ function SubscriptionPageInner() {
         )}
 
         {success && !postPaymentLoading && (
-          <Alert variant="default" className="py-2 bg-green-50 dark:bg-green-950/20 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800">
-            <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+          <Alert variant="success" className="py-2">
+            <CheckCircle2 className="h-4 w-4" />
             <AlertTitle className="text-sm">Успех!</AlertTitle>
             <AlertDescription className="text-xs">
               Готово! Вашият план е активен. Можете да ползвате всички включени функции.

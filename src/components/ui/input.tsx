@@ -32,7 +32,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 );
 Input.displayName = "Input";
 
-// Numeric input: keep native input for now but same visual style as HeroUI
+// Numeric input: HeroUI Input shell + decimal/integer filtering (BG comma/dot)
 export interface NumericInputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type" | "onChange"> {
   allowDecimal?: boolean;
@@ -40,9 +40,36 @@ export interface NumericInputProps
 }
 
 const NumericInput = React.forwardRef<HTMLInputElement, NumericInputProps>(
-  ({ className, allowDecimal = true, onChange, onKeyDown, value, placeholder, name, onBlur, disabled, "aria-invalid": ariaInvalid, ...rest }, ref) => {
+  (
+    {
+      className,
+      allowDecimal = true,
+      onChange,
+      onKeyDown,
+      value,
+      placeholder,
+      name,
+      onBlur,
+      disabled,
+      "aria-invalid": ariaInvalid,
+      ...rest
+    },
+    ref
+  ) => {
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      const allowedKeys = ["Backspace", "Delete", "Tab", "Escape", "Enter", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"];
+      const allowedKeys = [
+        "Backspace",
+        "Delete",
+        "Tab",
+        "Escape",
+        "Enter",
+        "ArrowLeft",
+        "ArrowRight",
+        "ArrowUp",
+        "ArrowDown",
+        "Home",
+        "End",
+      ];
       if (allowDecimal && (e.key === "." || e.key === ",")) {
         const currentValue = (e.target as HTMLInputElement).value;
         if (currentValue.includes(".") || currentValue.includes(",")) e.preventDefault();
@@ -64,28 +91,33 @@ const NumericInput = React.forwardRef<HTMLInputElement, NumericInputProps>(
       } else {
         newValue = newValue.replace(/[^0-9]/g, "");
       }
-      const syntheticEvent = { ...e, target: { ...e.target, value: newValue, name: name || e.target.name } } as React.ChangeEvent<HTMLInputElement>;
+      const syntheticEvent = {
+        ...e,
+        target: { ...e.target, value: newValue, name: name || e.target.name },
+      } as React.ChangeEvent<HTMLInputElement>;
       onChange?.(syntheticEvent);
     };
 
     return (
-      <input
+      <HeroUIInput
         ref={ref}
         type="text"
         inputMode="decimal"
         name={name}
-        value={value}
+        value={value as string | undefined}
         placeholder={placeholder}
         disabled={disabled}
         onBlur={onBlur}
         onKeyDown={handleKeyDown}
         onChange={handleChange}
         aria-invalid={ariaInvalid}
+        fullWidth
         className={cn(
-          "flex min-h-11 w-full rounded-2xl border border-input bg-background px-4 py-2.5 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-12",
-          ariaInvalid && "border-destructive focus-visible:ring-destructive",
+          "min-h-11 rounded-2xl text-sm font-medium placeholder:font-normal sm:min-h-12 md:text-sm",
+          ariaInvalid && "data-[invalid=true]:border-destructive data-[invalid=true]:focus-visible:ring-destructive",
           className
         )}
+        data-invalid={ariaInvalid ? "true" : undefined}
         {...rest}
       />
     );

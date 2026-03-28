@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { formatCurrency } from "@/lib/utils";
 import DocumentsTab from "@/components/invoice/DocumentsTab";
 import { getDocuments } from "@/lib/services/document-service";

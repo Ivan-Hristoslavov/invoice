@@ -3,11 +3,23 @@
 import { useState, useCallback, useRef } from "react";
 import Cropper from "react-easy-crop";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { toast } from "sonner";
-import { Upload, X, Check, Loader2, Lock, Crown } from "lucide-react";
+import { toast } from "@/lib/toast";
+import { Label, Slider, Spinner } from "@heroui/react";
+import { Upload, X, Check, Lock, Crown } from "lucide-react";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { MAX_LOGO_SIZE_BYTES, MAX_LOGO_DIMENSION_PX } from "@/config/constants";
 
@@ -30,6 +42,7 @@ export function LogoUpload({ currentLogoUrl, companyId, onLogoUploaded }: LogoUp
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { checkLimit, isFree } = useSubscriptionLimit();
@@ -185,26 +198,23 @@ export function LogoUpload({ currentLogoUrl, companyId, onLogoUploaded }: LogoUp
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm("Сигурни ли сте, че искате да изтриете логото?")) {
-      return;
-    }
-
+  const confirmDeleteLogo = async () => {
     try {
       const response = await fetch(`/api/companies/${companyId}/logo`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (!response.ok) {
-        throw new Error('Грешка при изтриване на лого');
+        throw new Error("Грешка при изтриване на лого");
       }
 
       toast.success("Логото е изтрито");
-      onLogoUploaded('');
-    } catch (error: any) {
-      console.error('Error deleting logo:', error);
+      onLogoUploaded("");
+      setDeleteDialogOpen(false);
+    } catch (error: unknown) {
+      console.error("Error deleting logo:", error);
       toast.error("Грешка", {
-        description: "Възникна грешка при изтриване на лого. Моля, опитайте отново."
+        description: "Възникна грешка при изтриване на лого. Моля, опитайте отново.",
       });
     }
   };
@@ -213,24 +223,18 @@ export function LogoUpload({ currentLogoUrl, companyId, onLogoUploaded }: LogoUp
     <div className="space-y-4">
       {/* Pro feature notice */}
       {isFree && (
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-          <div className="h-8 w-8 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
-            <Crown className="h-4 w-4 text-amber-600" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
-              PRO функция
-            </p>
-            <p className="text-xs text-muted-foreground">
+        <Alert variant="warning">
+          <Crown className="h-4 w-4 shrink-0" />
+          <AlertTitle className="text-sm">PRO функция</AlertTitle>
+          <AlertDescription className="flex flex-col gap-3 text-xs sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-muted-foreground">
               Качването на собствено лого е налично само в PRO и BUSINESS плановете.
-            </p>
-          </div>
-          <Button asChild size="sm" variant="outline" className="flex-shrink-0 border-amber-500/30 text-amber-700 hover:bg-amber-500/10">
-            <Link href="/settings/subscription">
-              Надградете
-            </Link>
-          </Button>
-        </div>
+            </span>
+            <Button asChild size="sm" variant="outline" className="w-full shrink-0 sm:w-auto">
+              <Link href="/settings/subscription">Надградете</Link>
+            </Button>
+          </AlertDescription>
+        </Alert>
       )}
 
       <div className="flex items-center gap-6">
@@ -278,7 +282,7 @@ export function LogoUpload({ currentLogoUrl, companyId, onLogoUploaded }: LogoUp
               <Button
                 type="button"
                 variant="outline"
-                onClick={handleDelete}
+                onClick={() => setDeleteDialogOpen(true)}
                 className="flex items-center gap-2 text-red-600 hover:text-red-700"
               >
                 <X className="h-4 w-4" />
@@ -299,6 +303,27 @@ export function LogoUpload({ currentLogoUrl, companyId, onLogoUploaded }: LogoUp
         onChange={handleFileSelect}
         className="hidden"
       />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Изтриване на лого</AlertDialogTitle>
+            <AlertDialogDescription>
+              Сигурни ли сте, че искате да премахнете логото на компанията? Можете да качите ново по всяко време.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отказ</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => void confirmDeleteLogo()}
+            >
+              Изтрий логото
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
@@ -324,17 +349,21 @@ export function LogoUpload({ currentLogoUrl, companyId, onLogoUploaded }: LogoUp
             )}
           </div>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Мащаб</label>
-              <input
-                type="range"
-                min={1}
-                max={3}
-                step={0.1}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Мащаб</Label>
+              <Slider
                 value={zoom}
-                onChange={(e) => setZoom(Number(e.target.value))}
-                className="w-full"
-              />
+                onChange={(v) => setZoom(typeof v === "number" ? v : (v[0] ?? 1))}
+                minValue={1}
+                maxValue={3}
+                step={0.1}
+                className="w-full max-w-full"
+              >
+                <Slider.Track>
+                  <Slider.Fill />
+                </Slider.Track>
+                <Slider.Thumb />
+              </Slider>
             </div>
             <div className="flex justify-end gap-2">
               <Button
@@ -354,7 +383,7 @@ export function LogoUpload({ currentLogoUrl, companyId, onLogoUploaded }: LogoUp
               >
                 {isUploading ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Spinner size="sm" color="current" className="text-primary-foreground" />
                     Качване...
                   </>
                 ) : (

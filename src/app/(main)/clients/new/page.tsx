@@ -23,7 +23,7 @@ import {
   Search,
   Loader2,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useCompanyBookLookup } from "@/hooks/useCompanyBookLookup";
 import { Button } from "@/components/ui/button";
 import { Input, NumericInput } from "@/components/ui/input";

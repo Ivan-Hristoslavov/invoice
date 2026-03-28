@@ -1,23 +1,32 @@
 "use client";
 
 import * as React from "react";
+import { TextArea as HeroTextArea } from "@heroui/react";
 import { cn } from "@/lib/utils";
 
+/**
+ * Multiline input — HeroUI TextArea (React Aria).
+ * @see https://heroui.com/docs/react/components/textarea
+ */
 export interface TextareaProps
-  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  extends Omit<React.ComponentProps<typeof HeroTextArea>, "onChange"> {
   "aria-invalid"?: boolean;
+  onChange?: React.ChangeEventHandler<HTMLTextAreaElement>;
 }
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, "aria-invalid": ariaInvalid, ...props }, ref) => (
-    <textarea
+  ({ className, "aria-invalid": ariaInvalid, onChange, ...props }, ref) => (
+    <HeroTextArea
       ref={ref}
+      fullWidth
       className={cn(
-        "flex min-h-32 w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm ring-offset-background placeholder:text-muted-foreground/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-        ariaInvalid && "border-destructive focus-visible:ring-destructive",
+        "min-h-32 rounded-2xl text-sm font-medium placeholder:font-normal",
+        ariaInvalid && "data-[invalid=true]:border-destructive data-[invalid=true]:focus-visible:ring-destructive",
         className
       )}
+      data-invalid={ariaInvalid ? "true" : undefined}
       aria-invalid={ariaInvalid}
+      onChange={onChange}
       {...props}
     />
   )

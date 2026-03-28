@@ -1,5 +1,11 @@
 "use client";
 
+/**
+ * HeroUI Toast API with a Sonner-like surface so call sites stay concise.
+ * @see https://heroui.com/docs/react/components/toast
+ *
+ * Root layout must render `<Toast.Provider />` (see `components/ui/sonner-toaster.tsx`).
+ */
 import * as React from "react";
 import { Toast, toast as heroToast } from "@heroui/react";
 
@@ -12,10 +18,19 @@ type ToastAction = {
   children?: React.ReactNode;
 };
 
+/** Native HeroUI action button props; merges over legacy `action` when both are set. */
+type HeroToastActionProps = {
+  children?: React.ReactNode;
+  onPress?: () => void;
+  className?: string;
+  variant?: ToastAction["variant"];
+};
+
 type SonnerLikeOptions = {
   description?: React.ReactNode;
   action?: ToastAction;
   cancel?: ToastAction;
+  actionProps?: HeroToastActionProps;
   duration?: number;
   icon?: React.ReactNode;
   className?: string;
@@ -75,12 +90,18 @@ function mapOptions(options?: SonnerLikeOptions, variant?: "default" | "accent" 
     return variant ? { variant } : undefined;
   }
 
+  const legacyAction = mapAction(options.action, options.cancel);
+  const actionProps =
+    legacyAction && options.actionProps
+      ? { ...legacyAction, ...options.actionProps }
+      : options.actionProps ?? legacyAction;
+
   return {
     description: options.description,
     indicator: options.icon,
     variant,
     timeout: options.duration,
-    actionProps: mapAction(options.action, options.cancel),
+    actionProps,
   };
 }
 

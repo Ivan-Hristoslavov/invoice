@@ -1,137 +1,78 @@
-"use client"
+"use client";
 
-import React from 'react';
-import { cn } from '@/lib/utils';
-import { AlertTriangleIcon, XCircleIcon, RefreshCwIcon, InfoIcon } from 'lucide-react';
-import { Button } from './button';
+import React from "react";
+import { cn } from "@/lib/utils";
+import { RefreshCwIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface ErrorMessageProps extends React.HTMLAttributes<HTMLDivElement> {
-  /** Заглавие на грешката */
   title?: string;
-  /** Описание на грешката */
   message?: string;
-  /** Тип на грешката */
-  type?: 'error' | 'warning' | 'info';
-  /** Функция, която да се извика при повторен опит */
+  type?: "error" | "warning" | "info";
   onRetry?: () => void;
-  /** Текст на бутона за повторен опит */
   retryText?: string;
-  /** Дали грешката е inline (без фон и рамка) */
   inline?: boolean;
-  /** Дали да се покаже иконата */
   showIcon?: boolean;
-  /** Допълнителни действия */
   actions?: React.ReactNode;
+}
+
+function typeToVariant(type: ErrorMessageProps["type"]): "destructive" | "warning" | "accent" {
+  switch (type) {
+    case "warning":
+      return "warning";
+    case "info":
+      return "accent";
+    default:
+      return "destructive";
+  }
 }
 
 export function ErrorMessage({
   title,
   message,
-  type = 'error',
+  type = "error",
   onRetry,
-  retryText = 'Опитайте отново',
+  retryText = "Опитайте отново",
   inline = false,
-  showIcon = true,
+  showIcon: _showIcon = true,
   actions,
   className,
   children,
   ...props
 }: ErrorMessageProps) {
-  const getIcon = () => {
-    switch (type) {
-      case 'error':
-        return <XCircleIcon className="w-5 h-5 text-destructive" />;
-      case 'warning':
-        return <AlertTriangleIcon className="w-5 h-5 text-warning" />;
-      case 'info':
-        return <InfoIcon className="w-5 h-5 text-primary" />;
-      default:
-        return null;
-    }
-  };
-  
-  const getBgColor = () => {
-    if (inline) return '';
-    
-    switch (type) {
-      case 'error':
-        return 'bg-destructive/10';
-      case 'warning':
-        return 'bg-warning/10';
-      case 'info':
-        return 'bg-primary/10';
-      default:
-        return 'bg-destructive/10';
-    }
-  };
-  
-  const getBorderColor = () => {
-    if (inline) return '';
-    
-    switch (type) {
-      case 'error':
-        return 'border-destructive/30';
-      case 'warning':
-        return 'border-warning/30';
-      case 'info':
-        return 'border-primary/30';
-      default:
-        return 'border-destructive/30';
-    }
-  };
-  
-  const getTextColor = () => {
-    switch (type) {
-      case 'error':
-        return 'text-destructive';
-      case 'warning':
-        return 'text-warning-foreground';
-      case 'info':
-        return 'text-primary';
-      default:
-        return 'text-destructive';
-    }
-  };
-
-  return (
-    <div
-      className={cn(
-        "rounded-md",
-        !inline && "border p-4",
-        getBgColor(),
-        getBorderColor(),
-        className
-      )}
-      {...props}
-    >
-      <div className="flex">
-        {showIcon && (
-          <div className="flex-shrink-0 mr-3">
-            {getIcon()}
+  if (inline) {
+    return (
+      <div className={cn("rounded-md text-sm", className)} {...props}>
+        {title && <p className={cn("mb-1 font-medium", type === "error" && "text-destructive")}>{title}</p>}
+        {message && <div>{message}</div>}
+        {children}
+        {(onRetry || actions) && (
+          <div className="mt-3 flex flex-wrap gap-3">
+            {onRetry && (
+              <Button size="sm" variant="outline" onClick={onRetry} className="inline-flex items-center">
+                <RefreshCwIcon className="mr-1 h-3 w-3" />
+                {retryText}
+              </Button>
+            )}
+            {actions}
           </div>
         )}
-        <div className="flex-1">
-          {title && (
-            <h3 className={cn("text-sm font-medium mb-1", getTextColor())}>
-              {title}
-            </h3>
-          )}
-          {message && (
-            <div className="text-sm">
-              {message}
-            </div>
-          )}
+      </div>
+    );
+  }
+
+  return (
+    <Alert variant={typeToVariant(type)} className={cn(className)} {...props}>
+      {title ? <AlertTitle>{title}</AlertTitle> : null}
+      <AlertDescription className="block">
+        <div className="space-y-3">
+          {message ? <p>{message}</p> : null}
           {children}
-          
           {(onRetry || actions) && (
-            <div className="mt-3 flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3 pt-1">
               {onRetry && (
-                <Button 
-                  size="sm"
-                  variant="outline"
-                  onClick={onRetry}
-                  className="inline-flex items-center"
-                >
+                <Button size="sm" variant="outline" onClick={onRetry} className="inline-flex items-center">
                   <RefreshCwIcon className="mr-1 h-3 w-3" />
                   {retryText}
                 </Button>
@@ -140,8 +81,8 @@ export function ErrorMessage({
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </AlertDescription>
+    </Alert>
   );
 }
 
@@ -153,13 +94,13 @@ export function ErrorBoundary({
   resetErrorBoundary: () => void;
 }) {
   return (
-    <div className="p-6 max-w-2xl mx-auto">
+    <div className="mx-auto max-w-2xl p-6">
       <ErrorMessage
         title="Възникна грешка"
-        message={`${error.message || 'Нещо се обърка при зареждането на тази страница.'}`}
+        message={`${error.message || "Нещо се обърка при зареждането на тази страница."}`}
         type="error"
         onRetry={resetErrorBoundary}
       />
     </div>
   );
-} 
+}
