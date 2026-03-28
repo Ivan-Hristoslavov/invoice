@@ -5,6 +5,7 @@ import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner-toaster";
 import { CookieConsent } from "@/components/gdpr/CookieConsent";
+import { Analytics } from "@vercel/analytics/next";
 import { APP_NAME, APP_DESCRIPTION, SEO_KEYWORDS } from "@/config/constants";
 
 const geistSans = localFont({
@@ -165,6 +166,7 @@ export default function RootLayout({
             <CookieConsent />
           </AuthProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
