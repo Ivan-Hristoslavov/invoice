@@ -154,9 +154,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     {
       id: "settings",
       title: "Настройки",
-      description: "Отвори настройките",
+      description: "Фактури, компания, абонамент",
       icon: Settings,
-      action: () => router.push("/settings"),
+      action: () => router.push("/settings/invoice-preferences"),
       keywords: ["settings", "настройки", "preferences"],
       category: "settings",
     },

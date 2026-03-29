@@ -377,6 +377,128 @@
   will-change: opacity, transform;
 }
 
+/* FullPageLoader — „дишане“ на иконата, движещ се фон, точки, лента */
+@keyframes loader-card-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.07);
+    filter: brightness(1.08);
+  }
+}
+
+@keyframes loading-ambient-drift {
+  0%,
+  100% {
+    opacity: 0.28;
+    transform: translate(-4%, -2%) scale(1);
+  }
+  50% {
+    opacity: 0.52;
+    transform: translate(4%, 3%) scale(1.12);
+  }
+}
+
+@keyframes loader-content-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes loader-dot-bounce {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  40% {
+    transform: translateY(-8px);
+    opacity: 1;
+  }
+}
+
+@keyframes loader-indeterminate {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
+@keyframes loader-shimmer-line {
+  0% {
+    background-position: 200% center;
+  }
+  100% {
+    background-position: -200% center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-loader-card-breathe,
+  .animate-loading-ambient-drift,
+  .animate-loader-content-rise,
+  .animate-loader-dot-bounce,
+  .animate-loader-indeterminate,
+  .animate-loader-shimmer-line {
+    animation: none !important;
+  }
+
+  .animate-loader-content-rise {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .animate-loading-ambient-drift {
+    opacity: 0.38 !important;
+    transform: none !important;
+  }
+
+  .animate-loader-dot-bounce {
+    opacity: 0.7 !important;
+  }
+}
+
+.animate-loader-card-breathe {
+  animation: loader-card-breathe 2.2s ease-in-out infinite;
+  will-change: transform, filter;
+}
+
+.animate-loading-ambient-drift {
+  animation: loading-ambient-drift 8s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+.animate-loader-content-rise {
+  opacity: 0;
+  animation: loader-content-rise 0.7s ease-out 0.06s forwards;
+}
+
+.animate-loader-dot-bounce {
+  animation: loader-dot-bounce 1.2s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.animate-loader-indeterminate {
+  animation: loader-indeterminate 1.35s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-loader-shimmer-line {
+  background-size: 200% 100%;
+  animation: loader-shimmer-line 2.5s ease-in-out infinite;
+}
+
 @utility page-title {
   /* ============================================
      TYPOGRAPHY SYSTEM - Responsive text sizes

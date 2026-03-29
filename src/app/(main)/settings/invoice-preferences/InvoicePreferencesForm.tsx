@@ -116,22 +116,33 @@ export function InvoicePreferencesForm() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          startingInvoiceNumber:
+            data.startingInvoiceNumber === undefined ||
+            data.startingInvoiceNumber === null ||
+            Number.isNaN(data.startingInvoiceNumber)
+              ? null
+              : data.startingInvoiceNumber,
+        }),
       });
 
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
       if (!response.ok) {
-        throw new Error("Failed to save preferences");
+        throw new Error(payload?.error || "Неуспешно запазване");
       }
 
       toast.success("Настройките са запазени", {
-        description: "Вашите предпочитания за фактури бяха успешно обновени.",
+        description: "Промените са записани в базата данни.",
       });
-      
+
       router.refresh();
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Моля, опитайте отново.";
       console.error("Error saving preferences:", error);
       toast.error("Грешка при запазване", {
-        description: "Възникна проблем при запазването на настройките. Моля, опитайте отново.",
+        description: message,
       });
     } finally {
       setIsLoading(false);
@@ -140,10 +151,10 @@ export function InvoicePreferencesForm() {
 
   if (isLoadingDefaults) {
     return (
-      <div className="flex items-center justify-center py-8">
+      <div className="flex items-center justify-center py-12">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Зареждане на настройки...</p>
+          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-sm text-muted-foreground">Зареждане на настройки...</p>
         </div>
       </div>
     );
@@ -152,9 +163,11 @@ export function InvoicePreferencesForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        {/* Основни настройки – без вътрешно заглавие, по-изчистено под card header-a */}
-        <div>
-          <div className="grid gap-4 sm:grid-cols-2">
+        <section className="rounded-2xl border border-border/40 bg-muted/20 p-4 sm:p-6 dark:bg-muted/10">
+          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Основни стойности
+          </h3>
+          <div className="grid gap-5 sm:grid-cols-2">
             <FormField
               control={form.control}
               name="defaultVatRate"
@@ -202,15 +215,14 @@ export function InvoicePreferencesForm() {
               )}
             />
           </div>
-        </div>
+        </section>
 
-        <Separator />
+        <Separator className="bg-border/60" />
 
-        {/* Настройки за номерация */}
-        <div>
-          <h3 className="text-lg font-medium">Номерация на фактурите</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Настройте как да се генерират номерата на фактурите
+        <section className="rounded-2xl border border-border/40 bg-muted/20 p-4 sm:p-6 dark:bg-muted/10">
+          <h3 className="text-base font-semibold tracking-tight">Номерация на фактурите</h3>
+          <p className="mb-4 text-sm text-muted-foreground">
+            Префикс, годишно нулиране и начален номер при миграция
           </p>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -282,15 +294,14 @@ export function InvoicePreferencesForm() {
               </FormItem>
             )}
           />
-        </div>
+        </section>
 
-        <Separator />
+        <Separator className="bg-border/60" />
 
-        {/* Текстове по подразбиране */}
-        <div>
-          <h3 className="text-lg font-medium">Текстове по подразбиране</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Задайте стандартни текстове за вашите фактури
+        <section className="rounded-2xl border border-border/40 bg-muted/20 p-4 sm:p-6 dark:bg-muted/10">
+          <h3 className="text-base font-semibold tracking-tight">Текстове по подразбиране</h3>
+          <p className="mb-4 text-sm text-muted-foreground">
+            Общи условия и бележки за нови фактури
           </p>
 
           <div className="space-y-4">
@@ -330,16 +341,13 @@ export function InvoicePreferencesForm() {
               )}
             />
           </div>
-        </div>
+        </section>
 
-        <Separator />
+        <Separator className="bg-border/60" />
 
-        {/* Визуални настройки */}
-        <div>
-          <h3 className="text-lg font-medium">Визуални настройки</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Настройте как да изглеждат вашите фактури
-          </p>
+        <section className="rounded-2xl border border-border/40 bg-muted/20 p-4 sm:p-6 dark:bg-muted/10">
+          <h3 className="text-base font-semibold tracking-tight">Визуални настройки</h3>
+          <p className="mb-4 text-sm text-muted-foreground">Лого и сума с думи в PDF</p>
 
           <div className="space-y-4">
             <FormField
@@ -388,15 +396,14 @@ export function InvoicePreferencesForm() {
               )}
             />
           </div>
-        </div>
+        </section>
 
-        <Separator />
+        <Separator className="bg-border/60" />
 
-        {/* Настройки за архивиране */}
-        <div>
-          <h3 className="text-lg font-medium">Архивиране</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Управлявайте автоматичното архивиране на фактури
+        <section className="rounded-2xl border border-border/40 bg-muted/20 p-4 sm:p-6 dark:bg-muted/10">
+          <h3 className="text-base font-semibold tracking-tight">Архивиране и чернови</h3>
+          <p className="mb-4 text-sm text-muted-foreground">
+            Периоди за автоматично архивиране и съхранение на чернови
           </p>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -444,11 +451,16 @@ export function InvoicePreferencesForm() {
               )}
             />
           </div>
-        </div>
+        </section>
 
-        <div className="flex justify-center sm:justify-end">
-          <Button type="submit" disabled={isLoading} className="min-w-[180px] rounded-2xl">
-            {isLoading ? "Запазване..." : "Запази настройките"}
+        <div className="flex justify-center border-t border-border/50 pt-2 sm:justify-end">
+          <Button
+            type="submit"
+            loading={isLoading}
+            disabled={isLoading}
+            className="min-w-[200px] rounded-2xl border-0 gradient-primary"
+          >
+            Запази настройките
           </Button>
         </div>
       </form>

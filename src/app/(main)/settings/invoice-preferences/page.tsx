@@ -19,20 +19,18 @@ export const metadata: Metadata = {
 
 export default async function InvoicePreferencesPage() {
   const session = await getServerSession(authOptions);
-  
+
   if (!session) {
     redirect("/signin");
   }
 
   return (
-    <Card className="glass-card mx-auto max-w-2xl rounded-[28px] border border-border/40 shadow-sm">
-      <CardHeader className="pb-4 sm:pb-5">
-        <CardTitle className="text-lg sm:text-xl">
-          Настройки на фактури
-        </CardTitle>
-        <CardDescription>
-          Настройте предпочитанията си за фактури, включително ДДС ставка по
-          подразбиране
+    <Card className="glass-card w-full rounded-[28px] border border-border/40 shadow-sm">
+      <CardHeader className="space-y-1 pb-4 sm:pb-5">
+        <CardTitle className="text-lg sm:text-xl">Настройки на фактури</CardTitle>
+        <CardDescription className="max-w-3xl leading-relaxed">
+          ДДС, валута, номерация, текстове по подразбиране и показване в PDF — запазват се в профила ви
+          (база данни).
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-0">
@@ -40,4 +38,4 @@ export default async function InvoicePreferencesPage() {
       </CardContent>
     </Card>
   );
-} 
+}

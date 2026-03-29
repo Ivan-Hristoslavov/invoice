@@ -7,9 +7,12 @@ import { InfoIcon, AlertTriangle, CheckCircle, ExternalLink } from 'lucide-react
 
 export default function TaxCompliancePage() {
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Данъчно съответствие</h1>
+    <div className="space-y-6">
+      <div className="space-y-1">
+        <h1 className="page-title">Данъчно съответствие</h1>
+        <p className="card-description max-w-2xl">
+          Изисквания към фактурите и справка за България (НАП).
+        </p>
       </div>
       
       <Tabs defaultValue="bulgaria">

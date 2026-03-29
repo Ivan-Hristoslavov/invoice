@@ -20,6 +20,8 @@ model User {
   stripeCustomerId                  String?           @unique
   defaultVatRate                    Decimal           @default(20.00) @db.Decimal(5, 2)
   startingInvoiceNumber             Int?
+  /// JSON: префикс, валута, текстове, визуални флагове, архивиране и др. (виж API invoice-preferences)
+  invoicePreferences                Json?
   phone                             String?
   profileCompletedAt                DateTime?
   accounts                          Account[]
