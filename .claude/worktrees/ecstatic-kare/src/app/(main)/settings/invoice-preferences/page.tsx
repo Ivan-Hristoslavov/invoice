@@ -1,0 +1,43 @@
+import { Metadata } from "next";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { APP_NAME } from "@/config/constants";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { InvoicePreferencesForm } from "./InvoicePreferencesForm";
+
+export const metadata: Metadata = {
+  title: `Настройки на фактури | ${APP_NAME}`,
+  description: "Настройте предпочитанията си за фактури и ДДС",
+};
+
+export default async function InvoicePreferencesPage() {
+  const session = await getServerSession(authOptions);
+  
+  if (!session) {
+    redirect("/signin");
+  }
+
+  return (
+    <Card className="glass-card mx-auto max-w-2xl rounded-[28px] border border-border/40 shadow-sm">
+      <CardHeader className="pb-4 sm:pb-5">
+        <CardTitle className="text-lg sm:text-xl">
+          Настройки на фактури
+        </CardTitle>
+        <CardDescription>
+          Настройте предпочитанията си за фактури, включително ДДС ставка по
+          подразбиране
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <InvoicePreferencesForm />
+      </CardContent>
+    </Card>
+  );
+} 

@@ -23,14 +23,16 @@ import {
   Percent,
 } from "lucide-react";
 import { Chip } from "@heroui/react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { APP_NAME } from "@/config/constants";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { LandingIconDecor } from "@/components/marketing/landing-icon-decor";
 import { BackgroundShapes } from "@/components/ui/background-shapes";
 import { shouldReduceBrowserEffects } from "@/lib/browser-effects";
-import { cn } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,11 +64,11 @@ type LandingNavSpy = (typeof LANDING_NAV)[number]["spy"];
 
 function landingNavLinkVisual(isActive: boolean) {
   return cn(
-    "shrink-0 rounded-full px-2 py-1 text-xs font-medium outline-none transition-[color,background-color,box-shadow] duration-200 sm:px-2.5 sm:py-1.5 sm:text-sm",
+    "shrink-0 rounded-full border px-2 py-1 text-xs font-medium outline-none transition-[color,background-color,border-color,box-shadow] duration-200 sm:px-2.5 sm:py-1.5 sm:text-sm",
     "focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
     isActive
-      ? "bg-emerald-600 text-white shadow-sm dark:bg-emerald-500 dark:text-white"
-      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+      ? "border-emerald-500/70 bg-emerald-500/10 text-emerald-700 shadow-sm dark:border-emerald-400/55 dark:bg-emerald-500/15 dark:text-emerald-300"
+      : "border-transparent text-muted-foreground hover:border-border/50 hover:bg-muted/50 hover:text-foreground"
   );
 }
 
@@ -75,8 +77,22 @@ const LANDING_SCROLL_MARGIN = "scroll-mt-28 sm:scroll-mt-32";
 /** Секции без тежки рамки — само вертикален ритъм и контейнер. */
 const LANDING_ZONE_OUTER = "px-4 py-8 sm:py-10";
 const LANDING_ZONE_PANEL = "rounded-2xl border border-border/40 bg-card/70 shadow-sm dark:bg-card/40";
-const LANDING_ZONE_LABEL =
-  "text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400";
+
+/** Етикет над секция — HeroUI Chip: success + tertiary (прозрачен фон) + изрична рамка. @see https://heroui.com/docs/react/components/chip */
+function LandingSectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <Chip
+      color="success"
+      variant="tertiary"
+      size="sm"
+      className="border border-emerald-500/45 bg-emerald-500/[0.07] shadow-sm backdrop-blur-[2px] dark:border-emerald-400/45 dark:bg-emerald-500/12"
+    >
+      <Chip.Label className="text-[10px] font-semibold uppercase tracking-[0.2em] sm:text-[11px]">
+        {children}
+      </Chip.Label>
+    </Chip>
+  );
+}
 
 type PlanKey = "FREE" | "STARTER" | "PRO" | "BUSINESS";
 
@@ -219,6 +235,48 @@ const pricingPlans: PricingPlan[] = [
     ctaHref: "/contact",
   },
 ];
+
+/** Същите акценти като в настройки → абонамент (`SubscriptionPlans`) */
+const LANDING_PLAN_THEME: Record<
+  PlanKey,
+  {
+    iconBg: string;
+    iconText: string;
+    checkBg: string;
+    checkIcon: string;
+    btnPrimary: string;
+  }
+> = {
+  FREE: {
+    iconBg: "bg-slate-100 dark:bg-slate-800",
+    iconText: "text-slate-500",
+    checkBg: "bg-slate-100 dark:bg-slate-800",
+    checkIcon: "text-slate-500",
+    btnPrimary:
+      "border border-slate-300 bg-background font-semibold hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800",
+  },
+  STARTER: {
+    iconBg: "bg-blue-100 dark:bg-blue-900/50",
+    iconText: "text-blue-500",
+    checkBg: "bg-blue-500/10",
+    checkIcon: "text-blue-500",
+    btnPrimary: "border-0 bg-blue-500 font-semibold text-white shadow-md shadow-blue-500/20 hover:bg-blue-600",
+  },
+  PRO: {
+    iconBg: "bg-emerald-100 dark:bg-emerald-900/50",
+    iconText: "text-emerald-500",
+    checkBg: "bg-emerald-500/10",
+    checkIcon: "text-emerald-500",
+    btnPrimary: "border-0 bg-emerald-500 font-semibold text-white shadow-md shadow-emerald-500/20 hover:bg-emerald-600",
+  },
+  BUSINESS: {
+    iconBg: "bg-violet-100 dark:bg-violet-900/50",
+    iconText: "text-violet-500",
+    checkBg: "bg-violet-500/10",
+    checkIcon: "text-violet-500",
+    btnPrimary: "border-0 bg-violet-500 font-semibold text-white shadow-md shadow-violet-500/20 hover:bg-violet-600",
+  },
+};
 
 const testimonials = [
   {
@@ -415,8 +473,12 @@ export default function HomePage() {
         }}
       />
 
-      <div className="flex min-h-screen flex-col overflow-x-hidden pb-24 sm:pb-0">
-        <BackgroundShapes variant="subtle" reduceEffects />
+      <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-background pb-24 sm:pb-0">
+        <BackgroundShapes variant="subtle" reduceEffects={shouldReduceEffects} />
+        <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden>
+          <div className="absolute inset-0 pricing-dot-bg" />
+          <LandingIconDecor reduceEffects={shouldReduceEffects} />
+        </div>
 
         {/* ── Header: fixed + компактен режим при скрол ── */}
         <header
@@ -432,7 +494,7 @@ export default function HomePage() {
         >
           <div
             className={cn(
-              "container mx-auto flex min-w-0 max-w-full items-center justify-between gap-2 px-3 sm:gap-3 sm:px-4 md:px-6",
+              "container relative mx-auto flex min-w-0 max-w-full items-center justify-between gap-2 px-3 sm:gap-3 sm:px-4 md:px-6",
               shouldReduceEffects ? "" : "transition-[min-height,gap] duration-300 ease-out",
               isHeaderCompact ? "min-h-11 py-1 sm:min-h-12" : "min-h-14 py-0 sm:min-h-16"
             )}
@@ -440,7 +502,7 @@ export default function HomePage() {
             <motion.div
               initial={{ opacity: 0, x: -12 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2"
+              className="relative z-20 flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2"
             >
               <DropdownMenu>
                 <DropdownMenuTrigger
@@ -511,7 +573,7 @@ export default function HomePage() {
 
             <nav
               className={cn(
-                "mx-1 hidden min-h-0 min-w-0 max-w-full flex-1 items-center justify-center overflow-x-auto text-muted-foreground [scrollbar-width:none] md:flex [&::-webkit-scrollbar]:hidden",
+                "pointer-events-none absolute left-1/2 top-1/2 z-10 hidden min-h-0 -translate-x-1/2 -translate-y-1/2 items-center justify-center overflow-x-auto text-muted-foreground [scrollbar-width:none] md:pointer-events-auto md:flex md:max-w-[min(92vw,28rem)] [&::-webkit-scrollbar]:hidden",
                 "transition-[gap] duration-300 ease-out",
                 isHeaderCompact ? "gap-1 lg:gap-2" : "gap-1.5 lg:gap-3 xl:gap-4"
               )}
@@ -524,7 +586,7 @@ export default function HomePage() {
                     key={item.spy}
                     href={item.href}
                     scroll
-                    className={cn("whitespace-nowrap", landingNavLinkVisual(isActive))}
+                    className={cn("pointer-events-auto whitespace-nowrap", landingNavLinkVisual(isActive))}
                     aria-current={isActive ? "page" : undefined}
                     onClick={() => setActiveLandingSpy(item.spy)}
                   >
@@ -538,7 +600,7 @@ export default function HomePage() {
               initial={{ opacity: 0, x: 12 }}
               animate={{ opacity: 1, x: 0 }}
               className={cn(
-                "flex shrink-0 items-center justify-end transition-[gap] duration-300 ease-out",
+                "relative z-20 flex shrink-0 items-center justify-end transition-[gap] duration-300 ease-out",
                 isHeaderCompact ? "gap-1" : "gap-1 sm:gap-1.5"
               )}
             >
@@ -599,11 +661,13 @@ export default function HomePage() {
         <section
           id="top"
           data-landing-spy="top"
-          className={cn(LANDING_SCROLL_MARGIN, "bg-background px-4 py-8 sm:py-10")}
+          className={cn(LANDING_SCROLL_MARGIN, "bg-transparent px-4 py-8 sm:py-10")}
         >
           <div className="container mx-auto max-w-6xl">
             <div className="mx-auto max-w-3xl px-1 text-center sm:px-4">
-              <p className={LANDING_ZONE_LABEL}>Начало</p>
+              <div className="flex justify-center">
+                <LandingSectionLabel>Начало</LandingSectionLabel>
+              </div>
               <h1
                 className="hero-title mx-auto mt-3 mb-3 max-w-[13ch] text-foreground sm:mb-4 sm:max-w-4xl"
                 style={{ textShadow: "0 6px 30px rgba(15, 23, 42, 0.24)" }}
@@ -652,12 +716,14 @@ export default function HomePage() {
         <section
           id="product"
           data-landing-spy="product"
-          className={cn(LANDING_SCROLL_MARGIN, LANDING_ZONE_OUTER, "bg-muted/15 dark:bg-muted/5")}
+          className={cn(LANDING_SCROLL_MARGIN, LANDING_ZONE_OUTER, "bg-transparent")}
         >
           <div className="container mx-auto max-w-6xl">
             <div className={cn(LANDING_ZONE_PANEL, "p-5 sm:p-8 md:p-10")}>
               <header className="pb-6 text-center sm:pb-8">
-                <p className={LANDING_ZONE_LABEL}>Продукт</p>
+                <div className="flex justify-center">
+                  <LandingSectionLabel>Продукт</LandingSectionLabel>
+                </div>
                 <h2 className="section-title mt-3">Какво прави {APP_NAME}</h2>
                 <p className="card-description mx-auto mt-3 max-w-lg">
                   Всичко за ежедневна работа с фактури и известия.
@@ -753,11 +819,7 @@ export default function HomePage() {
         <section
           id="pricing"
           data-landing-spy="pricing"
-          className={cn(
-            LANDING_SCROLL_MARGIN,
-            LANDING_ZONE_OUTER,
-            "relative bg-background pricing-dot-bg"
-          )}
+          className={cn(LANDING_SCROLL_MARGIN, LANDING_ZONE_OUTER, "relative bg-transparent")}
         >
           <div className="container relative z-[1] mx-auto max-w-7xl">
             <div
@@ -767,7 +829,9 @@ export default function HomePage() {
               )}
             >
               <div className="mb-6 text-center sm:mb-8">
-                <p className={LANDING_ZONE_LABEL}>Цени</p>
+                <div className="flex justify-center">
+                  <LandingSectionLabel>Цени</LandingSectionLabel>
+                </div>
                 <h2 className="section-title mt-3">Планове</h2>
                 <p className="card-description mx-auto mt-2 max-w-md">
                   Месечно или годишно · EUR · без скрити такси за софтуера
@@ -806,7 +870,12 @@ export default function HomePage() {
                   )}
                 >
                   Годишно
-                  <Chip size="sm" color="success" variant="soft" className="tiny-text h-5 gap-1 px-2">
+                  <Chip
+                    size="sm"
+                    color="success"
+                    variant="soft"
+                    className="tiny-text h-5 gap-1 border border-emerald-500/55 bg-emerald-500/5 px-2 text-emerald-700 dark:border-emerald-400/50 dark:bg-emerald-500/10 dark:text-emerald-300"
+                  >
                     <Percent className="h-3 w-3 shrink-0" aria-hidden />
                     -17%
                   </Chip>
@@ -817,45 +886,43 @@ export default function HomePage() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
               {pricingPlans.map((plan, index) => {
                 const PlanIcon = plan.icon;
+                const theme = LANDING_PLAN_THEME[plan.key];
                 const monthlyPrice =
                   isYearly && plan.price.yearly > 0
                     ? plan.price.yearly / 12
                     : plan.price.monthly;
 
-                const cardBody = (
+                const planBody = (
                   <>
-                    <CardContent className="relative z-1 flex flex-1 flex-col overflow-hidden p-4 sm:p-6">
-                      {plan.popular ? (
+                    {plan.popular ? (
+                      <div
+                        className="pointer-events-none absolute inset-x-0 top-0 h-24 rounded-t-[1.4375rem] bg-linear-to-b from-white/12 to-transparent dark:from-white/8"
+                        aria-hidden
+                      />
+                    ) : null}
+                    <div className="relative z-[1] flex min-h-0 flex-1 flex-col p-4 sm:p-5">
+                      <div className="mb-3 flex gap-3">
                         <div
-                          className="pointer-events-none absolute inset-x-0 top-0 h-28 rounded-t-[1.4375rem] bg-linear-to-b from-white/10 to-transparent dark:from-white/5"
-                          aria-hidden
-                        />
-                      ) : null}
-
-                      {/* Header: икона = цветен акцент вместо лента отгоре */}
-                      <div className="relative mb-5 flex gap-3 sm:gap-3.5">
-                        <div
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br ${plan.gradient} shadow-md ring-1 ring-white/15 sm:h-11 sm:w-11`}
+                          className={cn(
+                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl shadow-sm ring-1 ring-black/5 dark:ring-white/10",
+                            theme.iconBg,
+                            theme.iconText
+                          )}
                         >
-                          <PlanIcon className="h-5 w-5 text-white sm:h-5 sm:w-5" />
+                          <PlanIcon className="h-5 w-5" aria-hidden />
                         </div>
                         <div className="min-w-0 flex-1 space-y-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="card-title truncate">{plan.name}</p>
+                          <div className="flex items-start justify-between gap-2">
+                            <h3 className="truncate text-sm font-semibold leading-tight">{plan.name}</h3>
                             {plan.popular ? (
-                              <Chip
-                                size="sm"
-                                color="success"
-                                variant="soft"
-                                className="tiny-text shrink-0 gap-1"
-                              >
-                                <Star className="h-3 w-3 shrink-0 fill-current" aria-hidden />
+                              <Badge className="h-5 shrink-0 border-0 bg-emerald-500 px-2 py-0 text-[10px] font-semibold text-white">
+                                <Star className="mr-0.5 h-2.5 w-2.5 fill-current" aria-hidden />
                                 Популярен
-                              </Chip>
+                              </Badge>
                             ) : null}
                           </div>
                           <p
-                            className="card-description truncate text-xs leading-tight sm:text-sm"
+                            className="truncate text-[11px] leading-tight text-muted-foreground sm:text-xs"
                             title={plan.description}
                           >
                             {plan.description}
@@ -863,77 +930,87 @@ export default function HomePage() {
                         </div>
                       </div>
 
-                      {/* Price */}
-                      <div className="relative mb-1">
+                      <div className="mb-1">
                         {plan.key === "FREE" ? (
                           <div className="flex items-baseline gap-1">
-                            <span className="metric-value">0 €</span>
-                            <span className="small-text text-muted-foreground">/завинаги</span>
+                            <span className="text-xl font-bold tracking-tight sm:text-2xl">
+                              {formatPrice(0)} €
+                            </span>
+                            <span className="text-sm text-muted-foreground">/завинаги</span>
                           </div>
                         ) : (
                           <div>
                             <div className="flex items-baseline gap-1">
-                              <span className="metric-value">{monthlyPrice.toFixed(2)} €</span>
-                              <span className="small-text text-muted-foreground">/месец</span>
+                              <span className="text-xl font-bold tracking-tight sm:text-2xl">
+                                {formatPrice(monthlyPrice)}
+                              </span>
+                              <span className="text-sm font-normal text-muted-foreground">€/мес</span>
                             </div>
-                            {isYearly && (
-                              <p className="tiny-text mt-0.5 font-medium text-emerald-600 dark:text-emerald-400">
-                                {plan.price.yearly} €/год. · 2 месеца безплатно
+                            {isYearly && plan.price.yearly > 0 ? (
+                              <p className="mt-0.5 text-xs text-muted-foreground">
+                                {formatPrice(plan.price.yearly)} € общо за 12 месеца · 2 месеца безплатно
                               </p>
-                            )}
+                            ) : null}
+                            {!isYearly ? (
+                              <p className="mt-0.5 text-xs text-muted-foreground">Таксува се месечно</p>
+                            ) : null}
                           </div>
                         )}
                       </div>
 
-                      <div className="relative mb-4 mt-4 flex items-center gap-3">
-                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border/80 to-transparent" />
-                        <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                      <div className="my-3 flex items-center gap-2">
+                        <div className="h-px flex-1 bg-linear-to-r from-transparent via-border/80 to-transparent" />
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                           Функции
                         </span>
-                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border/80 to-transparent" />
+                        <div className="h-px flex-1 bg-linear-to-r from-transparent via-border/80 to-transparent" />
                       </div>
 
-                      <ul className="relative mb-5 flex-1 space-y-2">
+                      <ul className="mb-3 flex-1 space-y-1.5">
                         {plan.features.map((feat) => (
-                          <li key={feat.text} className="flex items-center gap-2.5">
+                          <li
+                            key={feat.text}
+                            className={cn(
+                              "flex items-center gap-2 text-xs sm:text-sm",
+                              !feat.included && "text-muted-foreground/50"
+                            )}
+                          >
                             {feat.included ? (
                               <div
-                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-linear-to-br ${plan.gradient}`}
+                                className={cn(
+                                  "flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
+                                  theme.checkBg
+                                )}
                               >
-                                <Check className="h-2.5 w-2.5 text-white" />
+                                <Check className={cn("h-3 w-3", theme.checkIcon)} aria-hidden />
                               </div>
                             ) : (
-                              <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-muted/80">
-                                <X className="h-2.5 w-2.5 text-muted-foreground" />
+                              <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted">
+                                <X className="h-3 w-3 text-muted-foreground/40" aria-hidden />
                               </div>
                             )}
-                            <span
-                              className={cn(
-                                "card-description",
-                                !feat.included && "text-muted-foreground"
-                              )}
-                            >
-                              {feat.text}
-                            </span>
+                            <span>{feat.text}</span>
                           </li>
                         ))}
                       </ul>
-                    </CardContent>
 
-                    <CardFooter className="relative z-1 border-t border-white/15 bg-black/10 px-4 pb-4 pt-3.5 backdrop-blur-md dark:border-white/10 dark:bg-black/25 sm:px-6 sm:pb-5">
-                      <Button
-                        asChild
-                        className={cn(
-                          "btn-text h-11 w-full rounded-2xl font-semibold sm:h-12",
-                          plan.popular && "gradient-primary border-0 text-white hover:opacity-90"
-                        )}
-                        variant={plan.popular ? "default" : "outline"}
-                      >
-                        <Link href={plan.ctaHref} className="flex items-center justify-center whitespace-nowrap">
-                          {plan.cta}
-                        </Link>
-                      </Button>
-                    </CardFooter>
+                      <div className="mt-auto border-t border-border/40 pt-3.5">
+                        <Button
+                          asChild
+                          className={cn(
+                            "h-11 w-full rounded-2xl font-semibold sm:h-12",
+                            plan.popular
+                              ? cn("border-0 text-white", theme.btnPrimary)
+                              : "border border-border/70 bg-background/90 hover:bg-muted/60"
+                          )}
+                          variant={plan.popular ? "default" : "outline"}
+                        >
+                          <Link href={plan.ctaHref} className="flex items-center justify-center whitespace-nowrap">
+                            {plan.cta}
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
                   </>
                 );
 
@@ -944,28 +1021,29 @@ export default function HomePage() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.5, delay: index * 0.08 }}
-                    className={cn("flex flex-col", plan.popular && "xl:-mt-2 xl:mb-2")}
+                    className={cn("flex min-h-0 flex-col", plan.popular && "xl:-mt-2 xl:mb-2")}
                   >
                     {plan.popular ? (
-                      <div className="pricing-featured-ring flex h-full flex-col">
-                        <Card
+                      <div className="pricing-featured-ring flex min-h-0 flex-1 flex-col">
+                        <div
                           className={cn(
-                            "flex h-full flex-col overflow-hidden rounded-[calc(1.5rem-1px)] border-0 shadow-none backdrop-blur-xl",
+                            "relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[calc(1.5rem-1px)] backdrop-blur-xl",
                             PRICING_CARD_SURFACE[plan.key]
                           )}
                         >
-                          {cardBody}
-                        </Card>
+                          {planBody}
+                        </div>
                       </div>
                     ) : (
-                      <Card
+                      <div
                         className={cn(
-                          "flex h-full flex-col overflow-hidden rounded-3xl border border-white/15 shadow-lg backdrop-blur-md dark:border-white/10",
+                          "relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border shadow-lg backdrop-blur-md transition-all duration-300",
+                          "border-white/15 hover:border-white/25 hover:shadow-md dark:border-white/10",
                           PRICING_CARD_SURFACE[plan.key]
                         )}
                       >
-                        {cardBody}
-                      </Card>
+                        {planBody}
+                      </div>
                     )}
                   </motion.div>
                 );
@@ -1012,12 +1090,14 @@ export default function HomePage() {
         <section
           id="contact"
           data-landing-spy="contact"
-          className={cn(LANDING_SCROLL_MARGIN, LANDING_ZONE_OUTER, "bg-muted/25 dark:bg-muted/10")}
+          className={cn(LANDING_SCROLL_MARGIN, LANDING_ZONE_OUTER, "bg-transparent")}
         >
           <div className="container mx-auto max-w-3xl">
             <div className={cn(LANDING_ZONE_PANEL, "p-5 sm:p-8")}>
               <header className="border-b border-border/50 pb-8 text-center">
-                <p className={LANDING_ZONE_LABEL}>Контакт</p>
+                <div className="flex justify-center">
+                  <LandingSectionLabel>Контакт</LandingSectionLabel>
+                </div>
                 <h2 className="section-title mt-3">Въпроси и връзка</h2>
                 <p className="card-description mx-auto mt-2 max-w-md">
                   Често задавани въпроси, имейл и старт в акаунт — в една зона.
@@ -1040,9 +1120,13 @@ export default function HomePage() {
 
               <div className="space-y-6">
                 <div className="rounded-2xl border border-border/45 bg-gradient-to-br from-muted/50 to-muted/20 p-5 shadow-inner backdrop-blur-sm dark:from-muted/25 dark:to-muted/10 sm:p-6">
-                  <p className="mb-3 text-center text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                    Поддръжка
-                  </p>
+                  <div className="mb-3 flex justify-center">
+                    <Chip color="default" variant="tertiary" size="sm" className="border border-border/55 bg-muted/30">
+                      <Chip.Label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                        Поддръжка
+                      </Chip.Label>
+                    </Chip>
+                  </div>
                   <div className="flex flex-col items-center gap-4 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-6 sm:gap-y-2">
                     <a
                       href={`mailto:${publicBusinessProfile.supportEmail}`}

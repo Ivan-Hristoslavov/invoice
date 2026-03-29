@@ -1,0 +1,179 @@
+"use client";
+
+import * as React from "react";
+import { Table as HeroUITable } from "@heroui/react";
+import { cn } from "@/lib/utils";
+
+interface TableProps extends React.ComponentProps<typeof HeroUITable> {
+  stickyHeader?: boolean;
+  contentAriaLabel?: string;
+  contentClassName?: string;
+  scrollContainerClassName?: string;
+}
+
+const TableBase = React.forwardRef<HTMLDivElement, TableProps>(
+  (
+    {
+      className,
+      stickyHeader = false,
+      children,
+      variant = "secondary",
+      contentAriaLabel = "Таблица",
+      contentClassName,
+      scrollContainerClassName,
+      ...props
+    },
+    ref
+  ) => (
+    <HeroUITable
+      ref={ref}
+      variant={variant}
+      className={cn("overflow-hidden rounded-[28px] border border-border/60 bg-card/85 shadow-sm", className)}
+      {...props}
+    >
+      <HeroUITable.ScrollContainer className={cn(stickyHeader && "max-h-[600px]", scrollContainerClassName)}>
+        <HeroUITable.Content aria-label={contentAriaLabel} className={cn("min-w-full", contentClassName)}>
+          {children}
+        </HeroUITable.Content>
+      </HeroUITable.ScrollContainer>
+    </HeroUITable>
+  ),
+);
+TableBase.displayName = "Table";
+
+const Table = Object.assign(TableBase, {
+  ScrollContainer: HeroUITable.ScrollContainer,
+  Content: HeroUITable.Content,
+  Header: HeroUITable.Header,
+  Body: HeroUITable.Body,
+  Footer: HeroUITable.Footer,
+  Row: HeroUITable.Row,
+  Column: HeroUITable.Column,
+  Cell: HeroUITable.Cell,
+});
+
+interface TableHeaderProps extends React.ComponentProps<typeof HeroUITable.Header> {
+  sticky?: boolean;
+}
+
+const TableHeader = React.forwardRef<HTMLTableSectionElement, TableHeaderProps>(
+  ({ className, sticky = false, ...props }, ref) => (
+    <HeroUITable.Header
+      ref={ref}
+      className={cn(
+        "bg-muted/35",
+        sticky && "sticky top-0 z-10",
+        className
+      )}
+      {...props}
+    />
+  ),
+);
+TableHeader.displayName = "TableHeader";
+
+const TableBody = React.forwardRef<
+  HTMLTableSectionElement,
+  React.ComponentProps<typeof HeroUITable.Body>
+>(({ className, ...props }, ref) => (
+  <HeroUITable.Body
+    ref={ref}
+    className={className}
+    {...props}
+  />
+));
+TableBody.displayName = "TableBody";
+
+const TableFooter = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<typeof HeroUITable.Footer>
+>(({ className, ...props }, ref) => (
+  <HeroUITable.Footer
+    ref={ref}
+    className={className}
+    {...props}
+  />
+));
+TableFooter.displayName = "TableFooter";
+
+interface TableRowProps extends React.ComponentProps<typeof HeroUITable.Row> {
+  selected?: boolean;
+}
+
+const TableRow = React.forwardRef<HTMLTableRowElement, TableRowProps>(
+  ({ className, selected, ...props }, ref) => (
+    <HeroUITable.Row
+      ref={ref}
+      className={cn(
+        "transition-colors hover:bg-muted/50",
+        selected && "bg-primary/5",
+        className
+      )}
+      {...props}
+    />
+  ),
+);
+TableRow.displayName = "TableRow";
+
+interface TableHeadProps extends React.ComponentProps<typeof HeroUITable.Column> {
+  sortable?: boolean;
+}
+
+const TableHead = React.forwardRef<HTMLTableCellElement, TableHeadProps>(
+  ({ className, sortable, children, ...props }, ref) => (
+    <HeroUITable.Column
+      ref={ref}
+      allowsSorting={sortable}
+      className={cn(
+        "px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground",
+        "sm:px-5",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </HeroUITable.Column>
+  ),
+);
+TableHead.displayName = "TableHead";
+
+const TableCell = React.forwardRef<
+  HTMLTableCellElement,
+  React.ComponentProps<typeof HeroUITable.Cell>
+>(({ className, ...props }, ref) => (
+  <HeroUITable.Cell
+    ref={ref}
+    className={cn("px-4 py-3.5 align-middle sm:px-5", className)}
+    {...props}
+  />
+));
+TableCell.displayName = "TableCell";
+
+const TableCaption = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("mt-4 text-sm text-muted-foreground", className)}
+    {...props}
+  />
+));
+TableCaption.displayName = "TableCaption";
+type SortDirection = "asc" | "desc" | null;
+function EnhancedTable<T extends Record<string, unknown>>() {
+  return null;
+}
+
+export {
+  Table,
+  TableHeader,
+  TableBody,
+  TableFooter,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableCaption,
+  EnhancedTable,
+};
+
+export type { SortDirection, TableProps, TableHeaderProps, TableRowProps, TableHeadProps };

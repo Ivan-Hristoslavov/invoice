@@ -1,0 +1,728 @@
+@import "tailwindcss";
+@import "@heroui/styles";
+
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --drop-shadow-glow:
+    0 0px 20px rgba(255, 255, 255, 0.35), 0 0px 65px rgba(255, 255, 255, 0.2);
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+
+  --color-gray-100: #f7fafc;
+  --color-gray-200: #edf2f7;
+  --color-gray-300: #e2e8f0;
+  --color-gray-400: #cbd5e0;
+  --color-gray-500: #a0aec0;
+  --color-gray-600: #718096;
+  --color-gray-700: #4a5568;
+  --color-gray-800: #2d3748;
+  --color-gray-900: #1a202c;
+
+  --color-blue-100: #ebf8ff;
+  --color-blue-200: #bee3f8;
+  --color-blue-300: #90cdf4;
+  --color-blue-400: #63b3ed;
+  --color-blue-500: #4299e1;
+  --color-blue-600: #3182ce;
+  --color-blue-700: #2b6cb0;
+  --color-blue-800: #2c5289;
+  --color-blue-900: #2a4365;
+
+  --color-green-100: #f0fff4;
+  --color-green-200: #c6f6d5;
+  --color-green-300: #9ae6b4;
+  --color-green-400: #68d391;
+  --color-green-500: #48bb78;
+  --color-green-600: #38a169;
+  --color-green-700: #2f855a;
+  --color-green-800: #276749;
+  --color-green-900: #22543d;
+
+  --color-red-100: #fff5f5;
+  --color-red-200: #fed7d7;
+  --color-red-300: #feb2b2;
+  --color-red-400: #fc8181;
+  --color-red-500: #f56565;
+  --color-red-600: #e53e3e;
+  --color-red-700: #c53030;
+  --color-red-800: #9b2c2c;
+  --color-red-900: #742a2a;
+
+  --color-yellow-100: #fffff0;
+  --color-yellow-200: #fefcbf;
+  --color-yellow-300: #faf089;
+  --color-yellow-400: #f6e05e;
+  --color-yellow-500: #ecc94b;
+  --color-yellow-600: #d69e2e;
+  --color-yellow-700: #b7791f;
+  --color-yellow-800: #975a16;
+  --color-yellow-900: #7d4511;
+
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  --text-5xl: 3rem;
+  --text-6xl: 4rem;
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --animate-fade-in: fade-in 0.3s ease-in-out;
+  --animate-fade-out: fade-out 0.3s ease-in-out;
+  --animate-slide-up: slide-up 0.3s ease-in-out;
+  --animate-slide-down: slide-down 0.3s ease-in-out;
+  --animate-scale-in: scale-in 0.2s ease-in-out;
+  --animate-pulse-once: pulse 1.5s ease-in-out 1;
+  --animate-shimmer: shimmer 2s infinite;
+
+  @keyframes fade-in {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+  @keyframes fade-out {
+    0% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+  @keyframes slide-up {
+    0% {
+      transform: translateY(10px);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  @keyframes slide-down {
+    0% {
+      transform: translateY(-10px);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  @keyframes scale-in {
+    0% {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: hsl(var(--muted-foreground));
+    opacity: 0.45;
+  }
+}
+
+@utility glass-card {
+  /* ============================================
+     Cards & surfaces - solid backgrounds, clear borders
+     ============================================ */
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+
+  .dark & {
+    background: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+@utility dark {
+  & .glass-card {
+    background: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+@utility solid-card {
+  /* Legacy alias - same as glass-card (solid) for gradient backgrounds */
+  background: inherit !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+@keyframes orb-float-slow {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(18px, -28px, 0) scale(1.08); }
+}
+
+@keyframes orb-float-slower {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(12px, -22px, 0) scale(1.05); }
+}
+
+@keyframes orb-float-diagonal {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(-16px, 18px, 0); }
+}
+
+@keyframes orb-float-reverse {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-14px, 20px, 0) scale(0.96); }
+}
+
+@keyframes orb-sway {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+  33% { transform: translate3d(12px, -8px, 0) rotate(8deg) scale(1.04); }
+  66% { transform: translate3d(-10px, 6px, 0) rotate(-8deg) scale(0.98); }
+}
+
+@keyframes orb-rotate {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+  50% { transform: translate3d(0, 12px, 0) rotate(90deg) scale(0.92); }
+}
+
+.animate-orb-float-slow {
+  animation: orb-float-slow 24s ease-in-out infinite;
+}
+
+.animate-orb-float-slower {
+  animation: orb-float-slower 30s ease-in-out infinite;
+}
+
+.animate-orb-float-diagonal {
+  animation: orb-float-diagonal 20s ease-in-out infinite;
+}
+
+.animate-orb-float-reverse {
+  animation: orb-float-reverse 26s ease-in-out infinite;
+}
+
+.animate-orb-sway {
+  animation: orb-sway 22s ease-in-out infinite;
+}
+
+.animate-orb-rotate {
+  animation: orb-rotate 22s ease-in-out infinite;
+}
+
+@utility page-title {
+  /* ============================================
+     TYPOGRAPHY SYSTEM - Responsive text sizes
+     ============================================ */
+
+  /* Page titles - largest headers */
+  @apply text-xl sm:text-2xl md:text-3xl font-bold tracking-tight leading-tight text-balance;
+}
+
+@utility section-title {
+  /* Section titles - card headers, section headers */
+  @apply text-lg sm:text-xl font-semibold tracking-tight leading-tight text-balance;
+}
+
+@utility subsection-title {
+  /* Subsection titles */
+  @apply text-base sm:text-lg font-medium leading-snug;
+}
+
+@utility card-title {
+  /* Card titles */
+  @apply text-base sm:text-lg font-semibold tracking-tight leading-snug;
+}
+
+@utility card-description {
+  /* Card descriptions */
+  @apply text-xs sm:text-sm leading-5 sm:leading-6 text-muted-foreground;
+}
+
+@utility body-text {
+  /* Body text */
+  @apply text-sm sm:text-base leading-6;
+}
+
+@utility small-text {
+  /* Small text - labels, hints */
+  @apply text-xs sm:text-sm leading-5;
+}
+
+@utility tiny-text {
+  /* Tiny text - badges, tags */
+  @apply text-[10px] sm:text-xs leading-4 sm:leading-5;
+}
+
+@utility hero-title {
+  /* Marketing hero display titles */
+  @apply text-[clamp(1.7rem,8vw,3rem)] sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.02] sm:leading-[1.05] text-balance;
+}
+
+@utility lead-text {
+  /* Intro and supporting copy under major headings */
+  @apply text-sm sm:text-lg leading-6 sm:leading-7 text-muted-foreground;
+}
+
+@utility metric-value {
+  /* Large stat values */
+  @apply text-xl sm:text-3xl font-bold tracking-tight;
+}
+
+@utility metric-label {
+  /* Small labels below stat values */
+  @apply text-xs sm:text-sm leading-5 text-muted-foreground;
+}
+
+@utility marketing-title {
+  /* Main marketing section titles on landing pages */
+  @apply text-2xl sm:text-4xl font-bold tracking-tight leading-tight text-balance;
+}
+
+@utility marketing-copy {
+  /* Supporting copy for landing cards and sections */
+  @apply text-sm sm:text-base leading-6 sm:leading-7 text-muted-foreground;
+}
+
+@utility marketing-kicker {
+  /* Small uppercase helper labels above copy blocks */
+  @apply text-xs sm:text-sm font-semibold tracking-tight leading-5 text-foreground;
+}
+
+/* Green–blue gradient design system – primary CTAs and highlights */
+@utility gradient-primary {
+  background: linear-gradient(135deg, hsl(160 84% 39%) 0%, hsl(174 72% 48%) 50%, hsl(187 85% 53%) 100%);
+  color: white;
+}
+@utility gradient-primary-text {
+  background: linear-gradient(135deg, hsl(160 84% 39%) 0%, hsl(174 72% 48%) 50%, hsl(187 85% 53%) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.dark .gradient-primary-text {
+  background: linear-gradient(135deg, hsl(160 84% 45%) 0%, hsl(174 72% 55%) 50%, hsl(187 85% 60%) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility btn-text {
+  /* Button text sizes */
+  @apply text-xs sm:text-sm font-medium whitespace-nowrap;
+}
+
+/* Keep all button content (text + icon) on one line */
+[data-slot="button"] {
+  white-space: nowrap;
+  display: inline-flex !important;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+
+@utility btn-text-lg {
+  @apply text-sm sm:text-base font-medium;
+}
+
+@utility form-label {
+  /* Form labels */
+  @apply text-xs sm:text-sm font-medium;
+}
+
+@utility page-header {
+  /* Page header container - responsive layout */
+  @apply flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6;
+}
+
+@utility page-header-left {
+  /* Page header left side with back button and title */
+  @apply flex items-center gap-2 flex-1 min-w-0;
+}
+
+@utility page-header-actions {
+  /* Page header actions (buttons) */
+  @apply flex flex-col sm:flex-row gap-2 w-full sm:w-auto;
+}
+
+@utility btn-responsive {
+  /* Responsive button - full width on mobile */
+  @apply w-full sm:w-auto;
+}
+
+@utility app-page-shell {
+  @apply space-y-5 sm:space-y-6;
+}
+
+@utility app-page-header {
+  @apply flex flex-col gap-3 sm:gap-4;
+}
+
+@utility app-page-actions {
+  @apply flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center;
+}
+
+@utility app-surface-card {
+  @apply rounded-[28px] border border-border/60 bg-card shadow-sm;
+}
+
+@utility app-form-control {
+  @apply min-h-11 rounded-2xl px-4 text-sm sm:min-h-12;
+}
+
+@utility back-btn {
+  /* Back button styling – single line */
+  @apply shrink-0 h-8 sm:h-9 whitespace-nowrap;
+}
+
+@utility form-container {
+  @apply space-y-6;
+}
+
+@utility form-section {
+  @apply space-y-4;
+}
+
+@utility form-group {
+  @apply space-y-2;
+}
+
+/* Form actions: consistent order — secondary/cancel left, primary submit right */
+@utility form-actions {
+  @apply flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 sm:justify-end sm:items-center;
+}
+
+@utility form-actions-between {
+  @apply flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 sm:justify-between sm:items-center;
+}
+
+@utility loading-overlay {
+  @apply fixed inset-0 bg-background/80 backdrop-blur-xs flex items-center justify-center z-50;
+}
+
+@utility loading-spinner {
+  @apply animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full;
+}
+
+@utility empty-state {
+  @apply flex flex-col items-center justify-center p-8 text-center bg-muted rounded-xl border-2 border-dashed border-border;
+}
+
+@utility empty-state-icon {
+  @apply text-muted-foreground mb-3 w-12 h-12;
+}
+
+@utility empty-state-text {
+  @apply text-muted-foreground mb-4;
+}
+
+@utility success-animation {
+  @apply transition-all duration-300 ease-in-out;
+}
+
+@utility mobile-container {
+  @apply px-4 sm:px-6 md:px-8;
+}
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Green–blue gradient design system (emerald → teal → cyan) */
+    --primary: 166 76% 42%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215 16% 47%;
+    
+    /* Opaque surfaces for clear component boundaries */
+    --card-opacity: 1;
+    --popover-opacity: 1;
+    --muted-opacity: 1;
+
+    --accent: 174 72% 48%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 210 40% 98%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 85%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 166 76% 42%;
+
+    --chart-1: 221 83% 53%;
+    --chart-2: 262 83% 58%;
+    --chart-3: 326 100% 74%;
+    --chart-4: 174 86% 45%;
+    --chart-5: 48 96% 53%;
+
+    --radius: 0.5rem;
+  }
+
+  /* Softer dark theme – green–blue gradient system */
+  .dark {
+    --background: 222 28% 12%;
+    --foreground: 210 40% 96%;
+
+    --card: 222 26% 15%;
+    --card-foreground: 210 40% 96%;
+
+    --popover: 222 26% 15%;
+    --popover-foreground: 210 40% 96%;
+
+    --primary: 166 76% 45%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 217 18% 22%;
+    --secondary-foreground: 210 40% 96%;
+
+    --muted: 217 18% 20%;
+    --muted-foreground: 215 18% 62%;
+    
+    /* Opaque surfaces for clear component boundaries */
+    --card-opacity: 1;
+    --popover-opacity: 1;
+    --muted-opacity: 1;
+
+    --accent: 174 72% 52%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 210 40% 98%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 210 40% 98%;
+
+    --border: 217 18% 24%;
+    --input: 217 18% 18%;
+    --ring: 166 76% 45%;
+
+    --chart-1: 217 91% 60%;
+    --chart-2: 262 83% 65%;
+    --chart-3: 326 100% 74%;
+    --chart-4: 174 86% 45%;
+    --chart-5: 48 96% 53%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  /* Prevent blinking in Safari */
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+  }
+  
+  /* Theme transition only for specific elements, not globally */
+  .theme-transition,
+  [data-theme-transition] {
+    transition-property: background-color, border-color, color;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+  }
+  
+  /* Fix for inputs - ensure proper contrast */
+  input::placeholder {
+    @apply text-muted-foreground/70;
+  }
+  
+  /* HeroUI-style invalid input (used when FormControl passes aria-invalid) */
+  [data-slot="input"][data-invalid="true"],
+  input[aria-invalid="true"],
+  textarea[aria-invalid="true"] {
+    border-color: hsl(var(--destructive)) !important;
+  }
+  [data-slot="input"][data-invalid="true"]:focus-visible,
+  input[aria-invalid="true"]:focus-visible,
+  textarea[aria-invalid="true"]:focus-visible {
+    --tw-ring-color: hsl(var(--destructive));
+  }
+
+  /* Prevent flash of unstyled content */
+  .no-fouc {
+    visibility: hidden;
+  }
+  
+  .no-fouc.loaded {
+    visibility: visible;
+  }
+}
+
+
+/* Skip-to-content link for keyboard navigation */
+.skip-to-content {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  z-index: 9999;
+}
+.skip-to-content:focus {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  width: auto;
+  height: auto;
+  padding: 0.75rem 1.5rem;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-radius: var(--radius);
+  font-weight: 600;
+  z-index: 9999;
+  outline: none;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+/* HeroUI toast colors */
+[data-slot="toast"] {
+  color: hsl(var(--foreground)) !important;
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+}
+
+[data-slot="toast-title"] {
+  color: hsl(var(--foreground)) !important;
+}
+
+[data-slot="toast-description"] {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+[data-slot="toast-close"] {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+[data-slot="toast-action-button"] {
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark [data-slot="toast"] {
+  color: hsl(var(--foreground)) !important;
+  background: hsl(var(--card)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+.dark [data-slot="toast-title"] {
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark [data-slot="toast-description"] {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+/* Лендинг: якоря и лепкав хедър — плавен скрол без да се скрива заглавието под бара */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

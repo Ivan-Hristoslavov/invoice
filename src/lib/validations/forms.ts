@@ -96,6 +96,15 @@ export const invoiceItemSchema = z.object({
   quantity: z.number().min(0.01, "Количеството трябва да бъде положително число"),
   price: z.number().min(0.01, "Цената е задължителна и трябва да е положителна"),
   taxRate: z.number().min(0, "ДДС ставката не може да бъде отрицателна").max(100, "ДДС не може да надвишава 100%").default(20),
+  vatExemptReason: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.taxRate === 0 && (!data.vatExemptReason || data.vatExemptReason.trim() === "")) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "При ДДС ставка 0% е необходимо основание за освобождаване (напр. чл. 69, ал. 2 ЗДДС)",
+      path: ["vatExemptReason"],
+    });
+  }
 });
 
 export const invoiceSchema = z.object({
@@ -111,6 +120,7 @@ export const invoiceSchema = z.object({
   paymentMethod: z.string().optional().default('BANK_TRANSFER'),
   isEInvoice: z.boolean().optional().default(false),
   isOriginal: z.boolean().optional().default(true),
+  reverseCharge: z.boolean().default(false),
   items: z.array(invoiceItemSchema).min(1, "Фактурата трябва да има поне един артикул"),
   notes: z.string().max(FIELD_LIMITS.notes, "Бележките са твърде дълги").optional(),
   termsAndConditions: z.string().max(FIELD_LIMITS.termsAndConditions, "Условията са твърде дълги").optional(),

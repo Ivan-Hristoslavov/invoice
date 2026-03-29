@@ -12,24 +12,53 @@ export interface BadgeProps extends Omit<React.ComponentProps<typeof Chip>, "var
     | "outline"
     | "success"
     | "warning"
-    | "info";
+    | "info"
+    // Invoice statuses
+    | "DRAFT" | "draft"
+    | "SENT" | "sent"
+    | "ISSUED" | "issued"
+    | "UNPAID" | "unpaid"
+    | "PAID" | "paid"
+    | "OVERDUE" | "overdue"
+    | "CANCELLED" | "cancelled"
+    | "VOIDED" | "voided"
+    | "PARTIAL" | "partial";
 }
 
-const chipColorMap: Record<string, "default" | "accent" | "danger" | "success" | "warning"> = {
-  // Всички стандартни бейджове (default/secondary/info/success/warning/outline)
-  // се визуализират в зелено (success). Само destructive остава червен.
-  default: "success",
-  secondary: "success",
+const chipColorMap: Record<string, "default" | "primary" | "secondary" | "danger" | "success" | "warning"> = {
+  // Generic UI variants
+  default: "default",
+  secondary: "secondary",
   destructive: "danger",
   success: "success",
-  warning: "success",
-  info: "success",
-  outline: "success",
-  "outline-solid": "success",
+  warning: "warning",
+  info: "primary",
+  outline: "default",
+  "outline-solid": "default",
+  // Invoice status variants (uppercase DB values)
+  DRAFT: "default",
+  SENT: "primary",
+  ISSUED: "primary",
+  UNPAID: "primary",
+  PAID: "success",
+  OVERDUE: "danger",
+  CANCELLED: "default",
+  VOIDED: "warning",
+  PARTIAL: "warning",
+  // Invoice status variants (lowercase)
+  draft: "default",
+  sent: "primary",
+  issued: "primary",
+  unpaid: "primary",
+  paid: "success",
+  overdue: "danger",
+  cancelled: "default",
+  voided: "warning",
+  partial: "warning",
 };
 
 const chipVariantMap: Record<string, "primary" | "secondary" | "soft" | "tertiary"> = {
-  default: "primary",
+  default: "soft",
   secondary: "soft",
   destructive: "soft",
   success: "soft",
@@ -37,6 +66,16 @@ const chipVariantMap: Record<string, "primary" | "secondary" | "soft" | "tertiar
   info: "soft",
   outline: "secondary",
   "outline-solid": "secondary",
+  // Invoice statuses all use soft style
+  DRAFT: "soft", draft: "soft",
+  SENT: "soft", sent: "soft",
+  ISSUED: "soft", issued: "soft",
+  UNPAID: "soft", unpaid: "soft",
+  PAID: "soft", paid: "soft",
+  OVERDUE: "soft", overdue: "soft",
+  CANCELLED: "soft", cancelled: "soft",
+  VOIDED: "soft", voided: "soft",
+  PARTIAL: "soft", partial: "soft",
 };
 
 function Badge({ variant = "default", className, children, ...props }: BadgeProps) {

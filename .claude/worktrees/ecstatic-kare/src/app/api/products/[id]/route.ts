@@ -1,0 +1,258 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { createAdminClient } from "@/lib/supabase/server";
+import { resolveSessionUser } from "@/lib/session-user";
+import { z } from "zod";
+import { FIELD_LIMITS } from "@/lib/validations/field-limits";
+
+const productSchema = z.object({
+  name: z
+    .string()
+    .min(2, "Името на продукта е задължително (минимум 2 символа)")
+    .max(FIELD_LIMITS.name, "Името на продукта е твърде дълго"),
+  description: z.string().max(FIELD_LIMITS.description, "Описанието е твърде дълго").optional().or(z.literal("")),
+  price: z.number().min(0, "Цената не може да бъде отрицателна"),
+  unit: z.string().min(1, "Единицата е задължителна").max(50, "Единицата е твърде дълга"),
+  taxRate: z.number().min(0, "ДДС ставката не може да бъде отрицателна").max(100, "ДДС не може да надвишава 100%").default(20),
+});
+
+// GET - Взима един продукт по ID
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: "Неоторизиран достъп" },
+        { status: 401 }
+      );
+    }
+
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json(
+        { error: "Сесията ви е невалидна. Моля, влезте отново." },
+        { status: 401 }
+      );
+    }
+
+    // Получаване на ID параметър по правилния асинхронен начин
+    const productId = (await context.params).id;
+
+    const supabase = createAdminClient();
+    const { data: product, error } = await supabase
+      .from("Product")
+      .select("*")
+      .eq("id", productId)
+      .eq("userId", sessionUser.id)
+      .single();
+    
+    if (error || !product) {
+      return NextResponse.json(
+        { error: "Продуктът не е намерен" },
+        { status: 404 }
+      );
+    }
+
+    if (!product) {
+      return NextResponse.json(
+        { error: "Продуктът не е намерен" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(product);
+  } catch (error) {
+    console.error("Грешка при извличане на продукт:", error);
+    return NextResponse.json(
+      { error: "Неуспешно извличане на продукт" },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT - Обновява съществуващ продукт
+export async function PUT(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: "Неоторизиран достъп" },
+        { status: 401 }
+      );
+    }
+
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json(
+        { error: "Сесията ви е невалидна. Моля, влезте отново." },
+        { status: 401 }
+      );
+    }
+
+    // Получаване на ID параметър по правилния асинхронен начин
+    const productId = (await context.params).id;
+    const json = await request.json();
+
+    // Валидиране на данните
+    const validated = productSchema.parse(json);
+
+    const supabase = createAdminClient();
+    
+    // Проверка дали продуктът съществува и принадлежи на потребителя
+    const { data: existingProduct, error: checkError } = await supabase
+      .from("Product")
+      .select("*")
+      .eq("id", productId)
+      .eq("userId", sessionUser.id)
+      .single();
+
+    if (checkError || !existingProduct) {
+      return NextResponse.json(
+        { error: "Продуктът не е намерен" },
+        { status: 404 }
+      );
+    }
+
+    // Обновяване на продукта
+    const { data: updatedProduct, error: updateError } = await supabase
+      .from("Product")
+      .update({
+        name: validated.name,
+        description: validated.description || null,
+        price: validated.price,
+        unit: validated.unit,
+        taxRate: validated.taxRate,
+        updatedAt: new Date().toISOString(),
+      })
+      .eq("id", productId)
+      .select()
+      .single();
+    
+    if (updateError || !updatedProduct) {
+      throw updateError;
+    }
+
+    return NextResponse.json(updatedProduct);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const details = error.errors.map((e) => ({
+        path: e.path.map(String),
+        message: e.message,
+      }));
+      return NextResponse.json(
+        { error: "Невалидни данни за продукта. Моля, проверете полетата.", details },
+        { status: 400 }
+      );
+    }
+
+    console.error("Грешка при обновяване на продукт:", error);
+    return NextResponse.json(
+      { error: "Неуспешно обновяване на продукт. Моля, опитайте отново." },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE - Изтрива продукт
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: "Неоторизиран достъп" },
+        { status: 401 }
+      );
+    }
+
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json(
+        { error: "Сесията ви е невалидна. Моля, влезте отново." },
+        { status: 401 }
+      );
+    }
+
+    // Получаване на ID параметър по правилния асинхронен начин
+    const productId = (await context.params).id;
+
+    const supabase = createAdminClient();
+    
+    // Проверка дали продуктът съществува и принадлежи на потребителя
+    const { data: existingProduct, error: checkError } = await supabase
+      .from("Product")
+      .select("*")
+      .eq("id", productId)
+      .eq("userId", sessionUser.id)
+      .single();
+
+    if (checkError || !existingProduct) {
+      return NextResponse.json(
+        { error: "Продуктът не е намерен" },
+        { status: 404 }
+      );
+    }
+
+    // Проверка дали продуктът вече е използван във фактури
+    const { count: usageCount, error: usageError } = await supabase
+      .from("InvoiceItem")
+      .select("id", { count: "exact", head: true })
+      .eq("productId", productId);
+
+    if (usageError) {
+      throw usageError;
+    }
+
+    // Ако продуктът е използван поне веднъж, не го трием твърдо, а само го архивираме
+    if ((usageCount ?? 0) > 0) {
+      const { error: archiveError } = await supabase
+        .from("Product")
+        .update({
+          isActive: false,
+          updatedAt: new Date().toISOString(),
+        })
+        .eq("id", productId);
+
+      if (archiveError) {
+        throw archiveError;
+      }
+
+      return NextResponse.json({
+        success: true,
+        archived: true,
+        message:
+          "Продуктът е използван във фактури и беше архивиран (деактивиран), вместо да бъде изтрит.",
+      });
+    }
+
+    // Ако продуктът не е използван, може да бъде изтрит безопасно
+    const { error: deleteError } = await supabase
+      .from("Product")
+      .delete()
+      .eq("id", productId);
+    
+    if (deleteError) {
+      throw deleteError;
+    }
+
+    return NextResponse.json({ success: true, archived: false });
+  } catch (error) {
+    console.error("Грешка при изтриване на продукт:", error);
+    return NextResponse.json(
+      { error: "Неуспешно изтриване на продукт" },
+      { status: 500 }
+    );
+  }
+} 

@@ -91,8 +91,17 @@ vi.mock("@heroui/react", () => ({
       Footer: ({ children, ...p }: React.HTMLAttributes<HTMLDivElement>) => <div {...p}>{children}</div>,
     }
   ),
-  Chip: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-    <div {...props}>{children}</div>
+  Chip: Object.assign(
+    ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+      <div data-testid="heroui-chip" {...props}>
+        {children}
+      </div>
+    ),
+    {
+      Label: ({ children, ...p }: React.HTMLAttributes<HTMLSpanElement>) => (
+        <span {...p}>{children}</span>
+      ),
+    }
   ),
   Separator: (props: React.HTMLAttributes<HTMLHRElement>) => <hr {...props} />,
   Spinner: () => <span>loading</span>,
