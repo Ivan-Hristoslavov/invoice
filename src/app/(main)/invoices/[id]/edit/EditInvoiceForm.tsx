@@ -8,6 +8,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuItemIcon,
+  DropdownMenuItemText,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -544,11 +546,13 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
             <DropdownMenuTrigger className="h-8 px-3 border rounded-md hover:bg-muted">
               <MoreVertical className="w-4 h-4" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="min-w-56">
               <DropdownMenuItem asChild>
                 <Link href={`/invoices/${invoiceId}`}>
-                  <Eye className="mr-2 h-4 w-4" />
-                  Преглед
+                  <DropdownMenuItemIcon>
+                    <Eye />
+                  </DropdownMenuItemIcon>
+                  <DropdownMenuItemText>Преглед</DropdownMenuItemText>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -559,8 +563,10 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                   }}
                   className="text-emerald-600 focus:text-emerald-600"
                 >
-                  <FileCheck className="mr-2 h-4 w-4" />
-                  Издай фактура
+                  <DropdownMenuItemIcon>
+                    <FileCheck />
+                  </DropdownMenuItemIcon>
+                  <DropdownMenuItemText>Издай фактура</DropdownMenuItemText>
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem
@@ -574,8 +580,10 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                   }
                 }}
               >
-                <Printer className="mr-2 h-4 w-4" />
-                Принтирай
+                <DropdownMenuItemIcon>
+                  <Printer />
+                </DropdownMenuItemIcon>
+                <DropdownMenuItemText>Принтирай</DropdownMenuItemText>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={async () => {
@@ -587,8 +595,10 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                   }
                 }}
               >
-                <Download className="mr-2 h-4 w-4" />
-                Изтегли PDF
+                <DropdownMenuItemIcon>
+                  <Download />
+                </DropdownMenuItemIcon>
+                <DropdownMenuItemText>Изтегли PDF</DropdownMenuItemText>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

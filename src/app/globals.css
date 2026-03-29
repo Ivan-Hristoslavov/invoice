@@ -287,6 +287,96 @@
   animation: orb-rotate 22s ease-in-out infinite;
 }
 
+/* Full-page loading overlay — breathing teal/cyan glow (see FullPageLoader) */
+@keyframes loading-bg-pulse {
+  0%,
+  100% {
+    opacity: 0.32;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 0.78;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes loading-bg-pulse-soft {
+  0%,
+  100% {
+    opacity: 0.18;
+    transform: scale(1.04) translateY(0);
+  }
+  50% {
+    opacity: 0.48;
+    transform: scale(0.94) translateY(12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-loading-bg-pulse,
+  .animate-loading-bg-pulse-soft {
+    animation: none !important;
+    opacity: 0.45 !important;
+    transform: none !important;
+  }
+}
+
+.animate-loading-bg-pulse {
+  animation: loading-bg-pulse 3.2s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+.animate-loading-bg-pulse-soft {
+  animation: loading-bg-pulse-soft 4s ease-in-out infinite;
+  animation-delay: 0.6s;
+  will-change: opacity, transform;
+}
+
+/* FullPageLoader — пулсиращ градиентен „ореол“ около централната икона */
+@keyframes loader-icon-halo {
+  0%,
+  100% {
+    opacity: 0.38;
+    transform: scale(0.88);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.14);
+  }
+}
+
+@keyframes loader-icon-halo-soft {
+  0%,
+  100% {
+    opacity: 0.22;
+    transform: scale(1.06) rotate(0deg);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(0.92) rotate(180deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-loader-icon-halo,
+  .animate-loader-icon-halo-soft {
+    animation: none !important;
+    opacity: 0.55 !important;
+    transform: none !important;
+  }
+}
+
+.animate-loader-icon-halo {
+  animation: loader-icon-halo 2.6s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+.animate-loader-icon-halo-soft {
+  animation: loader-icon-halo-soft 3.4s ease-in-out infinite;
+  animation-delay: 0.35s;
+  will-change: opacity, transform;
+}
+
 @utility page-title {
   /* ============================================
      TYPOGRAPHY SYSTEM - Responsive text sizes
@@ -382,6 +472,36 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+/* Landing / subscription pricing — subtle dot grid + glass cards (teal–violet brand) */
+@utility pricing-dot-bg {
+  background-image: radial-gradient(
+    rgba(148, 163, 184, 0.14) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
+}
+.dark .pricing-dot-bg {
+  background-image: radial-gradient(
+    rgba(148, 163, 184, 0.1) 1px,
+    transparent 1px
+  );
+}
+
+@utility pricing-featured-ring {
+  border-radius: 1.5rem;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    hsl(160 84% 45%) 0%,
+    hsl(174 72% 48%) 45%,
+    hsl(262 83% 58%) 100%
+  );
+  box-shadow:
+    0 0 0 1px rgba(16, 185, 129, 0.12),
+    0 24px 48px -16px rgba(16, 185, 129, 0.28),
+    0 12px 24px -12px rgba(6, 182, 212, 0.15);
 }
 
 @utility btn-text {
@@ -725,4 +845,18 @@ html {
   html {
     scroll-behavior: auto;
   }
+}
+
+/* Списък фактури (desktop): HeroUI Table — махаме хоризонтални линии (и на tr, и на td) */
+.invoices-table-flat.table-root--secondary .table__body .table__row {
+  border-bottom-width: 0;
+}
+
+.invoices-table-flat.table-root--secondary .table__body .table__row .table__cell {
+  border-bottom-width: 0;
+}
+
+/* Без вертикални разделители между колоните в хедъра (HeroUI ::after) */
+.invoices-table-flat .table__header .table__column::after {
+  content: none;
 }

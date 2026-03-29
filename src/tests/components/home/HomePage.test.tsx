@@ -55,6 +55,8 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
     children?: React.ReactNode;
     asChild?: boolean;
   }) => (asChild ? <>{children}</> : <div role="menuitem">{children}</div>),
+  DropdownMenuItemIcon: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  DropdownMenuItemText: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
 }));
 
 vi.mock("@heroui/react", () => ({

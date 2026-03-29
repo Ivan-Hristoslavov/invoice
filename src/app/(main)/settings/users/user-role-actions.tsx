@@ -6,12 +6,14 @@ import { useRouter } from "next/navigation";
 // Define Role type locally since we're not using Prisma on client side
 type Role = 'ADMIN' | 'OWNER' | 'MANAGER' | 'ACCOUNTANT' | 'VIEWER';
 const editableRoles: Exclude<Role, "OWNER">[] = ['ADMIN', 'MANAGER', 'ACCOUNTANT', 'VIEWER'];
-import { UserCog, Check, X, AlertTriangle } from "lucide-react";
+import { UserCog, Check, X, AlertTriangle, Shield, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuItemIcon,
+  DropdownMenuItemText,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -129,20 +131,26 @@ export default function UserRoleActions({
         >
           <UserCog className="h-4 w-4" aria-hidden />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" className="min-w-56">
           <DropdownMenuLabel>Действия с потребител</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {canEditRole ? (
             <DropdownMenuItem onClick={() => setIsOpen(true)}>
-              Промяна на роля
+              <DropdownMenuItemIcon>
+                <Shield />
+              </DropdownMenuItemIcon>
+              <DropdownMenuItemText>Промяна на роля</DropdownMenuItemText>
             </DropdownMenuItem>
           ) : null}
           {!isCurrentUser && (
             <DropdownMenuItem
               onClick={() => setIsDeleteDialogOpen(true)}
-              className="text-red-600"
+              className="text-red-600 focus:text-red-600"
             >
-              Премахни потребител
+              <DropdownMenuItemIcon>
+                <UserX />
+              </DropdownMenuItemIcon>
+              <DropdownMenuItemText>Премахни потребител</DropdownMenuItemText>
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>
