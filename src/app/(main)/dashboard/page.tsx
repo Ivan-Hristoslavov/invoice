@@ -92,6 +92,13 @@ function calcTrend(current: number, previous: number): { text: string; up: boole
   return { text: `${sign}${pct.toFixed(1)}%`, up: pct >= 0 };
 }
 
+/** Март–юни: пълни имена; по-дългите месеци (януари, февруари, …) — съкратени. */
+function formatMonthChartLabel(monthStart: Date): string {
+  const month = monthStart.getMonth();
+  if (month >= 2 && month <= 5) return format(monthStart, "LLLL", { locale: bg });
+  return format(monthStart, "MMM", { locale: bg });
+}
+
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   
@@ -308,7 +315,7 @@ export default async function DashboardPage() {
   for (let i = 5; i >= 0; i--) {
     const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
-    const monthLabel = format(monthStart, "MMM", { locale: bg });
+    const monthLabel = formatMonthChartLabel(monthStart);
     const monthTotal = statsRows
       .filter((inv) => {
         const d = new Date(inv.issueDate);
@@ -784,55 +791,10 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      {/* Row 4: Monthly Revenue Chart + Recent Activity */}
+      {/* Row 4: Recent Activity (full width) */}
       <div className="grid gap-4 sm:gap-5 lg:grid-cols-3">
-        {/* Monthly Revenue Chart */}
-        <Card className="relative overflow-hidden lg:col-span-1 border border-border/50 shadow-md">
-          <div
-            className="absolute left-0 right-0 top-0 h-[3px] bg-linear-to-r from-blue-500 via-indigo-500 to-violet-500"
-            aria-hidden
-          />
-          <CardHeader className="pb-3 px-3 pt-4 sm:px-6 sm:pt-6">
-            <div className="space-y-2">
-              <AppSectionKicker icon={BarChart3}>Приходи</AppSectionKicker>
-              <CardTitle className="card-title">Последни 6 месеца</CardTitle>
-              <CardDescription className="card-description">
-                Издадени фактури по месеци
-              </CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent className="px-3 pb-4 sm:px-6 sm:pb-6">
-            <div className="flex items-end gap-1.5 sm:gap-2 h-[140px]">
-              {monthlyRevenue.map((m, i) => {
-                const pct = maxMonthly > 0 ? (m.total / maxMonthly) * 100 : 0;
-                const barHeight = Math.max(pct, 3);
-                return (
-                  <div key={i} className="flex flex-1 flex-col items-center gap-1.5" title={`${m.label}: ${m.total.toFixed(2)} €`}>
-                    <p className="text-[10px] font-medium tabular-nums text-muted-foreground/70 leading-none">
-                      {m.total > 0 ? (m.total >= 1000 ? `${(m.total / 1000).toFixed(1)}k` : m.total.toFixed(0)) : ""}
-                    </p>
-                    <div className="w-full flex-1 flex items-end">
-                      <div
-                        className={`w-full rounded-t-md transition-all ${
-                          m.isCurrent
-                            ? "bg-linear-to-t from-emerald-600 to-emerald-400 shadow-sm shadow-emerald-500/30"
-                            : "bg-linear-to-t from-muted-foreground/25 to-muted-foreground/15"
-                        }`}
-                        style={{ height: `${barHeight}%` }}
-                      />
-                    </div>
-                    <p className={`text-[10px] font-medium capitalize leading-none ${m.isCurrent ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground/70"}`}>
-                      {m.label}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Recent Activity (Audit Log) */}
-        <Card className="relative overflow-hidden lg:col-span-2 border border-border/50 shadow-md">
+        <Card className="relative overflow-hidden lg:col-span-3 border border-border/50 shadow-md">
           <div
             className="absolute left-0 right-0 top-0 h-[3px] bg-linear-to-r from-violet-500 via-indigo-500 to-blue-500"
             aria-hidden
@@ -966,6 +928,57 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Monthly revenue — full width at bottom */}
+      <Card className="relative overflow-hidden border border-border/50 shadow-md">
+        <div
+          className="absolute left-0 right-0 top-0 h-[3px] bg-linear-to-r from-blue-500 via-indigo-500 to-violet-500"
+          aria-hidden
+        />
+        <CardHeader className="pb-3 px-3 pt-4 sm:px-6 sm:pt-6">
+          <div className="space-y-2">
+            <AppSectionKicker icon={BarChart3}>Приходи</AppSectionKicker>
+            <CardTitle className="card-title">Последни 6 месеца</CardTitle>
+            <CardDescription className="card-description">
+              Издадени фактури по месеци
+            </CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent className="px-3 pb-4 sm:px-6 sm:pb-6">
+          <div className="flex h-[160px] w-full items-stretch gap-2 sm:gap-3 md:gap-4">
+            {monthlyRevenue.map((m, i) => {
+              const pct = maxMonthly > 0 ? (m.total / maxMonthly) * 100 : 0;
+              const barHeight = Math.max(pct, 3);
+              return (
+                <div
+                  key={i}
+                  className="flex h-full min-h-0 min-w-0 flex-1 flex-col items-center gap-1.5"
+                  title={`${m.label}: ${m.total.toFixed(2)} €`}
+                >
+                  <p className="shrink-0 text-[10px] font-medium tabular-nums leading-none text-muted-foreground/70">
+                    {m.total > 0 ? (m.total >= 1000 ? `${(m.total / 1000).toFixed(1)}k` : m.total.toFixed(0)) : ""}
+                  </p>
+                  <div className="flex min-h-0 w-full flex-1 flex-col justify-end">
+                    <div
+                      className={`w-full rounded-t-md transition-all ${
+                        m.isCurrent
+                          ? "bg-linear-to-t from-emerald-600 to-emerald-400 shadow-sm shadow-emerald-500/30"
+                          : "bg-linear-to-t from-muted-foreground/25 to-muted-foreground/15"
+                      }`}
+                      style={{ height: `${barHeight}%` }}
+                    />
+                  </div>
+                  <p
+                    className={`shrink-0 text-[10px] font-medium capitalize leading-none ${m.isCurrent ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground/70"}`}
+                  >
+                    {m.label}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
