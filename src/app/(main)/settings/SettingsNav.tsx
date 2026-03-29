@@ -11,6 +11,7 @@ import {
   Settings,
   ArrowLeft,
   Palette,
+  UsersRound,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,8 @@ export function SettingsNav() {
   const router = useRouter();
   const { isPending, startTransition } = useSettingsNav();
   const selectedKey = pathnameToTabId(pathname);
+  const isTeamPage =
+    pathname === "/settings/team" || pathname.startsWith("/settings/team/");
 
   const handleTabChange = (key: string) => {
     const item = navItems.find((i) => i.id === key);
@@ -50,12 +53,27 @@ export function SettingsNav() {
     <div className="w-full space-y-4">
       <div className="flex flex-row items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-            <Settings className="h-4 w-4 text-primary" />
+          <div
+            className={cn(
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+              isTeamPage
+                ? "bg-violet-500/15 text-violet-600 dark:text-violet-300"
+                : "bg-primary/10 text-primary"
+            )}
+          >
+            {isTeamPage ? (
+              <UsersRound className="h-4 w-4" aria-hidden />
+            ) : (
+              <Settings className="h-4 w-4" aria-hidden />
+            )}
           </div>
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold">Настройки</h2>
-            <p className="text-[10px] text-muted-foreground">Управление на акаунта</p>
+            <h2 className="text-sm font-semibold tracking-tight">
+              {isTeamPage ? "Екип" : "Настройки"}
+            </h2>
+            <p className="text-[10px] text-muted-foreground">
+              {isTeamPage ? "Покани, роли и достъп до компанията" : "Профил, сигурност и предпочитания"}
+            </p>
           </div>
         </div>
         <Button
@@ -71,38 +89,74 @@ export function SettingsNav() {
         </Button>
       </div>
 
-      <Tabs value={selectedKey} onValueChange={handleTabChange} className="w-full">
-        <TabsList
+      {/* Екип ↔ акаунт настройки — същият контекст като в страничното меню */}
+      <div
+        className="flex w-full rounded-2xl border border-border/60 bg-muted/25 p-1 dark:bg-muted/15"
+        role="tablist"
+        aria-label="Екип или настройки на акаунта"
+      >
+        <Link
+          href="/settings/team"
           className={cn(
-            "w-full min-w-0 flex flex-row flex-nowrap gap-0 rounded-xl border border-border/60 bg-card p-1 px-0.5 sm:px-1",
-            "min-h-10 overflow-x-auto overflow-y-hidden",
-            "[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            "flex min-h-10 flex-1 items-center justify-center gap-2 rounded-[14px] px-3 py-2 text-sm font-semibold transition-colors",
+            isTeamPage
+              ? "bg-card text-foreground shadow-sm ring-1 ring-border/60"
+              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
           )}
-          aria-label="Настройки"
+          aria-current={isTeamPage ? "page" : undefined}
         >
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <TabsTrigger
-                key={item.id}
-                id={item.id}
-                value={item.id}
-                isDisabled={isPending}
-                className={cn(
-                  "shrink-0 flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors sm:px-3",
-                  "data-[selected=true]:bg-primary data-[selected=true]:text-primary-foreground",
-                  "data-[selected=false]:text-foreground/65 dark:data-[selected=false]:text-foreground/55",
-                  "data-[selected=true]:[&_span]:text-primary-foreground data-[selected=false]:[&_span]:text-inherit",
-                  "disabled:pointer-events-none disabled:opacity-70"
-                )}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                <span className="whitespace-nowrap">{item.title}</span>
-              </TabsTrigger>
-            );
-          })}
-        </TabsList>
-      </Tabs>
+          <UsersRound className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
+          <span className="whitespace-nowrap">Екип</span>
+        </Link>
+        <Link
+          href="/settings/profile"
+          className={cn(
+            "flex min-h-10 flex-1 items-center justify-center gap-2 rounded-[14px] px-3 py-2 text-sm font-semibold transition-colors",
+            !isTeamPage
+              ? "bg-card text-foreground shadow-sm ring-1 ring-border/60"
+              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+          )}
+          aria-current={!isTeamPage ? "page" : undefined}
+        >
+          <Settings className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
+          <span className="whitespace-nowrap">Настройки</span>
+        </Link>
+      </div>
+
+      {!isTeamPage ? (
+        <Tabs value={selectedKey} onValueChange={handleTabChange} className="w-full">
+          <TabsList
+            className={cn(
+              "w-full min-w-0 flex flex-row flex-nowrap gap-0 rounded-xl border border-border/50 bg-card/90 p-1 px-0.5 sm:px-1",
+              "min-h-10 overflow-x-auto overflow-y-hidden",
+              "[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            )}
+            aria-label="Раздели в настройките"
+          >
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <TabsTrigger
+                  key={item.id}
+                  id={item.id}
+                  value={item.id}
+                  isDisabled={isPending}
+                  className={cn(
+                    "shrink-0 flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors sm:px-3",
+                    "data-[selected=true]:bg-primary data-[selected=true]:text-primary-foreground",
+                    "data-[selected=false]:text-foreground/65 dark:data-[selected=false]:text-foreground/55",
+                    "data-[selected=true]:[&_span]:text-primary-foreground data-[selected=false]:[&_span]:text-inherit",
+                    "disabled:pointer-events-none disabled:opacity-70"
+                  )}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className="whitespace-nowrap">{item.title}</span>
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+        </Tabs>
+      ) : null}
     </div>
   );
 }

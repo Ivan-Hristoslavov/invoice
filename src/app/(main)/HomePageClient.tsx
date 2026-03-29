@@ -35,6 +35,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuItemIcon,
+  DropdownMenuItemText,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SUBSCRIPTION_PLANS } from "@/lib/subscription-plans";
@@ -43,6 +45,7 @@ import {
   publicBusinessProfile,
   shouldShowPublicLegalField,
 } from "@/config/public-business";
+import { PRICING_CARD_SURFACE } from "@/lib/pricing-card-surfaces";
 
 /**
  * Якорни линкове: `/#id` (не само `#id`), за да не се трупат фрагменти в Next.js.
@@ -59,7 +62,7 @@ type LandingNavSpy = (typeof LANDING_NAV)[number]["spy"];
 
 function landingNavLinkVisual(isActive: boolean) {
   return cn(
-    "rounded-full px-3 py-1.5 font-medium outline-none transition-[color,background-color,box-shadow] duration-200",
+    "shrink-0 rounded-full px-2 py-1 text-xs font-medium outline-none transition-[color,background-color,box-shadow] duration-200 sm:px-2.5 sm:py-1.5 sm:text-sm",
     "focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
     isActive
       ? "bg-emerald-600 text-white shadow-sm dark:bg-emerald-500 dark:text-white"
@@ -84,7 +87,6 @@ interface PricingPlan {
   description: string;
   icon: React.ElementType;
   gradient: string;
-  glowColor: string;
   popular?: boolean;
   features: { text: string; included: boolean }[];
   cta: string;
@@ -141,7 +143,6 @@ const pricingPlans: PricingPlan[] = [
     description: "За стартиращи бизнеси",
     icon: FileText,
     gradient: "from-slate-500 to-slate-600",
-    glowColor: "rgba(100,116,139,0.15)",
     features: [
       { text: "3 фактури/месец", included: true },
       { text: "1 фирма", included: true },
@@ -163,7 +164,6 @@ const pricingPlans: PricingPlan[] = [
     description: "За фрийлансъри",
     icon: Zap,
     gradient: "from-blue-500 to-indigo-600",
-    glowColor: "rgba(59,130,246,0.15)",
     features: [
       { text: "15 фактури/месец", included: true },
       { text: "1 фирма", included: true },
@@ -185,7 +185,6 @@ const pricingPlans: PricingPlan[] = [
     description: "За малки бизнеси",
     icon: Star,
     gradient: "from-emerald-500 to-teal-600",
-    glowColor: "rgba(16,185,129,0.2)",
     popular: true,
     features: [
       { text: "Неограничени фактури", included: true },
@@ -208,7 +207,6 @@ const pricingPlans: PricingPlan[] = [
     description: "За предприятия",
     icon: Crown,
     gradient: "from-violet-500 to-purple-600",
-    glowColor: "rgba(139,92,246,0.15)",
     features: [
       { text: "Всичко неограничено", included: true },
       { text: "10 фирми", included: true },
@@ -417,7 +415,7 @@ export default function HomePage() {
         }}
       />
 
-      <div className="min-h-screen overflow-x-hidden flex flex-col pb-20 sm:pb-0">
+      <div className="flex min-h-screen flex-col overflow-x-hidden pb-24 sm:pb-0">
         <BackgroundShapes variant="subtle" reduceEffects />
 
         {/* ── Header: fixed + компактен режим при скрол ── */}
@@ -434,7 +432,7 @@ export default function HomePage() {
         >
           <div
             className={cn(
-              "container mx-auto grid grid-cols-[1fr_auto] items-center gap-2 px-3 sm:gap-3 sm:px-4 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:px-6",
+              "container mx-auto flex min-w-0 max-w-full items-center justify-between gap-2 px-3 sm:gap-3 sm:px-4 md:px-6",
               shouldReduceEffects ? "" : "transition-[min-height,gap] duration-300 ease-out",
               isHeaderCompact ? "min-h-11 py-1 sm:min-h-12" : "min-h-14 py-0 sm:min-h-16"
             )}
@@ -442,7 +440,7 @@ export default function HomePage() {
             <motion.div
               initial={{ opacity: 0, x: -12 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex min-w-0 items-center justify-self-start gap-1.5 sm:gap-2"
+              className="flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2"
             >
               <DropdownMenu>
                 <DropdownMenuTrigger
@@ -469,7 +467,10 @@ export default function HomePage() {
                         aria-current={activeLandingSpy === item.spy ? "page" : undefined}
                         onClick={() => setActiveLandingSpy(item.spy)}
                       >
-                        {item.label}
+                        <DropdownMenuItemIcon>
+                          <span className="block size-4" aria-hidden />
+                        </DropdownMenuItemIcon>
+                        <DropdownMenuItemText>{item.label}</DropdownMenuItemText>
                       </Link>
                     </DropdownMenuItem>
                   ))}
@@ -510,8 +511,9 @@ export default function HomePage() {
 
             <nav
               className={cn(
-                "col-start-2 row-start-1 hidden items-center justify-center text-muted-foreground transition-[gap] duration-300 ease-out md:flex",
-                isHeaderCompact ? "gap-3 text-xs lg:gap-5" : "gap-4 text-sm lg:gap-8"
+                "mx-1 hidden min-h-0 min-w-0 max-w-full flex-1 items-center justify-center overflow-x-auto text-muted-foreground [scrollbar-width:none] md:flex [&::-webkit-scrollbar]:hidden",
+                "transition-[gap] duration-300 ease-out",
+                isHeaderCompact ? "gap-1 lg:gap-2" : "gap-1.5 lg:gap-3 xl:gap-4"
               )}
               aria-label="Секции на страницата"
             >
@@ -536,45 +538,47 @@ export default function HomePage() {
               initial={{ opacity: 0, x: 12 }}
               animate={{ opacity: 1, x: 0 }}
               className={cn(
-                "col-start-2 flex shrink-0 items-center justify-end justify-self-end transition-[gap] duration-300 ease-out md:col-start-3 md:row-start-1",
-                isHeaderCompact ? "gap-0.5 sm:gap-1.5" : "gap-1 sm:gap-2"
+                "flex shrink-0 items-center justify-end transition-[gap] duration-300 ease-out",
+                isHeaderCompact ? "gap-1" : "gap-1 sm:gap-1.5"
               )}
             >
-              <ThemeToggle />
+              <div className="shrink-0">
+                <ThemeToggle />
+              </div>
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 asChild
                 className={cn(
-                  "hidden sm:flex",
-                  isHeaderCompact && "h-8 px-2 text-xs"
+                  "hidden h-9 shrink-0 border border-border/70 bg-background/90 px-2.5 text-xs font-semibold shadow-sm hover:bg-muted/60 md:inline-flex",
+                  isHeaderCompact && "h-8 px-2 text-[11px]"
                 )}
               >
-                <Link href="/signin">Вход</Link>
+                <Link href="/signin" className="whitespace-nowrap">
+                  Вход
+                </Link>
               </Button>
               <Button
                 size="sm"
                 asChild
                 className={cn(
-                  "gradient-primary border-0 text-white hover:opacity-90",
-                  "transition-[height,padding,font-size] duration-300 ease-out",
-                  isHeaderCompact
-                    ? "h-8 px-2.5 text-[11px] sm:h-9 sm:px-3 sm:text-xs"
-                    : "h-9 px-2.5 text-xs sm:h-10 sm:px-4 sm:text-sm"
+                  "gradient-primary h-9 shrink-0 border-0 px-2.5 text-xs font-semibold text-white shadow-md hover:opacity-90 sm:px-3",
+                  "transition-[height,padding] duration-300 ease-out",
+                  isHeaderCompact && "h-8 px-2 text-[11px]"
                 )}
               >
-                <Link href="/signup" className="flex items-center whitespace-nowrap">
-                  <span className="sm:hidden">Старт</span>
-                  <span className="hidden sm:inline">
+                <Link href="/signup" className="flex items-center justify-center whitespace-nowrap">
+                  <span className="md:hidden">Старт</span>
+                  <span className="hidden md:inline xl:hidden">Започнете</span>
+                  <span className="hidden xl:inline">
                     {isHeaderCompact ? "Започнете" : "Започнете безплатно"}
                   </span>
                   <ArrowRight
                     className={cn(
-                      "transition-[width,height,margin] duration-300 ease-out",
-                      isHeaderCompact
-                        ? "ml-0.5 h-3 w-3 sm:ml-1 sm:h-3.5 sm:w-3.5"
-                        : "ml-1 h-3.5 w-3.5 sm:ml-2 sm:h-4 sm:w-4"
+                      "ml-0.5 h-3.5 w-3.5 shrink-0 sm:ml-1 sm:h-4 sm:w-4",
+                      isHeaderCompact && "ml-0.5 h-3 w-3"
                     )}
+                    aria-hidden
                   />
                 </Link>
               </Button>
@@ -611,22 +615,22 @@ export default function HomePage() {
               <p className="card-description mx-auto mb-6 max-w-xl text-base sm:text-lg">
                 Фактури и известия за България. Без плащания през нас — само документи и проследяване.
               </p>
-              <div className="mx-auto mb-8 flex w-full max-w-md flex-col items-stretch justify-center gap-2 sm:max-w-none sm:flex-row sm:gap-3">
+              <div className="mx-auto mb-8 grid w-full max-w-lg grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                 <Button
                   size="sm"
                   asChild
-                  className="h-11 w-full border-0 px-4 text-sm text-white shadow-md gradient-primary hover:opacity-90 sm:h-10 sm:w-auto sm:px-5 sm:shadow-lg"
+                  className="h-12 w-full border-0 px-5 text-sm font-semibold text-white shadow-lg gradient-primary hover:opacity-90 sm:h-12"
                 >
                   <Link href="/signup" className="flex items-center justify-center whitespace-nowrap">
                     Започнете безплатно
-                    <ChevronRight className="ml-1.5 h-3.5 w-3.5 sm:ml-2 sm:h-4 sm:w-4" />
+                    <ChevronRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
                   asChild
-                  className="h-11 w-full border-slate-300 px-4 text-sm dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 sm:h-10 sm:w-auto sm:px-5"
+                  className="h-12 w-full border-2 border-border/80 bg-background/60 px-5 text-sm font-semibold shadow-sm backdrop-blur-sm hover:bg-muted/70 dark:border-border/60"
                 >
                   <Link href="/signin" className="flex items-center justify-center whitespace-nowrap">
                     Вход
@@ -749,20 +753,29 @@ export default function HomePage() {
         <section
           id="pricing"
           data-landing-spy="pricing"
-          className={cn(LANDING_SCROLL_MARGIN, LANDING_ZONE_OUTER, "bg-background")}
+          className={cn(
+            LANDING_SCROLL_MARGIN,
+            LANDING_ZONE_OUTER,
+            "relative bg-background pricing-dot-bg"
+          )}
         >
-          <div className="container mx-auto max-w-7xl">
-            <div className={cn(LANDING_ZONE_PANEL, "p-5 sm:p-8")}>
+          <div className="container relative z-[1] mx-auto max-w-7xl">
+            <div
+              className={cn(
+                LANDING_ZONE_PANEL,
+                "rounded-3xl border-border/30 bg-card/50 p-5 shadow-xl backdrop-blur-md dark:bg-card/35 sm:p-8"
+              )}
+            >
               <div className="mb-6 text-center sm:mb-8">
                 <p className={LANDING_ZONE_LABEL}>Цени</p>
                 <h2 className="section-title mt-3">Планове</h2>
                 <p className="card-description mx-auto mt-2 max-w-md">
                   Месечно или годишно · EUR · без скрити такси за софтуера
                 </p>
-              <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-border/50 bg-muted/60 px-3 py-2 sm:gap-3 sm:px-5 sm:py-3">
+              <div className="mt-5 inline-flex items-center gap-3 rounded-full border border-border/40 bg-muted/40 px-4 py-2.5 shadow-inner backdrop-blur-sm sm:gap-4 sm:px-6 sm:py-3">
                 <span
                   className={cn(
-                    "text-xs font-medium transition-colors sm:text-sm",
+                    "text-xs font-semibold transition-colors sm:text-sm",
                     !isYearly ? "text-foreground" : "text-muted-foreground"
                   )}
                 >
@@ -773,20 +786,22 @@ export default function HomePage() {
                   onClick={() => setIsYearly(!isYearly)}
                   aria-label="Превключване към годишно ценообразуване"
                   className={cn(
-                    "relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none sm:h-6 sm:w-11",
-                    isYearly ? "bg-emerald-500" : "bg-muted-foreground/30"
+                    "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:h-7 sm:w-12",
+                    isYearly
+                      ? "bg-gradient-to-r from-emerald-500 to-cyan-500 shadow-[0_0_20px_-4px_rgba(16,185,129,0.55)]"
+                      : "bg-muted-foreground/35"
                   )}
                 >
                   <span
                     className={cn(
-                      "inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform shadow sm:h-4 sm:w-4",
-                      isYearly ? "translate-x-5 sm:translate-x-6" : "translate-x-1"
+                      "inline-block h-4 w-4 rounded-full bg-white shadow-md transition-transform sm:h-[18px] sm:w-[18px]",
+                      isYearly ? "translate-x-6 sm:translate-x-[1.35rem]" : "translate-x-1"
                     )}
                   />
                 </button>
                 <span
                   className={cn(
-                    "flex items-center gap-1.5 text-xs font-medium transition-colors sm:gap-2 sm:text-sm",
+                    "flex items-center gap-1.5 text-xs font-semibold transition-colors sm:gap-2 sm:text-sm",
                     isYearly ? "text-foreground" : "text-muted-foreground"
                   )}
                 >
@@ -799,13 +814,128 @@ export default function HomePage() {
               </div>
               </div>
 
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
               {pricingPlans.map((plan, index) => {
                 const PlanIcon = plan.icon;
                 const monthlyPrice =
                   isYearly && plan.price.yearly > 0
                     ? plan.price.yearly / 12
                     : plan.price.monthly;
+
+                const cardBody = (
+                  <>
+                    <CardContent className="relative z-1 flex flex-1 flex-col overflow-hidden p-4 sm:p-6">
+                      {plan.popular ? (
+                        <div
+                          className="pointer-events-none absolute inset-x-0 top-0 h-28 rounded-t-[1.4375rem] bg-linear-to-b from-white/10 to-transparent dark:from-white/5"
+                          aria-hidden
+                        />
+                      ) : null}
+
+                      {/* Header: икона = цветен акцент вместо лента отгоре */}
+                      <div className="relative mb-5 flex gap-3 sm:gap-3.5">
+                        <div
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br ${plan.gradient} shadow-md ring-1 ring-white/15 sm:h-11 sm:w-11`}
+                        >
+                          <PlanIcon className="h-5 w-5 text-white sm:h-5 sm:w-5" />
+                        </div>
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="card-title truncate">{plan.name}</p>
+                            {plan.popular ? (
+                              <Chip
+                                size="sm"
+                                color="success"
+                                variant="soft"
+                                className="tiny-text shrink-0 gap-1"
+                              >
+                                <Star className="h-3 w-3 shrink-0 fill-current" aria-hidden />
+                                Популярен
+                              </Chip>
+                            ) : null}
+                          </div>
+                          <p
+                            className="card-description truncate text-xs leading-tight sm:text-sm"
+                            title={plan.description}
+                          >
+                            {plan.description}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Price */}
+                      <div className="relative mb-1">
+                        {plan.key === "FREE" ? (
+                          <div className="flex items-baseline gap-1">
+                            <span className="metric-value">0 €</span>
+                            <span className="small-text text-muted-foreground">/завинаги</span>
+                          </div>
+                        ) : (
+                          <div>
+                            <div className="flex items-baseline gap-1">
+                              <span className="metric-value">{monthlyPrice.toFixed(2)} €</span>
+                              <span className="small-text text-muted-foreground">/месец</span>
+                            </div>
+                            {isYearly && (
+                              <p className="tiny-text mt-0.5 font-medium text-emerald-600 dark:text-emerald-400">
+                                {plan.price.yearly} €/год. · 2 месеца безплатно
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="relative mb-4 mt-4 flex items-center gap-3">
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border/80 to-transparent" />
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                          Функции
+                        </span>
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border/80 to-transparent" />
+                      </div>
+
+                      <ul className="relative mb-5 flex-1 space-y-2">
+                        {plan.features.map((feat) => (
+                          <li key={feat.text} className="flex items-center gap-2.5">
+                            {feat.included ? (
+                              <div
+                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-linear-to-br ${plan.gradient}`}
+                              >
+                                <Check className="h-2.5 w-2.5 text-white" />
+                              </div>
+                            ) : (
+                              <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-muted/80">
+                                <X className="h-2.5 w-2.5 text-muted-foreground" />
+                              </div>
+                            )}
+                            <span
+                              className={cn(
+                                "card-description",
+                                !feat.included && "text-muted-foreground"
+                              )}
+                            >
+                              {feat.text}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+
+                    <CardFooter className="relative z-1 border-t border-white/15 bg-black/10 px-4 pb-4 pt-3.5 backdrop-blur-md dark:border-white/10 dark:bg-black/25 sm:px-6 sm:pb-5">
+                      <Button
+                        asChild
+                        className={cn(
+                          "btn-text h-11 w-full rounded-2xl font-semibold sm:h-12",
+                          plan.popular && "gradient-primary border-0 text-white hover:opacity-90"
+                        )}
+                        variant={plan.popular ? "default" : "outline"}
+                      >
+                        <Link href={plan.ctaHref} className="flex items-center justify-center whitespace-nowrap">
+                          {plan.cta}
+                        </Link>
+                      </Button>
+                    </CardFooter>
+                  </>
+                );
 
                 return (
                   <motion.div
@@ -814,133 +944,29 @@ export default function HomePage() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.5, delay: index * 0.08 }}
-                    className={cn(
-                      "flex flex-col",
-                      plan.popular && "xl:-mt-3 xl:mb-3"
-                    )}
+                    className={cn("flex flex-col", plan.popular && "xl:-mt-2 xl:mb-2")}
                   >
-                    <Card
-                        className={cn(
-                          "relative flex h-full flex-col overflow-hidden border bg-card",
-                        plan.popular
-                          ? "border-emerald-500/50 shadow-lg sm:shadow-2xl"
-                            : "border-border/50 shadow-sm"
-                      )}
-                      style={
-                        plan.popular
-                          ? {
-                              boxShadow: `0 12px 32px ${plan.glowColor}, 0 4px 12px rgba(0,0,0,0.08)`,
-                            }
-                          : undefined
-                      }
-                    >
-                      {/* Gradient top bar */}
-                      <div className={`h-1 w-full shrink-0 bg-linear-to-r ${plan.gradient}`} />
-
-                      <CardContent className="flex flex-1 flex-col p-3.5 sm:p-5">
-                        {/* Header */}
-                        <div className="mb-4 flex items-start justify-between gap-2">
-                          <div className="flex items-center gap-2.5 sm:gap-3">
-                            <div
-                              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-linear-to-br ${plan.gradient} shadow-xs sm:h-9 sm:w-9 sm:shadow-md`}
-                            >
-                              <PlanIcon className="h-4 w-4 text-white sm:h-4.5 sm:w-4.5" />
-                            </div>
-                            <div>
-                              <p className="card-title">
-                                {plan.name}
-                              </p>
-                              <p className="card-description">
-                                {plan.description}
-                              </p>
-                            </div>
-                          </div>
-                          {plan.popular && (
-                            <Chip size="sm" color="success" variant="soft" className="tiny-text shrink-0 gap-1">
-                              <Star className="h-3 w-3 shrink-0 fill-current" aria-hidden />
-                              Популярен
-                            </Chip>
-                          )}
-                        </div>
-
-                        {/* Price */}
-                        <div className="mb-5">
-                          {plan.key === "FREE" ? (
-                            <div className="flex items-baseline gap-1">
-                              <span className="metric-value">0 €</span>
-                              <span className="small-text text-muted-foreground">
-                                /завинаги
-                              </span>
-                            </div>
-                          ) : (
-                            <div>
-                              <div className="flex items-baseline gap-1">
-                                <span className="metric-value">
-                                  {monthlyPrice.toFixed(2)} €
-                                </span>
-                                <span className="small-text text-muted-foreground">
-                                  /месец
-                                </span>
-                              </div>
-                              {isYearly && (
-                                <p className="tiny-text mt-0.5 font-medium text-emerald-600 dark:text-emerald-400">
-                                  {plan.price.yearly} €/год. · 2 месеца
-                                  безплатно
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                        <Separator className="mb-4" />
-
-                        {/* Features */}
-                        <ul className="mb-5 flex-1 space-y-2">
-                          {plan.features.map((feat) => (
-                            <li
-                              key={feat.text}
-                              className="flex items-center gap-2.5"
-                            >
-                              {feat.included ? (
-                                <div
-                                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-linear-to-br ${plan.gradient}`}
-                                >
-                                  <Check className="h-2.5 w-2.5 text-white" />
-                                </div>
-                              ) : (
-                                <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-muted">
-                                  <X className="h-2.5 w-2.5 text-muted-foreground" />
-                                </div>
-                              )}
-                              <span
-                                className={cn(
-                                  "card-description",
-                                  !feat.included && "text-muted-foreground"
-                                )}
-                              >
-                                {feat.text}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      </CardContent>
-
-                      <CardFooter className="px-3.5 pb-3.5 pt-0 sm:px-5 sm:pb-5">
-                        <Button
-                          asChild
+                    {plan.popular ? (
+                      <div className="pricing-featured-ring flex h-full flex-col">
+                        <Card
                           className={cn(
-                            "btn-text h-9 w-full sm:h-10",
-                            plan.popular &&
-                              "gradient-primary hover:opacity-90 text-white border-0"
+                            "flex h-full flex-col overflow-hidden rounded-[calc(1.5rem-1px)] border-0 shadow-none backdrop-blur-xl",
+                            PRICING_CARD_SURFACE[plan.key]
                           )}
-                          variant={plan.popular ? "default" : "outline"}
                         >
-                          <Link href={plan.ctaHref} className="flex items-center justify-center whitespace-nowrap">
-                            {plan.cta}
-                          </Link>
-                        </Button>
-                      </CardFooter>
-                    </Card>
+                          {cardBody}
+                        </Card>
+                      </div>
+                    ) : (
+                      <Card
+                        className={cn(
+                          "flex h-full flex-col overflow-hidden rounded-3xl border border-white/15 shadow-lg backdrop-blur-md dark:border-white/10",
+                          PRICING_CARD_SURFACE[plan.key]
+                        )}
+                      >
+                        {cardBody}
+                      </Card>
+                    )}
                   </motion.div>
                 );
               })}
@@ -1012,31 +1038,57 @@ export default function HomePage() {
 
               <Separator className="my-8" />
 
-              <div className="text-center">
-                <div className="mb-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
-                  <Mail className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden />
-                  <a
-                    href={`mailto:${publicBusinessProfile.supportEmail}`}
-                    className="font-medium text-primary underline-offset-4 hover:underline"
-                  >
-                    {publicBusinessProfile.supportEmail}
-                  </a>
-                  <span aria-hidden>·</span>
-                  <span>отговор {publicBusinessProfile.supportResponseHours}</span>
-                  <span aria-hidden>·</span>
-                  <Link href="/contact" className="font-medium text-primary underline-offset-4 hover:underline">
-                    контактна форма
-                  </Link>
+              <div className="space-y-6">
+                <div className="rounded-2xl border border-border/45 bg-gradient-to-br from-muted/50 to-muted/20 p-5 shadow-inner backdrop-blur-sm dark:from-muted/25 dark:to-muted/10 sm:p-6">
+                  <p className="mb-3 text-center text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    Поддръжка
+                  </p>
+                  <div className="flex flex-col items-center gap-4 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-6 sm:gap-y-2">
+                    <a
+                      href={`mailto:${publicBusinessProfile.supportEmail}`}
+                      className="inline-flex items-center gap-2.5 rounded-xl border border-emerald-500/25 bg-emerald-500/5 px-4 py-2.5 text-sm font-semibold text-emerald-700 shadow-sm transition-colors hover:border-emerald-500/40 hover:bg-emerald-500/10 dark:text-emerald-300"
+                    >
+                      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                        <Mail className="h-4 w-4" aria-hidden />
+                      </span>
+                      <span className="break-all">{publicBusinessProfile.supportEmail}</span>
+                    </a>
+                    <div className="hidden h-8 w-px bg-border/60 sm:block" aria-hidden />
+                    <p className="max-w-sm text-center text-sm leading-relaxed text-muted-foreground sm:max-w-none sm:text-left">
+                      <span className="block sm:inline">
+                        Отговор {publicBusinessProfile.supportResponseHours}
+                      </span>
+                      <span className="mx-2 hidden text-border sm:inline" aria-hidden>
+                        ·
+                      </span>
+                      <Link
+                        href="/contact"
+                        className="mt-1 inline-flex items-center justify-center font-semibold text-primary underline-offset-4 hover:underline sm:mt-0 sm:inline"
+                      >
+                        Контактна форма →
+                      </Link>
+                    </p>
+                  </div>
                 </div>
-                <div className="mx-auto flex w-full max-w-sm flex-col justify-center gap-2 sm:max-w-none sm:flex-row sm:gap-3">
-                  <Button asChild className="gradient-primary border-0 text-white hover:opacity-90">
+
+                <div className="grid grid-cols-1 gap-3 sm:mx-auto sm:max-w-xl sm:grid-cols-2 sm:gap-4">
+                  <Button
+                    asChild
+                    className="h-12 w-full border-0 text-base font-semibold text-white shadow-lg gradient-primary hover:opacity-90"
+                  >
                     <Link href="/signup" className="flex items-center justify-center gap-2">
                       Започнете безплатно
-                      <ArrowRight className="h-4 w-4" aria-hidden />
+                      <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
                     </Link>
                   </Button>
-                  <Button variant="outline" asChild>
-                    <Link href="/signin">Вход</Link>
+                  <Button
+                    variant="outline"
+                    asChild
+                    className="h-12 w-full border-2 border-border/80 bg-background/70 text-base font-semibold shadow-sm backdrop-blur-sm hover:bg-muted/70 dark:border-border/60"
+                  >
+                    <Link href="/signin" className="flex items-center justify-center">
+                      Вход
+                    </Link>
                   </Button>
                 </div>
               </div>
@@ -1045,8 +1097,11 @@ export default function HomePage() {
         </section>
 
         <div className="fixed inset-x-3 bottom-3 z-40 sm:hidden">
-          <div className="rounded-2xl border border-border/70 bg-background/95 p-2 shadow-lg backdrop-blur">
-            <Button asChild className="h-11 w-full gradient-primary text-white border-0">
+          <div className="rounded-3xl border border-border/70 bg-background/95 p-2.5 shadow-lg backdrop-blur">
+            <Button
+              asChild
+              className="h-12 w-full border-0 font-semibold text-white shadow-md gradient-primary hover:opacity-90"
+            >
               <Link href="/signup" className="flex items-center justify-center">
                 Започнете безплатно
                 <ArrowRight className="ml-2 h-4 w-4" />

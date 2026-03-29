@@ -187,15 +187,25 @@ export default function TeamSettingsClient({
 
   return (
     <div className="app-page-shell">
-      <div className="page-header">
-        <div className="min-w-0">
+      <div className="page-header flex flex-col gap-4 rounded-2xl border border-border/50 bg-linear-to-br from-violet-500/6 via-card/80 to-card p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5 dark:from-violet-500/10">
+        <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="page-title">Екип</h1>
-            {!isLoadingUsage && <UsageCounter used={members.length} limit={userUsage.limit} label="члена" />}
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-600 shadow-inner dark:bg-violet-500/20 dark:text-violet-200">
+              <Users className="h-5 w-5" aria-hidden />
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 className="page-title text-balance">Екип</h1>
+                {!isLoadingUsage && (
+                  <UsageCounter used={members.length} limit={userUsage.limit} label="члена" />
+                )}
+              </div>
+              <p className="card-description mt-1 max-w-2xl">
+                Управлявайте достъпа до <span className="font-medium text-foreground">{company.name}</span>
+                , канете колеги и следете чакащите покани.
+              </p>
+            </div>
           </div>
-          <p className="card-description mt-1">
-            Управлявайте достъпа до {company.name}, канете колеги и следете чакащите покани.
-          </p>
         </div>
         {companies.length > 1 ? (
           <Select
@@ -203,7 +213,7 @@ export default function TeamSettingsClient({
             onValueChange={(nextCompanyId) => router.push(`/settings/team?companyId=${nextCompanyId}`)}
             aria-label="Избор на компания за екипа"
           >
-            <SelectTrigger className="w-full sm:w-[260px]">
+            <SelectTrigger className="w-full min-w-[220px] sm:w-[280px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -258,26 +268,26 @@ export default function TeamSettingsClient({
 
             <div className="hidden 2xl:block">
               <div className="overflow-hidden rounded-[28px] border border-border/60 bg-card/85 shadow-sm">
-                <table className="min-w-full border-collapse">
-                  <thead className="bg-muted/35">
+                <table className="min-w-full border-collapse text-sm">
+                  <thead className="border-b border-border/50 bg-muted/30">
                     <tr>
-                      <th scope="col" className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      <th scope="col" className="px-5 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                         Член
                       </th>
-                      <th scope="col" className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      <th scope="col" className="px-5 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                         Имейл
                       </th>
-                      <th scope="col" className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      <th scope="col" className="px-5 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                         Роля
                       </th>
-                      <th scope="col" className="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      <th scope="col" className="px-5 py-3.5 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
                         Действия
                       </th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-border/40">
                     {members.map((member) => (
-                      <tr key={member.userId} className="border-t border-border/50 transition-colors hover:bg-muted/40">
+                      <tr key={member.userId} className="transition-colors hover:bg-muted/35">
                         <th scope="row" className="px-5 py-3.5 text-left font-medium">
                           {member.user.name || member.user.email}
                         </th>
