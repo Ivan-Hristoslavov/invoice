@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -16,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, NumericInput } from "@/components/ui/input";
-import { FullPageLoader } from "@/components/ui/loading-spinner";
+import { ContentLoader } from "@/components/ui/loading-spinner";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
 import { DEFAULT_VAT_RATE } from "@/config/constants";
+import { isIssuedLikeStatus } from "@/lib/invoice-status";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import React from "react";
@@ -144,6 +145,9 @@ class NoteFormErrorBoundary extends React.Component<
 function NoteFormContent(config: NoteFormConfig) {
   const colors = COLOR_MAP[config.accentColor] ?? COLOR_MAP.red;
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const invoiceIdFromQuery = searchParams.get("invoiceId");
+  const prefillFromInvoiceDoneRef = useRef(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -155,6 +159,11 @@ function NoteFormContent(config: NoteFormConfig) {
   const [showProductSearch, setShowProductSearch] = useState(false);
   /** След опит за изпращане показваме оцветяване на невалидни полета (като при имейл в auth формите). */
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [selectedInvoiceInfo, setSelectedInvoiceInfo] = useState<{
+    total: number;
+    existingNotesTotal: number;
+    remaining: number;
+  } | null>(null);
 
   const [formData, setFormData] = useState({
     companyId: "",
@@ -192,7 +201,7 @@ function NoteFormContent(config: NoteFormConfig) {
           fetch("/api/clients").catch(() => ({ ok: false, json: async () => ({ clients: [] }) })),
           fetch("/api/companies").catch(() => ({ ok: false, json: async () => ({ companies: [] }) })),
           fetch("/api/products").catch(() => ({ ok: false, json: async () => ({ products: [] }) })),
-          fetch("/api/invoices?pageSize=100&status=ISSUED").catch(() => ({
+          fetch("/api/invoices?pageSize=200").catch(() => ({
             ok: false,
             json: async () => ({ data: [] }),
           })),
@@ -217,7 +226,8 @@ function NoteFormContent(config: NoteFormConfig) {
         setProducts(productsArray.filter((p: any) => p?.id && p?.name));
         setSourceInvoices(
           invoicesArray.filter(
-            (invoice: any) => invoice?.id && invoice?.invoiceNumber && invoice?.status === "ISSUED"
+            (invoice: { id?: string; invoiceNumber?: string; status?: string }) =>
+              Boolean(invoice?.id && invoice?.invoiceNumber && isIssuedLikeStatus(invoice.status))
           )
         );
       } catch (err: any) {
@@ -235,6 +245,80 @@ function NoteFormContent(config: NoteFormConfig) {
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (!invoiceIdFromQuery || isLoadingData) return;
+    if (prefillFromInvoiceDoneRef.current) return;
+
+    let cancelled = false;
+
+    async function prefillFromInvoice() {
+      try {
+        const res = await fetch(`/api/invoices/${invoiceIdFromQuery}`);
+        if (!res.ok) {
+          toast.error("Неуспешно зареждане на фактурата за автоматично попълване.");
+          return;
+        }
+        const inv = (await res.json()) as {
+          id?: string;
+          companyId?: string;
+          clientId?: string;
+          invoiceNumber?: string;
+          currency?: string;
+          status?: string;
+          persistedStatus?: string;
+          items?: Array<Record<string, unknown>>;
+        };
+        const rawStatus = inv.persistedStatus ?? inv.status;
+        if (!isIssuedLikeStatus(rawStatus)) {
+          toast.warning(
+            "Само издадени фактури могат да се свържат. Моля, изберете документ от списъка."
+          );
+          return;
+        }
+        if (cancelled) return;
+
+        prefillFromInvoiceDoneRef.current = true;
+
+        setFormData((prev) => ({
+          ...prev,
+          companyId: inv.companyId ?? "",
+          clientId: inv.clientId ?? "",
+          invoiceId: inv.id ?? invoiceIdFromQuery ?? "",
+          currency: inv.currency || prev.currency || "EUR",
+          issueDate: new Date().toISOString().split("T")[0],
+          reason:
+            prev.reason.trim() ||
+            `Допълнително начисление по фактура № ${inv.invoiceNumber ?? ""}`,
+        }));
+
+        const rawItems = Array.isArray(inv.items) ? inv.items : [];
+        if (rawItems.length > 0) {
+          setItems(
+            rawItems.map((it, i) => ({
+              id: i + 1,
+              description: String(it.description ?? ""),
+              quantity: Math.max(0.0001, Number(it.quantity ?? 1) || 1),
+              unitPrice: Math.max(0, Number(it.unitPrice ?? it.price ?? 0) || 0),
+              taxRate: Number(it.taxRate ?? DEFAULT_VAT_RATE) || DEFAULT_VAT_RATE,
+            }))
+          );
+        }
+
+        toast.success("Данните са заредени от фактурата", {
+          description: inv.invoiceNumber ? `Фактура № ${inv.invoiceNumber}` : undefined,
+        });
+      } catch (err) {
+        console.error("Prefill from invoice:", err);
+        toast.error("Грешка при автоматично попълване от фактура");
+      }
+    }
+
+    void prefillFromInvoice();
+    return () => {
+      cancelled = true;
+    };
+  }, [invoiceIdFromQuery, isLoadingData]);
 
   const filteredProducts = useMemo(() => {
     if (!products || products.length === 0) return [];
@@ -337,6 +421,54 @@ function NoteFormContent(config: NoteFormConfig) {
     }
   }, [eligibleInvoices, formData.invoiceId]);
 
+  useEffect(() => {
+    if (!formData.invoiceId) {
+      setSelectedInvoiceInfo(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function fetchInvoiceInfo() {
+      try {
+        const res = await fetch(`/api/invoices/${formData.invoiceId}`);
+        if (!res.ok) return;
+        const inv = (await res.json()) as {
+          total?: string | number;
+          creditNote?: { total?: string | number } | null;
+          debitNotes?: Array<{ total?: string | number }>;
+        };
+
+        const invoiceTotal = Number(inv.total) || 0;
+
+        let notesTotal = 0;
+        if (inv.creditNote) {
+          notesTotal += Number(inv.creditNote.total) || 0;
+        }
+        if (Array.isArray(inv.debitNotes)) {
+          for (const dn of inv.debitNotes) {
+            notesTotal += Number(dn.total) || 0;
+          }
+        }
+
+        if (!cancelled) {
+          setSelectedInvoiceInfo({
+            total: invoiceTotal,
+            existingNotesTotal: notesTotal,
+            remaining: Math.max(0, invoiceTotal - notesTotal),
+          });
+        }
+      } catch {
+        if (!cancelled) setSelectedInvoiceInfo(null);
+      }
+    }
+
+    void fetchInvoiceInfo();
+    return () => {
+      cancelled = true;
+    };
+  }, [formData.invoiceId]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitAttempted(true);
@@ -410,15 +542,6 @@ function NoteFormContent(config: NoteFormConfig) {
     }
   };
 
-  if (isLoadingData) {
-    return (
-      <FullPageLoader
-        title={config.title}
-        subtitle="Подготвяме фирмите, клиентите и наличните документи за формата..."
-      />
-    );
-  }
-
   if (error) {
     return (
       <div className="max-w-4xl mx-auto space-y-6 p-6">
@@ -452,6 +575,11 @@ function NoteFormContent(config: NoteFormConfig) {
         </div>
       </div>
 
+      <ContentLoader
+        loading={isLoadingData}
+        title="Зареждане на данните"
+        subtitle="Подготвяме фирмите, клиентите и наличните документи..."
+      >
       <form onSubmit={handleSubmit}>
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
           {/* Left Column */}
@@ -552,6 +680,31 @@ function NoteFormContent(config: NoteFormConfig) {
                   <p className="text-xs text-muted-foreground">
                     Показват се само издадени фактури за избраните фирма и клиент.
                   </p>
+                  {formData.invoiceId && formData.invoiceId !== "" && selectedInvoiceInfo && (
+                    <div className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/20 p-3 space-y-1.5">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Оригинална сума:</span>
+                        <span className="font-medium">
+                          {formatPrice(selectedInvoiceInfo.total)} {formData.currency}
+                        </span>
+                      </div>
+                      {selectedInvoiceInfo.existingNotesTotal > 0 && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Съществуващи известия:</span>
+                          <span className="font-medium text-amber-600">
+                            -{formatPrice(selectedInvoiceInfo.existingNotesTotal)}{" "}
+                            {formData.currency}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between text-sm border-t border-blue-200 dark:border-blue-800 pt-1.5">
+                        <span className="font-medium">Остатък за корекция:</span>
+                        <span className="font-bold">
+                          {formatPrice(selectedInvoiceInfo.remaining)} {formData.currency}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -873,6 +1026,7 @@ function NoteFormContent(config: NoteFormConfig) {
           </Button>
         </div>
       </form>
+      </ContentLoader>
     </div>
   );
 }

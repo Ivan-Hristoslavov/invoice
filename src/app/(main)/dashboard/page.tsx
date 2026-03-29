@@ -20,13 +20,18 @@ import {
   LayoutDashboard,
   Inbox,
   Receipt,
+  AlertTriangle,
+  BarChart3,
+  TrendingDown,
+  TrendingUp,
+  Calendar,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { APP_NAME } from "@/config/constants";
 import { createAdminClient } from "@/lib/supabase/server";
 import { resolveSessionUser } from "@/lib/session-user";
-import { format, formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow, differenceInDays } from "date-fns";
 import { bg } from "date-fns/locale";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
@@ -59,10 +64,14 @@ interface InvoiceWithClient {
 const actionLabels: Record<string, string> = {
   CREATE: "Нова",
   UPDATE: "Обнови",
+  ISSUE: "Издаде",
   CANCEL: "Отмени",
+  VOID: "Анулира",
   SEND: "Изпрати",
   EXPORT: "Експортира",
   DELETE: "Изтри",
+  MARK_PAID: "Платена",
+  MARK_UNPAID: "Неплатена",
 };
 
 const entityLabels: Record<string, string> = {
@@ -148,11 +157,11 @@ export default async function DashboardPage() {
     };
   });
   
-  // Get all invoices for stats (minimal fields)
-  interface InvoiceStatsRow { id: string; status: string; total: number; createdAt: string; }
+  // Get all invoices for stats (minimal fields + dueDate/issueDate for overdue & chart)
+  interface InvoiceStatsRow { id: string; status: string; total: number; createdAt: string; issueDate: string; dueDate: string; clientId: string; }
   const { data: allInvoices } = await supabase
     .from("Invoice")
-    .select("id, status, total, createdAt")
+    .select("id, status, total, createdAt, issueDate, dueDate, clientId")
     .eq("userId", sessionUser.id);
   
   const statsRows: InvoiceStatsRow[] = allInvoices || [];
@@ -252,6 +261,64 @@ export default async function DashboardPage() {
     .select("*", { count: "exact", head: true })
     .eq("userId", sessionUser.id);
 
+  // Recent credit notes (last 3)
+  interface CreditNoteRow { id: string; creditNoteNumber: string; issueDate: string; total: number; currency: string; invoiceId: string | null; clientId: string | null; }
+  const { data: recentCreditNotes } = await supabase
+    .from("CreditNote")
+    .select("id, creditNoteNumber, issueDate, total, currency, invoiceId, clientId")
+    .eq("userId", sessionUser.id)
+    .order("createdAt", { ascending: false })
+    .limit(3);
+
+  // Recent debit notes (last 3)
+  interface DebitNoteRow { id: string; debitNoteNumber: string; issueDate: string; total: number; currency: string; invoiceId: string | null; clientId: string | null; }
+  const { data: recentDebitNotes } = await supabase
+    .from("DebitNote")
+    .select("id, debitNoteNumber, issueDate, total, currency, invoiceId, clientId")
+    .eq("userId", sessionUser.id)
+    .order("createdAt", { ascending: false })
+    .limit(3);
+
+  // Resolve linked invoice numbers for notes
+  const noteInvoiceIds = [
+    ...((recentCreditNotes || []).map((n: CreditNoteRow) => n.invoiceId).filter(Boolean) as string[]),
+    ...((recentDebitNotes || []).map((n: DebitNoteRow) => n.invoiceId).filter(Boolean) as string[]),
+  ];
+  const noteClientIds = [
+    ...((recentCreditNotes || []).map((n: CreditNoteRow) => n.clientId).filter(Boolean) as string[]),
+    ...((recentDebitNotes || []).map((n: DebitNoteRow) => n.clientId).filter(Boolean) as string[]),
+  ];
+  const { data: noteInvoicesData } = noteInvoiceIds.length > 0
+    ? await supabase.from("Invoice").select("id, invoiceNumber").in("id", noteInvoiceIds)
+    : { data: [] as Array<{ id: string; invoiceNumber: string }> };
+  const noteInvoiceMap = new Map((noteInvoicesData || []).map((i) => [i.id, i.invoiceNumber]));
+
+  // Overdue invoices (issued-like status, dueDate < today)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const overdueInvoices = statsRows
+    .filter((inv) => isIssuedLikeStatus(inv.status) && inv.status !== "PAID" && new Date(inv.dueDate) < today)
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+  const overdueCount = overdueInvoices.length;
+  const overdueTotal = overdueInvoices.reduce((sum, inv) => sum + Number(inv.total || 0), 0);
+  const topOverdue = overdueInvoices.slice(0, 5);
+
+  // Monthly revenue chart (last 6 months)
+  const monthlyRevenue: Array<{ label: string; total: number; isCurrent: boolean }> = [];
+  for (let i = 5; i >= 0; i--) {
+    const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+    const monthLabel = format(monthStart, "MMM", { locale: bg });
+    const monthTotal = statsRows
+      .filter((inv) => {
+        const d = new Date(inv.issueDate);
+        return isIssuedLikeStatus(inv.status) && d >= monthStart && d < monthEnd;
+      })
+      .reduce((sum, inv) => sum + Number(inv.total || 0), 0);
+    monthlyRevenue.push({ label: monthLabel, total: monthTotal, isCurrent: i === 0 });
+  }
+  const maxMonthly = Math.max(...monthlyRevenue.map((m) => m.total), 1);
+
   // Audit log (last 5 entries)
   const { data: auditLogs } = await supabase
     .from("AuditLog")
@@ -281,7 +348,8 @@ export default async function DashboardPage() {
   const auditInvoiceClientIds = [...new Set((auditInvoicesData || []).map((invoice) => invoice.clientId).filter(Boolean))];
   const auditInvoiceCompanyIds = [...new Set((auditInvoicesData || []).map((invoice) => invoice.companyId).filter(Boolean))];
 
-  const mergedClientIds = [...new Set([...clientIds, ...auditClientIds, ...auditInvoiceClientIds])];
+  const overdueClientIds = topOverdue.map((inv) => inv.clientId).filter(Boolean);
+  const mergedClientIds = [...new Set([...clientIds, ...auditClientIds, ...auditInvoiceClientIds, ...noteClientIds, ...overdueClientIds])];
   const mergedCompanyIds = [...new Set([...companyIds, ...auditCompanyIds, ...auditInvoiceCompanyIds])];
 
   const { data: mergedClientsData } = await supabase
@@ -532,54 +600,234 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      {/* Summary counts + Activity */}
+      {/* Row 3: Overdue Alert + Credit/Debit Notes */}
       <div className="grid gap-4 sm:gap-5 lg:grid-cols-3">
-        {/* Credit & Debit Note Summary */}
+        {/* Overdue Invoices */}
         <Card className="relative overflow-hidden lg:col-span-1 border border-border/50 shadow-md">
           <div
-            className="absolute left-0 right-0 top-0 h-[3px] bg-linear-to-r from-rose-500 via-red-500 to-orange-500"
+            className="absolute left-0 right-0 top-0 h-[3px] bg-linear-to-r from-orange-500 via-red-500 to-rose-500"
             aria-hidden
           />
           <CardHeader className="pb-3 px-3 pt-4 sm:px-6 sm:pt-6">
             <div className="space-y-2">
-              <AppSectionKicker icon={Receipt}>Финансови документи</AppSectionKicker>
-              <CardTitle className="card-title">Известия</CardTitle>
+              <AppSectionKicker icon={AlertTriangle}>Внимание</AppSectionKicker>
+              <CardTitle className="card-title">Просрочени фактури</CardTitle>
               <CardDescription className="card-description">
-                Кредитни и дебитни известия
+                {overdueCount > 0
+                  ? `${overdueCount} ${overdueCount === 1 ? "фактура" : "фактури"} за ${overdueTotal.toFixed(2)} €`
+                  : "Всичко е наред — няма просрочени"}
               </CardDescription>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3 px-3 sm:px-6 pb-3 sm:pb-6">
-            <Link
-              href="/credit-notes"
-              className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/50 transition-all duration-200 group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-linear-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-xs">
-                  <MinusCircle className="h-5 w-5 text-white" />
+          <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
+            {overdueCount === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+                  <CheckCircle className="h-6 w-6 text-emerald-500" />
                 </div>
-                <div>
-                  <p className="small-text font-medium">Кредитни известия</p>
-                  <p className="tiny-text text-muted-foreground">{creditNoteCount || 0} общо</p>
+                <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Няма просрочия</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {topOverdue.map((inv) => {
+                  const days = differenceInDays(today, new Date(inv.dueDate));
+                  const clientName = mergedClientsMap.get(inv.clientId)?.name || "—";
+                  return (
+                    <Link
+                      key={inv.id}
+                      href={`/invoices/${inv.id}`}
+                      className="group flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/5 p-2.5 transition-all hover:bg-red-500/10"
+                    >
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-500/15 text-red-600 dark:text-red-400">
+                        <Clock className="h-3.5 w-3.5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-medium">{clientName}</p>
+                        <p className="text-[11px] text-red-600 dark:text-red-400">
+                          {days} {days === 1 ? "ден" : "дни"} просрочие
+                        </p>
+                      </div>
+                      <p className="shrink-0 text-xs font-bold whitespace-nowrap">
+                        {Number(inv.total).toFixed(2)} €
+                      </p>
+                    </Link>
+                  );
+                })}
+                {overdueCount > 5 && (
+                  <Button variant="ghost" size="sm" asChild className="w-full text-xs text-red-600 hover:text-red-700">
+                    <Link href="/invoices?status=OVERDUE">
+                      Виж всички {overdueCount} просрочени
+                      <ArrowUpRight className="ml-1 h-3 w-3" />
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Credit & Debit Notes (enriched) */}
+        <Card className="relative overflow-hidden lg:col-span-2 border border-border/50 shadow-md">
+          <div
+            className="absolute left-0 right-0 top-0 h-[3px] bg-linear-to-r from-rose-500 via-red-500 to-orange-500"
+            aria-hidden
+          />
+          <CardHeader className="flex flex-row items-center justify-between pb-3 px-3 pt-4 sm:px-6 sm:pt-6">
+            <div className="min-w-0 flex-1 space-y-2">
+              <AppSectionKicker icon={Receipt}>Финансови документи</AppSectionKicker>
+              <CardTitle className="card-title">Последни известия</CardTitle>
+              <CardDescription className="card-description">
+                {creditNoteCount || 0} кредитни, {debitNoteCount || 0} дебитни известия
+              </CardDescription>
+            </div>
+            <div className="flex gap-1.5">
+              <Button variant="ghost" size="sm" asChild className="tiny-text shrink-0">
+                <Link href="/credit-notes" className="flex items-center gap-1">
+                  <span className="hidden sm:inline">Кредитни</span>
+                  <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                </Link>
+              </Button>
+              <Button variant="ghost" size="sm" asChild className="tiny-text shrink-0">
+                <Link href="/debit-notes" className="flex items-center gap-1">
+                  <span className="hidden sm:inline">Дебитни</span>
+                  <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="px-3 pb-3 sm:px-5 sm:pb-5">
+            {(recentCreditNotes?.length || 0) === 0 && (recentDebitNotes?.length || 0) === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-border/60 bg-muted/60 shadow-inner">
+                  <Receipt className="h-7 w-7 text-muted-foreground" />
+                </div>
+                <p className="mb-1 text-sm font-semibold">Няма известия</p>
+                <p className="text-xs text-muted-foreground max-w-xs">
+                  Кредитните и дебитните известия ще се показват тук
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {/* Credit notes column */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 pb-1">
+                    <div className="h-6 w-6 rounded-md bg-linear-to-br from-red-500 to-rose-600 flex items-center justify-center">
+                      <TrendingDown className="h-3 w-3 text-white" />
+                    </div>
+                    <p className="text-xs font-semibold">Кредитни</p>
+                    <span className="ml-auto text-[11px] text-muted-foreground">{creditNoteCount || 0}</span>
+                  </div>
+                  {(recentCreditNotes || []).length === 0 ? (
+                    <p className="py-3 text-center text-xs text-muted-foreground">Няма</p>
+                  ) : (
+                    (recentCreditNotes || []).map((note: CreditNoteRow) => (
+                      <Link
+                        key={note.id}
+                        href="/credit-notes"
+                        className="group flex items-center gap-2.5 rounded-lg border border-border/40 bg-muted/15 p-2.5 transition-all hover:bg-muted/40"
+                      >
+                        <div className="min-w-0 flex-1 space-y-0.5">
+                          <p className="truncate text-xs font-medium">
+                            {note.creditNoteNumber}
+                          </p>
+                          <p className="truncate text-[11px] text-muted-foreground">
+                            {note.invoiceId ? `Към ф-ра ${noteInvoiceMap.get(note.invoiceId) || "—"}` : "Без фактура"}
+                            {" · "}
+                            {format(new Date(note.issueDate), "d MMM", { locale: bg })}
+                          </p>
+                        </div>
+                        <p className="shrink-0 text-xs font-bold text-red-600 dark:text-red-400 whitespace-nowrap">
+                          -{Number(note.total).toFixed(2)} {note.currency === "BGN" ? "лв" : "€"}
+                        </p>
+                      </Link>
+                    ))
+                  )}
+                </div>
+                {/* Debit notes column */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 pb-1">
+                    <div className="h-6 w-6 rounded-md bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                      <TrendingUp className="h-3 w-3 text-white" />
+                    </div>
+                    <p className="text-xs font-semibold">Дебитни</p>
+                    <span className="ml-auto text-[11px] text-muted-foreground">{debitNoteCount || 0}</span>
+                  </div>
+                  {(recentDebitNotes || []).length === 0 ? (
+                    <p className="py-3 text-center text-xs text-muted-foreground">Няма</p>
+                  ) : (
+                    (recentDebitNotes || []).map((note: DebitNoteRow) => (
+                      <Link
+                        key={note.id}
+                        href="/debit-notes"
+                        className="group flex items-center gap-2.5 rounded-lg border border-border/40 bg-muted/15 p-2.5 transition-all hover:bg-muted/40"
+                      >
+                        <div className="min-w-0 flex-1 space-y-0.5">
+                          <p className="truncate text-xs font-medium">
+                            {note.debitNoteNumber}
+                          </p>
+                          <p className="truncate text-[11px] text-muted-foreground">
+                            {note.invoiceId ? `Към ф-ра ${noteInvoiceMap.get(note.invoiceId) || "—"}` : "Без фактура"}
+                            {" · "}
+                            {format(new Date(note.issueDate), "d MMM", { locale: bg })}
+                          </p>
+                        </div>
+                        <p className="shrink-0 text-xs font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                          +{Number(note.total).toFixed(2)} {note.currency === "BGN" ? "лв" : "€"}
+                        </p>
+                      </Link>
+                    ))
+                  )}
                 </div>
               </div>
-              <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-            </Link>
-            <Link
-              href="/debit-notes"
-              className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/50 transition-all duration-200 group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-xs">
-                  <PlusCircle className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <p className="small-text font-medium">Дебитни известия</p>
-                  <p className="tiny-text text-muted-foreground">{debitNoteCount || 0} общо</p>
-                </div>
-              </div>
-              <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-            </Link>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Row 4: Monthly Revenue Chart + Recent Activity */}
+      <div className="grid gap-4 sm:gap-5 lg:grid-cols-3">
+        {/* Monthly Revenue Chart */}
+        <Card className="relative overflow-hidden lg:col-span-1 border border-border/50 shadow-md">
+          <div
+            className="absolute left-0 right-0 top-0 h-[3px] bg-linear-to-r from-blue-500 via-indigo-500 to-violet-500"
+            aria-hidden
+          />
+          <CardHeader className="pb-3 px-3 pt-4 sm:px-6 sm:pt-6">
+            <div className="space-y-2">
+              <AppSectionKicker icon={BarChart3}>Приходи</AppSectionKicker>
+              <CardTitle className="card-title">Последни 6 месеца</CardTitle>
+              <CardDescription className="card-description">
+                Издадени фактури по месеци
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="px-3 pb-4 sm:px-6 sm:pb-6">
+            <div className="flex items-end gap-1.5 sm:gap-2 h-[140px]">
+              {monthlyRevenue.map((m, i) => {
+                const pct = maxMonthly > 0 ? (m.total / maxMonthly) * 100 : 0;
+                const barHeight = Math.max(pct, 3);
+                return (
+                  <div key={i} className="flex flex-1 flex-col items-center gap-1.5" title={`${m.label}: ${m.total.toFixed(2)} €`}>
+                    <p className="text-[10px] font-medium tabular-nums text-muted-foreground/70 leading-none">
+                      {m.total > 0 ? (m.total >= 1000 ? `${(m.total / 1000).toFixed(1)}k` : m.total.toFixed(0)) : ""}
+                    </p>
+                    <div className="w-full flex-1 flex items-end">
+                      <div
+                        className={`w-full rounded-t-md transition-all ${
+                          m.isCurrent
+                            ? "bg-linear-to-t from-emerald-600 to-emerald-400 shadow-sm shadow-emerald-500/30"
+                            : "bg-linear-to-t from-muted-foreground/25 to-muted-foreground/15"
+                        }`}
+                        style={{ height: `${barHeight}%` }}
+                      />
+                    </div>
+                    <p className={`text-[10px] font-medium capitalize leading-none ${m.isCurrent ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground/70"}`}>
+                      {m.label}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
           </CardContent>
         </Card>
 
@@ -650,11 +898,14 @@ export default async function DashboardPage() {
                         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-background border border-border/60">
                           {log.action === "CREATE" && <Plus className="h-4 w-4 text-emerald-600" />}
                           {log.action === "UPDATE" && <FileText className="h-4 w-4 text-blue-600" />}
+                          {log.action === "ISSUE" && <CheckCircle className="h-4 w-4 text-emerald-600" />}
                           {log.action === "CANCEL" && <XCircle className="h-4 w-4 text-red-600" />}
+                          {log.action === "VOID" && <XCircle className="h-4 w-4 text-orange-600" />}
                           {log.action === "SEND" && <ArrowUpRight className="h-4 w-4 text-violet-600" />}
                           {log.action === "EXPORT" && <FileText className="h-4 w-4 text-amber-600" />}
                           {log.action === "DELETE" && <XCircle className="h-4 w-4 text-red-600" />}
-                          {!["CREATE", "UPDATE", "CANCEL", "SEND", "EXPORT", "DELETE"].includes(log.action) && (
+                          {(log.action === "MARK_PAID" || log.action === "MARK_UNPAID") && <Calendar className="h-4 w-4 text-sky-600" />}
+                          {!["CREATE", "UPDATE", "ISSUE", "CANCEL", "VOID", "SEND", "EXPORT", "DELETE", "MARK_PAID", "MARK_UNPAID"].includes(log.action) && (
                             <Activity className="h-4 w-4 text-muted-foreground" />
                           )}
                         </div>

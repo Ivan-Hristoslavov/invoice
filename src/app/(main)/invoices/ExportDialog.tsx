@@ -78,19 +78,19 @@ export default function ExportDialog({
 
       if (exportFormat === "csv") {
         await exportInvoicesToCsv(filters);
-        toast.success("Invoices exported successfully as CSV");
+        toast.success("Фактурите са експортирани успешно като CSV");
       } else if (exportFormat === "json") {
         if (!canExportJson) {
-          throw new Error("JSON export requires PRO or BUSINESS.");
+          throw new Error("JSON експортът изисква ПРО или БИЗНЕС план.");
         }
         const result = await exportInvoicesToJson(filters);
-        toast.success(`${result.invoices.length} invoices exported as JSON`);
+        toast.success(`${result.invoices.length} фактури са експортирани като JSON`);
       } else if (exportFormat === "pdf" && invoiceId) {
         if (!canExportPdf) {
-          throw new Error("PDF export requires PRO or BUSINESS.");
+          throw new Error("PDF експортът изисква ПРО или БИЗНЕС план.");
         }
         await exportInvoiceAsPdf(invoiceId);
-        toast.success("Invoice exported as PDF");
+        toast.success("Фактурата е експортирана като PDF");
       }
 
       if (onOpenChange) {
@@ -101,7 +101,7 @@ export default function ExportDialog({
       router.refresh();
     } catch (error) {
       console.error("Export error:", error);
-      toast.error("Failed to export invoices");
+      toast.error("Грешка при експортиране на фактурите");
     } finally {
       setIsExporting(false);
     }
@@ -113,21 +113,21 @@ export default function ExportDialog({
         {children || (
           <Button variant="outline" className="flex items-center gap-2">
             <Download className="h-4 w-4" />
-            Export Options
+            Експорт
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Export Invoices</DialogTitle>
+          <DialogTitle>Експорт на фактури</DialogTitle>
           <DialogDescription>
-            Choose your export options and download your invoices
+            Изберете опции за експорт и изтеглете вашите фактури
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="export-format">Export Format</Label>
+            <Label htmlFor="export-format">Формат за експорт</Label>
             <RadioGroup
               defaultValue="csv"
               value={exportFormat}
@@ -145,7 +145,7 @@ export default function ExportDialog({
                 <RadioGroupItem value="json" id="json" disabled={!canExportJson} />
                 <Label htmlFor="json" className="flex items-center gap-2 cursor-pointer">
                   <FileText className="h-4 w-4" />
-                  JSON{!canExportJson && " (PRO / BUSINESS)"}
+                  JSON{!canExportJson && " (ПРО / БИЗНЕС)"}
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
@@ -153,14 +153,14 @@ export default function ExportDialog({
                 <Label htmlFor="pdf" className="flex items-center gap-2 cursor-pointer">
                   <FileText className="h-4 w-4" />
                   PDF
-                  {!invoiceId && " (available for single invoice only)"}
-                  {invoiceId && exportCapability !== "full" && " (PRO / BUSINESS)"}
+                  {!invoiceId && " (само за единична фактура)"}
+                  {invoiceId && exportCapability !== "full" && " (ПРО / БИЗНЕС)"}
                 </Label>
               </div>
             </RadioGroup>
             {exportCapability === "csv" && (
               <p className="text-sm text-muted-foreground">
-                Вашият план позволява CSV експорт. JSON и PDF експортът са налични в PRO и BUSINESS.
+                Вашият план позволява CSV експорт. JSON и PDF експортът са налични в ПРО и БИЗНЕС.
               </p>
             )}
           </div>
@@ -169,13 +169,13 @@ export default function ExportDialog({
           {exportFormat !== "pdf" && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="company">Company</Label>
+                <Label htmlFor="company">Фирма</Label>
                 <Select value={companyId} onValueChange={setCompanyId}>
                   <SelectTrigger id="company">
-                    <SelectValue placeholder="All companies" />
+                    <SelectValue placeholder="Всички фирми" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All companies</SelectItem>
+                    <SelectItem value="">Всички фирми</SelectItem>
                     {companies.map((company) => (
                       <SelectItem key={company.id} value={company.id}>
                         {company.name}
@@ -186,13 +186,13 @@ export default function ExportDialog({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="client">Client</Label>
+                <Label htmlFor="client">Клиент</Label>
                 <Select value={clientId} onValueChange={setClientId}>
                   <SelectTrigger id="client">
-                    <SelectValue placeholder="All clients" />
+                    <SelectValue placeholder="Всички клиенти" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All clients</SelectItem>
+                    <SelectItem value="">Всички клиенти</SelectItem>
                     {clients.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
                         {client.name}
@@ -203,23 +203,23 @@ export default function ExportDialog({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">Статус</Label>
                 <Select value={status} onValueChange={setStatus}>
                   <SelectTrigger id="status">
-                    <SelectValue placeholder="All statuses" />
+                    <SelectValue placeholder="Всички статуси" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All statuses</SelectItem>
-                    <SelectItem value="DRAFT">Draft</SelectItem>
-                    <SelectItem value="ISSUED">Issued</SelectItem>
-                    <SelectItem value="VOIDED">Voided</SelectItem>
-                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                    <SelectItem value="">Всички статуси</SelectItem>
+                    <SelectItem value="DRAFT">Чернова</SelectItem>
+                    <SelectItem value="ISSUED">Издадена</SelectItem>
+                    <SelectItem value="VOIDED">Анулирана</SelectItem>
+                    <SelectItem value="CANCELLED">Отменена</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label>Date Range</Label>
+                <Label>Период</Label>
                 <RadioGroup
                   defaultValue="all"
                   value={dateRange}
@@ -228,11 +228,11 @@ export default function ExportDialog({
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="all" id="all" />
-                    <Label htmlFor="all" className="cursor-pointer">All time</Label>
+                    <Label htmlFor="all" className="cursor-pointer">Всички</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="custom" id="custom" />
-                    <Label htmlFor="custom" className="cursor-pointer">Custom range</Label>
+                    <Label htmlFor="custom" className="cursor-pointer">Ръчен период</Label>
                   </div>
                 </RadioGroup>
               </div>
@@ -240,7 +240,7 @@ export default function ExportDialog({
               {dateRange === "custom" && (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="start-date">Start Date</Label>
+                    <Label htmlFor="start-date">От дата</Label>
                     <Input
                       id="start-date"
                       type="date"
@@ -249,7 +249,7 @@ export default function ExportDialog({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="end-date">End Date</Label>
+                    <Label htmlFor="end-date">До дата</Label>
                     <Input
                       id="end-date"
                       type="date"
@@ -265,10 +265,10 @@ export default function ExportDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange?.(false)}>
-            Cancel
+            Отказ
           </Button>
           <Button onClick={handleExport} disabled={isExporting}>
-            {isExporting ? "Exporting..." : "Export"}
+            {isExporting ? "Експортиране..." : "Експорт"}
           </Button>
         </DialogFooter>
       </DialogContent>

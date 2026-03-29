@@ -74,9 +74,12 @@ function landingNavLinkVisual(isActive: boolean) {
 
 const LANDING_SCROLL_MARGIN = "scroll-mt-28 sm:scroll-mt-32";
 
-/** Секции без тежки рамки — само вертикален ритъм и контейнер. */
+/** Секции — еднакъв външен отстъп; фонът е само от глобалния лендинг слой (точки/иконки). */
 const LANDING_ZONE_OUTER = "px-4 py-8 sm:py-10";
-const LANDING_ZONE_PANEL = "rounded-2xl border border-border/40 bg-card/70 shadow-sm dark:bg-card/40";
+/** Един и същ „стъклен“ панел за всички секции (hero, продукт, цени, контакт). */
+const LANDING_ZONE_PANEL =
+  "rounded-2xl border border-border/40 bg-card/70 shadow-sm backdrop-blur-sm dark:bg-card/40";
+const LANDING_ZONE_PANEL_PAD = "p-5 sm:p-8 md:p-10";
 
 /** Етикет над секция — HeroUI Chip: success + tertiary (прозрачен фон) + изрична рамка. @see https://heroui.com/docs/react/components/chip */
 function LandingSectionLabel({ children }: { children: React.ReactNode }) {
@@ -661,10 +664,11 @@ export default function HomePage() {
         <section
           id="top"
           data-landing-spy="top"
-          className={cn(LANDING_SCROLL_MARGIN, "bg-transparent px-4 py-8 sm:py-10")}
+          className={cn(LANDING_SCROLL_MARGIN, LANDING_ZONE_OUTER, "bg-transparent")}
         >
           <div className="container mx-auto max-w-6xl">
-            <div className="mx-auto max-w-3xl px-1 text-center sm:px-4">
+            <div className={cn(LANDING_ZONE_PANEL, LANDING_ZONE_PANEL_PAD)}>
+              <div className="mx-auto max-w-3xl px-1 text-center sm:px-4">
               <div className="flex justify-center">
                 <LandingSectionLabel>Начало</LandingSectionLabel>
               </div>
@@ -710,6 +714,7 @@ export default function HomePage() {
                 ))}
               </div>
             </div>
+            </div>
           </div>
         </section>
 
@@ -719,7 +724,7 @@ export default function HomePage() {
           className={cn(LANDING_SCROLL_MARGIN, LANDING_ZONE_OUTER, "bg-transparent")}
         >
           <div className="container mx-auto max-w-6xl">
-            <div className={cn(LANDING_ZONE_PANEL, "p-5 sm:p-8 md:p-10")}>
+            <div className={cn(LANDING_ZONE_PANEL, LANDING_ZONE_PANEL_PAD)}>
               <header className="pb-6 text-center sm:pb-8">
                 <div className="flex justify-center">
                   <LandingSectionLabel>Продукт</LandingSectionLabel>
@@ -819,15 +824,10 @@ export default function HomePage() {
         <section
           id="pricing"
           data-landing-spy="pricing"
-          className={cn(LANDING_SCROLL_MARGIN, LANDING_ZONE_OUTER, "relative bg-transparent")}
+          className={cn(LANDING_SCROLL_MARGIN, LANDING_ZONE_OUTER, "bg-transparent")}
         >
-          <div className="container relative z-[1] mx-auto max-w-7xl">
-            <div
-              className={cn(
-                LANDING_ZONE_PANEL,
-                "rounded-3xl border-border/30 bg-card/50 p-5 shadow-xl backdrop-blur-md dark:bg-card/35 sm:p-8"
-              )}
-            >
+          <div className="container relative z-1 mx-auto max-w-7xl">
+            <div className={cn(LANDING_ZONE_PANEL, LANDING_ZONE_PANEL_PAD)}>
               <div className="mb-6 text-center sm:mb-8">
                 <div className="flex justify-center">
                   <LandingSectionLabel>Цени</LandingSectionLabel>
@@ -1092,14 +1092,14 @@ export default function HomePage() {
           data-landing-spy="contact"
           className={cn(LANDING_SCROLL_MARGIN, LANDING_ZONE_OUTER, "bg-transparent")}
         >
-          <div className="container mx-auto max-w-3xl">
-            <div className={cn(LANDING_ZONE_PANEL, "p-5 sm:p-8")}>
+          <div className="container mx-auto max-w-6xl">
+            <div className={cn(LANDING_ZONE_PANEL, LANDING_ZONE_PANEL_PAD)}>
               <header className="border-b border-border/50 pb-8 text-center">
                 <div className="flex justify-center">
                   <LandingSectionLabel>Контакт</LandingSectionLabel>
                 </div>
                 <h2 className="section-title mt-3">Въпроси и връзка</h2>
-                <p className="card-description mx-auto mt-2 max-w-md">
+                <p className="card-description mx-auto mt-2 max-w-2xl">
                   Често задавани въпроси, имейл и старт в акаунт — в една зона.
                 </p>
               </header>
@@ -1155,7 +1155,7 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 sm:mx-auto sm:max-w-xl sm:grid-cols-2 sm:gap-4">
+                <div className="grid grid-cols-1 gap-3 sm:mx-auto sm:max-w-2xl sm:grid-cols-2 sm:gap-4">
                   <Button
                     asChild
                     className="h-12 w-full border-0 text-base font-semibold text-white shadow-lg gradient-primary hover:opacity-90"

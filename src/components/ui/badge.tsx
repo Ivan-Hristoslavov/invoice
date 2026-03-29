@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Chip } from "@heroui/react";
+import { cn } from "@/lib/utils";
 
 export interface BadgeProps extends Omit<React.ComponentProps<typeof Chip>, "variant"> {
   variant?:
@@ -25,31 +26,29 @@ export interface BadgeProps extends Omit<React.ComponentProps<typeof Chip>, "var
     | "PARTIAL" | "partial";
 }
 
-const chipColorMap: Record<string, "default" | "primary" | "secondary" | "danger" | "success" | "warning"> = {
-  // Generic UI variants
+/** HeroUI Chip `color` — само accent | danger | default | success | warning */
+const chipColorMap: Record<string, "accent" | "danger" | "default" | "success" | "warning"> = {
   default: "default",
-  secondary: "secondary",
+  secondary: "default",
   destructive: "danger",
   success: "success",
   warning: "warning",
-  info: "primary",
+  info: "success",
   outline: "default",
   "outline-solid": "default",
-  // Invoice status variants (uppercase DB values)
   DRAFT: "default",
-  SENT: "primary",
-  ISSUED: "primary",
-  UNPAID: "primary",
+  SENT: "accent",
+  ISSUED: "accent",
+  UNPAID: "accent",
   PAID: "success",
   OVERDUE: "danger",
   CANCELLED: "default",
   VOIDED: "warning",
   PARTIAL: "warning",
-  // Invoice status variants (lowercase)
   draft: "default",
-  sent: "primary",
-  issued: "primary",
-  unpaid: "primary",
+  sent: "accent",
+  issued: "accent",
+  unpaid: "accent",
   paid: "success",
   overdue: "danger",
   cancelled: "default",
@@ -81,9 +80,12 @@ const chipVariantMap: Record<string, "primary" | "secondary" | "soft" | "tertiar
 function Badge({ variant = "default", className, children, ...props }: BadgeProps) {
   return (
     <Chip
-      color={chipColorMap[variant] ?? "primary"}
-      variant={chipVariantMap[variant] ?? "solid"}
-      className={className}
+      color={chipColorMap[variant] ?? "accent"}
+      variant={chipVariantMap[variant] ?? "soft"}
+      className={cn(
+        "inline-flex w-fit max-w-full shrink-0 self-start",
+        className
+      )}
       size="sm"
       {...props}
     >

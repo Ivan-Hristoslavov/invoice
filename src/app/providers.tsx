@@ -1,13 +1,9 @@
 "use client";
 
-import { HeroUIProvider } from "@heroui/react";
-import { useRouter } from "next/navigation";
-
+/**
+ * HeroUI v3 (@heroui/react) не експортира root `HeroUIProvider` като в NextUI v2.
+ * Компонентите работят без обвиващ доставчик; навигация за линкове се ползва от Next.js директно.
+ */
 export function Providers({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
-  return (
-    <HeroUIProvider navigate={router.push}>
-      {children}
-    </HeroUIProvider>
-  );
+  return <>{children}</>;
 }

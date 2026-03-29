@@ -53,7 +53,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { FullPageLoader } from "@/components/ui/loading-spinner";
+import { ContentLoader } from "@/components/ui/loading-spinner";
 import { cn } from "@/lib/utils";
 import { applyApiValidationDetails } from "@/lib/form-errors";
 import { FIELD_LIMITS } from "@/lib/validations/field-limits";
@@ -258,16 +258,7 @@ export default function ProductPage() {
     }
   }
 
-  if (isLoadingProduct) {
-    return (
-      <FullPageLoader
-        title="Зареждане на продукт"
-        subtitle="Синхронизираме данните от каталога..."
-      />
-    );
-  }
-
-  if (!product && !isLoadingProduct) {
+  if (!isLoadingProduct && !product) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-border/60 bg-card/50 py-16">
         <p className="text-lg text-muted-foreground">Продуктът не е намерен</p>
@@ -280,6 +271,11 @@ export default function ProductPage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-5 sm:space-y-6">
+      <ContentLoader
+        loading={isLoadingProduct}
+        title="Зареждане на продукт"
+        subtitle="Синхронизираме данните от каталога..."
+      >
       {/* Хедър: навигация и заглавие на една визуална ос — без „разминаване“ между Назад и Каталог */}
       <header className="border-b border-border/50 pb-4">
         <nav
@@ -589,6 +585,7 @@ export default function ProductPage() {
           </div>
         </form>
       </Form>
+      </ContentLoader>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import type { Key } from "react-aria-components";
 import { Table as HeroUITable } from "@heroui/react";
 import { cn } from "@/lib/utils";
 
@@ -9,6 +10,8 @@ interface TableProps extends React.ComponentProps<typeof HeroUITable> {
   contentAriaLabel?: string;
   contentClassName?: string;
   scrollContainerClassName?: string;
+  /** Passed to the inner react-aria Table — use this instead of `onClick` on rows (proper press + a11y). */
+  onRowAction?: (key: Key) => void;
 }
 
 const TableBase = React.forwardRef<HTMLDivElement, TableProps>(
@@ -21,6 +24,7 @@ const TableBase = React.forwardRef<HTMLDivElement, TableProps>(
       contentAriaLabel = "Таблица",
       contentClassName,
       scrollContainerClassName,
+      onRowAction,
       ...props
     },
     ref
@@ -32,7 +36,11 @@ const TableBase = React.forwardRef<HTMLDivElement, TableProps>(
       {...props}
     >
       <HeroUITable.ScrollContainer className={cn(stickyHeader && "max-h-[600px]", scrollContainerClassName)}>
-        <HeroUITable.Content aria-label={contentAriaLabel} className={cn("min-w-full", contentClassName)}>
+        <HeroUITable.Content
+          aria-label={contentAriaLabel}
+          className={cn("min-w-full", contentClassName)}
+          onRowAction={onRowAction}
+        >
           {children}
         </HeroUITable.Content>
       </HeroUITable.ScrollContainer>

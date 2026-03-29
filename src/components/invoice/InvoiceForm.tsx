@@ -127,7 +127,7 @@ export function InvoiceForm({ defaultValues, isEditing = false }: InvoiceFormPro
       <FormSection title="Артикули">
         <div className="min-h-[100px] border border-dashed p-4 rounded">
           {/* Item rows would be here */}
-          {items.map((item, index) => (
+          {items.map((item: unknown, index: number) => (
             <div key={index} className="mb-3">
               {(item as { taxRate?: number }).taxRate === 0 && (
                 <FormField

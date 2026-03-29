@@ -9,6 +9,7 @@ import {
   normalizeInvoiceStatus,
   type AppInvoiceStatus,
 } from "@/lib/invoice-status";
+import { validateInvoiceForIssuing } from "@/lib/validate-invoice-for-issuing";
 
 // Valid status transitions for the current invoice lifecycle.
 const VALID_TRANSITIONS: Record<AppInvoiceStatus, AppInvoiceStatus[]> = {
@@ -17,6 +18,71 @@ const VALID_TRANSITIONS: Record<AppInvoiceStatus, AppInvoiceStatus[]> = {
   VOIDED: [],
   CANCELLED: [],
 };
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+      return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
+    }
+    const sessionUser = await resolveSessionUser(session.user);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Потребителят не е намерен" }, { status: 404 });
+    }
+
+    const supabase = createAdminClient();
+
+    const { data: invoice, error: invoiceError } = await supabase
+      .from("Invoice")
+      .select("id, userId")
+      .eq("id", id)
+      .single();
+
+    if (invoiceError || !invoice) {
+      return NextResponse.json(
+        { error: "Фактурата не е намерена" },
+        { status: 404 }
+      );
+    }
+
+    if (invoice.userId !== sessionUser.id) {
+      return NextResponse.json({ error: "Достъпът е отказан" }, { status: 403 });
+    }
+
+    const { data: fullInvoice, error: fullError } = await supabase
+      .from("Invoice")
+      .select("*, company:Company(*), items:InvoiceItem(*)")
+      .eq("id", id)
+      .single();
+
+    if (fullError || !fullInvoice) {
+      console.error("Грешка при зареждане на фактура за валидация:", fullError);
+      return NextResponse.json(
+        { error: "Неуспешно зареждане на фактурата за валидация" },
+        { status: 500 }
+      );
+    }
+
+    const { validationErrors, warnings } = validateInvoiceForIssuing(fullInvoice);
+
+    return NextResponse.json({
+      valid: validationErrors.length === 0,
+      errors: validationErrors,
+      warnings,
+    });
+  } catch (error) {
+    console.error("Грешка при валидация на фактура за издаване:", error);
+    return NextResponse.json(
+      { error: "Грешка при валидация на фактурата" },
+      { status: 500 }
+    );
+  }
+}
 
 export async function PATCH(
   request: NextRequest,
@@ -43,7 +109,7 @@ export async function PATCH(
         { status: 400 }
       );
     }
-    
+
     const requestedStatus = normalizeInvoiceStatus(body.status);
 
     if (!body.status) {
@@ -87,16 +153,44 @@ export async function PATCH(
 
     // Map current status from DB to app status for validation
     const currentAppStatus = normalizeInvoiceStatus(invoice.status);
-    
+
     // Validate status transition
     const allowedTransitions = VALID_TRANSITIONS[currentAppStatus] || [];
     if (!allowedTransitions.includes(requestedStatus)) {
       return NextResponse.json(
-        { 
-          error: `Не може да се промени статуса от ${currentAppStatus} към ${requestedStatus}. Позволени преходи: ${allowedTransitions.join(", ") || "няма"}` 
+        {
+          error: `Не може да се промени статуса от ${currentAppStatus} към ${requestedStatus}. Позволени преходи: ${allowedTransitions.join(", ") || "няма"}`,
         },
         { status: 400 }
       );
+    }
+
+    if (requestedStatus === "ISSUED") {
+      const { data: fullInvoice, error: fullError } = await supabase
+        .from("Invoice")
+        .select("*, company:Company(*), items:InvoiceItem(*)")
+        .eq("id", id)
+        .single();
+
+      if (fullError || !fullInvoice) {
+        console.error("Грешка при зареждане на фактура за валидация:", fullError);
+        return NextResponse.json(
+          { error: "Неуспешно зареждане на фактурата за валидация" },
+          { status: 500 }
+        );
+      }
+
+      const { validationErrors, warnings } = validateInvoiceForIssuing(fullInvoice);
+      if (validationErrors.length > 0) {
+        return NextResponse.json(
+          {
+            error: "Фактурата не може да бъде издадена поради липсващи данни",
+            validationErrors,
+            warnings,
+          },
+          { status: 422 }
+        );
+      }
     }
 
     const nextDatabaseStatus = getDatabaseStatusForAppStatus(requestedStatus);
@@ -124,22 +218,26 @@ export async function PATCH(
     try {
       const { logAction } = await import("@/lib/audit-log");
       const headers = request.headers;
-      
+
       // Determine action type based on new status
-      const actionType = requestedStatus === "VOIDED" ? "VOID" : 
-                         requestedStatus === "ISSUED" ? "ISSUE" : "UPDATE";
-      
+      const actionType =
+        requestedStatus === "VOIDED"
+          ? "VOID"
+          : requestedStatus === "ISSUED"
+            ? "ISSUE"
+            : "UPDATE";
+
       await logAction({
         userId: sessionUser.id,
         action: actionType,
         entityType: "INVOICE",
         entityId: id,
         invoiceId: id,
-        changes: { 
+        changes: {
           previousStatus: invoice.status,
           newStatus: requestedStatus,
           persistedStatus: nextDatabaseStatus,
-          reason: body.reason || undefined
+          reason: body.reason || undefined,
         },
         ipAddress: headers.get("x-forwarded-for") || headers.get("x-real-ip") || undefined,
         userAgent: headers.get("user-agent") || undefined,

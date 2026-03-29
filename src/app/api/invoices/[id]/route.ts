@@ -94,12 +94,18 @@ export async function GET(
     }
 
     // Fetch related data separately
-    const [clientResult, companyResult, itemsResult, creditNoteResult] = await Promise.all([
-      supabase.from("Client").select("id, name, email, phone, address, city, country").eq("id", invoice.clientId).single(),
-      supabase.from("Company").select("id, name, email, phone").eq("id", invoice.companyId).single(),
-      supabase.from("InvoiceItem").select("*").eq("invoiceId", id),
-      supabase.from("CreditNote").select("*").eq("invoiceId", id).maybeSingle()
-    ]);
+    const [clientResult, companyResult, itemsResult, creditNoteResult, debitNotesResult] =
+      await Promise.all([
+        supabase
+          .from("Client")
+          .select("id, name, email, phone, address, city, country")
+          .eq("id", invoice.clientId)
+          .single(),
+        supabase.from("Company").select("id, name, email, phone").eq("id", invoice.companyId).single(),
+        supabase.from("InvoiceItem").select("*").eq("invoiceId", id),
+        supabase.from("CreditNote").select("*").eq("invoiceId", id).maybeSingle(),
+        supabase.from("DebitNote").select("*").eq("invoiceId", id),
+      ]);
 
     const fullInvoice = {
       ...withDocumentSnapshots(
@@ -110,7 +116,8 @@ export async function GET(
       ),
       status: normalizeInvoiceStatus(invoice.status),
       persistedStatus: invoice.status,
-      creditNote: creditNoteResult.data
+      creditNote: creditNoteResult.data,
+      debitNotes: debitNotesResult.data ?? [],
     };
 
     return Response.json(fullInvoice);

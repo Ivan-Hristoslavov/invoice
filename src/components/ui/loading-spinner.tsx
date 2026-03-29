@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
 import { FileText } from "lucide-react";
 import { Spinner } from "@heroui/react";
 import { APP_NAME } from "@/config/constants";
@@ -35,6 +36,26 @@ export function FullPageLoader({
   title?: string;
   subtitle?: string;
 }) {
+  const [progress, setProgress] = useState(0);
+  const rafRef = useRef<number>(0);
+  const startRef = useRef(Date.now());
+
+  useEffect(() => {
+    startRef.current = Date.now();
+    function tick() {
+      const elapsed = Date.now() - startRef.current;
+      setProgress((prev) => {
+        const target = 92;
+        const timeBased = Math.min(target, (elapsed / 5000) * target);
+        const decel = prev + Math.max(0.12, (target - prev) * 0.006);
+        return Math.min(target, Math.max(decel, timeBased));
+      });
+      rafRef.current = requestAnimationFrame(tick);
+    }
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, []);
+
   return (
     <div
       className="fixed inset-0 z-50 overflow-hidden bg-background backdrop-blur-sm"
@@ -87,40 +108,159 @@ export function FullPageLoader({
           <h2 className="text-2xl font-semibold tracking-tight text-foreground">{title}</h2>
           <p className="text-sm leading-6 text-muted-foreground">{subtitle}</p>
 
-          <div
-            className="mx-auto h-0.5 max-w-[160px] rounded-full motion-safe:animate-loader-shimmer-line"
-            style={{
-              backgroundImage:
-                "linear-gradient(90deg, transparent, hsl(var(--primary) / 0.85), transparent)",
-              backgroundSize: "220% 100%",
-            }}
-            aria-hidden
-          />
-
-          <div className="flex justify-center gap-1.5 pt-1" aria-hidden>
-            {[0, 1, 2].map((i) => (
-              <span
-                key={i}
-                className="h-2 w-2 rounded-full bg-primary/80 motion-safe:animate-loader-dot-bounce"
-                style={{ animationDelay: `${i * 0.2}s` }}
+          <div className="mx-auto w-full max-w-[260px] space-y-2.5 pt-2">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-linear-to-r from-emerald-500 via-teal-400 to-cyan-400 shadow-sm shadow-primary/40"
+                style={{
+                  width: `${progress}%`,
+                  transition: "width 80ms linear",
+                }}
               />
-            ))}
+            </div>
+            <p className="text-center text-xs font-medium tabular-nums text-muted-foreground/80">
+              {Math.round(progress)}%
+            </p>
           </div>
-
-          <div className="mx-auto h-1 w-full max-w-[220px] overflow-hidden rounded-full bg-muted/40">
-            <div
-              className="h-full w-[38%] rounded-full bg-linear-to-r from-emerald-500 via-teal-400 to-cyan-400 motion-safe:animate-loader-indeterminate shadow-sm shadow-primary/40"
-              aria-hidden
-            />
-          </div>
-          <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/90">
-            Моля, изчакайте
-          </p>
           <span className="sr-only">
             {title}. {subtitle}
           </span>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Inline progressive loader that stays mounted, finishes 0→100%, then reveals children.
+ *
+ * Usage:
+ *   <ContentLoader loading={isLoadingData} title="…">
+ *     <ActualContent />
+ *   </ContentLoader>
+ *
+ * The bar crawls toward ~70% while `loading` is true.
+ * When `loading` flips to false the bar accelerates to 100%, then fades out.
+ */
+export function ContentLoader({
+  loading,
+  title = "Зареждане",
+  subtitle,
+  children,
+  className,
+}: {
+  loading: boolean;
+  title?: string;
+  subtitle?: string;
+  children?: React.ReactNode;
+  className?: string;
+}) {
+  const [progress, setProgress] = useState(0);
+  const [phase, setPhase] = useState<"loading" | "finishing" | "done">("loading");
+  const rafRef = useRef<number>(0);
+  const startRef = useRef(Date.now());
+  const loadedAtRef = useRef<number | null>(null);
+
+  // When loading flips to false, start finishing phase
+  useEffect(() => {
+    if (!loading && phase === "loading") {
+      loadedAtRef.current = Date.now();
+      setPhase("finishing");
+    }
+  }, [loading, phase]);
+
+  useEffect(() => {
+    if (phase === "done") return;
+
+    startRef.current = Date.now();
+
+    function tick() {
+      setProgress((prev) => {
+        if (phase === "done") return 100;
+
+        if (phase === "finishing" || !loading) {
+          // Fast ramp to 100
+          const next = prev + (100 - prev) * 0.18;
+          if (next >= 99.5) {
+            return 100;
+          }
+          return next;
+        }
+
+        // Slow crawl: realistic ramp toward ~70%
+        const elapsed = Date.now() - startRef.current;
+        const target = 70;
+        // Time-based linear + slight deceleration
+        const timeBased = Math.min(target, (elapsed / 4000) * target);
+        const decel = prev + Math.max(0.15, (target - prev) * 0.008);
+        return Math.min(target, Math.max(decel, timeBased));
+      });
+
+      rafRef.current = requestAnimationFrame(tick);
+    }
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [loading, phase]);
+
+  // Transition from finishing → done once bar hits 100
+  useEffect(() => {
+    if (phase === "finishing" && progress >= 100) {
+      const t = setTimeout(() => setPhase("done"), 250);
+      return () => clearTimeout(t);
+    }
+  }, [phase, progress]);
+
+  if (phase === "done") {
+    return <>{children}</>;
+  }
+
+  return (
+    <div
+      className={cn(
+        "flex flex-col items-center justify-center gap-5 rounded-2xl border border-border/40 bg-muted/20 py-16 px-6",
+        phase === "finishing" && progress >= 100 && "animate-out fade-out duration-200",
+        className
+      )}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <div className="relative flex h-14 w-14 items-center justify-center">
+        <div
+          className="absolute inset-[-30%] rounded-full bg-primary/10 blur-md motion-safe:animate-pulse"
+          aria-hidden
+        />
+        <div className="relative flex h-12 w-12 items-center justify-center rounded-xl gradient-primary shadow-lg shadow-primary/20">
+          <FileText className="h-6 w-6 text-white" aria-hidden />
+        </div>
+      </div>
+
+      <div className="space-y-2 text-center">
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        {subtitle && (
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
+        )}
+      </div>
+
+      <div className="w-full max-w-[240px] space-y-2">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/60">
+          <div
+            className="h-full rounded-full bg-linear-to-r from-emerald-500 via-teal-400 to-cyan-400 shadow-sm shadow-primary/30"
+            style={{
+              width: `${progress}%`,
+              transition: "width 80ms linear",
+            }}
+          />
+        </div>
+        <p className="text-center text-[11px] font-medium tabular-nums text-muted-foreground/80">
+          {Math.round(progress)}%
+        </p>
+      </div>
+
+      <span className="sr-only">
+        {title} — {Math.round(progress)}%
+      </span>
     </div>
   );
 }

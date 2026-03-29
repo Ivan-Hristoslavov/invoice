@@ -84,7 +84,11 @@ const SelectTrigger = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <HeroUISelect.Trigger
     ref={ref}
-    className={cn("min-h-11 w-full justify-between rounded-2xl px-4 text-sm font-medium sm:min-h-12", className)}
+    className={cn(
+      "flex min-h-9 w-full min-w-0 items-center justify-between gap-2 rounded-2xl px-4 py-2 text-sm font-medium sm:min-h-12 sm:py-2.5",
+      "whitespace-nowrap [&_[data-slot=select-value]]:min-w-0 [&_[data-slot=select-value]]:truncate",
+      className
+    )}
     {...props}
   >
     {children as any}

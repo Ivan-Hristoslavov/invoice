@@ -53,7 +53,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FormDatePicker } from "@/components/ui/date-picker";
-import { Loading } from "@/components/ui/loading";
+import { ContentLoader } from "@/components/ui/loading-spinner";
 import { toast } from "@/lib/toast";
 
 interface EditInvoiceFormProps {
@@ -496,17 +496,7 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
     }
   };
   
-  // If still loading, show loading state
-  if (isLoadingData) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <Loading size="lg" />
-      </div>
-    );
-  }
-  
-  // If error or invoice not found, show error
-  if (error || !invoice) {
+  if (!isLoadingData && (error || !invoice)) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
         <p className="text-lg text-muted-foreground">{error || "Фактурата не е намерена"}</p>
@@ -517,8 +507,7 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
     );
   }
   
-  // Only allow editing DRAFT invoices
-  if (invoice.status !== "DRAFT") {
+  if (!isLoadingData && invoice && invoice.status !== "DRAFT") {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
         <p className="text-lg text-muted-foreground">Можете да редактирате само фактури в статус DRAFT. За отмяна на издадена фактура използвайте функцията за създаване на кредитно известие.</p>
@@ -528,9 +517,33 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
       </div>
     );
   }
-  
+
+  const handlePrintInvoice = () => {
+    try {
+      printInvoicePdf(invoiceId);
+      toast.info("PDF файлът беше отворен в нов раздел. Използвайте Print от PDF прегледа.");
+    } catch (printErr) {
+      console.error("Error printing invoice:", printErr);
+      toast.error("Грешка при принтирането на фактурата");
+    }
+  };
+
+  const handleExportPdf = async () => {
+    try {
+      await exportInvoiceAsPdf(invoiceId);
+    } catch (exportErr) {
+      console.error("Error exporting PDF:", exportErr);
+      toast.error("Грешка при експортиране на PDF");
+    }
+  };
+
   return (
     <div>
+      <ContentLoader
+        loading={isLoadingData}
+        title="Зареждане на фактурата"
+        subtitle="Зареждаме данните за редактиране..."
+      >
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-2">
           <Button variant="ghost" size="sm" asChild className="back-btn rounded-full px-3">
@@ -541,77 +554,82 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
           </Button>
           <h1 className="truncate text-lg font-bold sm:text-xl">Редактиране #{invoiceData.invoiceNumber}</h1>
         </div>
-        <div className="flex items-center justify-between gap-2 sm:justify-end">
-          <DropdownMenu>
-            <DropdownMenuTrigger className="h-8 px-3 border rounded-md hover:bg-muted">
-              <MoreVertical className="w-4 h-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-56">
-              <DropdownMenuItem asChild>
-                <Link href={`/invoices/${invoiceId}`}>
-                  <DropdownMenuItemIcon>
-                    <Eye />
-                  </DropdownMenuItemIcon>
-                  <DropdownMenuItemText>Преглед</DropdownMenuItemText>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              {invoiceData.status === "DRAFT" && (
-                <DropdownMenuItem
-                  onClick={() => {
-                    router.push(`/invoices/${invoiceId}?action=issue`);
-                  }}
-                  className="text-emerald-600 focus:text-emerald-600"
-                >
-                  <DropdownMenuItemIcon>
-                    <FileCheck />
-                  </DropdownMenuItemIcon>
-                  <DropdownMenuItemText>Издай фактура</DropdownMenuItemText>
+        <div className="flex w-full min-w-0 flex-wrap items-center justify-end gap-2 sm:w-auto">
+          <div className="md:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background/80 hover:bg-muted">
+                <MoreVertical className="h-4 w-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-56">
+                <DropdownMenuItem asChild>
+                  <Link href={`/invoices/${invoiceId}`}>
+                    <DropdownMenuItemIcon>
+                      <Eye />
+                    </DropdownMenuItemIcon>
+                    <DropdownMenuItemText>Преглед</DropdownMenuItemText>
+                  </Link>
                 </DropdownMenuItem>
-              )}
-              <DropdownMenuItem
-                onClick={() => {
-                  try {
-                    printInvoicePdf(invoiceId);
-                    toast.info("PDF файлът беше отворен в нов раздел. Използвайте Print от PDF прегледа.");
-                  } catch (error) {
-                    console.error("Error printing invoice:", error);
-                    toast.error("Грешка при принтирането на фактурата");
-                  }
-                }}
+                <DropdownMenuSeparator />
+                {invoiceData.status === "DRAFT" && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      router.push(`/invoices/${invoiceId}?action=issue`);
+                    }}
+                    className="text-emerald-600 focus:text-emerald-600"
+                  >
+                    <DropdownMenuItemIcon>
+                      <FileCheck />
+                    </DropdownMenuItemIcon>
+                    <DropdownMenuItemText>Издай фактура</DropdownMenuItemText>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={handlePrintInvoice}>
+                  <DropdownMenuItemIcon>
+                    <Printer />
+                  </DropdownMenuItemIcon>
+                  <DropdownMenuItemText>Принтирай</DropdownMenuItemText>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => void handleExportPdf()}>
+                  <DropdownMenuItemIcon>
+                    <Download />
+                  </DropdownMenuItemIcon>
+                  <DropdownMenuItemText>Изтегли PDF</DropdownMenuItemText>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <div className="hidden max-w-full flex-wrap items-center justify-end gap-2 md:flex">
+            <Button variant="outline" size="sm" asChild className="shrink-0 gap-1.5">
+              <Link href={`/invoices/${invoiceId}`}>
+                <Eye className="h-4 w-4" />
+                Преглед
+              </Link>
+            </Button>
+            {invoiceData.status === "DRAFT" && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0 gap-1.5 border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-700"
+                onClick={() => router.push(`/invoices/${invoiceId}?action=issue`)}
               >
-                <DropdownMenuItemIcon>
-                  <Printer />
-                </DropdownMenuItemIcon>
-                <DropdownMenuItemText>Принтирай</DropdownMenuItemText>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={async () => {
-                  try {
-                    await exportInvoiceAsPdf(invoiceId);
-                  } catch (error) {
-                    console.error("Error exporting PDF:", error);
-                    toast.error("Грешка при експортиране на PDF");
-                  }
-                }}
-              >
-                <DropdownMenuItemIcon>
-                  <Download />
-                </DropdownMenuItemIcon>
-                <DropdownMenuItemText>Изтегли PDF</DropdownMenuItemText>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button 
-            type="submit" 
-            form="invoice-form" 
-            size="sm"
-            disabled={isLoading}
-            className="hidden sm:inline-flex"
-          >
-            <Save className="w-4 h-4 mr-1.5" />
-            {isLoading ? "Запазване..." : "Запази"}
-          </Button>
+                <FileCheck className="h-4 w-4" />
+                Издай
+              </Button>
+            )}
+            <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5" onClick={handlePrintInvoice}>
+              <Printer className="h-4 w-4" />
+              Принтирай
+            </Button>
+            <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5" onClick={() => void handleExportPdf()}>
+              <Download className="h-4 w-4" />
+              PDF
+            </Button>
+            <Button type="submit" form="invoice-form" size="sm" disabled={isLoading} className="shrink-0 gap-1.5">
+              <Save className="h-4 w-4" />
+              {isLoading ? "Запазване..." : "Запази"}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -924,6 +942,7 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
           </div>
         </div>
       </form>
+      </ContentLoader>
     </div>
   );
 } 

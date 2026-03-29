@@ -982,3 +982,13 @@ html {
 .invoices-table-flat .table__header .table__column::after {
   content: none;
 }
+
+/* По-подредени редове: леки хоризонтални линии (върху flat таблица) */
+.invoices-table-flat.data-table-polished.table-root--secondary .table__body .table__row:not(:last-child) .table__cell {
+  border-bottom-width: 1px;
+  border-bottom-color: hsl(var(--border) / 0.35);
+}
+
+.invoices-table-flat.data-table-polished .table__header {
+  box-shadow: inset 0 -1px 0 0 hsl(var(--border) / 0.35);
+}

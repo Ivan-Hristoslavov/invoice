@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { FileCheck, AlertTriangle, X } from "lucide-react";
+import { FileCheck, AlertTriangle, X, CheckCircle2, XCircle, Info } from "lucide-react";
 
 interface StatusChangeModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => Promise<void>;
   invoiceNumber: string;
+  invoiceId?: string;
   currentStatus: string;
   newStatus: string;
 }
@@ -18,12 +19,15 @@ export function StatusChangeModal({
   onClose,
   onConfirm,
   invoiceNumber,
+  invoiceId,
   currentStatus,
   newStatus,
 }: StatusChangeModalProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
 
-  // Handle ESC key to close
   useEffect(() => {
     if (!isOpen) return;
 
@@ -34,7 +38,6 @@ export function StatusChangeModal({
     };
 
     document.addEventListener("keydown", handleEscape);
-    // Prevent body scroll when modal is open
     document.body.style.overflow = "hidden";
 
     return () => {
@@ -42,6 +45,38 @@ export function StatusChangeModal({
       document.body.style.overflow = "unset";
     };
   }, [isOpen, isLoading, onClose]);
+
+  useEffect(() => {
+    if (!isOpen || newStatus !== "ISSUED" || !invoiceId) {
+      setValidationErrors([]);
+      setValidationWarnings([]);
+      return;
+    }
+
+    let cancelled = false;
+    setIsValidating(true);
+
+    fetch(`/api/invoices/${invoiceId}/status`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        setValidationErrors(data.errors || []);
+        setValidationWarnings(data.warnings || []);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setValidationErrors([]);
+          setValidationWarnings([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsValidating(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, newStatus, invoiceId]);
 
   const handleConfirm = async () => {
     setIsLoading(true);
@@ -60,6 +95,8 @@ export function StatusChangeModal({
       onClose();
     }
   };
+
+  const hasBlockingErrors = validationErrors.length > 0;
 
   const getStatusInfo = () => {
     if (newStatus === "ISSUED") {
@@ -105,7 +142,6 @@ export function StatusChangeModal({
         className="glass-card relative rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 animate-in zoom-in-95 slide-in-from-bottom-2"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close button */}
         <button
           onClick={onClose}
           disabled={isLoading}
@@ -115,7 +151,6 @@ export function StatusChangeModal({
           <X className="h-4 w-4" />
         </button>
 
-        {/* Header */}
         <div className="flex flex-col items-center text-center mb-6">
           <div className={`rounded-full p-3 mb-4 ${
             newStatus === "ISSUED" 
@@ -133,9 +168,51 @@ export function StatusChangeModal({
             {statusInfo.description}
           </p>
         </div>
+
+        {/* Pre-issue validation checklist */}
+        {newStatus === "ISSUED" && (isValidating || hasBlockingErrors || validationWarnings.length > 0) && (
+          <div className="mb-4 space-y-2">
+            {isValidating && (
+              <p className="text-sm text-muted-foreground text-center animate-pulse">
+                Проверка на задължителни полета...
+              </p>
+            )}
+            {!isValidating && !hasBlockingErrors && validationWarnings.length === 0 && (
+              <div className="flex items-center gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 p-3">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                <p className="text-sm text-emerald-800 dark:text-emerald-200">Всички задължителни полета са попълнени</p>
+              </div>
+            )}
+            {!isValidating && hasBlockingErrors && (
+              <div className="rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <XCircle className="h-4 w-4 text-red-600 shrink-0" />
+                  <p className="text-sm font-medium text-red-800 dark:text-red-200">Липсващи задължителни данни:</p>
+                </div>
+                <ul className="ml-6 space-y-1">
+                  {validationErrors.map((err, i) => (
+                    <li key={i} className="text-sm text-red-700 dark:text-red-300 list-disc">{err}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {!isValidating && validationWarnings.length > 0 && (
+              <div className="rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Info className="h-4 w-4 text-amber-600 shrink-0" />
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Препоръки:</p>
+                </div>
+                <ul className="ml-6 space-y-1">
+                  {validationWarnings.map((warn, i) => (
+                    <li key={i} className="text-sm text-amber-700 dark:text-amber-300 list-disc">{warn}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
         
-        {/* Warning box */}
-        {statusInfo.warning && (
+        {statusInfo.warning && !hasBlockingErrors && (
           <div className={`rounded-lg p-4 my-4 ${
             newStatus === "CANCELLED"
               ? "bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50"
@@ -167,7 +244,6 @@ export function StatusChangeModal({
           </div>
         )}
 
-        {/* Buttons */}
         <div className="flex flex-row justify-between items-center gap-4 border-t pt-6 mt-6">
           <Button
             variant="ghost"
@@ -180,9 +256,9 @@ export function StatusChangeModal({
           </Button>
           <Button
             variant="solid"
-            color={statusInfo.buttonColor}
+            color={hasBlockingErrors ? "gray" : statusInfo.buttonColor}
             onClick={handleConfirm}
-            disabled={isLoading}
+            disabled={isLoading || isValidating || hasBlockingErrors}
             size="3"
             loading={isLoading}
             className="flex-1"
