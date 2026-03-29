@@ -16,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, NumericInput } from "@/components/ui/input";
-import { FullPageLoader } from "@/components/ui/loading-spinner";
+import { FullPageLoader, LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -29,12 +29,7 @@ import {
 import { toast } from "@/lib/toast";
 import { DEFAULT_VAT_RATE } from "@/config/constants";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import React from "react";
-
-/** Визуално състояние при грешка — като `aria-invalid` при имейл във формите за вход */
-const FIELD_INVALID =
-  "border-destructive ring-2 ring-destructive/25 data-[focus-visible]:ring-destructive/40";
 
 export interface NoteFormConfig {
   type: "credit" | "debit";
@@ -153,8 +148,6 @@ function NoteFormContent(config: NoteFormConfig) {
   const [sourceInvoices, setSourceInvoices] = useState<any[]>([]);
   const [productSearchQuery, setProductSearchQuery] = useState("");
   const [showProductSearch, setShowProductSearch] = useState(false);
-  /** След опит за изпращане показваме оцветяване на невалидни полета (като при имейл в auth формите). */
-  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const [formData, setFormData] = useState({
     companyId: "",
@@ -339,30 +332,14 @@ function NoteFormContent(config: NoteFormConfig) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitAttempted(true);
 
     if (!formData.companyId || !formData.clientId) {
       toast.error("Моля, изберете компания и клиент");
       return;
     }
 
-    if (!formData.reason.trim()) {
-      toast.error("Моля, въведете причина за известието");
-      return;
-    }
-
-    if (!formData.issueDate) {
-      toast.error("Моля, изберете дата на издаване");
-      return;
-    }
-
-    if (
-      items.some(
-        (item) =>
-          !item.description.trim() || item.quantity <= 0 || item.unitPrice <= 0
-      )
-    ) {
-      toast.error("Моля, попълнете валидно всички артикули (описание, количество и цена)");
+    if (items.some((item) => !item.description || item.quantity <= 0 || item.unitPrice <= 0)) {
+      toast.error("Моля, попълнете всички полета на артикулите");
       return;
     }
 
@@ -393,7 +370,6 @@ function NoteFormContent(config: NoteFormConfig) {
       }
 
       const noteData = data[colors.responseKey];
-      setSubmitAttempted(false);
       toast.success(config.successMessage, {
         description: `Номер: ${noteData[colors.numberKey]}`,
       });
@@ -430,11 +406,6 @@ function NoteFormContent(config: NoteFormConfig) {
       </div>
     );
   }
-
-  const companyInvalid = submitAttempted && !formData.companyId;
-  const clientInvalid = submitAttempted && !formData.clientId;
-  const reasonInvalid = submitAttempted && !formData.reason.trim();
-  const issueDateInvalid = submitAttempted && !formData.issueDate;
 
   return (
     <div className="app-page-shell mx-auto max-w-6xl">
@@ -474,10 +445,7 @@ function NoteFormContent(config: NoteFormConfig) {
                     }
                     aria-label="Изберете компания"
                   >
-                    <SelectTrigger
-                      className={cn("w-full", companyInvalid && FIELD_INVALID)}
-                      aria-invalid={companyInvalid}
-                    >
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Изберете компания" />
                     </SelectTrigger>
                     <SelectContent className="z-100 max-h-[300px]">
@@ -488,11 +456,6 @@ function NoteFormContent(config: NoteFormConfig) {
                       ))}
                     </SelectContent>
                   </Select>
-                  {companyInvalid ? (
-                    <p className="text-xs text-destructive" role="alert">
-                      Изберете компания
-                    </p>
-                  ) : null}
                 </div>
 
                 <div className="space-y-2">
@@ -504,10 +467,7 @@ function NoteFormContent(config: NoteFormConfig) {
                     }
                     aria-label="Изберете клиент"
                   >
-                    <SelectTrigger
-                      className={cn("w-full", clientInvalid && FIELD_INVALID)}
-                      aria-invalid={clientInvalid}
-                    >
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Изберете клиент" />
                     </SelectTrigger>
                     <SelectContent className="z-100 max-h-[300px]">
@@ -518,11 +478,6 @@ function NoteFormContent(config: NoteFormConfig) {
                       ))}
                     </SelectContent>
                   </Select>
-                  {clientInvalid ? (
-                    <p className="text-xs text-destructive" role="alert">
-                      Изберете клиент
-                    </p>
-                  ) : null}
                 </div>
 
                 <div className="space-y-2">
@@ -577,17 +532,11 @@ function NoteFormContent(config: NoteFormConfig) {
                       onChange={(e) =>
                         setFormData((prev) => ({ ...prev, issueDate: e.target.value }))
                       }
-                      className={cn("w-full pr-10", issueDateInvalid && FIELD_INVALID)}
-                      aria-invalid={issueDateInvalid}
+                      className="w-full pr-10"
                       required
                     />
                     <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                   </div>
-                  {issueDateInvalid ? (
-                    <p className="text-xs text-destructive" role="alert">
-                      Изберете дата
-                    </p>
-                  ) : null}
                 </div>
 
                 <div className="space-y-2">
@@ -601,14 +550,7 @@ function NoteFormContent(config: NoteFormConfig) {
                     placeholder={colors.reasonPlaceholder}
                     rows={3}
                     required
-                    aria-invalid={reasonInvalid}
-                    className={cn(reasonInvalid && FIELD_INVALID)}
                   />
-                  {reasonInvalid ? (
-                    <p className="text-xs text-destructive" role="alert">
-                      Опишете причината за известието
-                    </p>
-                  ) : null}
                 </div>
 
                 <div className="space-y-2">
@@ -727,22 +669,8 @@ function NoteFormContent(config: NoteFormConfig) {
                   </div>
                 )}
 
-                {items.map((item, index) => {
-                  const descInvalid = submitAttempted && !item.description.trim();
-                  const qtyInvalid = submitAttempted && item.quantity <= 0;
-                  const priceInvalid = submitAttempted && item.unitPrice <= 0;
-                  const itemHasError = descInvalid || qtyInvalid || priceInvalid;
-
-                  return (
-                  <div
-                    key={item.id}
-                    className={cn(
-                      "space-y-3 rounded-2xl border bg-muted/30 p-4",
-                      itemHasError
-                        ? "border-destructive/80 ring-1 ring-destructive/30"
-                        : "border-border/60"
-                    )}
-                  >
+                {items.map((item, index) => (
+                  <div key={item.id} className="space-y-3 rounded-2xl border border-border/60 bg-muted/30 p-4">
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-sm font-medium text-muted-foreground">
                         Артикул {index + 1}
@@ -767,14 +695,12 @@ function NoteFormContent(config: NoteFormConfig) {
                         onChange={(e) => updateItem(item.id, "description", e.target.value)}
                         placeholder="Описание на артикула..."
                         required
-                        aria-invalid={descInvalid}
-                        className={cn(descInvalid && FIELD_INVALID)}
                       />
                     </div>
 
                     <div className="grid grid-cols-1 min-[375px]:grid-cols-3 gap-3 sm:gap-2">
                       <div className="space-y-1.5">
-                        <Label className="block text-xs font-medium">К-во *</Label>
+                        <Label className="block text-xs font-medium">К-во</Label>
                         <NumericInput
                           value={item.quantity}
                           onChange={(e) =>
@@ -782,11 +708,10 @@ function NoteFormContent(config: NoteFormConfig) {
                           }
                           className="w-full"
                           required
-                          aria-invalid={qtyInvalid}
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="block text-xs font-medium">Цена *</Label>
+                        <Label className="block text-xs font-medium">Цена</Label>
                         <NumericInput
                           value={item.unitPrice}
                           onChange={(e) =>
@@ -794,7 +719,6 @@ function NoteFormContent(config: NoteFormConfig) {
                           }
                           className="w-full"
                           required
-                          aria-invalid={priceInvalid}
                         />
                       </div>
                       <div className="space-y-1.5">
@@ -820,8 +744,7 @@ function NoteFormContent(config: NoteFormConfig) {
                       </div>
                     </div>
                   </div>
-                );
-                })}
+                ))}
               </CardContent>
             </Card>
 
@@ -864,12 +787,20 @@ function NoteFormContent(config: NoteFormConfig) {
           </Button>
           <Button
             type="submit"
-            loading={isLoading}
             disabled={isLoading}
             className={`btn-responsive ${colors.button} ${colors.buttonHover}`}
           >
-            {!isLoading && <Check className="h-4 w-4" aria-hidden />}
-            {isLoading ? "Създаване..." : colors.submitLabel}
+            {isLoading ? (
+              <>
+                <LoadingSpinner size="small" className="mr-2 text-white" />
+                Създаване...
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4 mr-2" />
+                {colors.submitLabel}
+              </>
+            )}
           </Button>
         </div>
       </form>

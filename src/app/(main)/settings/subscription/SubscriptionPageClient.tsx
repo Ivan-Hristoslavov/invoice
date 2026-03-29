@@ -74,8 +74,8 @@ function SubscriptionPageInner() {
           </Alert>
         )}
 
-        <Card className="overflow-hidden border-border/40 bg-transparent shadow-none">
-          <CardContent className="pricing-dot-bg rounded-xl border border-border/35 bg-card/30 p-4 shadow-inner backdrop-blur-sm sm:p-6">
+        <Card>
+          <CardContent>
             <Suspense fallback={<SubscriptionSkeleton />}>
               <SubscriptionPlans onSuccessRefetchDone={handleSuccessRefetchDone} />
             </Suspense>

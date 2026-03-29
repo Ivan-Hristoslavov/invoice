@@ -20,7 +20,7 @@ interface LoadingProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export function Loading({
-  variant = 'pulse',
+  variant = 'spinner',
   size = 'md',
   showText = false,
   text = 'Зареждане...',
@@ -85,7 +85,7 @@ export function Loading({
   );
   
   if (fullScreen) {
-    if (variant === 'spinner' || variant === 'pulse') {
+    if (variant === 'spinner') {
       return <FullPageLoader title={text} subtitle={showText ? undefined : "Подготвяме съдържанието за вас..."} />;
     }
 

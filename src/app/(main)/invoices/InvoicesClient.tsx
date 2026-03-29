@@ -52,8 +52,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuItemIcon,
-  DropdownMenuItemText,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -908,19 +906,15 @@ export default function InvoicesClient({
                           <DropdownMenuContent align="end" className="w-56">
                             <DropdownMenuItem asChild>
                               <Link href={`/invoices/${invoice.id}`}>
-                                <DropdownMenuItemIcon>
-                                  <Eye />
-                                </DropdownMenuItemIcon>
-                                <DropdownMenuItemText>Преглед</DropdownMenuItemText>
+                                <Eye className="mr-2 h-4 w-4" />
+                                Преглед
                               </Link>
                             </DropdownMenuItem>
                             {invoice.userId === currentUserId && normalizedStatus === "DRAFT" && (
                               <DropdownMenuItem asChild className="min-[320px]:hidden">
                                 <Link href={`/invoices/${invoice.id}/edit`}>
-                                  <DropdownMenuItemIcon>
-                                    <Edit />
-                                  </DropdownMenuItemIcon>
-                                  <DropdownMenuItemText>Редактиране</DropdownMenuItemText>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Редактиране
                                 </Link>
                               </DropdownMenuItem>
                             )}
@@ -930,20 +924,16 @@ export default function InvoicesClient({
                                   onClick={() => openStatusModal(invoice, "ISSUED")}
                                   className="text-emerald-600 focus:text-emerald-600"
                                 >
-                                  <DropdownMenuItemIcon>
-                                    <FileCheck />
-                                  </DropdownMenuItemIcon>
-                                  <DropdownMenuItemText>Издай фактура</DropdownMenuItemText>
+                                  <FileCheck className="mr-2 h-4 w-4" />
+                                  Издай фактура
                                 </DropdownMenuItem>
                                 {invoice.userId === currentUserId && (
                                   <DropdownMenuItem
                                     onClick={() => openVoidModal(invoice)}
-                                    className="text-purple-600 focus:text-purple-600 dark:focus:bg-purple-500/15"
+                                    className="text-purple-600 focus:text-purple-600"
                                   >
-                                    <DropdownMenuItemIcon>
-                                      <Ban />
-                                    </DropdownMenuItemIcon>
-                                    <DropdownMenuItemText>Анулирай</DropdownMenuItemText>
+                                    <Ban className="mr-2 h-4 w-4" />
+                                    Анулирай
                                   </DropdownMenuItem>
                                 )}
                               </>
@@ -953,27 +943,21 @@ export default function InvoicesClient({
                                 onClick={() => openCancelModal(invoice)}
                                 className="text-red-600 focus:text-red-600"
                               >
-                                <DropdownMenuItemIcon>
-                                  <XCircle />
-                                </DropdownMenuItemIcon>
-                                <DropdownMenuItemText>Отмени фактура</DropdownMenuItemText>
+                                <XCircle className="mr-2 h-4 w-4" />
+                                Отмени фактура
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuItem onClick={() => handleDuplicate(invoice.id)}>
-                              <DropdownMenuItemIcon>
-                                <Copy />
-                              </DropdownMenuItemIcon>
-                              <DropdownMenuItemText>Дублирай</DropdownMenuItemText>
+                              <Copy className="mr-2 h-4 w-4" />
+                              Дублирай
                             </DropdownMenuItem>
                             {invoice.userId === currentUserId && (
                               <DropdownMenuItem
                                 onClick={() => openDeleteModal(invoice)}
                                 className="text-red-600 focus:text-red-600"
                               >
-                                <DropdownMenuItemIcon>
-                                  <Trash2 />
-                                </DropdownMenuItemIcon>
-                                <DropdownMenuItemText>Изтрий фактура</DropdownMenuItemText>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Изтрий фактура
                               </DropdownMenuItem>
                             )}
                           </DropdownMenuContent>
@@ -990,7 +974,7 @@ export default function InvoicesClient({
                   contentAriaLabel="Списък с фактури"
                   contentClassName="min-w-[980px]"
                   scrollContainerClassName="overflow-x-auto overscroll-x-contain"
-                  className="invoices-table-flat min-w-0 rounded-2xl border border-border/50 bg-transparent"
+                  className="min-w-0 rounded-2xl border border-border/50 bg-transparent"
                 >
                   <TableHeader className="bg-muted/35">
                     <TableHead isRowHeader className="px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground text-center">
@@ -1090,14 +1074,12 @@ export default function InvoicesClient({
                                     >
                                       <MoreHorizontal className="h-4 w-4" />
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="min-w-56">
+                                    <DropdownMenuContent align="end">
                                       {invoice.userId === currentUserId && normalizedStatus === "DRAFT" && (
                                         <DropdownMenuItem asChild>
                                           <Link href={`/invoices/${invoice.id}/edit`} onClick={(e) => e.stopPropagation()}>
-                                            <DropdownMenuItemIcon>
-                                              <Edit />
-                                            </DropdownMenuItemIcon>
-                                            <DropdownMenuItemText>Редактиране</DropdownMenuItemText>
+                                            <Edit className="mr-2 h-4 w-4" />
+                                            Редактиране
                                           </Link>
                                         </DropdownMenuItem>
                                       )}
@@ -1110,10 +1092,8 @@ export default function InvoicesClient({
                                             }}
                                             className="text-emerald-600 focus:text-emerald-600"
                                           >
-                                            <DropdownMenuItemIcon>
-                                              <FileCheck />
-                                            </DropdownMenuItemIcon>
-                                            <DropdownMenuItemText>Издай фактура</DropdownMenuItemText>
+                                            <FileCheck className="mr-2 h-4 w-4" />
+                                            Издай фактура
                                           </DropdownMenuItem>
                                           {invoice.userId === currentUserId && (
                                             <DropdownMenuItem
@@ -1121,12 +1101,10 @@ export default function InvoicesClient({
                                                 e.stopPropagation();
                                                 openVoidModal(invoice);
                                               }}
-                                              className="text-purple-600 focus:text-purple-600 dark:focus:bg-purple-500/15"
+                                              className="text-purple-600 focus:bg-purple-50 focus:text-purple-600"
                                             >
-                                              <DropdownMenuItemIcon>
-                                                <Ban />
-                                              </DropdownMenuItemIcon>
-                                              <DropdownMenuItemText>Анулирай</DropdownMenuItemText>
+                                              <Ban className="mr-2 h-4 w-4" />
+                                              Анулирай
                                             </DropdownMenuItem>
                                           )}
                                         </>
@@ -1139,26 +1117,20 @@ export default function InvoicesClient({
                                           }}
                                           className="text-red-600 focus:text-red-600"
                                         >
-                                          <DropdownMenuItemIcon>
-                                            <XCircle />
-                                          </DropdownMenuItemIcon>
-                                          <DropdownMenuItemText>Отмени фактура</DropdownMenuItemText>
+                                          <XCircle className="mr-2 h-4 w-4" />
+                                          Отмени фактура
                                         </DropdownMenuItem>
                                       )}
                                       <DropdownMenuSeparator />
                                       <DropdownMenuItem asChild>
                                         <Link href={`/invoices/${invoice.id}`} onClick={(e) => e.stopPropagation()}>
-                                          <DropdownMenuItemIcon>
-                                            <Eye />
-                                          </DropdownMenuItemIcon>
-                                          <DropdownMenuItemText>Преглед</DropdownMenuItemText>
+                                          <Eye className="mr-2 h-4 w-4" />
+                                          Преглед
                                         </Link>
                                       </DropdownMenuItem>
                                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDuplicate(invoice.id); }}>
-                                        <DropdownMenuItemIcon>
-                                          <Copy />
-                                        </DropdownMenuItemIcon>
-                                        <DropdownMenuItemText>Дублирай</DropdownMenuItemText>
+                                        <Copy className="mr-2 h-4 w-4" />
+                                        Дублирай
                                       </DropdownMenuItem>
                                       {invoice.userId === currentUserId && (
                                         <DropdownMenuItem
@@ -1168,10 +1140,8 @@ export default function InvoicesClient({
                                           }}
                                           className="text-red-600 focus:text-red-600"
                                         >
-                                          <DropdownMenuItemIcon>
-                                            <Trash2 />
-                                          </DropdownMenuItemIcon>
-                                          <DropdownMenuItemText>Изтрий фактура</DropdownMenuItemText>
+                                          <Trash2 className="mr-2 h-4 w-4" />
+                                          Изтрий фактура
                                         </DropdownMenuItem>
                                       )}
                                       <DropdownMenuSeparator />
@@ -1206,10 +1176,8 @@ export default function InvoicesClient({
                                           }
                                         }}
                                       >
-                                        <DropdownMenuItemIcon>
-                                          <Printer />
-                                        </DropdownMenuItemIcon>
-                                        <DropdownMenuItemText>Принтирай</DropdownMenuItemText>
+                                        <Printer className="mr-2 h-4 w-4" />
+                                        Принтирай
                                       </DropdownMenuItem>
                                       <DropdownMenuItem
                                         onClick={async (e) => {
@@ -1223,10 +1191,8 @@ export default function InvoicesClient({
                                           }
                                         }}
                                       >
-                                        <DropdownMenuItemIcon>
-                                          <Download />
-                                        </DropdownMenuItemIcon>
-                                        <DropdownMenuItemText>Изтегли PDF</DropdownMenuItemText>
+                                        <Download className="mr-2 h-4 w-4" />
+                                        Изтегли PDF
                                       </DropdownMenuItem>
                                     </DropdownMenuContent>
                                   </DropdownMenu>

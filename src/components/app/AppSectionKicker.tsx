@@ -3,7 +3,7 @@ import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const kickerClass =
-  "inline-flex w-fit max-w-full shrink-0 self-start items-center gap-1 rounded-md border border-emerald-500/20 bg-emerald-500/[0.06] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/12 dark:text-emerald-100 sm:text-[11px]";
+  "inline-flex max-w-full items-center gap-1 rounded-md border border-emerald-500/20 bg-emerald-500/[0.06] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/12 dark:text-emerald-100 sm:text-[11px]";
 
 /**
  * Малък зелен етикет с икона — визуално съгласуван с marketing chip-овете,
