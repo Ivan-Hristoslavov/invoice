@@ -1,0 +1,28 @@
+# Fix for the Stripe API key issue
+
+The error "Neither apiKey nor config.authenticator provided" is occurring because your 
+STRIPE_SECRET_KEY in the .env file is malformed. There's a comment directly attached to the 
+key value which is causing Stripe to fail.
+
+Please update your .env file with the following corrected entries:
+
+```
+# Stripe API Keys
+STRIPE_SECRET_KEY=sk_test_51QdfKuRubUJH2vI3ZUu3fjDqvxiL8fQqLQrqGApw8D4Q1pVxgHLK8aAxwdOr2bPmVZWc8ORkdFILX9NdXOfPk6z5006S9FLylG
+STRIPE_SECRET_KEY_FIXED=sk_test_51QdfKuRubUJH2vI3ZUu3fjDqvxiL8fQqLQrqGApw8D4Q1pVxgHLK8aAxwdOr2bPmVZWc8ORkdFILX9NdXOfPk6z5006S9FLylG
+```
+
+The current value has a comment mixed in with the key:
+STRIPE_SECRET_KEY=sk_test_51QdfKuRubUJH2vI3ZUu3fjDqvxiL8fQqLQrqGApw8D4Q1pVxgHLK8aAxwdOr2bPmVZWc8ORkdFILX9NdX
+OfPk6z5006S9FLylG# Stripe Price IDs - you need to create these in your Stripe dashboard
+
+After making this change, restart your Next.js server for the changes to take effect.
+
+Alternative solution:
+If you prefer not to modify the .env file directly, create a new file called .env.local with just 
+these two lines, and the values from .env.local will automatically override the ones in .env:
+
+```
+STRIPE_SECRET_KEY=sk_test_51QdfKuRubUJH2vI3ZUu3fjDqvxiL8fQqLQrqGApw8D4Q1pVxgHLK8aAxwdOr2bPmVZWc8ORkdFILX9NdXOfPk6z5006S9FLylG
+STRIPE_SECRET_KEY_FIXED=sk_test_51QdfKuRubUJH2vI3ZUu3fjDqvxiL8fQqLQrqGApw8D4Q1pVxgHLK8aAxwdOr2bPmVZWc8ORkdFILX9NdXOfPk6z5006S9FLylG
+``` 

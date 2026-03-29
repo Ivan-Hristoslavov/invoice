@@ -5,11 +5,16 @@ import { Dropdown, Separator } from "@heroui/react";
 import { Check, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const ITEM_CLASS =
-  "relative flex min-h-9 w-full cursor-default select-none items-center gap-3 rounded-lg px-3 py-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50";
+const ITEM_PADDING = "px-3 py-2";
 
-/** При asChild реалният елемент е Link/<a> — същият ред като menu item: gap-3, икона + етикет. */
-const AS_CHILD_TRIGGER_CLASS = "flex w-full min-w-0 items-center gap-3 no-underline outline-none";
+const ITEM_CLASS =
+  `relative flex min-h-9 w-full cursor-default select-none items-center gap-3 rounded-lg ${ITEM_PADDING} text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50`;
+
+const ITEM_CLASS_NO_PAD =
+  "relative flex min-h-9 w-full cursor-default select-none items-center rounded-lg p-0 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50";
+
+/** При asChild реалният елемент е Link/<a> — поема целия padding за да е кликваем навсякъде. */
+const AS_CHILD_TRIGGER_CLASS = `flex w-full min-w-0 items-center gap-3 ${ITEM_PADDING} no-underline outline-none`;
 
 /** Фиксирана 16×16 клетка за икони — подравнява всички редове в менюто. */
 function DropdownMenuItemIcon({
@@ -79,6 +84,12 @@ function omitMenuItemDomLeakProps(props: Record<string, unknown>): Record<string
   }
   return next;
 }
+
+/** HeroUI `Dropdown.Item` извиква `onAction` без DOM event — кодът с `onClick` очаква поне stopPropagation. */
+const MENU_ITEM_CLICK_STUB = {
+  stopPropagation: () => {},
+  preventDefault: () => {},
+} as unknown as React.MouseEvent;
 
 type DropdownRootProps = React.ComponentProps<typeof Dropdown>;
 
@@ -161,8 +172,7 @@ const DropdownMenuItem = React.forwardRef<
       <Dropdown.Item
         ref={ref}
         className={cn(
-          ITEM_CLASS,
-          inset && "pl-8",
+          ITEM_CLASS_NO_PAD,
           destructive && "text-destructive focus:bg-destructive/10 focus:text-destructive",
           className
         )}
@@ -171,11 +181,7 @@ const DropdownMenuItem = React.forwardRef<
           (typeof child.props.children === "string" ? child.props.children : undefined)
         }
         onAction={() => {
-          const ev = {
-            stopPropagation: () => {},
-            preventDefault: () => {},
-          } as unknown as React.MouseEvent;
-          onClick?.(ev);
+          onClick?.(MENU_ITEM_CLICK_STUB);
         }}
         onPointerDown={handlePointerDown}
         {...props}
@@ -186,8 +192,8 @@ const DropdownMenuItem = React.forwardRef<
             ...child.props,
             className: cn(
               AS_CHILD_TRIGGER_CLASS,
+              inset && "pl-8",
               (child.props as { className?: string }).className,
-              className
             ),
             onClick: (e: React.MouseEvent) => {
               onClick?.(e);
@@ -208,7 +214,7 @@ const DropdownMenuItem = React.forwardRef<
         destructive && "text-destructive focus:bg-destructive/10 focus:text-destructive",
         className
       )}
-      onAction={onClick ? () => onClick({} as React.MouseEvent) : undefined}
+      onAction={onClick ? () => onClick(MENU_ITEM_CLICK_STUB) : undefined}
       onPointerDown={handlePointerDown}
       {...props}
     >

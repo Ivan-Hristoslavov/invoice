@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/sonner-toaster";
 import { CookieConsent } from "@/components/gdpr/CookieConsent";
 import { Analytics } from "@vercel/analytics/next";
 import { APP_NAME, APP_DESCRIPTION, SEO_KEYWORDS } from "@/config/constants";
+import { Providers } from "./providers";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -155,6 +156,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <Providers>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -171,6 +173,7 @@ export default function RootLayout({
             <CookieConsent />
           </AuthProvider>
         </ThemeProvider>
+        </Providers>
         <Analytics />
       </body>
     </html>

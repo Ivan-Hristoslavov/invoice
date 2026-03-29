@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api-utils';
 import { useRouter } from 'next/navigation';
+import { useWatch } from 'react-hook-form';
 
 interface InvoiceFormProps {
   defaultValues?: any;
@@ -30,6 +31,7 @@ export function InvoiceForm({ defaultValues, isEditing = false }: InvoiceFormPro
       issueDate: new Date().toISOString().split('T')[0],
       dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       status: 'DRAFT',
+      reverseCharge: false,
       items: [],
     },
     onSubmit: async (data) => {
@@ -47,6 +49,8 @@ export function InvoiceForm({ defaultValues, isEditing = false }: InvoiceFormPro
   
   const { formState } = form;
   const { errors } = formState;
+  const reverseCharge = useWatch({ control: form.control, name: "reverseCharge" });
+  const items = useWatch({ control: form.control, name: "items" }) ?? [];
   
   return (
     <FormLayout onSubmit={handleSubmit}>
@@ -102,11 +106,44 @@ export function InvoiceForm({ defaultValues, isEditing = false }: InvoiceFormPro
         </div>
       </FormSection>
       
+      <FormSection title="НАП настройки">
+        <FormField label="" error={undefined}>
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              {...form.register("reverseCharge")}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            <span className="text-sm font-medium">Обратно начисляване (чл. 82 ЗДДС)</span>
+          </label>
+        </FormField>
+        {reverseCharge && (
+          <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
+            ⚠️ При обратно начисляване ДДС не се начислява от доставчика
+          </div>
+        )}
+      </FormSection>
+
       <FormSection title="Артикули">
         <div className="min-h-[100px] border border-dashed p-4 rounded">
           {/* Item rows would be here */}
-          <Button 
-            type="button" 
+          {items.map((item: unknown, index: number) => (
+            <div key={index} className="mb-3">
+              {(item as { taxRate?: number }).taxRate === 0 && (
+                <FormField
+                  label="Основание за освобождаване от ДДС"
+                  error={(errors.items as any)?.[index]?.vatExemptReason?.message}
+                >
+                  <Input
+                    {...form.register(`items.${index}.vatExemptReason`)}
+                    placeholder="напр. чл. 69, ал. 2 ЗДДС"
+                  />
+                </FormField>
+              )}
+            </div>
+          ))}
+          <Button
+            type="button"
             onClick={() => {}}
           >
             Добави артикул

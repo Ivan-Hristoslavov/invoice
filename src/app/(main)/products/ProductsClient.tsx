@@ -176,7 +176,7 @@ export default function ProductsClient({
       </div>
 
       {/* Search & View Toggle */}
-      <Card className="border-0 shadow-lg">
+      <Card className="rounded-2xl border border-border/50 bg-card/60 shadow-sm backdrop-blur-sm">
         <CardContent className="p-3 sm:p-4">
           <div className="flex flex-col gap-3 min-[420px]:flex-row min-[420px]:items-center min-[420px]:gap-3">
             <div className="relative min-w-0 w-full flex-1">
@@ -218,7 +218,7 @@ export default function ProductsClient({
 
       {/* Empty State */}
       {filteredProducts.length === 0 ? (
-        <Card className="border-0 shadow-lg">
+        <Card className="rounded-2xl border border-border/50 bg-card/60 shadow-sm backdrop-blur-sm">
           <CardContent className="p-0">
             <EmptyState
               icon={Package}
@@ -236,55 +236,85 @@ export default function ProductsClient({
           </CardContent>
         </Card>
       ) : viewMode === "cards" ? (
-        <div className="grid min-w-0 grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {paginatedProducts.map((product) => (
             <Link key={product.id} href={`/products/${product.id}`} className="block h-full min-w-0">
               <Card
                 variant="secondary"
-                className="group h-full cursor-pointer rounded-xl border border-border/50 bg-card/90 shadow-none ring-0 transition-[border-color,background-color,box-shadow] hover:border-primary/35 hover:bg-muted/25 hover:shadow-sm"
+                className={cn(
+                  "group h-full cursor-pointer overflow-hidden rounded-2xl border border-border/45",
+                  "bg-card/50 shadow-sm backdrop-blur-sm transition-all duration-200",
+                  "hover:border-emerald-500/35 hover:bg-card/80 hover:shadow-md hover:shadow-emerald-500/6"
+                )}
               >
-                <CardContent className="!p-0">
-                  {/* Мобилен: вертикален блок; sm+: хоризонтален ред */}
-                  <div className="flex flex-col gap-2.5 p-3 sm:flex-row sm:items-stretch sm:gap-3 sm:p-3.5">
-                    <div className="flex min-w-0 items-start gap-3 sm:min-w-0 sm:flex-1">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary sm:h-[52px] sm:w-[52px]">
-                        <Package className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden />
+                <CardContent className="p-0!">
+                  <div className="flex flex-col">
+                    <div className="flex gap-3.5 p-4 pb-3 sm:p-5 sm:pb-4">
+                      <div
+                        className={cn(
+                          "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl sm:h-14 sm:w-14",
+                          "bg-linear-to-br from-emerald-500/18 via-emerald-500/8 to-cyan-500/12",
+                          "text-emerald-600 shadow-inner ring-1 ring-emerald-500/20",
+                          "dark:from-emerald-500/25 dark:via-emerald-500/12 dark:to-cyan-500/15 dark:text-emerald-400"
+                        )}
+                      >
+                        <Package className="h-6 w-6 sm:h-7 sm:w-7" aria-hidden />
                       </div>
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-0 flex-1 pt-0.5">
                         <div className="flex items-start justify-between gap-2">
-                          <CardTitle className="line-clamp-2 text-sm font-semibold leading-snug text-foreground group-hover:text-primary sm:text-base">
+                          <CardTitle className="line-clamp-2 text-base font-semibold leading-snug tracking-tight text-foreground transition-colors group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
                             {product.name}
                           </CardTitle>
-                          {product.isActive === false && (
-                            <Badge
-                              variant="outline"
-                              className="shrink-0 border-amber-500/40 text-[9px] uppercase tracking-wide text-amber-800 dark:text-amber-200"
-                            >
-                              Архив
-                            </Badge>
-                          )}
+                          <ChevronRight
+                            className="mt-0.5 hidden h-4 w-4 shrink-0 text-muted-foreground/40 transition-all group-hover:translate-x-0.5 group-hover:text-emerald-500 sm:block"
+                            aria-hidden
+                          />
                         </div>
-                        <CardDescription className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground sm:mt-1.5">
+                        {product.isActive === false && (
+                          <Badge
+                            variant="outline"
+                            className="mt-2 border-amber-500/45 text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-200"
+                          >
+                            Архив
+                          </Badge>
+                        )}
+                        <CardDescription className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
                           {product.description?.trim() || `Артикул · ${product.unit}`}
                         </CardDescription>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between gap-3 border-t border-border/40 pt-2.5 sm:w-[5.75rem] sm:min-w-[5.75rem] sm:flex-col sm:items-end sm:justify-center sm:border-l sm:border-t-0 sm:pt-0 sm:pl-3 sm:shrink-0">
-                      <div className="text-left sm:w-full sm:text-right">
-                        <span className="text-base font-bold tabular-nums text-foreground sm:text-lg">
-                          {formatPrice(product.price)}
-                          <span className="text-xs font-semibold text-muted-foreground"> €</span>
-                        </span>
-                        <p className="text-[11px] text-muted-foreground sm:mt-0.5">/ {product.unit}</p>
+
+                    <div
+                      className={cn(
+                        "mx-3 mb-3 flex flex-wrap items-end justify-between gap-3 rounded-xl border border-border/30 px-3.5 py-3 sm:mx-4 sm:mb-4 sm:px-4 sm:py-3.5",
+                        "bg-linear-to-br from-muted/50 via-muted/30 to-emerald-500/8 dark:from-muted/25 dark:via-muted/12 dark:to-emerald-500/10"
+                      )}
+                    >
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                          Цена
+                        </p>
+                        <p className="mt-0.5 flex flex-wrap items-baseline gap-x-1">
+                          <span className="text-2xl font-bold tabular-nums tracking-tight text-foreground sm:text-[1.65rem]">
+                            {formatPrice(product.price)}
+                          </span>
+                          <span className="text-sm font-medium text-muted-foreground">€</span>
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">за {product.unit}</p>
                       </div>
-                      <div className="flex items-center gap-2 sm:flex-col sm:items-end sm:gap-1">
+                      <div className="flex items-center gap-2">
                         {product.taxRate > 0 ? (
-                          <Badge variant="secondary" className="text-[10px] font-medium whitespace-nowrap">
+                          <Badge
+                            variant="outline"
+                            className="border-emerald-500/40 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold tabular-nums text-emerald-800 dark:border-emerald-500/35 dark:bg-emerald-500/15 dark:text-emerald-200"
+                          >
                             ДДС {product.taxRate}%
                           </Badge>
-                        ) : null}
+                        ) : (
+                          <span className="text-[11px] font-medium text-muted-foreground">Без ДДС</span>
+                        )}
                         <ChevronRight
-                          className="h-4 w-4 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5 group-hover:text-primary sm:hidden"
+                          className="h-4 w-4 shrink-0 text-muted-foreground/45 transition-transform group-hover:translate-x-0.5 group-hover:text-emerald-500 sm:hidden"
                           aria-hidden
                         />
                       </div>
@@ -296,84 +326,137 @@ export default function ProductsClient({
           ))}
         </div>
       ) : (
-        <Table
-          variant="secondary"
-          stickyHeader
-          className="min-w-0 rounded-2xl border border-border/50 bg-card shadow-sm"
-          contentAriaLabel="Списък с продукти"
-          contentClassName="min-w-[680px]"
-          scrollContainerClassName="overflow-x-auto overscroll-x-contain"
-        >
-          <TableHeader
-            sticky
-            className="border-b border-border/50 bg-muted/40 backdrop-blur-sm dark:bg-muted/25"
-          >
-            <TableRow className="border-0 hover:bg-transparent">
-              <TableHead className="w-[36%] text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Продукт
-              </TableHead>
-              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Описание
-              </TableHead>
-              <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Цена
-              </TableHead>
-              <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Мярка
-              </TableHead>
-              <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                ДДС
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedProducts.map((product, index) => (
-              <TableRow
+        <>
+          {/* Мобилен изглед: същият модел като фактурите — компактни редове, не широка таблица */}
+          <div className="space-y-2 px-0.5 pb-1 md:hidden sm:px-1">
+            {paginatedProducts.map((product) => (
+              <button
                 key={product.id}
-                className={cn(
-                  "cursor-pointer border-b border-border/30 transition-colors last:border-0",
-                  "hover:bg-primary/[0.04] dark:hover:bg-primary/[0.07]",
-                  index % 2 === 1 && "bg-muted/20 dark:bg-muted/10"
-                )}
+                type="button"
                 onClick={() => router.push(`/products/${product.id}`)}
+                className={cn(
+                  "w-full rounded-xl border border-border/40 bg-muted/20 px-3 py-2.5 text-left transition-colors",
+                  "hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                )}
               >
-                <TableCell className="py-2 sm:py-3.5">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                      <Package className="h-4 w-4" aria-hidden />
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 flex-1 items-start gap-2.5">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10">
+                      <Package className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden />
                     </div>
-                    <div className="min-w-0">
-                      <p className="truncate font-medium text-foreground">{product.name}</p>
-                      {product.isActive === false && (
-                        <Badge variant="outline" className="mt-1 text-[10px] uppercase tracking-wide">
-                          Архив
-                        </Badge>
-                      )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">{product.name}</p>
+                      <p className="line-clamp-2 text-xs text-muted-foreground">
+                        {product.description?.trim() || "—"}
+                      </p>
                     </div>
                   </div>
-                </TableCell>
-                <TableCell className="max-w-[220px] py-2 text-sm text-muted-foreground sm:py-3.5">
-                  <span className="line-clamp-2">{product.description || "—"}</span>
-                </TableCell>
-                <TableCell className="py-2 text-right sm:py-3.5">
-                  <span className="font-semibold tabular-nums text-foreground">
-                    {formatPrice(product.price)} €
-                  </span>
-                </TableCell>
-                <TableCell className="py-2 text-center text-sm text-muted-foreground sm:py-3.5">{product.unit}</TableCell>
-                <TableCell className="py-2 text-center sm:py-3.5">
+                  <div className="shrink-0 text-right">
+                    <p className="text-sm font-bold tabular-nums">{formatPrice(product.price)} €</p>
+                    <p className="text-xs text-muted-foreground">{product.unit}</p>
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center justify-between pl-11">
                   {product.taxRate > 0 ? (
-                    <Badge variant="secondary" className="font-medium tabular-nums">
-                      {product.taxRate}%
-                    </Badge>
+                    <span className="inline-flex items-center rounded-full border border-emerald-500/35 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-200">
+                      ДДС {product.taxRate}%
+                    </span>
                   ) : (
-                    <span className="text-sm text-muted-foreground">—</span>
+                    <span className="text-[11px] text-muted-foreground">Без ДДС</span>
                   )}
-                </TableCell>
-              </TableRow>
+                  {product.isActive === false && (
+                    <span className="text-[11px] font-medium text-amber-700 dark:text-amber-400">Архив</span>
+                  )}
+                </div>
+              </button>
             ))}
-          </TableBody>
-        </Table>
+          </div>
+
+          <div className="hidden min-w-0 md:block">
+            <div className="overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-b from-muted/25 to-card/40 shadow-sm">
+              <div className="min-w-0 overflow-x-auto">
+            <Table
+              variant="secondary"
+              stickyHeader
+              contentAriaLabel="Списък с продукти"
+              contentClassName="min-w-[680px] w-full table-fixed"
+              scrollContainerClassName="overflow-x-auto overscroll-x-contain"
+              className="invoices-table-flat data-table-polished min-w-0 rounded-none border-0 bg-transparent shadow-none"
+              onRowAction={(key) => router.push(`/products/${String(key)}`)}
+            >
+              <TableHeader className="bg-muted/35">
+                <TableHead
+                  isRowHeader
+                  className="w-[26%] px-4 py-2 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground"
+                >
+                  Продукт
+                </TableHead>
+                <TableHead className="w-[28%] px-4 py-2 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Описание
+                </TableHead>
+                <TableHead className="w-[14%] px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Цена
+                </TableHead>
+                <TableHead className="w-[12%] px-4 py-2 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Мярка
+                </TableHead>
+                <TableHead className="w-[14%] px-4 py-2 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  ДДС
+                </TableHead>
+              </TableHeader>
+              <TableBody items={paginatedProducts}>
+                {(item) => {
+                  const product = item as Product;
+                  return (
+                  <TableRow
+                    key={product.id}
+                    id={product.id}
+                    className="group cursor-pointer transition-colors hover:bg-muted/40 dark:hover:bg-muted/20"
+                  >
+                    <TableCell className="px-4 py-3 align-middle">
+                      <div className="flex min-w-0 items-center justify-center gap-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 shadow-inner">
+                          <Package className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                        </div>
+                        <div className="min-w-0 max-w-[12rem] text-center sm:max-w-[14rem]">
+                          <p className="truncate text-sm font-semibold leading-tight">{product.name}</p>
+                          <p className="text-[11px] leading-tight text-muted-foreground">
+                            {product.isActive === false ? "Архив" : "Артикул"}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="min-w-0 px-4 py-2.5 align-middle text-center">
+                      <p className="line-clamp-2 text-sm text-muted-foreground">
+                        {product.description?.trim() || "—"}
+                      </p>
+                    </TableCell>
+                    <TableCell className="px-4 py-2.5 text-right align-middle">
+                      <p className="text-sm font-bold tabular-nums leading-tight">
+                        {formatPrice(product.price)} €
+                      </p>
+                    </TableCell>
+                    <TableCell className="px-4 py-2.5 text-center align-middle">
+                      <p className="text-sm text-muted-foreground">{product.unit}</p>
+                    </TableCell>
+                    <TableCell className="px-4 py-2.5 text-center align-middle">
+                      {product.taxRate > 0 ? (
+                        <span className="inline-flex items-center justify-center rounded-full border border-emerald-500/35 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-200">
+                          ДДС {product.taxRate}%
+                        </span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                  );
+                }}
+              </TableBody>
+            </Table>
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Pagination */}

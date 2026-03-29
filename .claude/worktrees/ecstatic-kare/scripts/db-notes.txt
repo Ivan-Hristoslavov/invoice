@@ -1,0 +1,45 @@
+База (Supabase) и Prisma — бележки за проекта
+============================================
+
+Какво правя аз в репото
+-----------------------
+- scripts/supabase-db-structure.sql — read-only преглед на схема (таблици, колони, FK, индекси, enum-и, RLS флаг, политики в секция 9).
+- scripts/db-notes.txt — този файл: дрифт и препоръки.
+
+Какво НЕ мога да направя без твоя DATABASE_URL / Supabase
+---------------------------------------------------------
+- Да синхронизирам автоматично реалната БД с prisma/schema.prisma (трябва ти `prisma db pull` или ръчно сравнение).
+- Да потвърдя колоните на таблици, които ги има само в prod (пример: StripePrice в SQL snapshot, но не в този git repo).
+
+Известен дрифт
+----------------
+- Таблица "Payment" (плащания по фактура) — създадена от ранни Prisma миграции; приложението вече ползва текстово поле `Invoice.paymentMethod` и отделно `SubscriptionPayment`. В schema.prisma е добавен `model Payment` с @@ignore, за да не предлага Migrate да DROP-не таблицата при бъдещи промени.
+- Ако в Supabase имаш таблица "StripePrice", която липсва в schema.prisma — пусни секция 2 от supabase-db-structure.sql, виж колоните, после `npx prisma db pull` в клон или добави модел ръчно / @@ignore след преглед.
+
+Преди миграции към production
+-------------------------------
+1. Backup в Supabase.
+2. Snapshot от supabase-db-structure.sql (запазен резултат).
+3. `npx prisma migrate diff` (или преглед на SQL) спрямо целевата база.
+4. Production: `prisma migrate deploy`, не `migrate dev`.
+
+RLS
+---
+- RLS включен по таблици не променя автоматично Prisma през DATABASE_URL, ако потребителят е owner / привилегирован; политиките са критични за anon/PostgREST. Секция 9 в SQL показва политиките.
+
+Какво означава твоят изход от pg_policies (service_role_all_*)
+-------------------------------------------------------------
+- Всяка политика е: cmd ALL, USING и WITH CHECK = (auth.role() = 'service_role').
+- Това значи: през Supabase API (PostgREST) пълният достъп до редовете е позволен само когато заявката е с service_role (сървърният secret ключ), не с anon и не с обикновен authenticated JWT за потребител.
+- Ролта "public" в колоната roles при политиките е PostgreSQL ролята, за която се прилага правилото; самото условие пак филтрира по auth.role() = service_role.
+- Практика: клиентски браузър с anon key няма да чете/пише тези таблици директно през Data API — което е желателно за сървърно приложение.
+- Prisma с директна връзка (connection string към Postgres) обикновено ползва роля като postgres / pooler user: тя често е owner или суперпотребител и по подразбиране заобикаля RLS, затова приложението ти с Prisma може да работи, дори политиките да са „само service_role“ за PostgREST. Ако някога връзката е с по-слаба роля без bypass, трябва да тестваш заявки.
+- Липсват политики за anon/authenticated с (auth.uid() = …) — ако планираш клиентски достъп до таблиците през Supabase JS с user JWT, ще трябва отделни политики; за Next.js API + Prisma това често не е нужно.
+
+Забележка: в твоя JSON няма TeamInvite, PasswordResetToken, StripePrice — ако ги има в базата, пусни отново секция 9 или провери дали са в друг schema.
+
+CompanyBook (ЕИК lookup) при деплой
+----------------------------------
+- В Vercel (или друг хост): Environment Variables → Production (и Preview ако тестваш там) → `COMPANYBOOK_API_KEY` = твоят Bearer ключ от companybook.bg. Без този ключ API `/api/companybook/[uic]` връща 503 и формите остават само с ръчно въвеждане.
+- `COMPANYBOOK_API_BASE` е по избор; по подразбиране в кода е `https://api.companybook.bg/api/companies`. Не използвай `NEXT_PUBLIC_` за ключа — той трябва да е само на сървъра.
+- Търсенето по ЕИК изисква план с `eikSearch` (от Стартер нагоре); виж `src/lib/subscription-plans.ts`.

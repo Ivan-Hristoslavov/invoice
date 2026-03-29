@@ -6,9 +6,10 @@ import { useRouter } from "next/navigation";
 import { Building, Plus, Search, Users, Lock, LayoutGrid, List, Pencil, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AppSectionKicker } from "@/components/app/AppSectionKicker";
-import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { UsageCounter, LimitBanner } from "@/components/ui/pro-feature-lock";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -156,8 +157,8 @@ export default function ClientsClient({
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid w-full min-w-0 grid-cols-2 gap-1 sm:gap-3 lg:grid-cols-4 lg:max-w-2xl">
+      {/* Stats — като фактурите */}
+      <div className="mx-auto grid max-w-3xl grid-cols-2 gap-2 sm:max-w-4xl sm:gap-2.5 lg:max-w-none lg:grid-cols-2">
         <CardStatsMetric compact title="Общо клиенти" value={clients.length} icon={Users} />
         <CardStatsMetric
           compact
@@ -168,7 +169,7 @@ export default function ClientsClient({
       </div>
 
       {/* Search & View Toggle */}
-      <Card className="border-0 shadow-lg">
+      <Card className="rounded-xl border border-border/40 shadow-sm">
         <CardContent className="p-3 sm:p-4">
           <div className="flex flex-col gap-3 min-[420px]:flex-row min-[420px]:items-center min-[420px]:gap-3">
             <div className="relative min-w-0 w-full flex-1">
@@ -210,7 +211,7 @@ export default function ClientsClient({
 
       {/* Empty State */}
       {filteredClients.length === 0 ? (
-        <Card className="border-0 shadow-lg">
+        <Card className="border border-border/40 shadow-sm">
           <CardContent className="p-0">
             <EmptyState
               icon={Users}
@@ -228,7 +229,6 @@ export default function ClientsClient({
           </CardContent>
         </Card>
       ) : viewMode === "cards" ? (
-        /* Cards View */
         <div className="grid min-w-0 grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
           {paginatedClients.map((client) => (
             <div key={client.id} className="group relative min-w-0">
@@ -266,18 +266,20 @@ export default function ClientsClient({
                         <CardTitle className="line-clamp-2 text-sm font-semibold leading-snug text-foreground group-hover:text-primary sm:text-base">
                           {client.name}
                         </CardTitle>
-                        <CardDescription className="mt-1 space-y-0.5 text-xs leading-relaxed sm:mt-1.5 sm:text-sm">
-                          {client.email && <p className="truncate text-muted-foreground">{client.email}</p>}
-                          {client.phone && <p className="text-muted-foreground">{client.phone}</p>}
+                        <div className="card-description mt-1 space-y-0.5 text-xs leading-relaxed text-muted-foreground sm:mt-1.5 sm:text-sm">
+                          {client.email && (
+                            <span className="block truncate">{client.email}</span>
+                          )}
+                          {client.phone && <span className="block">{client.phone}</span>}
                           {(client.city || client.country) && (
-                            <p className="line-clamp-1 text-muted-foreground">
+                            <span className="line-clamp-1 block">
                               {[client.city, client.country].filter(Boolean).join(", ")}
-                            </p>
+                            </span>
                           )}
                           {!client.email && !client.phone && !(client.city || client.country) && (
-                            <p className="text-muted-foreground/80">Няма контактни данни</p>
+                            <span className="block text-muted-foreground/80">Няма контактни данни</span>
                           )}
-                        </CardDescription>
+                        </div>
                         {client.createdById && createdByMap[client.createdById] && (
                           <p className="mt-1 text-[11px] text-muted-foreground">
                             От {createdByMap[client.createdById].name ?? "—"}
@@ -306,89 +308,162 @@ export default function ClientsClient({
           ))}
         </div>
       ) : (
-        <Table
-          variant="secondary"
-          stickyHeader
-          className="min-w-0 rounded-2xl border border-border/50 bg-card shadow-sm"
-          contentAriaLabel="Списък с клиенти"
-          contentClassName="min-w-[920px]"
-          scrollContainerClassName="overflow-x-auto overscroll-x-contain"
-        >
-          <TableHeader
-            sticky
-            className="border-b border-border/50 bg-muted/40 backdrop-blur-sm dark:bg-muted/25"
-          >
-            <TableRow className="border-0 hover:bg-transparent">
-              <TableHead className="w-[22%] text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Име
-              </TableHead>
-              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Имейл</TableHead>
-              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Телефон</TableHead>
-              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Локация</TableHead>
-              <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Създадена от</TableHead>
-              <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Фактури
-              </TableHead>
-              <TableHead className="w-[120px] text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Действия
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedClients.map((client, index) => (
-              <TableRow
-                key={client.id}
-                className={cn(
-                  "group cursor-pointer border-b border-border/30 transition-colors last:border-0",
-                  "hover:bg-primary/[0.04] dark:hover:bg-primary/[0.07]",
-                  index % 2 === 1 && "bg-muted/20 dark:bg-muted/10"
-                )}
-                onClick={() => router.push(`/clients/${client.id}`)}
+        <Card className="border border-border/40 shadow-sm">
+          <CardHeader className="space-y-1 pb-3 sm:pb-4">
+            <Badge variant="info" className="mb-2">
+              Контакти
+            </Badge>
+            <CardTitle>Списък с клиенти</CardTitle>
+            <CardDescription>
+              {filteredClients.length} от {clients.length} клиента
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="space-y-2 px-2 pb-4 md:hidden sm:px-3">
+              {paginatedClients.map((client) => (
+                <button
+                  key={client.id}
+                  type="button"
+                  onClick={() => router.push(`/clients/${client.id}`)}
+                  className={cn(
+                    "w-full rounded-xl border border-border/40 bg-muted/20 px-3 py-2.5 text-left transition-colors",
+                    "hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 flex-1 items-start gap-2.5">
+                      <div
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-[11px] font-bold text-primary"
+                        aria-hidden
+                      >
+                        {clientInitials(client.name)}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold">{client.name}</p>
+                        <p className="line-clamp-1 text-xs text-muted-foreground">
+                          {client.email && client.email}
+                          {!client.email && (client.phone || "—")}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary tabular-nums">
+                      {invoiceCounts[client.id] || 0}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <div className="hidden min-w-0 pb-4 md:block">
+              <div className="overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-b from-muted/25 to-card/40 shadow-sm">
+                <div className="min-w-0 overflow-x-auto">
+              <Table
+                variant="secondary"
+                stickyHeader
+                contentAriaLabel="Списък с клиенти"
+                contentClassName="min-w-[960px] w-full table-fixed"
+                scrollContainerClassName="overflow-x-auto overscroll-x-contain"
+                className="invoices-table-flat data-table-polished min-w-0 rounded-none border-0 bg-transparent shadow-none"
+                onRowAction={(key) => router.push(`/clients/${String(key)}`)}
               >
-                <TableCell className="py-2 sm:py-3.5">
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-foreground">{client.name}</p>
-                    {client.bulstatNumber && (
-                      <p className="text-xs text-muted-foreground">ЕИК: {client.bulstatNumber}</p>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="max-w-[200px] py-2 text-sm text-muted-foreground sm:py-3.5">
-                  <span className="line-clamp-2">{client.email || "—"}</span>
-                </TableCell>
-                <TableCell className="py-2 text-sm text-muted-foreground sm:py-3.5">{client.phone || "—"}</TableCell>
-                <TableCell className="max-w-[180px] py-2 text-sm text-muted-foreground sm:py-3.5">
-                  <span className="line-clamp-2">
-                    {[client.city, client.country].filter(Boolean).join(", ") || "—"}
-                  </span>
-                </TableCell>
-                <TableCell className="py-2 text-sm text-muted-foreground sm:py-3.5">
-                  {client.createdById && createdByMap[client.createdById]
-                    ? createdByMap[client.createdById].name ?? "—"
-                    : "—"}
-                </TableCell>
-                <TableCell className="py-2 text-center sm:py-3.5">
-                  <span className="inline-flex min-w-8 items-center justify-center rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
-                    {invoiceCounts[client.id] || 0}
-                  </span>
-                </TableCell>
-                <TableCell className="py-2 text-right sm:py-3.5">
-                  <div
-                    className="flex justify-end opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100"
-                    onClick={(event) => event.stopPropagation()}
+                <TableHeader className="bg-muted/35">
+                  <TableHead
+                    isRowHeader
+                    className="w-[20%] px-4 py-2 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground"
                   >
-                    <Button asChild size="sm" variant="ghost" className="h-8 rounded-full px-3">
-                      <Link href={`/clients/${client.id}/edit`} className="flex items-center gap-1.5 whitespace-nowrap">
-                        <Pencil className="h-3.5 w-3.5" />
-                        Редакция
-                      </Link>
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                    Име
+                  </TableHead>
+                  <TableHead className="w-[18%] px-4 py-2 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Имейл
+                  </TableHead>
+                  <TableHead className="w-[12%] px-4 py-2 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Телефон
+                  </TableHead>
+                  <TableHead className="w-[14%] px-4 py-2 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Локация
+                  </TableHead>
+                  <TableHead className="w-[14%] px-4 py-2 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Създадена от
+                  </TableHead>
+                  <TableHead className="w-[10%] px-4 py-2 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Фактури
+                  </TableHead>
+                  <TableHead className="w-[12%] px-4 py-2 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Действия
+                  </TableHead>
+                </TableHeader>
+                <TableBody items={paginatedClients}>
+                  {(item) => {
+                    const client = item as Client;
+                    return (
+                    <TableRow
+                      key={client.id}
+                      id={client.id}
+                      className="group cursor-pointer transition-colors hover:bg-muted/40 dark:hover:bg-muted/20"
+                    >
+                      <TableCell className="px-4 py-3 align-middle">
+                        <div className="flex min-w-0 items-center justify-center gap-3">
+                          <div
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/25 to-primary/5 text-[11px] font-bold text-primary shadow-inner"
+                            aria-hidden
+                          >
+                            {clientInitials(client.name)}
+                          </div>
+                          <div className="min-w-0 max-w-[10rem] text-center sm:max-w-[12rem]">
+                            <p className="truncate text-sm font-semibold leading-tight">{client.name}</p>
+                            {client.bulstatNumber && (
+                              <p className="text-[11px] leading-tight text-muted-foreground">
+                                ЕИК: {client.bulstatNumber}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="min-w-0 px-4 py-2.5 text-center">
+                        <span className="line-clamp-2 text-sm text-muted-foreground">{client.email || "—"}</span>
+                      </TableCell>
+                      <TableCell className="px-4 py-2.5 text-center text-sm text-muted-foreground">
+                        {client.phone || "—"}
+                      </TableCell>
+                      <TableCell className="min-w-0 px-4 py-2.5 text-center">
+                        <span className="line-clamp-2 text-sm text-muted-foreground">
+                          {[client.city, client.country].filter(Boolean).join(", ") || "—"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="px-4 py-2.5 text-center text-sm text-muted-foreground">
+                        {client.createdById && createdByMap[client.createdById]
+                          ? createdByMap[client.createdById].name ?? "—"
+                          : "—"}
+                      </TableCell>
+                      <TableCell className="px-4 py-2.5 text-center align-middle">
+                        <span className="inline-flex min-w-8 items-center justify-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                          {invoiceCounts[client.id] || 0}
+                        </span>
+                      </TableCell>
+                      <TableCell className="px-4 py-2.5 text-center align-middle">
+                        <div
+                          className="flex justify-center opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100"
+                          onClick={(event) => event.stopPropagation()}
+                          onKeyDown={(event) => event.stopPropagation()}
+                        >
+                          <Button asChild size="sm" variant="ghost" className="h-8 rounded-full px-3">
+                            <Link href={`/clients/${client.id}/edit`} className="flex items-center gap-1.5 whitespace-nowrap">
+                              <Pencil className="h-3.5 w-3.5" />
+                              Редакция
+                            </Link>
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                    );
+                  }}
+                </TableBody>
+              </Table>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Pagination */}

@@ -55,7 +55,7 @@ import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { UsageCounter, LimitBanner } from "@/components/ui/pro-feature-lock";
 import { FormDatePicker } from "@/components/ui/date-picker";
 import { InvoiceWorkspaceSetup } from "@/components/invoice/InvoiceWorkspaceSetup";
-import { FullPageLoader, LoadingSpinner } from "@/components/ui/loading-spinner";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { createPortal } from "react-dom";
 import { formatInvoicePrice, formatInvoiceLongDate } from "./invoice-new-format";
 import { InvoiceStepIndicator } from "./InvoiceStepIndicator";
@@ -1788,14 +1788,8 @@ description: error.message?.includes("план")
   );
 }
 
-// Loading fallback component
 function NewInvoiceLoading() {
-  return (
-    <FullPageLoader
-      title="Нова фактура"
-      subtitle="Подготвяме клиента, фирмата и настройките за новия документ..."
-    />
-  );
+  return <LoadingSpinner className="py-24" size="large" />;
 }
 
 export default function NewInvoicePage() {

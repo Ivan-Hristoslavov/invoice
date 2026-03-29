@@ -1,10 +1,5 @@
-import { FullPageLoader } from "@/components/ui/loading-spinner";
+import { PageSkeleton } from "@/components/ui/skeletons";
 
 export default function MainAppLoading() {
-  return (
-    <FullPageLoader
-      title="Зареждаме страницата"
-      subtitle="Изчакваме данните и подготвяме най-важното за вас..."
-    />
-  );
+  return <PageSkeleton />;
 }

@@ -22,6 +22,9 @@ import {
   FileText,
   XCircle,
   Mail,
+  TrendingUp,
+  TrendingDown,
+  Banknote,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -73,6 +76,9 @@ type Invoice = {
   issueDate: string;
   dueDate: string;
   status: string;
+  /** Raw DB status from `getInvoiceWithDetails` (e.g. UNPAID, PAID). */
+  persistedStatus?: string;
+  paidAt?: string | null;
   subtotal: number;
   taxAmount: number;
   discount?: number;
@@ -120,6 +126,8 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isChangingStatus, setIsChangingStatus] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
+  const [isMarkingPaid, setIsMarkingPaid] = useState(false);
+  const [isMarkingUnpaid, setIsMarkingUnpaid] = useState(false);
   const [showIssueModal, setShowIssueModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
@@ -128,6 +136,8 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
   // Subscription limit check for email sending
   const { canUseFeature, isLoadingUsage } = useSubscriptionLimit();
   const canSendEmail = canUseFeature('emailSending');
+  const normalizedStatus = normalizeInvoiceStatus(invoice.status);
+  const isPaidInDb = invoice.persistedStatus === "PAID";
 
   useEffect(() => {
     return () => {
@@ -188,14 +198,21 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
       
       if (response.ok) {
         const updatedInvoice = await response.json();
-        setInvoice({ ...invoice, status: updatedInvoice.status });
+        setInvoice({ ...invoice, status: updatedInvoice.status, persistedStatus: updatedInvoice.persistedStatus });
         toast.success("Фактурата е издадена успешно", {
           description: "Фактурата вече е със статус 'Издадена'"
         });
         router.refresh();
       } else {
-        const error = await response.json();
-        toast.error(error.error || "Грешка при издаване на фактурата");
+        const errorData = await response.json();
+        if (errorData.validationErrors?.length > 0) {
+          toast.error(errorData.error, {
+            description: errorData.validationErrors.join("; "),
+          });
+        } else {
+          toast.error(errorData.error || "Грешка при издаване на фактурата");
+        }
+        throw new Error(errorData.error);
       }
     } catch (error) {
       console.error("Error issuing invoice:", error);
@@ -304,8 +321,64 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (normalizeInvoiceStatus(status)) {
+  const handleMarkPaid = async () => {
+    setIsMarkingPaid(true);
+    try {
+      const response = await fetch(`/api/invoices/${invoice.id}/mark-paid`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        toast.error(payload.error || "Грешка при маркиране като платена");
+        return;
+      }
+      setInvoice({
+        ...invoice,
+        persistedStatus: "PAID",
+        paidAt: payload.paidAt ?? new Date().toISOString(),
+      });
+      toast.success("Фактурата е маркирана като платена");
+      router.refresh();
+    } catch {
+      toast.error("Грешка при маркиране като платена");
+    } finally {
+      setIsMarkingPaid(false);
+    }
+  };
+
+  const handleMarkUnpaid = async () => {
+    setIsMarkingUnpaid(true);
+    try {
+      const response = await fetch(`/api/invoices/${invoice.id}/mark-unpaid`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        toast.error(payload.error || "Грешка при маркиране като неплатена");
+        return;
+      }
+      setInvoice({
+        ...invoice,
+        persistedStatus: "UNPAID",
+        paidAt: null,
+      });
+      toast.success("Фактурата е маркирана като неплатена");
+      router.refresh();
+    } catch {
+      toast.error("Грешка при маркиране като неплатена");
+    } finally {
+      setIsMarkingUnpaid(false);
+    }
+  };
+
+  const getStatusIcon = () => {
+    if (invoice.persistedStatus === "PAID") {
+      return <Banknote className="h-4 w-4 text-sky-600 dark:text-sky-400" />;
+    }
+    switch (normalizeInvoiceStatus(invoice.status)) {
       case "DRAFT":
         return <AlertTriangle className="h-4 w-4 text-amber-500" />;
       case "ISSUED":
@@ -319,8 +392,11 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (normalizeInvoiceStatus(status)) {
+  const getStatusColor = () => {
+    if (invoice.persistedStatus === "PAID") {
+      return "bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800";
+    }
+    switch (normalizeInvoiceStatus(invoice.status)) {
       case "DRAFT":
         return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800";
       case "ISSUED":
@@ -334,8 +410,9 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (normalizeInvoiceStatus(status)) {
+  const getStatusText = () => {
+    if (invoice.persistedStatus === "PAID") return "Платена";
+    switch (normalizeInvoiceStatus(invoice.status)) {
       case "DRAFT":
         return "Чернова";
       case "ISSUED":
@@ -422,7 +499,7 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
               </TooltipProvider>
             )}
             
-            {invoice.status === "ISSUED" && (
+            {normalizedStatus === "ISSUED" && (
               <Button
                 variant="destructive"
                 size="sm"
@@ -476,13 +553,11 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
               Фактура #{invoice.invoiceNumber}
             </h1>
             <div
-              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                invoice.status
-              )}`}
+              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor()}`}
             >
               <span className="flex items-center gap-1">
-                {getStatusIcon(invoice.status)}
-                {getStatusText(invoice.status)}
+                {getStatusIcon()}
+                {getStatusText()}
               </span>
             </div>
           </div>
@@ -491,7 +566,7 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
           <div className="w-full sm:w-auto">
             <div className="flex flex-wrap items-center gap-1.5">
             {/* Draft actions */}
-            {invoice.status === "DRAFT" && (
+            {normalizedStatus === "DRAFT" && (
               <>
                 <Button variant="outline" size="sm" asChild className="h-8 rounded-lg text-xs sm:flex-none">
                   <Link href={`/invoices/${invoice.id}/edit`} className="flex items-center whitespace-nowrap">
@@ -512,17 +587,69 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
             )}
 
           {/* Issued actions */}
-          {invoice.status === "ISSUED" && (
-            <Button
-              variant="destructive"
-              size="sm"
-              className="h-8 rounded-lg text-xs sm:flex-none"
-              onClick={() => setShowCancelModal(true)}
-              disabled={isSendingEmail}
-            >
-              <AlertTriangle className="w-3.5 h-3.5 mr-1" />
-              Отмени
-            </Button>
+          {normalizedStatus === "ISSUED" && (
+            <>
+              {!isPaidInDb && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 rounded-lg text-xs sm:flex-none border-sky-500/40 text-sky-800 hover:bg-sky-500/10 dark:text-sky-200"
+                  onClick={handleMarkPaid}
+                  disabled={isMarkingPaid}
+                >
+                  <Banknote className="w-3.5 h-3.5 mr-1 shrink-0" />
+                  <span className="truncate">
+                    {isMarkingPaid ? "..." : "Маркирай като платена"}
+                  </span>
+                </Button>
+              )}
+              {isPaidInDb && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 rounded-lg text-xs sm:flex-none"
+                  onClick={handleMarkUnpaid}
+                  disabled={isMarkingUnpaid}
+                >
+                  <Clock className="w-3.5 h-3.5 mr-1 shrink-0" />
+                  <span className="truncate">
+                    {isMarkingUnpaid ? "..." : "Маркирай като неплатена"}
+                  </span>
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 rounded-lg text-xs sm:flex-none border-emerald-500/40 text-emerald-800 hover:bg-emerald-500/10 dark:text-emerald-200"
+                asChild
+              >
+                <Link href={`/debit-notes/new?invoiceId=${invoice.id}`}>
+                  <TrendingUp className="w-3.5 h-3.5 mr-1" />
+                  Дебитно известие
+                </Link>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 rounded-lg text-xs sm:flex-none border-red-500/40 text-red-700 hover:bg-red-500/10 dark:text-red-300"
+                asChild
+              >
+                <Link href={`/credit-notes/new?invoiceId=${invoice.id}`}>
+                  <TrendingDown className="w-3.5 h-3.5 mr-1" />
+                  Кредитно известие
+                </Link>
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="h-8 rounded-lg text-xs sm:flex-none"
+                onClick={() => setShowCancelModal(true)}
+                disabled={isSendingEmail}
+              >
+                <AlertTriangle className="w-3.5 h-3.5 mr-1" />
+                Отмени
+              </Button>
+            </>
           )}
 
           {/* Common actions */}
@@ -628,6 +755,12 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
                         <span className="text-muted-foreground">Дата на плащане</span>
                         <span>{format(new Date(invoice.dueDate), "dd.MM.yyyy")}</span>
                       </div>
+                      {invoice.paidAt && (
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="text-muted-foreground">Платена на</span>
+                          <span>{format(new Date(invoice.paidAt), "dd.MM.yyyy")}</span>
+                        </div>
+                      )}
                       <div className="flex items-center justify-between gap-4">
                         <span className="text-muted-foreground">Валута</span>
                         <span>{invoice.currency}</span>
@@ -895,6 +1028,7 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
             onClose={() => setShowIssueModal(false)}
             onConfirm={handleIssueInvoice}
             invoiceNumber={invoice.invoiceNumber}
+            invoiceId={invoice.id}
             currentStatus={invoice.status}
             newStatus="ISSUED"
           />

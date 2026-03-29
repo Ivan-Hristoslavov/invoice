@@ -1,0 +1,610 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                                String            @id @default(cuid())
+  name                              String?
+  email                             String?           @unique
+  emailVerified                     DateTime?
+  image                             String?
+  password                          String?
+  createdAt                         DateTime          @default(now())
+  updatedAt                         DateTime          @updatedAt
+  defaultLocale                     String            @default("en")
+  stripeCustomerId                  String?           @unique
+  defaultVatRate                    Decimal           @default(20.00) @db.Decimal(5, 2)
+  startingInvoiceNumber             Int?
+  phone                             String?
+  profileCompletedAt                DateTime?
+  accounts                          Account[]
+  auditLogs                         AuditLog[]
+  Client_Client_createdByIdToUser   Client[]          @relation("Client_createdByIdToUser")
+  clients                           Client[]
+  companies                         Company[]
+  creditNotes                       CreditNote[]
+  debitNotes                        DebitNote[]
+  documents                         Document[]
+  Invoice_Invoice_createdByIdToUser Invoice[]         @relation("Invoice_createdByIdToUser")
+  invoices                          Invoice[]
+  invoiceSequences                  InvoiceSequence[]
+  products                          Product[]
+  sessions                          Session[]
+  subscriptions                     Subscription[]
+  sentTeamInvites                   TeamInvite[]      @relation("TeamInviteInvitedBy")
+  acceptedTeamInvites               TeamInvite[]      @relation("TeamInviteInvitedUser")
+  userRoles                         UserRole[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Company {
+  id                      String            @id @default(cuid())
+  name                    String
+  email                   String?
+  phone                   String?
+  address                 String?
+  city                    String?
+  state                   String?
+  zipCode                 String?
+  country                 String?
+  vatNumber               String?
+  taxIdNumber             String?
+  registrationNumber      String?
+  bankName                String?
+  bankAccount             String?
+  bankSwift               String?
+  bankIban                String?
+  logo                    String?
+  stripeAccountId         String?
+  bulstatNumber           String?
+  vatRegistered           Boolean           @default(false)
+  vatRegistrationNumber   String?
+  mol                     String?
+  accountablePerson       String?
+  napUserName             String?
+  napPassword             String?
+  certificateSerialNumber String?
+  certificateThumbprint   String?
+  uicType                 String?           @default("BULSTAT")
+  taxComplianceSystem     String?           @default("general")
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+  userId                  String
+  user                    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creditNotes             CreditNote[]
+  debitNotes              DebitNote[]
+  invoices                Invoice[]
+  invoiceSequences        InvoiceSequence[]
+  teamInvites             TeamInvite[]
+  userRoles               UserRole[]
+
+  @@index([userId, name])
+}
+
+model Client {
+  id                            String       @id @default(cuid())
+  name                          String
+  email                         String?
+  phone                         String?
+  address                       String?
+  city                          String?
+  state                         String?
+  zipCode                       String?
+  country                       String?
+  vatNumber                     String?
+  taxIdNumber                   String?
+  bulstatNumber                 String?
+  vatRegistered                 Boolean      @default(false)
+  vatRegistrationNumber         String?
+  mol                           String?
+  uicType                       String?      @default("BULSTAT")
+  taxComplianceSystem           String?      @default("general")
+  createdAt                     DateTime     @default(now())
+  updatedAt                     DateTime     @updatedAt
+  userId                        String
+  locale                        String       @default("en")
+  createdById                   String?
+  User_Client_createdByIdToUser User?        @relation("Client_createdByIdToUser", fields: [createdById], references: [id])
+  user                          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creditNotes                   CreditNote[]
+  debitNotes                    DebitNote[]
+  invoices                      Invoice[]
+
+  @@index([userId, name])
+  @@index([createdById])
+}
+
+model Product {
+  id           String               @id @default(cuid())
+  name         String
+  description  String?
+  price        Decimal              @db.Decimal(10, 2)
+  unit         String               @default("piece")
+  taxRate      Decimal              @default(0) @db.Decimal(5, 2)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  userId       String
+  isActive     Boolean              @default(true)
+  invoiceItems InvoiceItem[]
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  translations ProductTranslation[]
+
+  @@index([userId, name])
+}
+
+model ProductTranslation {
+  id          String  @id @default(cuid())
+  productId   String
+  locale      String
+  name        String
+  description String?
+  unit        String?
+  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, locale])
+}
+
+model Invoice {
+  id                                          String           @id @default(cuid())
+  invoiceNumber                               String
+  clientId                                    String
+  companyId                                   String
+  userId                                      String
+  issueDate                                   DateTime
+  dueDate                                     DateTime
+  status                                      InvoiceStatus    @default(DRAFT)
+  paidAt                                      DateTime?
+  subtotal                                    Decimal          @db.Decimal(10, 2)
+  taxAmount                                   Decimal          @db.Decimal(10, 2)
+  discount                                    Decimal?         @db.Decimal(10, 2)
+  total                                       Decimal          @db.Decimal(10, 2)
+  notes                                       String?
+  termsAndConditions                          String?
+  currency                                    String           @default("USD")
+  locale                                      String           @default("en")
+  createdAt                                   DateTime         @default(now())
+  updatedAt                                   DateTime         @updatedAt
+  bulstatNumber                               String?
+  isOriginal                                  Boolean          @default(true)
+  uniqueNapId                                 String?
+  placeOfIssue                                String?
+  paymentMethod                               String?
+  supplyDate                                  DateTime?
+  isEInvoice                                  Boolean          @default(false)
+  napStatus                                   String?
+  cancelledAt                                 DateTime?
+  cancelledBy                                 String?
+  creditNoteId                                String?          @unique
+  invoiceSequenceId                           String?          @unique
+  sellerSnapshot                              Json?
+  buyerSnapshot                               Json?
+  itemsSnapshot                               Json?
+  createdById                                 String?
+  auditLogs                                   AuditLog[]
+  creditNote                                  CreditNote?
+  debitNotes                                  DebitNote[]
+  documents                                   Document[]
+  client                                      Client           @relation(fields: [clientId], references: [id])
+  company                                     Company          @relation(fields: [companyId], references: [id])
+  User_Invoice_createdByIdToUser              User?            @relation("Invoice_createdByIdToUser", fields: [createdById], references: [id])
+  CreditNote_Invoice_creditNoteIdToCreditNote CreditNote?      @relation("Invoice_creditNoteIdToCreditNote", fields: [creditNoteId], references: [id])
+  sequence                                    InvoiceSequence? @relation(fields: [invoiceSequenceId], references: [id])
+  user                                        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items                                       InvoiceItem[]
+  /// Legacy table; not exposed on Prisma Client (see model Payment @@ignore)
+  payments                                    Payment[]       @ignore
+
+  @@unique([invoiceNumber, userId])
+  @@unique([invoiceNumber, companyId])
+  @@index([userId, status])
+  @@index([userId, issueDate(sort: Desc)])
+  @@index([clientId])
+  @@index([companyId])
+  @@index([createdById])
+}
+
+model InvoiceItem {
+  id          String   @id @default(cuid())
+  invoiceId   String
+  productId   String?
+  description String
+  quantity    Decimal  @db.Decimal(10, 2)
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  taxRate     Decimal  @default(0) @db.Decimal(5, 2)
+  subtotal    Decimal  @db.Decimal(10, 2)
+  taxAmount   Decimal  @db.Decimal(10, 2)
+  total       Decimal  @db.Decimal(10, 2)
+  unit        String?  @default("бр.")
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product     Product? @relation(fields: [productId], references: [id])
+
+  @@index([invoiceId])
+  @@index([productId])
+}
+
+model InvoiceSequence {
+  id        String   @id @default(cuid())
+  companyId String
+  year      Int
+  sequence  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+  invoice   Invoice?
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([companyId, year])
+  @@index([userId, companyId, year])
+  @@index([userId])
+}
+
+model CreditNote {
+  id                                       String           @id @default(cuid())
+  creditNoteNumber                         String           @unique
+  invoiceId                                String?          @unique
+  companyId                                String
+  clientId                                 String
+  userId                                   String
+  issueDate                                DateTime
+  reason                                   String?
+  subtotal                                 Decimal          @db.Decimal(10, 2)
+  taxAmount                                Decimal          @db.Decimal(10, 2)
+  total                                    Decimal          @db.Decimal(10, 2)
+  currency                                 String           @default("EUR")
+  notes                                    String?
+  createdAt                                DateTime         @default(now())
+  updatedAt                                DateTime         @updatedAt
+  sellerSnapshot                           Json?
+  buyerSnapshot                            Json?
+  itemsSnapshot                            Json?
+  client                                   Client           @relation(fields: [clientId], references: [id])
+  company                                  Company          @relation(fields: [companyId], references: [id])
+  invoice                                  Invoice?         @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  user                                     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items                                    CreditNoteItem[]
+  Invoice_Invoice_creditNoteIdToCreditNote Invoice?         @relation("Invoice_creditNoteIdToCreditNote")
+
+  @@unique([creditNoteNumber, companyId])
+  @@index([invoiceId])
+  @@index([userId, issueDate(sort: Desc)])
+}
+
+model CreditNoteItem {
+  id           String     @id @default(cuid())
+  creditNoteId String
+  description  String
+  quantity     Decimal    @db.Decimal(10, 2)
+  unitPrice    Decimal    @db.Decimal(10, 2)
+  taxRate      Decimal    @default(0) @db.Decimal(5, 2)
+  subtotal     Decimal    @db.Decimal(10, 2)
+  taxAmount    Decimal    @db.Decimal(10, 2)
+  total        Decimal    @db.Decimal(10, 2)
+  unit         String?    @default("бр.")
+  creditNote   CreditNote @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
+
+  @@index([creditNoteId])
+}
+
+model DebitNote {
+  id              String          @id @default(cuid())
+  debitNoteNumber String          @unique
+  invoiceId       String?
+  companyId       String
+  clientId        String
+  userId          String
+  issueDate       DateTime
+  reason          String?
+  subtotal        Decimal         @db.Decimal(10, 2)
+  taxAmount       Decimal         @db.Decimal(10, 2)
+  total           Decimal         @db.Decimal(10, 2)
+  currency        String          @default("EUR")
+  notes           String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  sellerSnapshot  Json?
+  buyerSnapshot   Json?
+  itemsSnapshot   Json?
+  client          Client          @relation(fields: [clientId], references: [id])
+  company         Company         @relation(fields: [companyId], references: [id])
+  invoice         Invoice?        @relation(fields: [invoiceId], references: [id])
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items           DebitNoteItem[]
+
+  @@unique([debitNoteNumber, companyId])
+  @@index([invoiceId])
+  @@index([userId, issueDate(sort: Desc)])
+}
+
+model DebitNoteItem {
+  id          String    @id @default(cuid())
+  debitNoteId String
+  description String
+  quantity    Decimal   @db.Decimal(10, 2)
+  unitPrice   Decimal   @db.Decimal(10, 2)
+  taxRate     Decimal   @default(0) @db.Decimal(5, 2)
+  subtotal    Decimal   @db.Decimal(10, 2)
+  taxAmount   Decimal   @db.Decimal(10, 2)
+  total       Decimal   @db.Decimal(10, 2)
+  unit        String?   @default("бр.")
+  debitNote   DebitNote @relation(fields: [debitNoteId], references: [id], onDelete: Cascade)
+
+  @@index([debitNoteId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  invoiceId  String?
+  action     String
+  entityType String
+  entityId   String?
+  changes    String?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  invoice    Invoice? @relation(fields: [invoiceId], references: [id])
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model Payment {
+  id                String        @id @default(cuid())
+  invoiceId         String
+  amount            Decimal       @db.Decimal(10, 2)
+  paymentDate       DateTime
+  paymentMethod     PaymentMethod
+  transactionId     String?
+  reference         String?
+  notes             String?
+  refundedPaymentId String?
+  status            String?
+  createdAt         DateTime      @default(now())
+  Invoice           Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@map("Payment")
+  @@ignore
+}
+
+model Document {
+  id        String   @id @default(cuid())
+  name      String
+  size      Int
+  type      String
+  url       String
+  invoiceId String
+  userId    String
+  createdAt DateTime @default(now())
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model Permission {
+  id              String           @id @default(cuid())
+  name            String           @unique
+  description     String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  rolePermissions RolePermission[]
+}
+
+model UserRole {
+  id        String   @id @default(cuid())
+  userId    String
+  role      Role     @default(VIEWER)
+  companyId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  company   Company? @relation(fields: [companyId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
+  @@index([companyId])
+  @@index([userId])
+}
+
+model TeamInvite {
+  id              String    @id @default(cuid())
+  companyId       String
+  email           String
+  role            Role      @default(VIEWER)
+  token           String    @unique
+  status          String    @default("PENDING")
+  invitedByUserId String
+  invitedUserId   String?
+  expiresAt       DateTime
+  acceptedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invitedBy       User      @relation("TeamInviteInvitedBy", fields: [invitedByUserId], references: [id], onDelete: Cascade)
+  invitedUser     User?     @relation("TeamInviteInvitedUser", fields: [invitedUserId], references: [id])
+
+  @@index([companyId, status])
+  @@index([email, status])
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  role         Role
+  permissionId String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([role, permissionId])
+}
+
+model Subscription {
+  id                   String                @id @default(cuid())
+  userId               String
+  stripeSubscriptionId String                @unique
+  status               SubscriptionStatus
+  plan                 SubscriptionPlan
+  priceId              String
+  quantity             Int                   @default(1)
+  cancelAtPeriodEnd    Boolean               @default(false)
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  history              SubscriptionHistory[]
+  paymentHistory       SubscriptionPayment[]
+
+  @@index([userId, status])
+}
+
+model SubscriptionPayment {
+  id              String        @id @default(cuid())
+  subscriptionId  String
+  stripeInvoiceId String        @unique
+  amount          Decimal       @db.Decimal(10, 2)
+  currency        String        @default("USD")
+  status          PaymentStatus
+  paymentMethod   String?
+  paymentIntentId String?
+  createdAt       DateTime      @default(now())
+  subscription    Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+}
+
+model SubscriptionHistory {
+  id             String             @id @default(cuid())
+  subscriptionId String
+  status         SubscriptionStatus
+  event          String
+  createdAt      DateTime           @default(now())
+  subscription   Subscription       @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+}
+
+model WebhookEventLog {
+  id          String   @id @default(cuid())
+  eventType   String
+  eventId     String
+  status      String
+  payload     String
+  processedAt DateTime @default(now())
+
+  @@index([eventType, status])
+  @@index([eventId])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model StripePrice {
+  id            String   @id
+  plan          String
+  interval      String
+  stripePriceId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now())
+
+  @@unique([plan, interval])
+}
+
+enum InvoiceStatus {
+  DRAFT
+  UNPAID
+  PAID
+  OVERDUE
+  CANCELLED
+  VOIDED
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  CASH
+  CREDIT_CARD
+  APPLE_PAY
+  GOOGLE_PAY
+  WIRE_TRANSFER
+  OTHER
+
+  @@map("PaymentMethod")
+}
+
+enum Role {
+  ADMIN
+  OWNER
+  MANAGER
+  ACCOUNTANT
+  VIEWER
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  UNPAID
+  CANCELED
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  TRIALING
+  PAUSED
+}
+
+enum SubscriptionPlan {
+  FREE
+  STARTER
+  PRO
+  BUSINESS
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
+  FAILED
+  PENDING
+  REFUNDED
+  VOID
+}
