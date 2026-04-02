@@ -10,7 +10,7 @@ const LEGAL_UPDATED = "14 март 2026";
 
 export const metadata: Metadata = genMeta({
   title: "Условия за ползване",
-  description: "Условията за ползване на услугата Invoicy",
+  description: "Условията за ползване на услугата InvoicyPro",
 });
 
 function LegalLinks() {

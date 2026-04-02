@@ -8,7 +8,7 @@ import { APP_NAME } from "@/config/constants";
 
 export const metadata: Metadata = genMeta({
   title: "За нас",
-  description: "Научете повече за Invoicy и нашата мисия да опростим фактурирането за българските бизнеси",
+  description: "Научете повече за InvoicyPro и нашата мисия да опростим фактурирането за българските бизнеси",
 });
 
 const values = [

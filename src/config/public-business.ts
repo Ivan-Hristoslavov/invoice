@@ -1,3 +1,5 @@
+import { APP_NAME } from "@/config/constants";
+
 export const publicBusinessProfile = {
   supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@invoicy.bg",
   supportPhone: process.env.NEXT_PUBLIC_SUPPORT_PHONE || "",
@@ -23,7 +25,7 @@ export function shouldShowPublicLegalField(value: string): boolean {
 
 export const paymentMessage = {
   short:
-    "Invoicy е софтуер за фактуриране. Не е платежен оператор и не съхранява клиентски карти.",
+    `${APP_NAME} е софтуер за фактуриране. Не е платежен оператор и не съхранява клиентски карти.`,
   subscription:
     "Плащанията за абонамент се обработват сигурно от Stripe.",
   clientInvoices:

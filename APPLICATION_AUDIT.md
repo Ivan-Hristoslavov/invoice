@@ -2,7 +2,7 @@
 
 ## Overview
 
-Invoicy is a Bulgarian invoice management web application built with Next.js 14 (App Router), Supabase (PostgreSQL), and Stripe for subscriptions. It targets Bulgarian businesses and provides NAP (National Revenue Agency) compliant invoice issuance, credit/debit notes, client/company management, and PDF generation.
+InvoicyPro is a Bulgarian invoice management web application built with Next.js 14 (App Router), Supabase (PostgreSQL), and Stripe for subscriptions. It targets Bulgarian businesses and provides NAP (National Revenue Agency) compliant invoice issuance, credit/debit notes, client/company management, and PDF generation.
 
 **Tech Stack:** Next.js 14, React, TypeScript, Tailwind CSS, shadcn/ui + Radix UI, Supabase, Stripe, NextAuth, Framer Motion, jsPDF, Nodemailer, Zod
 

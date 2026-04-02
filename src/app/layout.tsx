@@ -6,7 +6,7 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner-toaster";
 import { CookieConsent } from "@/components/gdpr/CookieConsent";
 import { Analytics } from "@vercel/analytics/next";
-import { APP_NAME, APP_DESCRIPTION, SEO_KEYWORDS } from "@/config/constants";
+import { APP_NAME, APP_DEFAULT_TITLE, APP_DESCRIPTION, SEO_KEYWORDS } from "@/config/constants";
 import { Providers } from "./providers";
 
 const geistSans = localFont({
@@ -42,7 +42,7 @@ const appUrl = getAppUrl();
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    default: `${APP_NAME} - Професионална система за фактуриране за България`,
+    default: APP_DEFAULT_TITLE,
     template: `%s | ${APP_NAME}`
   },
   description: APP_DESCRIPTION,
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     locale: "bg_BG",
     url: appUrl,
     siteName: APP_NAME,
-    title: `${APP_NAME} - Професионална система за фактуриране`,
+    title: APP_DEFAULT_TITLE,
     description: APP_DESCRIPTION,
     images: [
       {
@@ -73,7 +73,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: `${APP_NAME} - Професионална система за фактуриране`,
+    title: APP_DEFAULT_TITLE,
     description: APP_DESCRIPTION,
     images: ['/og-image.png'],
     creator: '@invoicy_bg',

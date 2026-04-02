@@ -1,12 +1,12 @@
 import { Metadata } from "next";
-import { APP_NAME, APP_DESCRIPTION, SEO_KEYWORDS } from "@/config/constants";
+import { APP_NAME, APP_DEFAULT_TITLE, APP_DESCRIPTION, SEO_KEYWORDS } from "@/config/constants";
 
 export const metadata: Metadata = {
-  title: `${APP_NAME} - Професионална система за фактуриране за България`,
+  title: APP_DEFAULT_TITLE,
   description: APP_DESCRIPTION,
   keywords: SEO_KEYWORDS,
   openGraph: {
-    title: `${APP_NAME} - Професионална система за фактуриране`,
+    title: APP_DEFAULT_TITLE,
     description: APP_DESCRIPTION,
     type: "website",
     locale: "bg_BG",
@@ -16,13 +16,13 @@ export const metadata: Metadata = {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: `${APP_NAME} - Система за фактуриране`,
+        alt: `${APP_NAME} – invoicing`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${APP_NAME} - Професионална система за фактуриране`,
+    title: APP_DEFAULT_TITLE,
     description: APP_DESCRIPTION,
     images: ['/og-image.png'],
   },

@@ -2,14 +2,22 @@
  * Global application constants
  */
 
-export const APP_NAME = "Invoicy";
+export const APP_NAME = "InvoicyPro";
+
+/** Default `<title>` and primary SEO title (Open Graph / Twitter when not overridden). */
+export const APP_DEFAULT_TITLE = "InvoicyPro – Invoicing SaaS";
 
 // App metadata
-export const APP_DESCRIPTION = "Професионална система за фактуриране за български бизнеси. Създавайте фактури, управлявайте клиенти и проследявайте плащания с пълна НАП съвместимост.";
+export const APP_DESCRIPTION =
+  "Modern invoicing platform for managing invoices easily and efficiently.";
 export const APP_COPYRIGHT = `© ${new Date().getFullYear()} ${APP_NAME}. Всички права запазени.`;
 
 // SEO Keywords
 export const SEO_KEYWORDS = [
+  "InvoicyPro",
+  "invoicing SaaS",
+  "invoice software",
+  "online invoicing",
   "фактуриране",
   "фактури",
   "фактура софтуер",
@@ -21,7 +29,7 @@ export const SEO_KEYWORDS = [
   "фактуриране България",
   "управление на фактури",
   "фактуриране за бизнес",
-  "фактуриране софтуер България"
+  "фактуриране софтуер България",
 ];
 
 // Default values

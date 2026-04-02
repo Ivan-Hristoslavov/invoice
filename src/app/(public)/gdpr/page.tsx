@@ -10,7 +10,7 @@ const LEGAL_UPDATED = "14 март 2026";
 
 export const metadata: Metadata = genMeta({
   title: "GDPR Съответствие",
-  description: "Информация за GDPR съответствието и правата ви върху личните данни при използване на Invoicy",
+  description: "Информация за GDPR съответствието и правата ви върху личните данни при използване на InvoicyPro",
 });
 
 function LegalLinks() {

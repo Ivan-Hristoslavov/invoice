@@ -9,14 +9,14 @@ import { paymentMessage } from "@/config/public-business";
 
 export const metadata: Metadata = genMeta({
   title: "Интеграции",
-  description: "Интегрирайте Invoicy с вашите любими инструменти за по-ефективна работа",
+  description: "Интегрирайте InvoicyPro с вашите любими инструменти за по-ефективна работа",
 });
 
 const integrations = [
   {
     icon: CreditCard,
     title: "Stripe",
-    description: "Сигурно процесиране на абонаментни плащания за Invoicy чрез Stripe Checkout.",
+    description: "Сигурно процесиране на абонаментни плащания за InvoicyPro чрез Stripe Checkout.",
     status: "Достъпно",
     comingSoon: false
   },
@@ -37,7 +37,7 @@ const integrations = [
   {
     icon: BarChart3,
     title: "API",
-    description: "Интегрирайте Invoicy във вашите собствени системи чрез RESTful API.",
+    description: "Интегрирайте InvoicyPro във вашите собствени системи чрез RESTful API.",
     status: "Скоро",
     comingSoon: true
   },

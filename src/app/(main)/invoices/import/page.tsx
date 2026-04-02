@@ -8,7 +8,7 @@ import { checkPermission } from "@/lib/permissions";
 import { resolveSessionUser } from "@/lib/session-user";
 
 export const metadata: Metadata = {
-  title: "Import Invoices - Invoicy",
+  title: "Import Invoices - InvoicyPro",
   description: "Import multiple invoices from a CSV file",
 };
 
