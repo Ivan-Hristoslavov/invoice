@@ -357,7 +357,7 @@ export async function sendVerificationEmail({
 }) {
   const transporter = getSmtpTransporter();
   const fromAddress = getFromAddress();
-  const appName = process.env.NEXT_PUBLIC_APP_NAME || "Invoicy";
+  const appName = process.env.NEXT_PUBLIC_APP_NAME || APP_NAME;
 
   const from = process.env.NEXT_PUBLIC_APP_DOMAIN
     ? `${appName} <${fromAddress}>`
@@ -403,7 +403,7 @@ export async function sendPasswordResetEmail({
 }) {
   const transporter = getSmtpTransporter();
   const fromAddress = getFromAddress();
-  const appName = process.env.NEXT_PUBLIC_APP_NAME || "Invoicy";
+  const appName = process.env.NEXT_PUBLIC_APP_NAME || APP_NAME;
 
   const from = process.env.NEXT_PUBLIC_APP_DOMAIN
     ? `${appName} <${fromAddress}>`

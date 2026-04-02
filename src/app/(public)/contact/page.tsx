@@ -10,7 +10,7 @@ import { ContactRequestForm } from "@/components/marketing/ContactRequestForm";
 
 export const metadata: Metadata = genMeta({
   title: "Контакти",
-  description: "Свържете се с екипа на Invoicy. Отговаряме на всички ваши въпроси",
+  description: "Свържете се с екипа на InvoicyPro. Отговаряме на всички ваши въпроси",
 });
 
 export default function ContactPage() {

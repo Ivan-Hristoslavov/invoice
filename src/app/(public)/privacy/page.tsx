@@ -10,7 +10,7 @@ const LEGAL_UPDATED = "14 март 2026";
 
 export const metadata: Metadata = genMeta({
   title: "Политика за поверителност",
-  description: "Как Invoicy събира, използва и защитава вашата лична информация",
+  description: "Как InvoicyPro събира, използва и защитава вашата лична информация",
 });
 
 function LegalLinks() {

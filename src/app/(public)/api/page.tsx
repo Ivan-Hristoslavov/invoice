@@ -9,7 +9,7 @@ import { paymentMessage } from "@/config/public-business";
 
 export const metadata: Metadata = genMeta({
   title: "API Документация",
-  description: "Интегрирайте Invoicy във вашите собствени системи чрез RESTful API",
+  description: "Интегрирайте InvoicyPro във вашите собствени системи чрез RESTful API",
 });
 
 export default function APIPage() {

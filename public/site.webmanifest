@@ -1,7 +1,7 @@
 {
-  "name": "FacturaPro - Професионална система за фактуриране",
-  "short_name": "FacturaPro",
-  "description": "Професионална система за фактуриране за български бизнеси с пълна НАП съвместимост",
+  "name": "InvoicyPro – Invoicing SaaS",
+  "short_name": "InvoicyPro",
+  "description": "Modern invoicing platform for managing invoices easily and efficiently.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

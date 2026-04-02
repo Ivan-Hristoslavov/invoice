@@ -8,7 +8,7 @@ import { APP_NAME } from "@/config/constants";
 
 export const metadata: Metadata = genMeta({
   title: "Кариери",
-  description: "Присъединете се към екипа на Invoicy и помогнете да опростим фактурирането за българските бизнеси",
+  description: "Присъединете се към екипа на InvoicyPro и помогнете да опростим фактурирането за българските бизнеси",
 });
 
 const positions = [
@@ -28,7 +28,7 @@ const positions = [
     title: "Customer Success Manager",
     location: "София",
     type: "Пълен работен ден",
-    description: "Помогнете на нашите клиенти да постигнат успех с Invoicy."
+    description: "Помогнете на нашите клиенти да постигнат успех с InvoicyPro."
   }
 ];
 
