@@ -1022,6 +1022,17 @@ description: error.message?.includes("план")
                   <p className="pt-2 text-sm text-muted-foreground">
                     {recipientPreview ? `За ${recipientPreview.name}` : "Изберете детайлите по документа"}
                   </p>
+                  <p className="pt-3 text-xs leading-relaxed text-muted-foreground">
+                    По желание префикс (напр. <span className="font-mono text-foreground/80">Ф-</span>) и правилата за
+                    непрекъсната номерация се настройват в{" "}
+                    <Link
+                      href="/settings/invoice-preferences"
+                      className="font-medium text-primary underline-offset-4 hover:underline"
+                    >
+                      Настройки → Фактури
+                    </Link>
+                    .
+                  </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 sm:justify-end">

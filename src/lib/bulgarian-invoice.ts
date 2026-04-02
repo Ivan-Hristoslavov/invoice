@@ -52,10 +52,13 @@ export function generateBulgarianInvoiceNumber(
  * @returns The components of the invoice number
  */
 export function parseBulgarianInvoiceNumber(invoiceNumber: string): BulgarianInvoiceNumberComponents | null {
-  // Expected format: YYCCCCNNNNNN where YY=year, CCCC=company, NNNNNN=sequential number
+  // Core format: YYCCCCNNNNNN (12 digits). Optional user prefix (e.g. Ф-) is ignored.
+  const digits = invoiceNumber.replace(/\D/g, "");
+  if (digits.length < 12) return null;
+  const core = digits.slice(-12);
   const regex = /^(\d{2})(\d{4})(\d{6})$/;
-  const match = invoiceNumber.match(regex);
-  
+  const match = core.match(regex);
+
   if (!match) return null;
   
   return {

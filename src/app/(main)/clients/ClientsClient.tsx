@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Building, Plus, Search, Users, Lock, LayoutGrid, List, Pencil, ChevronRight } from "lucide-react";
+import { Building, Plus, Search, Users, Lock, LayoutGrid, List, Pencil, ChevronRight, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AppSectionKicker } from "@/components/app/AppSectionKicker";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -130,17 +130,25 @@ export default function ClientsClient({
         </div>
         <div className="page-header-actions w-full sm:w-auto">
           {canCreateClient ? (
-            <Link href="/clients/new" className="block w-full sm:inline-block sm:w-auto">
-              <Button
-                size="3"
-                variant="solid"
-                color="green"
-                className="w-full gap-2 whitespace-nowrap shadow-lg sm:w-auto"
-              >
-                <Plus className="h-5 w-5" />
-                Нов клиент
-              </Button>
-            </Link>
+            <div className="flex w-full gap-2 sm:w-auto">
+              <Link href="/clients/import" className="hidden sm:inline-block">
+                <Button size="3" variant="outline" className="gap-2 whitespace-nowrap">
+                  <Upload className="h-4 w-4" />
+                  Импорт
+                </Button>
+              </Link>
+              <Link href="/clients/new" className="block w-full sm:inline-block sm:w-auto">
+                <Button
+                  size="3"
+                  variant="solid"
+                  color="green"
+                  className="w-full gap-2 whitespace-nowrap shadow-lg sm:w-auto"
+                >
+                  <Plus className="h-5 w-5" />
+                  Нов клиент
+                </Button>
+              </Link>
+            </div>
           ) : (
             <Link href="/settings/subscription" className="block w-full sm:inline-block sm:w-auto">
               <Button

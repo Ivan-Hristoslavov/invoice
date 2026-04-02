@@ -26,6 +26,10 @@ vi.mock("@/middleware/subscription", () => ({
   checkSubscriptionLimits: mockCheckSubscriptionLimits,
 }));
 
+vi.mock("@/lib/team", () => ({
+  getAccessibleOwnerUserIdsForUser: vi.fn(async () => ["user_1"]),
+}));
+
 function createRequest(body: Record<string, unknown>) {
   return new NextRequest("http://localhost/api/clients", {
     method: "POST",
@@ -39,11 +43,20 @@ function createRequest(body: Record<string, unknown>) {
 function createClientSupabaseMock() {
   let insertedPayload: Record<string, unknown> | null = null;
 
+  const duplicateChain = {
+    select: vi.fn(() => duplicateChain),
+    in: vi.fn(() => duplicateChain),
+    eq: vi.fn(() => duplicateChain),
+    limit: vi.fn(() => duplicateChain),
+    maybeSingle: vi.fn(async () => ({ data: null, error: null })),
+  };
+
   const supabase = {
     from: vi.fn((table: string) => {
       if (table !== "Client") throw new Error(`Unexpected table ${table}`);
 
       return {
+        select: vi.fn(() => duplicateChain),
         insert: vi.fn((payload: Record<string, unknown>) => {
           insertedPayload = payload;
           return {
@@ -68,6 +81,7 @@ function createClientSupabaseMock() {
 function createClientDuplicateCheckSupabaseMock(hasDuplicate: boolean) {
   const lookup = {
     select: vi.fn(() => lookup),
+    in: vi.fn(() => lookup),
     eq: vi.fn(() => lookup),
     limit: vi.fn(() => lookup),
     maybeSingle: vi.fn(async () => ({

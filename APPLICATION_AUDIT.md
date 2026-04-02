@@ -1,12 +1,14 @@
-# Application Audit Report - Invoicy
+# Application Audit Report - InvoicyPro
 
 ## Overview
 
-InvoicyPro is a Bulgarian invoice management web application built with Next.js 14 (App Router), Supabase (PostgreSQL), and Stripe for subscriptions. It targets Bulgarian businesses and provides NAP (National Revenue Agency) compliant invoice issuance, credit/debit notes, client/company management, and PDF generation.
+InvoicyPro is a Bulgarian invoice management web application built with Next.js 15 (App Router), Supabase (PostgreSQL), and Stripe for subscriptions. It targets Bulgarian businesses and provides invoice issuance with Bulgarian tax field support, credit/debit notes, client/company management, and PDF generation.
 
-**Tech Stack:** Next.js 14, React, TypeScript, Tailwind CSS, shadcn/ui + Radix UI, Supabase, Stripe, NextAuth, Framer Motion, jsPDF, Nodemailer, Zod
+**Tech Stack:** Next.js 15, React, TypeScript, Tailwind CSS, shadcn/ui + HeroUI, Supabase, Stripe, NextAuth, Framer Motion, jsPDF, Nodemailer, Zod
 
-**Current Readiness:** ~85% ready for production
+**Current Readiness:** ~88% ready for production
+
+**Important:** This product is NOT an officially approved СУПТО (software for sales management) under Наредба H-18. It provides field-level and format-level support for Bulgarian invoicing requirements but does not guarantee full regulatory compliance. Users bear responsibility for their own tax reporting to НАП.
 
 ---
 
@@ -16,33 +18,21 @@ InvoicyPro is a Bulgarian invoice management web application built with Next.js 
 
 **Status (updated):** Password reset is implemented. Forgot-password API generates a token, stores it in `PasswordResetToken`, sends email via `sendPasswordResetEmail`. Reset-password page (`/reset-password?token=xxx`) and API validate the token and update the password. Rate limiting is applied.
 
-### 1.2 Authorization Middleware Bug
+### 1.2 Authorization Middleware Bug — FIXED
 
-**File:** `src/middleware/authorization.ts`
+**Status (updated):** Fixed — `allowSameUser` logic corrected.
 
-`permissionNames` is referenced before definition, which could cause runtime errors or permission bypass.
+### 1.3 NAP Credential Columns — REMOVED
 
-**Priority:** CRITICAL
+**Status (updated):** `napUserName` and `napPassword` columns dropped from Company table via migration `0015_drop_nap_credentials.sql`. These were never populated via UI or API and storing portal credentials was a security risk. Prisma schema updated accordingly.
 
-### 1.3 Sensitive Credentials Stored in Plaintext
+### 1.4 Rate Limiting on Auth Endpoints — IMPLEMENTED
 
-**File:** `prisma/schema.prisma` (Company model)
+**Status (updated):** In-memory rate limiter (`src/lib/rate-limit.ts`) applied to registration, forgot-password, and reset-password endpoints.
 
-Fields `napPassword`, `napUserName` are stored without encryption. These are credentials for the Bulgarian tax authority portal.
+### 1.5 Database Migrations — APPLIED
 
-**Priority:** CRITICAL
-
-### 1.4 No Rate Limiting on Auth Endpoints
-
-Login, registration, and password reset endpoints have no rate limiting, making them vulnerable to brute force attacks.
-
-**Priority:** CRITICAL
-
-### 1.5 Database Migrations Not Applied
-
-The `supabase-migration-rename-mol-to-english.sql` migration needs to be applied to rename the Cyrillic column `mол` to `mol` in Company and Client tables. Without this, queries fail with "column does not exist" errors.
-
-**Priority:** CRITICAL
+**Status (updated):** All migrations applied. Column `mol` renamed from Cyrillic. 15 migration files in `db/migrations/`.
 
 ---
 
@@ -61,19 +51,9 @@ The `supabase-migration-rename-mol-to-english.sql` migration needs to be applied
 - Sort by date, amount, client, status
 - Bulk actions (export, delete drafts)
 
-### 2.2 Dashboard - Static Data and Missing Analytics
+### 2.2 Dashboard Analytics — MOSTLY IMPLEMENTED
 
-**Current State:** Dashboard shows basic counts and totals with hardcoded trend percentages (+12.5%, +8.2%).
-
-**Needed:**
-- Real trend calculations (compare current month to previous)
-- Revenue chart (monthly/yearly)
-- Invoice status breakdown chart (pie/bar)
-- Top clients by revenue
-- Upcoming due dates / overdue alerts
-- Quick actions section
-- Date range selector for all stats
-- Company filter (if multiple companies)
+**Status (updated):** Dashboard now includes real trend calculations (current vs previous month), 6-month revenue bar chart, overdue invoices alert card, recent credit/debit notes with linked invoice numbers, activity timeline from audit logs, and quick actions. Remaining: date range selector, company filter, top clients by revenue.
 
 ### 2.3 Credit/Debit Notes - Missing GET API Endpoints
 
@@ -84,15 +64,9 @@ The `supabase-migration-rename-mol-to-english.sql` migration needs to be applied
 - `GET /api/debit-notes` with pagination, filtering, search
 - Consistent API design with invoice endpoints
 
-### 2.4 Multi-Currency Support
+### 2.4 Multi-Currency Support — PARTIALLY IMPLEMENTED
 
-**Current State:** Only EUR is supported. The currency field exists but the dropdown only shows EUR.
-
-**Needed:**
-- Add BGN (Bulgarian Lev) - essential for domestic invoices
-- Add USD, GBP at minimum
-- Exchange rate display (informational)
-- Currency formatting per currency
+**Status (updated):** EUR, BGN, and USD are now available in invoice creation/editing. Currency formatting works per currency. Remaining: GBP, exchange rate display.
 
 ### 2.5 Recurring Invoices
 
@@ -186,46 +160,21 @@ The `supabase-migration-rename-mol-to-english.sql` migration needs to be applied
 
 ## 4. BUSINESS LOGIC IMPROVEMENTS
 
-### 4.1 Invoice Numbering
+### 4.1 Invoice Numbering — PARTIALLY IMPLEMENTED
 
-**Current State:** Works with `startingInvoiceNumber` but the format is 10-digit only (0000000001). Bulgarian NAP requires specific format.
+**Status (updated):** `InvoiceSequence` table provides per-company, per-year sequential numbering. `src/lib/bulgarian-invoice.ts` generates the 12-digit core `YYCCCCNNNNNN` using last 4 digits of EIK. Optional `invoicePrefix` from user `invoicePreferences` (see invoice-preferences API) is applied in `src/lib/invoice-sequence.ts` for issued numbers and next-number preview. Remaining: gap detection/reporting robustness for mixed legacy numbers, formal numbering audit trail.
 
-**Needed:**
-- Proper NAP format: YYCCCCNNNNNNИ (year + company code + sequence + suffix)
-- Per-company numbering (not just per-user)
-- Gap detection and reporting
-- Numbering audit trail
+### 4.2 VAT Handling — MOSTLY IMPLEMENTED
 
-### 4.2 VAT Handling
+**Status (updated):** Per-item VAT rates, `reverseCharge` flag on Invoice, `vatExemptReason` on InvoiceItem (migration `0014`). Validation requires reason when tax rate is 0%. Remaining: VAT summary section in PDF (grouped by rate), intra-community supply handling.
 
-**Current State:** Single VAT rate per item. No reverse charge, no exempt handling.
+### 4.3 Client Management — CSV IMPORT ADDED
 
-**Needed:**
-- VAT exempt option (0% with reason)
-- Reverse charge mechanism (for EU B2B)
-- Multiple VAT rates per invoice (already works per item)
-- VAT summary section in PDF (grouped by rate)
-- Intra-community supply handling
+**Status (updated):** CSV import for clients implemented (`src/lib/clients-import.ts`, `POST /api/clients/import`, import UI). Duplicate detection by EIK on creation. Remaining: categories/tags, notes per client, contact history, balance/statement, merge.
 
-### 4.3 Client Management
+### 4.4 Product Management — CSV IMPORT + ACTIVE/INACTIVE ADDED
 
-**Missing features:**
-- Client categories/tags for organization
-- Notes/comments per client
-- Contact history (emails sent, invoices created)
-- Client balance/statement
-- CSV import/export
-- Duplicate detection and merge
-
-### 4.4 Product Management
-
-**Missing features:**
-- Product categories
-- SKU/barcode field
-- Unit types (piece, hour, kg, m2, etc.) - field exists but no predefined list
-- Bulk import from CSV
-- Price history
-- Active/inactive status
+**Status (updated):** CSV import for products implemented (`src/lib/products-import.ts`, `POST /api/products/import`, import UI). `isActive` field added (migration `0013`). Remaining: categories, SKU field, predefined unit list, price history.
 
 ### 4.5 Reports and Analytics
 
@@ -282,11 +231,9 @@ The `supabase-migration-rename-mol-to-english.sql` migration needs to be applied
 - `src/app/(main)/debit-notes/[id]/page.tsx` (lines 108-114)
 - Various `console.log` statements throughout API routes
 
-### 5.3 Duplicate Code in Credit/Debit Note Forms
+### 5.3 Duplicate Code in Credit/Debit Note Forms — RESOLVED
 
-**Problem:** `credit-notes/new/page.tsx` and `debit-notes/new/page.tsx` are nearly identical (~700 lines each). Same for the detail pages.
-
-**Recommendation:** Extract a shared `NoteForm` component with a `type` prop ("credit" | "debit") and color theme prop.
+**Status (updated):** Shared `NoteForm` component extracted to `src/components/notes/NoteForm.tsx` (~470 lines), eliminating ~1,400 lines of duplicated code.
 
 ### 5.4 PDF Generator Duplication
 
@@ -440,17 +387,17 @@ The `supabase-migration-rename-mol-to-english.sql` migration needs to be applied
 | Area | Score | Notes |
 |------|-------|-------|
 | Core Features | 8/10 | Invoice lifecycle, PDF, email working |
-| Security | 5/10 | Auth works but critical gaps (password reset, rate limiting) |
+| Security | 7/10 | Password reset, rate limiting, BULSTAT uniqueness, NAP credentials removed |
 | Design/UX | 7/10 | Modern look but inconsistent components, needs mobile polish |
 | Data Layer | 7/10 | Good schema but mixed Prisma/Supabase approach |
-| Business Logic | 7/10 | NAP compliance good, missing recurring/proforma/reports |
+| Business Logic | 7.5/10 | Bulgarian tax format support, reverse charge, VAT exempt, CSV imports; missing recurring/proforma/reports |
 | Performance | 6/10 | Glass morphism heavy, no pagination on lists |
 | Testing | 2/10 | Minimal test coverage |
 | Documentation | 4/10 | Internal docs exist but no user guide or API docs |
 | Monetization | 6/10 | Stripe integration works, limits partially enforced |
 | Deployment Ready | 5/10 | No CI/CD, no monitoring, no error tracking |
 
-**Overall: 5.7/10** - Functional application with good core features but needs security fixes, performance optimization, and additional features before production launch.
+**Overall: 7.2/10** - Functional application with solid core features, security improvements applied, Bulgarian tax format support with reverse charge/VAT exempt. Remaining gaps: recurring invoices, proforma, reports, CI/CD, full test coverage.
 
 ---
 
@@ -501,3 +448,33 @@ All issues below have been resolved:
 - `.env.example` - Environment variables template
 
 ### Updated Score: ~7.5/10
+
+---
+
+## FIXES APPLIED (Session: March 2026)
+
+### Security
+1. **NAP Credentials Removed** — `napUserName`/`napPassword` columns dropped from Company table (migration `0015`). These were dead columns with no UI or API write path — security risk eliminated.
+
+### Legal/Marketing
+2. **Marketing Copy Softened** — Replaced "пълна НАП съвместимост" with "поддръжка на български данъчни формати" across README, features page, SEO keywords, auth layout, subscription plans.
+3. **Terms Disclaimer** — Added section 7 "Данъчно съответствие" to Terms of Service clarifying the product is not a substitute for accounting/legal advice and does not guarantee full regulatory compliance.
+4. **Tax Compliance Page** — Removed specific monetary thresholds (5000 EUR, fines 250-5000 EUR) that may be outdated; replaced with references to current НАП guidance and accountant consultation.
+
+### Document Snapshots
+5. **Immutable Snapshots** — `document-snapshots.ts` creates seller/buyer/items snapshots at issue time, ensuring historical accuracy even if live data changes.
+
+### Dashboard
+6. **Revenue Chart** — 6-month bar chart with Bulgarian month labels.
+7. **Overdue Invoices** — Alert card with top overdue items and totals.
+8. **Recent Notes** — Credit/debit notes card with linked invoice numbers.
+
+### Imports
+9. **Client CSV Import** — `src/lib/clients-import.ts`, `POST /api/clients/import/route.ts`, import UI with preview, validation, subscription limits, duplicate detection by EIK.
+10. **Product CSV Import** — `src/lib/products-import.ts`, `POST /api/products/import/route.ts`, import UI with same pattern.
+
+### PDF
+11. **Modern PDF Layout** — Rewritten `pdf-generator.ts` with neutral palette, structured header, party cards, column-width table, and `Генерирано с InvoicyPro` footer.
+
+### APPLICATION_AUDIT.md
+12. **Audit Refresh** — Updated statuses for all items that have been implemented since the original audit.

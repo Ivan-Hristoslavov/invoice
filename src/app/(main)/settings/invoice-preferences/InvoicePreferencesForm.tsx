@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Info } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { DEFAULT_VAT_RATE } from "@/config/constants";
 
@@ -221,9 +222,18 @@ export function InvoicePreferencesForm() {
 
         <section className="rounded-2xl border border-border/40 bg-muted/20 p-4 sm:p-6 dark:bg-muted/10">
           <h3 className="text-base font-semibold tracking-tight">Номерация на фактурите</h3>
-          <p className="mb-4 text-sm text-muted-foreground">
-            Префикс, годишно нулиране и начален номер при миграция
+          <p className="mb-3 text-sm text-muted-foreground">
+            По желание буквен префикс (напр. <span className="font-mono text-foreground">Ф-</span>,{" "}
+            <span className="font-mono text-foreground">ФАК-</span>), годишно нулиране и начален номер при миграция.
+            Същинският номер на фактурата е цифров и последователен.
           </p>
+          <div className="mb-4 flex gap-3 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 text-sm text-foreground/90 dark:bg-primary/10">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+            <p className="m-0 leading-relaxed">
+              Тук задавате как да изглежда номерът на следващата фактура. При създаване на фактура виждате
+              преглед на номера; промяната на префикса не влияе на вече издадени документи.
+            </p>
+          </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField
@@ -236,12 +246,13 @@ export function InvoicePreferencesForm() {
                   <Input
                     {...field}
                     value={field.value ?? ""}
-                    placeholder="Напр. INV-"
+                    placeholder="Напр. Ф- или ФАК-"
                     className="min-h-11 rounded-2xl text-sm"
                   />
                   </FormControl>
                   <FormDescription>
-                    Незадължителен префикс преди номера на фактурата
+                    Незадължителен текст преди цифровия номер (често срещани: <span className="font-mono">Ф-</span>,{" "}
+                    <span className="font-mono">ФАК-</span>). Оставете празно, ако искате само номер без букви отпред.
                   </FormDescription>
                 </FormItem>
               )}

@@ -1,6 +1,36 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/server";
 import { generateBulgarianInvoiceNumber } from "@/lib/bulgarian-invoice";
 import cuid from "cuid";
+
+type InvoicePrefsJson = { invoicePrefix?: string | null };
+
+/** Prepends user-defined prefix from settings (e.g. Ф-, ФАК-) to the numeric core. */
+export function applyInvoicePrefix(
+  baseNumber: string,
+  prefix: string | null | undefined
+): string {
+  if (typeof prefix !== "string") return baseNumber;
+  const p = prefix.trim();
+  if (!p) return baseNumber;
+  return `${p}${baseNumber}`;
+}
+
+export async function getInvoicePrefixForUser(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<string | null> {
+  const { data } = await supabase
+    .from("User")
+    .select("invoicePreferences")
+    .eq("id", userId)
+    .maybeSingle();
+  const prefs = data?.invoicePreferences as InvoicePrefsJson | null | undefined;
+  const raw = prefs?.invoicePrefix;
+  if (typeof raw !== "string") return null;
+  const t = raw.trim();
+  return t || null;
+}
 
 export async function getNextInvoiceSequence(
   userId: string,
@@ -65,11 +95,13 @@ export async function getNextInvoiceSequence(
         }
       }
 
-      const invoiceNumber = generateBulgarianInvoiceNumber(
+      const baseNumber = generateBulgarianInvoiceNumber(
         nextSequence,
         companyEik ?? undefined,
         "invoice"
       );
+      const prefix = await getInvoicePrefixForUser(supabase, userId);
+      const invoiceNumber = applyInvoicePrefix(baseNumber, prefix);
 
       return { sequence: nextSequence, invoiceNumber };
     } catch (error) {

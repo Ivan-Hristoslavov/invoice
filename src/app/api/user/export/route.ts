@@ -128,12 +128,7 @@ export async function GET(request: NextRequest) {
         // Remove sensitive fields
         stripeCustomerId: undefined,
       } : null,
-      companies: companiesData.map((company: Record<string, unknown>) => ({
-        ...company,
-        // Remove sensitive fields
-        napPassword: undefined,
-        napUserName: undefined,
-      })),
+      companies: companiesData,
       clients: clientsData,
       products: productsData,
       invoices,

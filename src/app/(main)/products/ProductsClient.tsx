@@ -13,6 +13,7 @@ import {
   Percent,
   Package,
   ChevronRight,
+  Upload,
 } from "lucide-react";
 import { cn, formatPrice } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
@@ -128,18 +129,26 @@ export default function ProductsClient({
           </p>
         </div>
         {canCreateProduct ? (
-          <Button 
-            asChild 
-            size="3" 
-            variant="solid" 
-            color="green"
-            className="h-11 w-full shadow-lg sm:h-auto sm:w-auto"
-          >
-            <Link href="/products/new" className="flex items-center whitespace-nowrap">
-              <Plus className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-              Нов продукт
-            </Link>
-          </Button>
+          <div className="flex w-full gap-2 sm:w-auto">
+            <Button asChild size="3" variant="outline" className="hidden sm:inline-flex h-11 sm:h-auto">
+              <Link href="/products/import" className="flex items-center whitespace-nowrap">
+                <Upload className="mr-2 h-4 w-4" />
+                Импорт
+              </Link>
+            </Button>
+            <Button 
+              asChild 
+              size="3" 
+              variant="solid" 
+              color="green"
+              className="h-11 w-full shadow-lg sm:h-auto sm:w-auto"
+            >
+              <Link href="/products/new" className="flex items-center whitespace-nowrap">
+                <Plus className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                Нов продукт
+              </Link>
+            </Button>
+          </div>
         ) : (
           <Button 
             asChild 

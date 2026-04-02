@@ -522,7 +522,7 @@ export function SubscriptionPlans({ onSuccessRefetchDone }: SubscriptionPlansPro
           <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
             <Shield className="h-4 w-4 text-emerald-500" />
           </div>
-          <span>НАП съвместим</span>
+          <span>Български формати</span>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center">

@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { generateBulgarianInvoiceNumber } from "@/lib/bulgarian-invoice";
-import { getCurrentSequence } from "@/lib/invoice-sequence";
+import {
+  applyInvoicePrefix,
+  getCurrentSequence,
+  getInvoicePrefixForUser,
+} from "@/lib/invoice-sequence";
 import { resolveSessionUser } from "@/lib/session-user";
 import { createAdminClient } from "@/lib/supabase/server";
 
@@ -46,11 +50,13 @@ export async function GET(request: Request) {
     }
 
     const currentSequence = await getCurrentSequence(sessionUser.id, company.id);
-    const nextNumber = generateBulgarianInvoiceNumber(
+    const baseNumber = generateBulgarianInvoiceNumber(
       currentSequence + 1,
       company.bulstatNumber,
       "invoice"
     );
+    const prefix = await getInvoicePrefixForUser(supabase, sessionUser.id);
+    const nextNumber = applyInvoicePrefix(baseNumber, prefix);
 
     return NextResponse.json({ invoiceNumber: nextNumber });
   } catch (error) {
