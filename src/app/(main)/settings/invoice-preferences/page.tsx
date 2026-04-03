@@ -29,8 +29,10 @@ export default async function InvoicePreferencesPage() {
       <CardHeader className="space-y-1 pb-4 sm:pb-5">
         <CardTitle className="text-lg sm:text-xl">Настройки на фактури</CardTitle>
         <CardDescription className="max-w-3xl leading-relaxed">
-          ДДС, валута, номерация, текстове по подразбиране и показване в PDF — запазват се в профила ви
-          (база данни).
+          ДДС, валута, <strong className="font-medium text-foreground">по желание префикс преди номера</strong> (напр.{" "}
+          <span className="font-mono text-sm">Ф-</span> или <span className="font-mono text-sm">ФАК-</span>), непрекъсната номерация и начален номер при миграция,
+          текстове по подразбиране и показване в PDF — запазват се в профила ви. Път в менюто:{" "}
+          <span className="whitespace-nowrap">Настройки → Фактури</span> (тази страница).
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-0">

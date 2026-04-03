@@ -26,6 +26,10 @@ vi.mock("@/middleware/subscription", () => ({
   checkSubscriptionLimits: mockCheckSubscriptionLimits,
 }));
 
+vi.mock("@/lib/team", () => ({
+  getAccessibleCompaniesForUser: vi.fn(async () => []),
+}));
+
 function createRequest(body: Record<string, unknown>) {
   return new NextRequest("http://localhost/api/companies", {
     method: "POST",

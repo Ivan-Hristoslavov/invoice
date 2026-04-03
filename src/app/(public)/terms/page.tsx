@@ -109,7 +109,19 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-foreground mb-3">7. Ограничение на отговорността</h2>
+              <h2 className="text-xl font-semibold text-foreground mb-3">7. Данъчно съответствие</h2>
+              <p>
+                {APP_NAME} предоставя полета, формати и номерация, съобразени с често срещаните изисквания
+                към съдържанието на български фактури. Услугата <strong>не е</strong> заместител на счетоводен или правен съвет.
+                Потребителят носи пълната отговорност за правилното отчитане, подаване и съответствие на
+                издаваните документи с изискванията на Националната агенция за приходите (НАП) и приложимото
+                данъчно законодателство. {APP_NAME} не гарантира автоматично пълно съответствие с всички
+                нормативни изисквания.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-xl font-semibold text-foreground mb-3">8. Ограничение на отговорността</h2>
               <p>
                 В максималната степен, разрешена от приложимото законодателство, доставчикът на {APP_NAME} не носи
                 отговорност за преки, непряки, случайни или последващи щети, произтичащи от използването или
@@ -118,7 +130,7 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-foreground mb-3">8. Промени в условията</h2>
+              <h2 className="text-xl font-semibold text-foreground mb-3">9. Промени в условията</h2>
               <p>
                 Запазваме си правото да променяме тези условия. При съществени промени ще уведомим потребителите
                 (напр. чрез имейл или съобщение в приложението). Продължавайки да използвате услугата след влизането
@@ -127,7 +139,7 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-foreground mb-3">9. Контакт</h2>
+              <h2 className="text-xl font-semibold text-foreground mb-3">10. Контакт</h2>
               <p>
                 За въпроси относно тези условия моля свържете се с нас на{" "}
                 <Link href="/contact" className="text-primary font-medium hover:underline">страницата за контакт</Link>.

@@ -252,6 +252,22 @@ describe("team invite routes", () => {
         return query;
       }
 
+      if (table === "User") {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              single: vi.fn(async () => ({
+                data: {
+                  name: "Member User",
+                  profileCompletedAt: "2026-01-01T00:00:00.000Z",
+                },
+                error: null,
+              })),
+            })),
+          })),
+        };
+      }
+
       throw new Error(`Unexpected table ${table}`);
     });
 

@@ -119,7 +119,7 @@ describe("POST /api/invoices/[id]/send", () => {
     );
     expect(update).toHaveBeenCalledWith(
       expect.objectContaining({
-        status: "ISSUED",
+        status: "UNPAID",
       })
     );
   });

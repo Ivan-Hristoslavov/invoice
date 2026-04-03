@@ -55,6 +55,10 @@ vi.mock("@/lib/invoice-sequence", () => ({
   getNextInvoiceSequence: mockGetNextInvoiceSequence,
 }));
 
+vi.mock("@/lib/team", () => ({
+  getAccessibleCompaniesForUser: vi.fn(async () => []),
+}));
+
 vi.mock("@/lib/audit-log", () => ({
   logAction: mockLogAction,
 }));
@@ -176,7 +180,7 @@ describe("POST /api/invoices route", () => {
         companyId: "company_1",
         issueDate: "2026-03-14",
         dueDate: "2026-03-20",
-        items: [{ description: "Услуга", quantity: 1, price: 0, taxRate: 20 }],
+        items: [{ description: "Услуга", quantity: 1, price: 10, taxRate: 20 }],
       })
     );
 

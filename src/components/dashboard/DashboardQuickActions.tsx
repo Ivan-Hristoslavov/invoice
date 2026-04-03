@@ -9,6 +9,7 @@ import {
   MinusCircle,
   PlusCircle,
   Zap,
+  Settings,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
@@ -104,6 +105,19 @@ export function DashboardQuickActions({
             </div>
           </Link>
         ))}
+        <div className="mt-3 rounded-xl border border-border/50 bg-muted/30 px-3 py-2.5">
+          <Link
+            href="/settings/invoice-preferences"
+            className="flex items-start gap-2 text-left text-xs text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <Settings className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+            <span>
+              <span className="font-medium text-foreground">Префикс и номерация</span> — по желание напр.{" "}
+              <span className="font-mono">Ф-</span> преди цифрите, нулиране всяка година и начален номер.{" "}
+              <span className="text-primary underline-offset-2 hover:underline">Настройки → Фактури</span>
+            </span>
+          </Link>
+        </div>
       </CardContent>
     </Card>
   );

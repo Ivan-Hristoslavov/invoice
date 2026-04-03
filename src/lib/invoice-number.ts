@@ -1,4 +1,7 @@
-import { generateBulgarianInvoiceNumber } from "@/lib/bulgarian-invoice";
+import {
+  generateBulgarianInvoiceNumber,
+  parseBulgarianInvoiceNumber,
+} from "@/lib/bulgarian-invoice";
 import { getNextInvoiceSequence } from "@/lib/invoice-sequence";
 
 /**
@@ -24,8 +27,9 @@ export async function generateNextInvoiceNumber(
 }
 
 /**
- * Validates if an invoice number follows the correct format
+ * Validates invoice number: 12-digit core YYCCCCNNNNNN, or optional text prefix + same core.
  */
 export function isValidInvoiceNumber(invoiceNumber: string): boolean {
-  return /^\d{12}$/.test(invoiceNumber);
+  if (/^\d{12}$/.test(invoiceNumber)) return true;
+  return parseBulgarianInvoiceNumber(invoiceNumber) !== null;
 }

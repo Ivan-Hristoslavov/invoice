@@ -60,9 +60,13 @@ describe("formatCurrency", () => {
     expect(formatCurrency(100, "EUR")).toBe("€100");
   });
 
-  it("falls back to currency code for unknown currencies", () => {
-    expect(formatCurrency(50, "BGN")).toBe("BGN50");
-    expect(formatCurrency(50, "USD")).toBe("USD50");
+  it("formats BGN and USD with known symbols", () => {
+    expect(formatCurrency(50, "BGN")).toBe("50 лв.");
+    expect(formatCurrency(50, "USD")).toBe("$50");
+  });
+
+  it("uses raw currency code as symbol when unknown", () => {
+    expect(formatCurrency(50, "CHF")).toBe("CHF50");
   });
 
   it("formats decimal amounts correctly", () => {
@@ -80,8 +84,8 @@ describe("getCurrencySymbol", () => {
     expect(getCurrencySymbol("EUR")).toBe("€");
   });
 
-  it("defaults to € for unknown currencies", () => {
-    expect(getCurrencySymbol("XYZ")).toBe("€");
+  it("returns code string for unknown currencies and € by default", () => {
+    expect(getCurrencySymbol("XYZ")).toBe("XYZ");
     expect(getCurrencySymbol()).toBe("€");
   });
 });

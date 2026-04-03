@@ -104,8 +104,6 @@ model Company {
   vatRegistrationNumber   String?
   mol                     String?
   accountablePerson       String?
-  napUserName             String?
-  napPassword             String?
   certificateSerialNumber String?
   certificateThumbprint   String?
   uicType                 String?           @default("BULSTAT")
