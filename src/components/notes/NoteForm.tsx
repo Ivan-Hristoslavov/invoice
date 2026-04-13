@@ -30,7 +30,7 @@ import { toast } from "@/lib/toast";
 import { DEFAULT_VAT_RATE } from "@/config/constants";
 import { isIssuedLikeStatus } from "@/lib/invoice-status";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 import React from "react";
 
 /** Визуално състояние при грешка — като `aria-invalid` при имейл във формите за вход */
@@ -87,18 +87,6 @@ const COLOR_MAP: Record<string, {
     responseKey: "debitNote",
     numberKey: "debitNoteNumber",
   },
-};
-
-const formatPrice = (value: number): string => {
-  const rounded = Math.round(value * 100) / 100;
-  if (Number.isInteger(rounded)) {
-    return rounded.toString();
-  }
-  const oneDecimal = Math.round(value * 10) / 10;
-  if (oneDecimal === rounded) {
-    return oneDecimal.toString();
-  }
-  return rounded.toFixed(2);
 };
 
 interface ErrorBoundaryState {

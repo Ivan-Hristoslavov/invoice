@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
@@ -64,6 +64,7 @@ export function RegisterForm() {
   const [confirmFieldError, setConfirmFieldError] = useState<string | null>(null);
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const inviteEmail = searchParams.get("email");
+  const googleOAuthStartedRef = useRef(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -151,8 +152,10 @@ export function RegisterForm() {
   };
 
   const handleGoogleSignIn = () => {
+    if (isGoogleLoading || googleOAuthStartedRef.current) return;
+    googleOAuthStartedRef.current = true;
     setIsGoogleLoading(true);
-    signIn("google", { callbackUrl });
+    void signIn("google", { callbackUrl });
   };
 
   const passwordStrengthResult = getPasswordStrength(formData.password);

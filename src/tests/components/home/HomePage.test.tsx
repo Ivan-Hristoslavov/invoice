@@ -180,8 +180,8 @@ describe("HomePage", () => {
     });
     await user.click(yearlyToggle);
 
-    // PRO yearly89.99 € → per month 7.5 (formatPrice collapses trailing zero)
-    expect(screen.getByText("7.5")).toBeInTheDocument();
+    // PRO yearly 89.99 € → per month 7.50
+    expect(screen.getByText("7.50")).toBeInTheDocument();
   });
 
   it("shows product feature grid without pagination", () => {

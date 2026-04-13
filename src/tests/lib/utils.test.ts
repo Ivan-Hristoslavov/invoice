@@ -24,58 +24,58 @@ describe("cn", () => {
 });
 
 describe("formatPrice", () => {
-  it("strips decimals for whole numbers", () => {
-    expect(formatPrice(10)).toBe("10");
-    expect(formatPrice(0)).toBe("0");
-    expect(formatPrice(100)).toBe("100");
+  it("always shows two fraction digits", () => {
+    expect(formatPrice(10)).toBe("10.00");
+    expect(formatPrice(0)).toBe("0.00");
+    expect(formatPrice(100)).toBe("100.00");
   });
 
-  it("keeps one decimal for .x0 numbers", () => {
-    expect(formatPrice(1.5)).toBe("1.5");
-    expect(formatPrice(9.1)).toBe("9.1");
+  it("pads one-decimal amounts to two places", () => {
+    expect(formatPrice(1.5)).toBe("1.50");
+    expect(formatPrice(9.1)).toBe("9.10");
   });
 
-  it("shows two decimals when needed", () => {
+  it("shows two decimals for fractional amounts", () => {
     expect(formatPrice(1.23)).toBe("1.23");
     expect(formatPrice(99.99)).toBe("99.99");
   });
 
   it("rounds to 2 decimal places", () => {
-    expect(formatPrice(1.005)).toBe("1");
+    expect(formatPrice(1.005)).toBe("1.00");
     expect(formatPrice(1.234567)).toBe("1.23");
   });
 
   it("handles negative values", () => {
-    expect(formatPrice(-5)).toBe("-5");
-    expect(formatPrice(-1.5)).toBe("-1.5");
+    expect(formatPrice(-5)).toBe("-5.00");
+    expect(formatPrice(-1.5)).toBe("-1.50");
   });
 });
 
 describe("formatCurrency", () => {
   it("defaults to EUR symbol", () => {
-    expect(formatCurrency(10)).toBe("€10");
+    expect(formatCurrency(10)).toBe("€10.00");
   });
 
   it("uses EUR symbol for EUR", () => {
-    expect(formatCurrency(100, "EUR")).toBe("€100");
+    expect(formatCurrency(100, "EUR")).toBe("€100.00");
   });
 
   it("formats BGN and USD with known symbols", () => {
-    expect(formatCurrency(50, "BGN")).toBe("50 лв.");
-    expect(formatCurrency(50, "USD")).toBe("$50");
+    expect(formatCurrency(50, "BGN")).toBe("50.00 лв.");
+    expect(formatCurrency(50, "USD")).toBe("$50.00");
   });
 
   it("uses raw currency code as symbol when unknown", () => {
-    expect(formatCurrency(50, "CHF")).toBe("CHF50");
+    expect(formatCurrency(50, "CHF")).toBe("CHF50.00");
   });
 
   it("formats decimal amounts correctly", () => {
     expect(formatCurrency(9.99)).toBe("€9.99");
-    expect(formatCurrency(0.5)).toBe("€0.5");
+    expect(formatCurrency(0.5)).toBe("€0.50");
   });
 
   it("handles zero", () => {
-    expect(formatCurrency(0)).toBe("€0");
+    expect(formatCurrency(0)).toBe("€0.00");
   });
 });
 

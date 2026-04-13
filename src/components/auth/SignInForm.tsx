@@ -25,6 +25,7 @@ export function SignInForm() {
   const [emailTouched, setEmailTouched] = useState(false);
   const [emailFieldError, setEmailFieldError] = useState<string | null>(null);
   const hasAttemptedMagicLinkRef = useRef(false);
+  const googleOAuthStartedRef = useRef(false);
 
   const isEmailNotVerified = error && error.includes("потвърдете имейла");
 
@@ -123,8 +124,10 @@ export function SignInForm() {
   };
 
   const handleGoogleSignIn = () => {
+    if (isGoogleLoading || googleOAuthStartedRef.current) return;
+    googleOAuthStartedRef.current = true;
     setIsGoogleLoading(true);
-    signIn("google", { callbackUrl });
+    void signIn("google", { callbackUrl });
   };
 
   const handleResendVerification = async () => {
