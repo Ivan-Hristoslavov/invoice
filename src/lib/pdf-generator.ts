@@ -4,6 +4,7 @@ import jsPDF from 'jspdf';
 import { normalizeInvoiceStatus } from '@/lib/invoice-status';
 import { APP_NAME } from '@/config/constants';
 import { resolvePdfVisualPrefsForUser } from '@/lib/pdf-visual-preferences.server';
+import { embedCompanyLogoInPdf } from '@/lib/pdf-company-logo';
 
 type InvoicePdfVisualPrefs = {
   showCompanyLogo: boolean;
@@ -274,22 +275,12 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
   let logoH = 0;
   const headerRowY = 22;
   if (pdfPrefs.showCompanyLogo && invoice.company?.logo) {
-    try {
-      const logoResponse = await fetch(invoice.company.logo);
-      if (logoResponse.ok) {
-        const logoArrayBuffer = await logoResponse.arrayBuffer();
-        const logoBuffer = Buffer.from(logoArrayBuffer);
-        const logoBase64 = logoBuffer.toString("base64");
-        const contentType = logoResponse.headers.get("content-type") || "image/png";
-        const imageFormat = contentType.split("/")[1]?.split(";")[0] || "png";
-        const maxLogoW = 32;
-        const maxLogoH = 18;
-        doc.addImage(logoBase64, imageFormat, margin, headerRowY, maxLogoW, maxLogoH);
-        logoH = maxLogoH;
-      }
-    } catch (e) {
-      console.warn("Could not load company logo:", e);
-    }
+    logoH = await embedCompanyLogoInPdf(
+      doc,
+      invoice.company.logo,
+      { x: margin, y: headerRowY, maxW: 32, maxH: 18 },
+      `invoice:${invoice.id ?? invoice.invoiceNumber ?? "unknown"}`
+    );
   }
 
   const splitMid = margin + contentWidth * 0.5;

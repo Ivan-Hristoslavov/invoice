@@ -1,22 +1,34 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogoUpload } from "@/components/forms/LogoUpload";
 
 interface CompanyLogoSectionProps {
   currentLogoUrl: string | null;
   companyId: string;
+  showCompanyLogoInPdf: boolean;
 }
 
-export function CompanyLogoSection({ currentLogoUrl, companyId }: CompanyLogoSectionProps) {
+export function CompanyLogoSection({
+  currentLogoUrl,
+  companyId,
+  showCompanyLogoInPdf,
+}: CompanyLogoSectionProps) {
   const router = useRouter();
+  const [displayLogoUrl, setDisplayLogoUrl] = useState<string | null>(currentLogoUrl);
+
+  useEffect(() => {
+    setDisplayLogoUrl(currentLogoUrl);
+  }, [currentLogoUrl]);
 
   return (
     <LogoUpload
-      currentLogoUrl={currentLogoUrl}
+      currentLogoUrl={displayLogoUrl}
       companyId={companyId}
-      onLogoUploaded={() => {
-        // Refresh data after upload without full page reload
+      showCompanyLogoInPdf={showCompanyLogoInPdf}
+      onLogoUploaded={(logoUrl) => {
+        setDisplayLogoUrl(logoUrl ? logoUrl : null);
         router.refresh();
       }}
     />
