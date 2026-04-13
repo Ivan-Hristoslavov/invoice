@@ -27,6 +27,7 @@ import {
   Banknote,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BreadcrumbsBar } from "@/components/ui/breadcrumbs-bar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -544,6 +545,14 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
 
   return (
     <div className="app-page-shell">
+      <nav aria-label="Навигационна пътека" className="mb-2 border-b border-border/40 pb-2">
+        <BreadcrumbsBar
+          items={[
+            { label: "Фактури", href: "/invoices" },
+            { label: `Фактура №${invoice.invoiceNumber}` },
+          ]}
+        />
+      </nav>
       {/* Header */}
       <div className="app-page-header">
         {/* Top row: Back button */}

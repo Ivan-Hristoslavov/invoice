@@ -10,7 +10,6 @@ import {
   Minus,
   Trash2,
   X, 
-  Search, 
   Check, 
   Edit, 
   User, 
@@ -40,6 +39,7 @@ import {
   CardDescription
 } from "@/components/ui/card";
 import { Input, NumericInput } from "@/components/ui/input";
+import { SearchField } from "@/components/ui/search-field";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -1098,15 +1098,14 @@ description: error.message?.includes("план")
                         Изберете съществуващ клиент и веднага ще продължите към следващата стъпка.
                       </CardDescription>
                     </div>
-                    <div className="relative w-full lg:w-80">
-                      <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        type="search"
+                    <div className="w-full lg:w-80">
+                      <SearchField
+                        aria-label="Търсене на клиент"
                         placeholder="Търсене на клиент..."
-                        className="h-11 pl-11 font-medium"
                         value={clientSearchQuery}
-                        disabled={isLoadingClients}
-                        onChange={(event) => setClientSearchQuery(event.target.value)}
+                        isDisabled={isLoadingClients}
+                        onChange={setClientSearchQuery}
+                        className="[&_[data-slot=search-field-group]]:min-h-11 [&_[data-slot=search-field-input]]:font-medium"
                       />
                     </div>
                   </div>
@@ -1519,14 +1518,13 @@ description: error.message?.includes("план")
                       </div>
                       <p className="mt-0.5 text-xs text-muted-foreground">Кликнете върху продукт, за да го добавите.</p>
                     </div>
-                    <div className="relative w-full sm:w-64">
-                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
-                      <Input
-                        type="search"
+                    <div className="w-full sm:w-64">
+                      <SearchField
+                        aria-label="Търсене в каталога"
                         placeholder="Търсене..."
-                        className="pl-12 pr-3 font-medium"
                         value={productSearchQuery}
-                        onChange={(e) => setProductSearchQuery(e.target.value)}
+                        onChange={setProductSearchQuery}
+                        className="[&_[data-slot=search-field-group]]:min-h-11 [&_[data-slot=search-field-input]]:font-medium"
                       />
                     </div>
                   </div>

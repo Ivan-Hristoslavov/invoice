@@ -13,7 +13,6 @@ import {
   Inbox,
   Receipt,
   AlertTriangle,
-  BarChart3,
   TrendingDown,
   TrendingUp,
   Calendar,
@@ -33,6 +32,7 @@ import {
   type CreditNoteRow,
   type DebitNoteRow,
 } from "./load-dashboard-data";
+import { DashboardRevenueChart } from "@/components/dashboard/DashboardRevenueChart";
 
 const actionLabels: Record<string, string> = {
   CREATE: "Нова",
@@ -150,7 +150,7 @@ export async function DashboardMainSection({
   const { mergedClientsMap, mergedCompaniesMap, auditInvoicesMap, noteInvoiceMap } = body;
   const { today, topOverdue, overdueCount, overdueTotal } = body;
   const { recentCreditNotes, recentDebitNotes, creditNoteCount, debitNoteCount } = body;
-  const { monthlyRevenue, maxMonthly, auditLogs } = body;
+  const { auditLogs } = body;
 
   return (
     <>
@@ -590,53 +590,14 @@ export async function DashboardMainSection({
         </Card>
       </div>
 
-      <Card className="relative overflow-hidden border border-border/50 shadow-md">
-        <div
-          className="absolute left-0 right-0 top-0 h-[3px] bg-linear-to-r from-blue-500 via-indigo-500 to-violet-500"
-          aria-hidden
-        />
-        <CardHeader className="pb-3 px-3 pt-4 sm:px-6 sm:pt-6">
-          <div className="space-y-2">
-            <AppSectionKicker icon={BarChart3}>Приходи</AppSectionKicker>
-            <CardTitle className="card-title">Последни 6 месеца</CardTitle>
-            <CardDescription className="card-description">Издадени фактури по месеци</CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent className="px-3 pb-4 sm:px-6 sm:pb-6">
-          <div className="flex h-[160px] w-full items-stretch gap-2 sm:gap-3 md:gap-4">
-            {monthlyRevenue.map((m, i) => {
-              const pct = maxMonthly > 0 ? (m.total / maxMonthly) * 100 : 0;
-              const barHeight = Math.max(pct, 3);
-              return (
-                <div
-                  key={i}
-                  className="flex h-full min-h-0 min-w-0 flex-1 flex-col items-center gap-1.5"
-                  title={`${m.label}: ${m.total.toFixed(2)} €`}
-                >
-                  <p className="shrink-0 text-[10px] font-medium tabular-nums leading-none text-muted-foreground/70">
-                    {m.total > 0 ? (m.total >= 1000 ? `${(m.total / 1000).toFixed(1)}k` : m.total.toFixed(0)) : ""}
-                  </p>
-                  <div className="flex min-h-0 w-full flex-1 flex-col justify-end">
-                    <div
-                      className={`w-full rounded-t-md transition-all ${
-                        m.isCurrent
-                          ? "bg-linear-to-t from-emerald-600 to-emerald-400 shadow-sm shadow-emerald-500/30"
-                          : "bg-linear-to-t from-muted-foreground/25 to-muted-foreground/15"
-                      }`}
-                      style={{ height: `${barHeight}%` }}
-                    />
-                  </div>
-                  <p
-                    className={`shrink-0 text-[10px] font-medium capitalize leading-none ${m.isCurrent ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground/70"}`}
-                  >
-                    {m.label}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+      <DashboardRevenueChart
+        anchorMs={body.today.getTime()}
+        rows={body.statsRows.map((r) => ({
+          issueDate: r.issueDate,
+          total: Number(r.total || 0),
+          status: r.status,
+        }))}
+      />
     </>
   );
 }

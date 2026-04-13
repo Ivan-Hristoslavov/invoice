@@ -16,7 +16,6 @@ import { CardStatsMetric } from "@/components/ui/CardStatsMetric";
 import {
   FileText,
   Plus,
-  Search,
   Upload,
   Download,
   Eye,
@@ -38,7 +37,9 @@ import {
   TrendingDown,
   AlertTriangle,
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { SearchField } from "@/components/ui/search-field";
+import { Toolbar } from "@heroui/react";
+import { ButtonGroup } from "@heroui/react";
 import { Badge } from "@/components/ui/badge";
 import { Pagination } from "@/components/ui/pagination";
 import { format } from "date-fns";
@@ -575,14 +576,16 @@ export default function InvoicesClient({
             Създавайте фактури бързо, изглеждайте професионално и проследявайте какво ви дължат
           </p>
         </div>
-        <div className="page-header-actions">
+        <Toolbar className="page-header-actions flex min-h-0 w-full flex-wrap items-center justify-end gap-2 bg-transparent p-0 shadow-none sm:w-auto">
           {canCreateInvoices && (
-            <Button variant="outline" asChild size="lg" className="hidden sm:inline-flex">
-              <Link href="/invoices/import">
-                <Upload className="mr-2 h-4 w-4" />
-                Импорт
-              </Link>
-            </Button>
+            <ButtonGroup size="md" className="hidden sm:inline-flex">
+              <Button variant="outline" asChild size="lg">
+                <Link href="/invoices/import">
+                  <Upload className="mr-2 h-4 w-4" />
+                  Импорт
+                </Link>
+              </Button>
+            </ButtonGroup>
           )}
           {(isLoadingUsage || canCreateInvoice) ? (
             <Button 
@@ -602,7 +605,7 @@ export default function InvoicesClient({
               Нова фактура
             </LockedButton>
           )}
-        </div>
+        </Toolbar>
       </div>
       
       {/* Fast Action Button - Floating */}
@@ -639,14 +642,13 @@ export default function InvoicesClient({
       <Card className="rounded-xl border border-border/40 shadow-sm">
         <CardContent className="!p-2 sm:!p-2.5 md:!p-3">
           <div className="space-y-2 md:hidden">
-            <div className="relative min-w-0">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="search"
+            <div className="min-w-0">
+              <SearchField
+                aria-label="Търсене по номер, клиент или дата"
                 placeholder="Търсене по номер, клиент или дата..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-9 border-border pl-8 text-sm"
+                onChange={setSearchQuery}
+                className="[&_[data-slot=search-field-group]]:min-h-9 [&_[data-slot=search-field-input]]:text-sm"
               />
             </div>
             <div className="grid grid-cols-2 gap-1.5">
@@ -712,14 +714,13 @@ export default function InvoicesClient({
             )}
           </div>
           <div className="hidden gap-2 md:grid md:grid-cols-2 xl:grid-cols-[minmax(0,1.35fr)_minmax(200px,1fr)_minmax(200px,1fr)_auto] xl:items-center">
-            <div className="relative min-w-0">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-              <Input
-                type="search"
+            <div className="min-w-0">
+              <SearchField
+                aria-label="Търсене по номер, клиент или дата"
                 placeholder="Търсене по номер, клиент или дата..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 h-9 border-border text-sm"
+                onChange={setSearchQuery}
+                className="[&_[data-slot=search-field-group]]:min-h-9 [&_[data-slot=search-field-input]]:text-sm"
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter} aria-label="Филтър по статус">
@@ -777,24 +778,26 @@ export default function InvoicesClient({
                 {filteredInvoices.length} от {invoices.length} фактури
               </CardDescription>
             </div>
-            {canCreateInvoices && (isLoadingUsage || canCreateInvoice) && (
-              <Button 
-                asChild 
-                className="h-11 w-full border-0 text-white shadow-lg transition-all gradient-primary hover:shadow-md hover:ring-2 hover:ring-emerald-400/25 sm:w-auto"
-              >
-                <Link href="/invoices/new" className="flex items-center whitespace-nowrap">
-                  <Plus className="mr-2 h-4 w-4" />
+            <Toolbar className="flex min-h-0 w-full flex-col gap-2 bg-transparent p-0 shadow-none sm:w-auto sm:flex-row sm:justify-end">
+              {canCreateInvoices && (isLoadingUsage || canCreateInvoice) && (
+                <Button 
+                  asChild 
+                  className="h-11 w-full border-0 text-white shadow-lg transition-all gradient-primary hover:shadow-md hover:ring-2 hover:ring-emerald-400/25 sm:w-auto"
+                >
+                  <Link href="/invoices/new" className="flex items-center whitespace-nowrap">
+                    <Plus className="mr-2 h-4 w-4" />
+                    <span className="hidden sm:inline">Нова фактура</span>
+                    <span className="sm:hidden">Нова</span>
+                  </Link>
+                </Button>
+              )}
+              {canCreateInvoices && !isLoadingUsage && !canCreateInvoice && (
+                <LockedButton requiredPlan="PRO">
                   <span className="hidden sm:inline">Нова фактура</span>
                   <span className="sm:hidden">Нова</span>
-                </Link>
-              </Button>
-            )}
-            {canCreateInvoices && !isLoadingUsage && !canCreateInvoice && (
-              <LockedButton requiredPlan="PRO">
-                <span className="hidden sm:inline">Нова фактура</span>
-                <span className="sm:hidden">Нова</span>
-              </LockedButton>
-            )}
+                </LockedButton>
+              )}
+            </Toolbar>
           </div>
         </CardHeader>
         

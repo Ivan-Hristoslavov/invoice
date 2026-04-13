@@ -1,7 +1,5 @@
 import { cache } from "react";
 import { createAdminClient } from "@/lib/supabase/server";
-import { format } from "date-fns";
-import { bg } from "date-fns/locale";
 import { isIssuedLikeStatus, normalizeInvoiceStatus, type AppInvoiceStatus } from "@/lib/invoice-status";
 
 export interface InvoiceRow {
@@ -63,12 +61,6 @@ export function calcTrend(current: number, previous: number): { text: string; up
   const pct = ((current - previous) / previous) * 100;
   const sign = pct >= 0 ? "+" : "";
   return { text: `${sign}${pct.toFixed(1)}%`, up: pct >= 0 };
-}
-
-export function formatMonthChartLabel(monthStart: Date): string {
-  const month = monthStart.getMonth();
-  if (month >= 2 && month <= 5) return format(monthStart, "LLLL", { locale: bg });
-  return format(monthStart, "MMM", { locale: bg });
 }
 
 /** Бързи2 заявки за хедър и CTA преди тежкото тяло (Suspense). */
@@ -136,8 +128,6 @@ export interface DashboardBody {
   overdueCount: number;
   overdueTotal: number;
   topOverdue: InvoiceStatsRow[];
-  monthlyRevenue: Array<{ label: string; total: number; isCurrent: boolean }>;
-  maxMonthly: number;
   today: Date;
   clientTrend: { text: string; up: boolean };
 }
@@ -369,21 +359,6 @@ export const getDashboardBody = cache(async (userId: string): Promise<DashboardB
   const overdueCount = overdueInvoices.length;
   const overdueTotal = overdueInvoices.reduce((sum, inv) => sum + Number(inv.total || 0), 0);
 
-  const monthlyRevenue: Array<{ label: string; total: number; isCurrent: boolean }> = [];
-  for (let i = 5; i >= 0; i--) {
-    const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
-    const monthLabel = formatMonthChartLabel(monthStart);
-    const monthTotal = statsRows
-      .filter((inv) => {
-        const d = new Date(inv.issueDate);
-        return isIssuedLikeStatus(inv.status) && d >= monthStart && d < monthEnd;
-      })
-      .reduce((sum, inv) => sum + Number(inv.total || 0), 0);
-    monthlyRevenue.push({ label: monthLabel, total: monthTotal, isCurrent: i === 0 });
-  }
-  const maxMonthly = Math.max(...monthlyRevenue.map((m) => m.total), 1);
-
   return {
     statsRows,
     recentInvoicesData,
@@ -411,8 +386,6 @@ export const getDashboardBody = cache(async (userId: string): Promise<DashboardB
     overdueCount,
     overdueTotal,
     topOverdue,
-    monthlyRevenue,
-    maxMonthly,
     today,
     clientTrend,
   };

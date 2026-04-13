@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Description, FieldError, Fieldset } from "@heroui/react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -172,15 +173,15 @@ export function InvoicePreferencesForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <section className="rounded-2xl border border-border/40 bg-muted/20 p-4 sm:p-6 dark:bg-muted/10">
-          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <Fieldset className="rounded-2xl border border-border/40 bg-muted/20 p-4 sm:p-6 dark:bg-muted/10">
+          <Fieldset.Legend className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Основни стойности
-          </h3>
-          <div className="grid gap-5 sm:grid-cols-2">
+          </Fieldset.Legend>
+          <Fieldset.Group className="grid gap-5 sm:grid-cols-2">
             <FormField
               control={form.control}
               name="defaultVatRate"
-              render={({ field }) => (
+              render={({ field, fieldState }) => (
                 <FormItem>
                   <FormLabel>ДДС ставка по подразбиране (%)</FormLabel>
                   <FormControl>
@@ -191,10 +192,12 @@ export function InvoicePreferencesForm() {
                       className="min-h-11 rounded-2xl text-sm"
                     />
                   </FormControl>
-                  <FormDescription>
+                  <Description className="text-muted-foreground">
                     Тази стойност ще бъде използвана по подразбиране за всички нови продукти и артикули
-                  </FormDescription>
-                  <FormMessage />
+                  </Description>
+                  {fieldState.error?.message ? (
+                    <FieldError>{fieldState.error.message}</FieldError>
+                  ) : null}
                 </FormItem>
               )}
             />
@@ -217,14 +220,14 @@ export function InvoicePreferencesForm() {
                       <SelectItem value="USD">USD - Долар</SelectItem>
                     </SelectContent>
                   </Select>
-                  <FormDescription>
+                  <Description className="text-muted-foreground">
                     Валутата, която ще се използва по подразбиране за нови фактури
-                  </FormDescription>
+                  </Description>
                 </FormItem>
               )}
             />
-          </div>
-        </section>
+          </Fieldset.Group>
+        </Fieldset>
 
         <Separator className="bg-border/60" />
 
