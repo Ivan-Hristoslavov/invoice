@@ -1,14 +1,12 @@
-import Link from "next/link";
 import { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { APP_NAME } from "@/config/constants";
 import { createAdminClient } from "@/lib/supabase/server";
 import { resolveSessionUser } from "@/lib/session-user";
 import CreditNotesClient, { type CreditNoteListItem } from "./CreditNotesClient";
+import { NewCreditNoteButton } from "./NewCreditNoteButton";
 
 export const metadata: Metadata = {
   title: `Сторно документи | ${APP_NAME}`,
@@ -101,12 +99,7 @@ export default async function CreditNotesPage() {
             Преглед на издадени кредитни известия за отменени фактури
           </p>
         </div>
-        <Button asChild className="btn-responsive">
-          <Link href="/credit-notes/new" className="flex items-center whitespace-nowrap">
-            <Plus className="mr-2 h-4 w-4" />
-            Ново кредитно известие
-          </Link>
-        </Button>
+        <NewCreditNoteButton />
       </div>
 
       <CreditNotesClient creditNotes={creditNotes} />
