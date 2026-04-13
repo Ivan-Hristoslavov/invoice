@@ -60,6 +60,26 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
 }));
 
 vi.mock("@heroui/react", () => ({
+  Switch: ({
+    isSelected,
+    onSelectionChange,
+    "aria-label": ariaLabel,
+    className,
+  }: {
+    isSelected?: boolean;
+    onSelectionChange?: (v: boolean) => void;
+    "aria-label"?: string;
+    className?: string;
+  }) => (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={isSelected ?? false}
+      aria-label={ariaLabel}
+      className={className}
+      onClick={() => onSelectionChange?.(!isSelected)}
+    />
+  ),
   Button: ({
     children,
     onPress,
@@ -155,7 +175,7 @@ describe("HomePage", () => {
     // Price and currency are split in markup: "8.99" + "€/мес" (see HomePageClient pricing grid)
     expect(screen.getByText("8.99")).toBeInTheDocument();
 
-    const yearlyToggle = screen.getByRole("button", {
+    const yearlyToggle = screen.getByRole("switch", {
       name: "Превключване към годишно ценообразуване",
     });
     await user.click(yearlyToggle);
