@@ -25,6 +25,7 @@ function useViewTransitionFinishedRejectionPatch() {
       try {
         const transition = original(callback);
         void transition.finished.catch(() => {});
+        void transition.ready.catch(() => {});
         return transition;
       } catch {
         if (callback) callback();

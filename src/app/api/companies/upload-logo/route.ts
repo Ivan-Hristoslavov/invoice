@@ -180,11 +180,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Update company with new logo URL
+    // Update company with new logo URL (scope to owner)
     const { error: updateError } = await supabase
       .from("Company")
       .update({ logo: logoUrl })
-      .eq("id", companyId);
+      .eq("id", companyId)
+      .eq("userId", session.user.id as string);
 
     if (updateError) {
       // If update fails, try to delete the uploaded file

@@ -1,9 +1,42 @@
 "use client";
 
 import * as React from "react";
-import { AlertDialog as HeroUIAlertDialog } from "@heroui/react";
-import { Button } from "@/components/ui/button";
+import { AlertDialog as HeroUIAlertDialog, buttonVariants } from "@heroui/react";
+import type { ButtonProps } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+const variantToHero: Record<
+  NonNullable<ButtonProps["variant"]>,
+  "primary" | "secondary" | "tertiary" | "outline" | "ghost" | "danger"
+> = {
+  default: "primary",
+  destructive: "danger",
+  "outline-solid": "outline",
+  outline: "outline",
+  secondary: "secondary",
+  ghost: "ghost",
+  link: "ghost",
+  soft: "tertiary",
+  surface: "tertiary",
+  classic: "primary",
+  solid: "primary",
+};
+
+const sizeToHero: Record<NonNullable<ButtonProps["size"]>, "sm" | "md" | "lg"> = {
+  sm: "sm",
+  default: "md",
+  lg: "lg",
+  icon: "md",
+  "1": "sm",
+  "2": "md",
+  "3": "lg",
+  "4": "lg",
+};
+
+const triggerButtonLayout =
+  "inline-flex min-h-10 flex-row items-center justify-center gap-1.5 rounded-2xl text-center text-sm font-medium leading-tight whitespace-normal sm:min-h-11 sm:whitespace-nowrap";
+const triggerButtonInteraction =
+  "data-[hovered=true]:opacity-100 data-[pressed=true]:opacity-100 data-[hovered=true]:shadow-md data-[hovered=true]:ring-2 data-[hovered=true]:ring-primary/25 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
 // ---------- Root ----------
 interface AlertDialogProps {
@@ -39,7 +72,7 @@ const AlertDialogTrigger = ({
   children?: React.ReactNode;
   [key: string]: unknown;
 }) => (
-  <HeroUIAlertDialog.Trigger {...(props as any)}>
+  <HeroUIAlertDialog.Trigger {...(props as Record<string, unknown>)}>
     {children}
   </HeroUIAlertDialog.Trigger>
 );
@@ -55,22 +88,22 @@ const AlertDialogOverlay = () => null;
 
 // ---------- Content ----------
 const AlertDialogContent = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
+  HTMLElement,
+  React.HTMLAttributes<HTMLElement>
 >(({ className, children, ...props }, ref) => (
   <HeroUIAlertDialog.Backdrop>
     <HeroUIAlertDialog.Container>
-      <HeroUIAlertDialog.Dialog>
-        <div
-          ref={ref}
-          className={cn(
-            "glass-card w-[92vw] max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl p-0",
+      <HeroUIAlertDialog.Dialog
+        {...({
+          ref,
+          className: cn(
+            "glass-card flex max-h-[min(90vh,720px)] w-[min(92vw,28rem)] flex-col overflow-hidden rounded-2xl border border-border/50 shadow-2xl outline-none",
             className
-          )}
-          {...props}
-        >
-          {children}
-        </div>
+          ),
+          ...props,
+        } as React.ComponentProps<typeof HeroUIAlertDialog.Dialog>)}
+      >
+        {children}
       </HeroUIAlertDialog.Dialog>
     </HeroUIAlertDialog.Container>
   </HeroUIAlertDialog.Backdrop>
@@ -83,8 +116,8 @@ const AlertDialogHeader = ({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <HeroUIAlertDialog.Header
-    className={cn("flex flex-col space-y-2 p-6 pb-0", className)}
-    {...(props as any)}
+    className={cn("flex min-h-0 flex-1 flex-col gap-2 p-6 pb-2", className)}
+    {...(props as Record<string, unknown>)}
   />
 );
 AlertDialogHeader.displayName = "AlertDialogHeader";
@@ -96,10 +129,10 @@ const AlertDialogFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <HeroUIAlertDialog.Footer
     className={cn(
-      "flex flex-col-reverse sm:flex-row sm:justify-end gap-2 p-6 pt-4",
+      "mt-auto flex shrink-0 flex-col gap-2 border-t border-border/50 bg-muted/20 px-6 py-4 sm:flex-row sm:justify-end sm:gap-3 dark:bg-muted/10",
       className
     )}
-    {...(props as any)}
+    {...(props as Record<string, unknown>)}
   />
 );
 AlertDialogFooter.displayName = "AlertDialogFooter";
@@ -110,9 +143,9 @@ const AlertDialogTitle = React.forwardRef<
   React.HTMLAttributes<HTMLHeadingElement>
 >(({ className, ...props }, ref) => (
   <HeroUIAlertDialog.Heading
-    ref={ref as any}
+    ref={ref as React.Ref<HTMLHeadingElement>}
     className={cn("text-lg font-semibold leading-none tracking-tight", className)}
-    {...(props as any)}
+    {...(props as Record<string, unknown>)}
   />
 ));
 AlertDialogTitle.displayName = "AlertDialogTitle";
@@ -124,7 +157,7 @@ const AlertDialogDescription = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("px-6 py-4 text-sm text-muted-foreground", className)}
+    className={cn("text-sm text-muted-foreground", className)}
     {...props}
   >
     {children}
@@ -132,40 +165,111 @@ const AlertDialogDescription = React.forwardRef<
 ));
 AlertDialogDescription.displayName = "AlertDialogDescription";
 
-// ---------- Action (closes dialog after click) ----------
+type AlertDialogButtonProps = Omit<ButtonProps, "asChild" | "loading">;
+
+// ---------- Action (closes dialog; single button — no nesting) ----------
 const AlertDialogAction = React.forwardRef<
   HTMLButtonElement,
-  React.ComponentPropsWithoutRef<typeof Button>
->(({ className, children, onClick, ...props }, ref) => (
-  <HeroUIAlertDialog.CloseTrigger>
-    <Button
-      ref={ref}
-      className={className}
-      onClick={onClick}
-      {...props}
-    >
-      {children}
-    </Button>
-  </HeroUIAlertDialog.CloseTrigger>
-));
+  AlertDialogButtonProps
+>(
+  (
+    {
+      className,
+      children,
+      onClick,
+      variant = "default",
+      size = "default",
+      disabled,
+      type: _type,
+      ...props
+    },
+    ref
+  ) => {
+    const heroVariant = variantToHero[variant] ?? "primary";
+    const heroSize = sizeToHero[size] ?? "md";
+    const isIconOnly = size === "icon";
+
+    const ariaFromProps = (props as { "aria-label"?: string })["aria-label"];
+    const accessibleLabel =
+      ariaFromProps ?? (typeof children === "string" ? children : undefined);
+
+    return (
+      <HeroUIAlertDialog.CloseTrigger
+        {...({
+          ref,
+          isDisabled: disabled,
+          ...(accessibleLabel ? { "aria-label": accessibleLabel } : {}),
+          className: cn(
+            buttonVariants({
+              variant: heroVariant,
+              size: heroSize,
+              isIconOnly,
+            }),
+            triggerButtonLayout,
+            triggerButtonInteraction,
+            disabled && "pointer-events-none opacity-60",
+            className
+          ),
+          onPress: () => {
+            onClick?.({} as React.MouseEvent<HTMLButtonElement>);
+          },
+          children,
+          ...props,
+          // HeroUI CloseTrigger defaults to slot "close" (top-right). Footer actions must not use that slot.
+          slot: undefined,
+        } as React.ComponentProps<typeof HeroUIAlertDialog.CloseTrigger>)}
+      />
+    );
+  }
+);
 AlertDialogAction.displayName = "AlertDialogAction";
 
 // ---------- Cancel ----------
 const AlertDialogCancel = React.forwardRef<
   HTMLButtonElement,
-  React.ComponentPropsWithoutRef<typeof Button>
->(({ className, children, ...props }, ref) => (
-  <HeroUIAlertDialog.CloseTrigger>
-    <Button
-      ref={ref}
-      variant="outline"
-      className={cn("mt-2 sm:mt-0", className)}
-      {...props}
-    >
-      {children}
-    </Button>
-  </HeroUIAlertDialog.CloseTrigger>
-));
+  AlertDialogButtonProps
+>(
+  (
+    { className, children, onClick, variant = "outline", size = "default", disabled, type: _type, ...props },
+    ref
+  ) => {
+    const heroVariant = variantToHero[variant] ?? "outline";
+    const heroSize = sizeToHero[size] ?? "md";
+    const isIconOnly = size === "icon";
+
+    const ariaFromProps = (props as { "aria-label"?: string })["aria-label"];
+    const accessibleLabel =
+      ariaFromProps ?? (typeof children === "string" ? children : undefined);
+
+    return (
+      <HeroUIAlertDialog.CloseTrigger
+        {...({
+          ref,
+          isDisabled: disabled,
+          ...(accessibleLabel ? { "aria-label": accessibleLabel } : {}),
+          className: cn(
+            buttonVariants({
+              variant: heroVariant,
+              size: heroSize,
+              isIconOnly,
+            }),
+            triggerButtonLayout,
+            triggerButtonInteraction,
+            "mt-0 sm:mt-0",
+            disabled && "pointer-events-none opacity-60",
+            className
+          ),
+          onPress: () => {
+            onClick?.({} as React.MouseEvent<HTMLButtonElement>);
+          },
+          children,
+          ...props,
+          slot: undefined,
+        } as React.ComponentProps<typeof HeroUIAlertDialog.CloseTrigger>)}
+      />
+    );
+  }
+);
 AlertDialogCancel.displayName = "AlertDialogCancel";
 
 export {

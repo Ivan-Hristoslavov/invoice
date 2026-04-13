@@ -25,20 +25,34 @@ export default async function CompanySettingsPage() {
   }
 
   let company = null;
+  let showCompanyLogoInPdf = true;
   try {
     const supabase = createAdminClient();
-    const { data, error } = await supabase
-      .from("Company")
-      .select("*")
-      .eq("userId", sessionUser.id)
-      .single();
+    const [companyRes, userRes] = await Promise.all([
+      supabase.from("Company").select("*").eq("userId", sessionUser.id).single(),
+      supabase
+        .from("User")
+        .select("invoicePreferences")
+        .eq("id", sessionUser.id)
+        .maybeSingle(),
+    ]);
 
-    if (!error && data) {
-      company = data;
+    if (!companyRes.error && companyRes.data) {
+      company = companyRes.data;
+    }
+
+    const prefs = userRes.data?.invoicePreferences as
+      | { showCompanyLogo?: boolean }
+      | null
+      | undefined;
+    if (typeof prefs?.showCompanyLogo === "boolean") {
+      showCompanyLogoInPdf = prefs.showCompanyLogo;
     }
   } catch (error) {
     console.error("Грешка при връзка с базата данни:", error);
   }
 
-  return <CompanySettingsTabs company={company} />;
+  return (
+    <CompanySettingsTabs company={company} showCompanyLogoInPdf={showCompanyLogoInPdf} />
+  );
 }

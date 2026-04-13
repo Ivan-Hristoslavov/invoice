@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import jsPDF from 'jspdf';
 import { resolvePdfVisualPrefsForUser } from '@/lib/pdf-visual-preferences.server';
+import { embedCompanyLogoInPdf } from '@/lib/pdf-company-logo';
 
 // Colors for professional design
 const COLORS = {
@@ -71,26 +72,13 @@ export async function generateCreditNotePdfServer(creditNote: any): Promise<Buff
   let yPos = 24;
   let logoHeight = 0;
   
-  // Load and add company logo if available
   if (pdfPrefs.showCompanyLogo && creditNote.company?.logo) {
-    try {
-      const logoResponse = await fetch(creditNote.company.logo);
-      if (logoResponse.ok) {
-        const logoArrayBuffer = await logoResponse.arrayBuffer();
-        const logoBuffer = Buffer.from(logoArrayBuffer);
-        const logoBase64 = logoBuffer.toString('base64');
-        const contentType = logoResponse.headers.get('content-type') || 'image/png';
-        const imageFormat = contentType.split('/')[1]?.split(';')[0] || 'png';
-        
-        const maxLogoWidth = 30;
-        const maxLogoHeight = 20;
-        
-        doc.addImage(logoBase64, imageFormat, margin, yPos, maxLogoWidth, maxLogoHeight);
-        logoHeight = maxLogoHeight;
-      }
-    } catch (error) {
-      console.warn('Could not load company logo:', error);
-    }
+    logoHeight = await embedCompanyLogoInPdf(
+      doc,
+      creditNote.company.logo,
+      { x: margin, y: yPos, maxW: 30, maxH: 20 },
+      `credit-note:${creditNote.id ?? creditNote.creditNoteNumber ?? "unknown"}`
+    );
   }
   
   // Credit Note title section (right side)

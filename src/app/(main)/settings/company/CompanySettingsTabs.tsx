@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { CompanyForm } from "./CompanyForm";
 import { CompanyLogoSection } from "./CompanyLogoSection";
-import { Building2, MapPin, Receipt, CreditCard, Image, Lock } from "lucide-react";
+import { Building2, CreditCard, Image, Lock } from "lucide-react";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 
 interface CompanyData {
@@ -44,9 +44,11 @@ interface CompanyData {
 
 interface CompanySettingsTabsProps {
   company: CompanyData | null;
+  /** From User.invoicePreferences — controls whether PDFs embed the logo */
+  showCompanyLogoInPdf: boolean;
 }
 
-export function CompanySettingsTabs({ company }: CompanySettingsTabsProps) {
+export function CompanySettingsTabs({ company, showCompanyLogoInPdf }: CompanySettingsTabsProps) {
   const isNew = !company;
   const { canUseFeature } = useSubscriptionLimit();
   const canUseLogo = canUseFeature('customBranding');
@@ -75,7 +77,6 @@ export function CompanySettingsTabs({ company }: CompanySettingsTabsProps) {
       </TabsList>
       </div>
 
-      {activeTab === "info" && (
       <TabsContent value="info">
         <Card>
           <CardHeader>
@@ -118,9 +119,8 @@ export function CompanySettingsTabs({ company }: CompanySettingsTabsProps) {
           </CardContent>
         </Card>
       </TabsContent>
-      )}
 
-      {!isNew && activeTab === "bank" && (
+      {!isNew && (
         <TabsContent value="bank">
           <Card>
             <CardHeader>
@@ -147,12 +147,12 @@ export function CompanySettingsTabs({ company }: CompanySettingsTabsProps) {
                 isBankInfo={true}
                 isNewCompany={isNew}
               />
-            </CardContent>
-          </Card>
+          </CardContent>
+        </Card>
         </TabsContent>
       )}
 
-      {!isNew && activeTab === "logo" && (
+      {!isNew && (
         <TabsContent value="logo">
           <Card>
             <CardHeader>
@@ -163,7 +163,7 @@ export function CompanySettingsTabs({ company }: CompanySettingsTabsProps) {
                 <div>
                   <CardTitle>Лого на компанията</CardTitle>
                   <CardDescription>
-                    Качете лого, което ще се показва на фактурите
+                    Качете лого за фактури, PDF и известия. За PDF има отделна настройка в предпочитанията за фактури.
                   </CardDescription>
                 </div>
               </div>
@@ -173,6 +173,7 @@ export function CompanySettingsTabs({ company }: CompanySettingsTabsProps) {
                 <CompanyLogoSection
                   currentLogoUrl={company?.logo ?? null}
                   companyId={company?.id || ""}
+                  showCompanyLogoInPdf={showCompanyLogoInPdf}
                 />
               ) : (
                 <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-amber-300 bg-amber-50/50 px-6 py-10 text-center dark:border-amber-700 dark:bg-amber-950/20">
