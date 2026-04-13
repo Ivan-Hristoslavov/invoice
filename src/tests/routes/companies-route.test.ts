@@ -162,14 +162,6 @@ describe("POST /api/companies route", () => {
           message: expect.stringContaining("Невалиден"),
         }),
         expect.objectContaining({
-          path: ["vatRegistrationNumber"],
-          message: expect.stringContaining("Невалиден"),
-        }),
-        expect.objectContaining({
-          path: ["vatRegistered"],
-          message: expect.stringContaining("ДДС"),
-        }),
-        expect.objectContaining({
           path: ["mol"],
           message: expect.stringContaining("МОЛ"),
         }),

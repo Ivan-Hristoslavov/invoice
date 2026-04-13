@@ -1,7 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ClientsClient from "@/app/(main)/clients/ClientsClient";
+
+const mockPush = vi.fn();
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: mockPush,
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+    back: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}));
 
 // Mock Next.js Link
 vi.mock("next/link", () => ({
@@ -55,12 +67,12 @@ describe("ClientsClient", () => {
 
   it("shows approaching-limit warning", () => {
     renderClients({ isApproachingLimit: true, clientsRemaining: 2 });
-    expect(screen.getByText(/Остават ви само/)).toBeInTheDocument();
+    expect(screen.getByText(/Надградете за повече и търсене по ЕИК/)).toBeInTheDocument();
   });
 
   it("shows at-limit error", () => {
     renderClients({ isAtLimit: true, isApproachingLimit: false, clientsRemaining: 0 });
-    expect(screen.getByText(/Достигнахте лимита/)).toBeInTheDocument();
+    expect(screen.getByText(/Лимитът за клиенти е достигнат/)).toBeInTheDocument();
   });
 
   it("filters clients by search query", async () => {
@@ -80,23 +92,20 @@ describe("ClientsClient", () => {
 
   it("switches to table view", async () => {
     renderClients();
-    const listBtn = screen.getAllByRole("button").find((btn) =>
-      btn.querySelector("svg")
-    );
-    // Click the second view toggle button (list/table)
-    const toggleButtons = screen.getAllByRole("button").filter((b) =>
-      b.className.includes("h-9")
-    );
-    if (toggleButtons[1]) {
-      fireEvent.click(toggleButtons[1]);
-      expect(screen.getByRole("table")).toBeInTheDocument();
-    }
+    fireEvent.click(screen.getByRole("button", { name: "Табличен изглед" }));
+    expect(screen.getByRole("grid", { name: "Списък с клиенти" })).toBeInTheDocument();
   });
 
   it("shows invoice count for each client (cards view)", () => {
     renderClients();
-    expect(screen.getByText(/5 фактури/)).toBeInTheDocument();
-    expect(screen.getAllByText(/0 фактури/).length).toBeGreaterThan(0);
+    const card1 = screen.getByText("Клиент 1").closest(".group");
+    expect(card1).toBeTruthy();
+    expect(within(card1 as HTMLElement).getByText("5")).toBeInTheDocument();
+    expect(within(card1 as HTMLElement).getByText("фактури")).toBeInTheDocument();
+    const card2 = screen.getByText("Клиент 2").closest(".group");
+    expect(card2).toBeTruthy();
+    expect(within(card2 as HTMLElement).getByText("0")).toBeInTheDocument();
+    expect(within(card2 as HTMLElement).getByText("фактури")).toBeInTheDocument();
   });
 
   it("shows empty state when no clients", () => {
@@ -126,7 +135,7 @@ describe("ClientsClient pagination", () => {
     expect(screen.getByText(/1–12 от 25 клиента/)).toBeInTheDocument();
 
     // Click page 2 button
-    fireEvent.click(screen.getByRole("button", { name: "2" }));
+    fireEvent.click(screen.getByRole("button", { name: "Страница 2" }));
     expect(screen.getByText(/13–24 от 25 клиента/)).toBeInTheDocument();
     expect(screen.getByText("Клиент 13")).toBeInTheDocument();
   });
@@ -134,7 +143,7 @@ describe("ClientsClient pagination", () => {
   it("resets to page 1 when search changes", async () => {
     render(<ClientsClient {...defaultProps} clients={manyClients} />);
     // Go to page 3 (client 25)
-    fireEvent.click(screen.getByRole("button", { name: "3" }));
+    fireEvent.click(screen.getByRole("button", { name: "Страница 3" }));
     expect(screen.getByText("Клиент 25")).toBeInTheDocument();
 
     // Search for "Клиент 25" specifically — only 1 match, pagination disappears, page resets

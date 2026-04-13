@@ -3,6 +3,18 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ProductsClient from "@/app/(main)/products/ProductsClient";
 
+const mockPush = vi.fn();
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: mockPush,
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+    back: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}));
+
 vi.mock("next/link", () => ({
   default: ({ children, href }: { children: React.ReactNode; href: string }) => (
     <a href={href}>{children}</a>
@@ -48,14 +60,14 @@ describe("ProductsClient", () => {
 
   it("shows approaching-limit warning", () => {
     render(<ProductsClient {...defaultProps} isApproachingLimit productsRemaining={2} />);
-    expect(screen.getByText(/Остават ви само/)).toBeInTheDocument();
+    expect(screen.getByText(/Надградете за неограничени артикули/)).toBeInTheDocument();
   });
 
   it("shows at-limit error", () => {
     render(
       <ProductsClient {...defaultProps} isAtLimit isApproachingLimit={false} productsRemaining={0} />
     );
-    expect(screen.getByText(/Достигнахте лимита/)).toBeInTheDocument();
+    expect(screen.getByText(/Лимитът за продукти е достигнат/)).toBeInTheDocument();
   });
 
   it("filters by search query", async () => {
@@ -80,8 +92,11 @@ describe("ProductsClient", () => {
 
   it("shows prices with € symbol", () => {
     render(<ProductsClient {...defaultProps} />);
-    // Product 1 price is 10 * 1 = 10
-    expect(screen.getByText(/10\.00 €/)).toBeInTheDocument();
+    // Product 1 price is 10; amount and € are in sibling spans in the card
+    const productCard = screen.getByText("Продукт 1").closest("a");
+    expect(productCard).toBeTruthy();
+    expect(productCard).toHaveTextContent("10");
+    expect(productCard).toHaveTextContent("€");
   });
 
   it("shows stats: total products, average price, with tax count", () => {
@@ -93,13 +108,8 @@ describe("ProductsClient", () => {
 
   it("switches to table view", () => {
     render(<ProductsClient {...defaultProps} />);
-    const toggleBtns = screen.getAllByRole("button").filter((b) =>
-      b.className.includes("h-9 px-3")
-    );
-    if (toggleBtns[1]) {
-      fireEvent.click(toggleBtns[1]);
-      expect(screen.getByRole("table")).toBeInTheDocument();
-    }
+    fireEvent.click(screen.getByRole("button", { name: "Табличен изглед" }));
+    expect(screen.getByRole("grid", { name: "Списък с продукти" })).toBeInTheDocument();
   });
 });
 
@@ -119,7 +129,7 @@ describe("ProductsClient pagination", () => {
 
   it("navigates to page 2", () => {
     render(<ProductsClient {...defaultProps} products={manyProducts} />);
-    const page2Btn = screen.getByRole("button", { name: "2" });
+    const page2Btn = screen.getByRole("button", { name: "Страница 2" });
     fireEvent.click(page2Btn);
     expect(screen.getByText("Продукт 13")).toBeInTheDocument();
     expect(screen.queryByText("Продукт 1")).not.toBeInTheDocument();
@@ -128,7 +138,7 @@ describe("ProductsClient pagination", () => {
   it("resets to page 1 on search", async () => {
     render(<ProductsClient {...defaultProps} products={manyProducts} />);
     // Go to last page
-    fireEvent.click(screen.getByRole("button", { name: "2" }));
+    fireEvent.click(screen.getByRole("button", { name: "Страница 2" }));
     expect(screen.getByText("Продукт 20")).toBeInTheDocument();
 
     // Search for exact name that only matches product 20
