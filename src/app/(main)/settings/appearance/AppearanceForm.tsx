@@ -55,7 +55,7 @@ export function AppearanceForm() {
               variant={theme === value ? "default" : "outline"}
               size="sm"
               className={cn(
-                "gap-2",
+                "gap-2 text-foreground",
                 theme === value && "ring-2 ring-primary ring-offset-2 ring-offset-background"
               )}
               onClick={() => setTheme(value)}

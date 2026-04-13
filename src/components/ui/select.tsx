@@ -85,8 +85,12 @@ const SelectTrigger = React.forwardRef<
   <HeroUISelect.Trigger
     ref={ref}
     className={cn(
-      "flex min-h-9 w-full min-w-0 items-center justify-between gap-2 rounded-2xl px-4 py-2 text-sm font-medium sm:min-h-12 sm:py-2.5",
+      "flex min-h-9 w-full min-w-0 items-center justify-between gap-2 rounded-2xl border border-border/80 bg-background px-4 py-2 text-sm font-medium text-foreground shadow-sm sm:min-h-12 sm:py-2.5",
       "whitespace-nowrap [&_[data-slot=select-value]]:min-w-0 [&_[data-slot=select-value]]:truncate",
+      "transition-[border-color,box-shadow,background-color] duration-150",
+      "data-[hovered=true]:bg-background data-[hovered=true]:border-primary/35",
+      "data-[hovered=true]:shadow-[0_0_0_1px_hsl(var(--primary)/0.18)]",
+      "data-[focus-visible=true]:border-primary/50 data-[focus-visible=true]:ring-2 data-[focus-visible=true]:ring-ring/40",
       className
     )}
     {...props}

@@ -194,7 +194,7 @@ describe("POST /api/invoices route", () => {
     const { supabase, getInsertedInvoicePayload, getInsertedItemsPayload } = createInvoiceSupabaseMock();
     mockCreateAdminClient.mockReturnValue(supabase);
     mockFetchOwnedCompanyAndClient.mockResolvedValue({
-      company: { id: "company_1", bulstatNumber: "204676177", name: "Тест ООД" },
+      company: { id: "company_1", bulstatNumber: "175074752", name: "Тест ООД" },
       client: { id: "client_1", name: "Клиент ЕООД" },
     });
     mockPrepareDocumentItems.mockReturnValue({

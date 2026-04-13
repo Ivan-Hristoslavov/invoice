@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { exportInvoicePdfBuffer } from './invoice-export';
+import { exportInvoicePdfBuffer } from './invoice-export-pdf-buffer';
 import { createAdminClient } from './supabase/server';
 import { withDocumentSnapshots } from './document-snapshots';
 import { APP_NAME } from "@/config/constants";
@@ -53,7 +53,7 @@ interface SendInvoiceEmailParams {
   bankDetails?: {
     bankName: string;
     iban: string;
-    bic: string;
+    bic?: string;
     accountHolder: string;
   };
 }
@@ -328,7 +328,7 @@ export async function sendInvoiceWithPaymentDetails({
               <h4 style="margin: 0 0 10px 0; font-size: 16px;">🏦 Банков превод:</h4>
               <p style="margin: 0 0 5px 0;">Банка: ${bankDetails.bankName}</p>
               <p style="margin: 0 0 5px 0;">IBAN: ${bankDetails.iban}</p>
-              <p style="margin: 0 0 5px 0;">BIC: ${bankDetails.bic}</p>
+              ${bankDetails.bic ? `<p style="margin: 0 0 5px 0;">BIC: ${bankDetails.bic}</p>` : ""}
               <p style="margin: 0 0 5px 0;">Получател: ${bankDetails.accountHolder}</p>
               <p style="margin: 0; font-style: italic;">Моля, посочете номера на фактурата (${invoiceNumber}) като основание за плащането.</p>
             </div>

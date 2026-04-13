@@ -81,6 +81,7 @@ export async function POST(
       sellerSnapshot: original.sellerSnapshot ?? null,
       buyerSnapshot: original.buyerSnapshot ?? null,
       itemsSnapshot: original.itemsSnapshot ?? null,
+      goodsRecipientSnapshot: original.goodsRecipientSnapshot ?? null,
     };
 
     const { data: newInvoice, error: createError } = await supabase

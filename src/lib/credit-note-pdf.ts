@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import jsPDF from 'jspdf';
+import { resolvePdfVisualPrefsForUser } from '@/lib/pdf-visual-preferences.server';
 
 // Colors for professional design
 const COLORS = {
@@ -27,6 +28,8 @@ function formatCurrency(amount: number, currency: string): string {
 
 // Server-side PDF generation function for Credit Notes
 export async function generateCreditNotePdfServer(creditNote: any): Promise<Buffer> {
+  const pdfPrefs = await resolvePdfVisualPrefsForUser(creditNote.userId as string | undefined);
+
   // Load fonts from file system
   const fontPath = join(process.cwd(), 'public', 'fonts');
   const regularFont = readFileSync(join(fontPath, 'Roboto-Regular.ttf'));
@@ -69,7 +72,7 @@ export async function generateCreditNotePdfServer(creditNote: any): Promise<Buff
   let logoHeight = 0;
   
   // Load and add company logo if available
-  if (creditNote.company?.logo) {
+  if (pdfPrefs.showCompanyLogo && creditNote.company?.logo) {
     try {
       const logoResponse = await fetch(creditNote.company.logo);
       if (logoResponse.ok) {

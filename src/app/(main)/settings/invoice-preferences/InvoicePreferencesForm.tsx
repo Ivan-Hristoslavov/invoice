@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,8 +21,10 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Info } from "lucide-react";
+import Link from "next/link";
 import { toast } from "@/lib/toast";
 import { DEFAULT_VAT_RATE } from "@/config/constants";
+import { formatTenDigitSequenceDisplay } from "@/lib/bulgarian-invoice";
 
 const preferencesSchema = z.object({
   // Основни настройки за ДДС
@@ -34,7 +36,8 @@ const preferencesSchema = z.object({
   
   // Настройки за номерация
   invoicePrefix: z.string().max(10).optional(),
-  resetNumberingYearly: z.boolean().default(true),
+  /** Kept for backward compatibility; sequence no longer resets by calendar year. */
+  resetNumberingYearly: z.boolean().default(false),
   startingInvoiceNumber: z
     .number()
     .int()
@@ -69,13 +72,18 @@ export function InvoicePreferencesForm() {
     resolver: zodResolver(preferencesSchema) as any,
     defaultValues: {
       defaultVatRate: DEFAULT_VAT_RATE,
-      resetNumberingYearly: true,
+      resetNumberingYearly: false,
       defaultCurrency: "EUR",
       showAmountInWords: true,
       showCompanyLogo: true,
       autoArchiveAfterDays: 365,
       keepDraftDays: 30,
     },
+  });
+
+  const migrationStartWatch = useWatch({
+    control: form.control,
+    name: "startingInvoiceNumber",
   });
 
   // Load default values from API
@@ -88,7 +96,7 @@ export function InvoicePreferencesForm() {
           form.reset({
             defaultVatRate: data.defaultVatRate ?? DEFAULT_VAT_RATE,
             invoicePrefix: data.invoicePrefix ?? "",
-            resetNumberingYearly: data.resetNumberingYearly ?? true,
+            resetNumberingYearly: data.resetNumberingYearly ?? false,
             startingInvoiceNumber: data.startingInvoiceNumber ?? undefined,
             defaultCurrency: data.defaultCurrency ?? "EUR",
             showAmountInWords: data.showAmountInWords ?? true,
@@ -268,7 +276,8 @@ export function InvoicePreferencesForm() {
                       Нулиране на номерация годишно
                     </FormLabel>
                     <FormDescription>
-                      Започване на номерацията от 1 всяка нова година
+                      Оставена за съвместимост. Номерацията вече е непрекъсната (без нулиране на 1 януари), за да
+                      отговаря на обичайните изисквания за хронология и одит.
                     </FormDescription>
                   </div>
                   <FormControl>
@@ -298,8 +307,19 @@ export function InvoicePreferencesForm() {
                     className="min-h-11 rounded-2xl text-sm"
                   />
                 </FormControl>
-                <FormDescription>
-                  Задайте начален номер, ако мигрирате от друга система. Следващите фактури ще започват от този номер. Формат: 10 цифри (0000000001, 0000000002, ...)
+                <FormDescription className="space-y-1">
+                  <span>
+                    Задайте начален пореден номер при миграция. Първата нова фактура ще използва поне тази
+                    стойност и няма да намалява спрямо вече издадени номера.
+                  </span>
+                  <span className="block font-mono text-xs text-foreground">
+                    10-цифрен пореден блок:{" "}
+                    {formatTenDigitSequenceDisplay(
+                      migrationStartWatch != null && !Number.isNaN(migrationStartWatch)
+                        ? migrationStartWatch
+                        : 1
+                    )}
+                  </span>
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -358,20 +378,38 @@ export function InvoicePreferencesForm() {
 
         <section className="rounded-2xl border border-border/40 bg-muted/20 p-4 sm:p-6 dark:bg-muted/10">
           <h3 className="text-base font-semibold tracking-tight">Визуални настройки</h3>
-          <p className="mb-4 text-sm text-muted-foreground">Лого и сума с думи в PDF</p>
+          <p className="mb-3 text-sm text-muted-foreground">
+            Лого и сума с думи в PDF. Промените важат за следващи изтегляния и изпращания — вече издадените
+            фактури не се променят автоматично.
+          </p>
+          <div className="mb-4 flex gap-3 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 text-sm text-foreground/90 dark:bg-primary/10">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+            <p className="m-0 leading-relaxed">
+              <span className="font-semibold text-foreground">Лого:</span> този превключвател само включва или
+              изключва логото в PDF. Качете файл от{" "}
+              <Link
+                href="/settings/company"
+                className="font-semibold text-primary underline-offset-4 hover:underline"
+              >
+                Настройки → Компания → Лого
+              </Link>
+              . Ако няма качено лого, изгледът на PDF няма да се промени.
+            </p>
+          </div>
 
           <div className="space-y-4">
             <FormField
               control={form.control}
               name="showCompanyLogo"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
+                <FormItem className="flex flex-row items-center justify-between rounded-xl border border-border/60 bg-background/50 p-4">
+                  <div className="space-y-0.5 pr-3">
                     <FormLabel className="text-base">
                       Показване на фирмено лого
                     </FormLabel>
-                    <FormDescription>
-                      Добавяне на вашето лого във фактурите
+                    <FormDescription className="text-xs sm:text-sm">
+                      Показва каченото фирмено лого в горната част на PDF фактурата. Не изисква допълнителни
+                      действия освен ако още не сте качили лого за компанията.
                     </FormDescription>
                   </div>
                   <FormControl>
@@ -388,13 +426,14 @@ export function InvoicePreferencesForm() {
               control={form.control}
               name="showAmountInWords"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
+                <FormItem className="flex flex-row items-center justify-between rounded-xl border border-border/60 bg-background/50 p-4">
+                  <div className="space-y-0.5 pr-3">
                     <FormLabel className="text-base">
                       Сума с думи
                     </FormLabel>
-                    <FormDescription>
-                      Показване на сумата, изписана с думи
+                    <FormDescription className="text-xs sm:text-sm">
+                      Автоматично добавя крайната сума изписана с думи (блок &quot;Словом&quot;) в PDF според
+                      валутата на документа. Не е нужно да въвеждате текст на ръка.
                     </FormDescription>
                   </div>
                   <FormControl>

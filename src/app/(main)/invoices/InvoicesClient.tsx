@@ -611,7 +611,7 @@ export default function InvoicesClient({
           <Button
             asChild
             size="lg"
-            className="h-12 w-12 rounded-full gradient-primary hover:opacity-90 text-white border-0 shadow-xl transition-transform hover:scale-105 active:scale-95"
+            className="h-12 w-12 rounded-full gradient-primary text-white border-0 shadow-xl transition-transform hover:scale-105 hover:ring-2 hover:ring-emerald-400/30 active:scale-95"
           >
             <Link href="/invoices/new">
               <Plus className="h-5 w-5" />
@@ -780,7 +780,7 @@ export default function InvoicesClient({
             {canCreateInvoices && (isLoadingUsage || canCreateInvoice) && (
               <Button 
                 asChild 
-                className="h-11 w-full border-0 text-white shadow-lg transition-all gradient-primary hover:opacity-90 sm:w-auto"
+                className="h-11 w-full border-0 text-white shadow-lg transition-all gradient-primary hover:shadow-md hover:ring-2 hover:ring-emerald-400/25 sm:w-auto"
               >
                 <Link href="/invoices/new" className="flex items-center whitespace-nowrap">
                   <Plus className="mr-2 h-4 w-4" />

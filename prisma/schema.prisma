@@ -221,6 +221,8 @@ model Invoice {
   sellerSnapshot                              Json?
   buyerSnapshot                               Json?
   itemsSnapshot                               Json?
+  /// Optional: person receiving goods (name/phone/MOL), may differ from buyer MOL on Client snapshot
+  goodsRecipientSnapshot                      Json?
   createdById                                 String?
   auditLogs                                   AuditLog[]
   creditNote                                  CreditNote?

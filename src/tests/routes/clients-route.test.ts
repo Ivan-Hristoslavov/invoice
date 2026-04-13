@@ -157,9 +157,9 @@ describe("POST /api/clients route", () => {
         address: "ул. Шипка 1",
         city: "София",
         country: "България",
-        bulstatNumber: "204676177",
+        bulstatNumber: "175074752",
         vatRegistered: true,
-        vatRegistrationNumber: "bg204676177",
+        vatRegistrationNumber: "bg175074752",
         mol: "Мария Петрова",
         uicType: "BULSTAT",
       })
@@ -174,9 +174,9 @@ describe("POST /api/clients route", () => {
       expect.objectContaining({
         name: "Клиент ЕООД",
         userId: "user_1",
-        bulstatNumber: "204676177",
-        vatRegistrationNumber: "BG204676177",
-        vatNumber: "BG204676177",
+        bulstatNumber: "175074752",
+        vatRegistrationNumber: "BG175074752",
+        vatNumber: "BG175074752",
         taxComplianceSystem: "bulgarian",
       })
     );
@@ -194,7 +194,7 @@ describe("POST /api/clients route", () => {
         address: "ул. Пример 1",
         city: "София",
         country: "България",
-        bulstatNumber: "123456789",
+        bulstatNumber: "175074752",
         entryMode: "manual",
       })
     );
@@ -207,7 +207,7 @@ describe("POST /api/clients route", () => {
     expect(insertedPayload).toEqual(
       expect.objectContaining({
         name: "Ръчен клиент",
-        bulstatNumber: "123456789",
+        bulstatNumber: "175074752",
       })
     );
   });
@@ -219,7 +219,7 @@ describe("POST /api/clients route", () => {
     const { GET } = await import("@/app/api/clients/route");
     const response = await GET(
       new NextRequest(
-        "http://localhost/api/clients?bulstatNumber=123456789&uicType=BULSTAT"
+        "http://localhost/api/clients?bulstatNumber=175074752&uicType=BULSTAT"
       )
     );
     const body = await response.json();

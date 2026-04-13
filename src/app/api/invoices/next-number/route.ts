@@ -61,7 +61,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ invoiceNumber: nextNumber });
   } catch (error) {
     console.error("Грешка при генериране на номер на фактура:", error);
-    const defaultNumber = `${new Date().getFullYear().toString().slice(-2)}0000000001`;
-    return NextResponse.json({ invoiceNumber: defaultNumber });
+    const fallbackBase = generateBulgarianInvoiceNumber(1, undefined);
+    return NextResponse.json({ invoiceNumber: fallbackBase });
   }
 } 

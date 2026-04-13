@@ -32,7 +32,7 @@ export const companySchema = z.object({
     .min(2, "Името на фирмата е задължително (минимум 2 символа)")
     .max(FIELD_LIMITS.name, "Името на фирмата е твърде дълго"),
   vat: z.string().min(9, "ДДС номерът трябва да бъде валиден").max(FIELD_LIMITS.phone).optional(),
-  email: emailSchema.optional(),
+  email: z.union([z.literal(""), emailSchema]),
   phone: z.string().max(FIELD_LIMITS.phone, "Телефонът е твърде дълъг").optional(),
   address: z
     .string()
@@ -56,7 +56,7 @@ export const clientSchema = z.object({
     .string()
     .min(2, "Името на клиента е задължително (минимум 2 символа)")
     .max(FIELD_LIMITS.name, "Името е твърде дълго"),
-  email: emailSchema.optional(),
+  email: z.union([z.literal(""), emailSchema]),
   phone: z.string().max(FIELD_LIMITS.phone, "Телефонът е твърде дълъг").optional(),
   vat: z.string().max(FIELD_LIMITS.phone).optional(),
   address: z
@@ -107,6 +107,15 @@ export const invoiceItemSchema = z.object({
   }
 });
 
+/** Optional person receiving goods (same buyer client; may differ from client MOL). */
+export const invoiceGoodsRecipientSchema = z
+  .object({
+    name: z.string().max(FIELD_LIMITS.name).optional().or(z.literal("")),
+    phone: z.string().max(FIELD_LIMITS.phone).optional().or(z.literal("")),
+    mol: z.string().max(FIELD_LIMITS.mol).optional().or(z.literal("")),
+  })
+  .optional();
+
 export const invoiceSchema = z.object({
   clientId: z.string().min(1, "Клиентът е задължителен"),
   companyId: z.string().min(1, "Фирмата е задължителна"),
@@ -122,6 +131,7 @@ export const invoiceSchema = z.object({
   isOriginal: z.boolean().optional().default(true),
   reverseCharge: z.boolean().default(false),
   items: z.array(invoiceItemSchema).min(1, "Фактурата трябва да има поне един артикул"),
+  goodsRecipient: invoiceGoodsRecipientSchema,
   notes: z.string().max(FIELD_LIMITS.notes, "Бележките са твърде дълги").optional(),
   termsAndConditions: z.string().max(FIELD_LIMITS.termsAndConditions, "Условията са твърде дълги").optional(),
 }).refine(data => {

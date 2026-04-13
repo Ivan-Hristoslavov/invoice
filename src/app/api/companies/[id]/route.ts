@@ -149,7 +149,7 @@ export async function PUT(
           ? "bulgarian"
           : "general",
       bankName: normalized.bankName || null,
-      bankAccount: normalized.bankAccount || null,
+      bankAccount: null,
       bankSwift: normalized.bankSwift || null,
       bankIban: normalized.bankIban || null,
       updatedAt: new Date().toISOString(),

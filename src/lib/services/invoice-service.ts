@@ -15,7 +15,7 @@ export const getInvoiceWithDetails = cache(async (invoiceId: string, userId: str
       .from("Invoice")
       .select(`
         *,
-        client:Client(id, name, email, phone, address, city, country),
+        client:Client(id, name, email, phone, address, city, country, bulstatNumber, mol, vatNumber, vatRegistrationNumber, vatRegistered),
         company:Company(id, name, email, phone),
         items:InvoiceItem(*),
         payments:Payment(*)

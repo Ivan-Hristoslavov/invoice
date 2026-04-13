@@ -3,6 +3,29 @@ import { join } from 'path';
 import jsPDF from 'jspdf';
 import { normalizeInvoiceStatus } from '@/lib/invoice-status';
 import { APP_NAME } from '@/config/constants';
+import { resolvePdfVisualPrefsForUser } from '@/lib/pdf-visual-preferences.server';
+
+type InvoicePdfVisualPrefs = {
+  showCompanyLogo: boolean;
+  showAmountInWords: boolean;
+};
+
+async function resolveInvoicePdfVisualPrefs(invoice: {
+  userId?: string;
+  showCompanyLogo?: boolean;
+  showAmountInWords?: boolean;
+}): Promise<InvoicePdfVisualPrefs> {
+  if (
+    typeof invoice.showCompanyLogo === 'boolean' &&
+    typeof invoice.showAmountInWords === 'boolean'
+  ) {
+    return {
+      showCompanyLogo: invoice.showCompanyLogo,
+      showAmountInWords: invoice.showAmountInWords,
+    };
+  }
+  return resolvePdfVisualPrefsForUser(invoice.userId);
+}
 
 /** Neutral SaaS palette (print-friendly) — RGB 0–255 */
 const PAL = {
@@ -171,6 +194,8 @@ function getCurrencyCentsWord(currency: string, count: number): string {
 
 // Server-side PDF generation function
 export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
+  const pdfPrefs = await resolveInvoicePdfVisualPrefs(invoice);
+
   // Load fonts from file system
   const fontPath = join(process.cwd(), 'public', 'fonts');
   const regularFont = readFileSync(join(fontPath, 'Roboto-Regular.ttf'));
@@ -248,7 +273,7 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
   // ---- Logo ----
   let logoH = 0;
   const headerRowY = 22;
-  if (invoice.company?.logo) {
+  if (pdfPrefs.showCompanyLogo && invoice.company?.logo) {
     try {
       const logoResponse = await fetch(invoice.company.logo);
       if (logoResponse.ok) {
@@ -359,12 +384,32 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
   if (invoice.client?.city) clientDetailLines.push(invoice.client.city);
   if (invoice.client?.phone) clientDetailLines.push(`Тел. ${invoice.client.phone}`);
   if (invoice.client?.bulstatNumber) clientDetailLines.push(`ЕИК ${invoice.client.bulstatNumber}`);
-  if (invoice.client?.vatNumber) clientDetailLines.push(`ДДС № ${invoice.client.vatNumber}`);
+  const clientVatDisplay =
+    (invoice.client?.vatNumber && String(invoice.client.vatNumber).trim()) ||
+    (invoice.client?.vatRegistrationNumber &&
+      String(invoice.client.vatRegistrationNumber).trim()) ||
+    "";
+  if (clientVatDisplay) clientDetailLines.push(`ДДС № ${clientVatDisplay}`);
   if (invoice.client?.mol) clientDetailLines.push(`МОЛ ${invoice.client.mol}`);
+
+  const goodsRecipientLines: string[] = [];
+  const gr = invoice.goodsRecipientSnapshot;
+  if (gr && typeof gr === "object") {
+    const gName = typeof gr.name === "string" ? gr.name.trim() : "";
+    const gPhone = typeof gr.phone === "string" ? gr.phone.trim() : "";
+    const gMol = typeof gr.mol === "string" ? gr.mol.trim() : "";
+    if (gName || gPhone || gMol) {
+      goodsRecipientLines.push("Получател на стоката:");
+      if (gName) goodsRecipientLines.push(gName);
+      if (gPhone) goodsRecipientLines.push(`Тел. ${gPhone}`);
+      if (gMol) goodsRecipientLines.push(`МОЛ ${gMol}`);
+    }
+  }
+  const clientPartyLines = [...clientDetailLines, ...goodsRecipientLines];
 
   const innerBlock = (lineCount: number) => 4 + 6 + 5 + lineCount * 4 + pad;
   const supplierH = Math.max(40, innerBlock(supplierDetailLines.length));
-  const clientH = Math.max(40, innerBlock(clientDetailLines.length));
+  const clientH = Math.max(40, innerBlock(clientPartyLines.length));
   const cardH = Math.max(supplierH, clientH);
 
   const yParties = yPos;
@@ -398,7 +443,7 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
     sy += 4;
   });
   let cy = yParties + 17;
-  clientDetailLines.forEach((line) => {
+  clientPartyLines.forEach((line) => {
     doc.text(line, clientX + pad, cy);
     cy += 4;
   });
@@ -519,15 +564,17 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
   doc.text("ОБЩО", totalsX, yPos);
   doc.text(formatCurrency(displayTotal, currency), rightEdge, yPos, { align: "right" });
 
-  const amountInWords = numberToWordsBG(displayTotal, invoice.currency || "EUR");
-  const maxWordsW = totalsX - margin - 8;
-  doc.setFont("Roboto", "normal");
-  doc.setFontSize(8.5);
-  setText(PAL.muted);
-  doc.text("Словом", margin, totalsTop + 5);
-  setText(PAL.text);
-  const words = doc.splitTextToSize(amountInWords, maxWordsW);
-  doc.text(words, margin, totalsTop + 10);
+  if (pdfPrefs.showAmountInWords) {
+    const amountInWords = numberToWordsBG(displayTotal, invoice.currency || "EUR");
+    const maxWordsW = totalsX - margin - 8;
+    doc.setFont("Roboto", "normal");
+    doc.setFontSize(8.5);
+    setText(PAL.muted);
+    doc.text("Словом", margin, totalsTop + 5);
+    setText(PAL.text);
+    const words = doc.splitTextToSize(amountInWords, maxWordsW);
+    doc.text(words, margin, totalsTop + 10);
+  }
 
   yPos += 10;
   doc.setFontSize(8.5);
@@ -548,7 +595,17 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
   );
 
   // ---- Bank ----
-  if (invoice.company?.bankAccount || invoice.company?.bankIban) {
+  const companyBank = invoice.company?.bankAccount;
+  const hasJoinedBank = companyBank && typeof companyBank === "object";
+  const hasLegacyAccountNumber =
+    typeof companyBank === "string" && companyBank.trim().length > 0;
+  if (
+    invoice.company?.bankIban ||
+    invoice.company?.bankName ||
+    invoice.company?.bankSwift ||
+    hasJoinedBank ||
+    hasLegacyAccountNumber
+  ) {
     yPos += 12;
     const bankH = 22;
     setFill(PAL.surface);
@@ -562,13 +619,18 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
     doc.setFont("Roboto", "normal");
     doc.setFontSize(8.5);
     setText(PAL.text);
-    const bankAccount = invoice.company.bankAccount;
+    const bankAccount =
+      invoice.company.bankAccount && typeof invoice.company.bankAccount === "object"
+        ? invoice.company.bankAccount
+        : null;
     let bankY = yPos + 11;
     if (bankAccount?.bankName || invoice.company.bankName) {
       doc.text(`Банка · ${bankAccount?.bankName || invoice.company.bankName}`, margin + 4, bankY);
     }
     if (bankAccount?.iban || invoice.company.bankIban) {
       doc.text(`IBAN · ${bankAccount?.iban || invoice.company.bankIban}`, margin + 4 + contentWidth / 3, bankY);
+    } else if (typeof companyBank === "string" && companyBank.trim()) {
+      doc.text(`Сметка · ${companyBank}`, margin + 4 + contentWidth / 3, bankY);
     }
     if (bankAccount?.swift || invoice.company.bankSwift) {
       doc.text(`SWIFT · ${bankAccount?.swift || invoice.company.bankSwift}`, margin + 4 + (contentWidth * 2) / 3, bankY);

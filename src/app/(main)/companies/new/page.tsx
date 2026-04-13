@@ -205,7 +205,6 @@ const companySchema = z.object({
   accountablePerson: z.string().optional().or(z.literal("")),
   uicType: z.enum(["BULSTAT", "EGN"]).default("BULSTAT"),
   bankName: z.string().optional().or(z.literal("")),
-  bankAccount: z.string().optional().or(z.literal("")),
   bankSwift: z.string().optional().or(z.literal("")),
   bankIban: z.string().optional().or(z.literal("")),
 }).superRefine((value, ctx) => {
@@ -244,7 +243,6 @@ function getStepForCompanyField(field?: string) {
     case "accountablePerson":
       return 2;
     case "bankName":
-    case "bankAccount":
     case "bankSwift":
     case "bankIban":
       return 3;
@@ -287,9 +285,9 @@ export default function NewCompanyPage() {
     },
     {
       title: "Банкова сметка",
-      description: "Банка, IBAN и SWIFT при нужда",
+      description: "Банка и IBAN; BIC/SWIFT по избор (често не е нужен за български IBAN)",
       icon: <CreditCard className="h-5 w-5" />,
-      fields: ["bankName", "bankIban", "bankSwift", "bankAccount"] as const,
+      fields: ["bankName", "bankIban", "bankSwift"] as const,
       requiredFields: [] as const,
     },
   ];
@@ -316,14 +314,13 @@ export default function NewCompanyPage() {
       accountablePerson: "",
       uicType: "BULSTAT",
       bankName: "",
-      bankAccount: "",
       bankSwift: "",
       bankIban: "",
     },
   });
 
   const formValues = form.watch();
-  const { plan, canUseFeature } = useSubscriptionLimit();
+  const { plan, canUseFeature, refreshUsage } = useSubscriptionLimit();
   const canUseEikSearch = canUseFeature("eikSearch");
   const { createCheckoutSession } = useSubscription();
   const [eikCheckoutLoading, setEikCheckoutLoading] = useState(false);
@@ -524,6 +521,8 @@ export default function NewCompanyPage() {
         }
         throw new Error(errorPayload?.error || "Неуспешно създаване на компания");
       }
+
+      await refreshUsage();
 
       toast.success("Компанията е създадена", {
         description: "Вашата компания беше създадена успешно.",
@@ -781,7 +780,7 @@ export default function NewCompanyPage() {
                     </div>
                     <div className="flex flex-col gap-3 sm:flex-row">
                       <Input
-                        placeholder="Въведете ЕИК (напр. 204676177)"
+                        placeholder="Въведете ЕИК (напр. 175074752)"
                         inputMode="numeric"
                         className="h-12 flex-1"
                         value={formValues.bulstatNumber || ""}
@@ -1077,7 +1076,7 @@ export default function NewCompanyPage() {
                             <FormControl>
                               <div className="flex flex-col gap-2 sm:flex-row">
                                 <Input
-                                  placeholder="123456789"
+                                  placeholder="175074752"
                                   className="h-12 flex-1"
                                   inputMode="numeric"
                                   {...field}
@@ -1200,7 +1199,7 @@ export default function NewCompanyPage() {
                             <FormLabel>ДДС номер</FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="BG123456789"
+                                placeholder="BG175074752"
                                 className="h-12"
                                 disabled={!form.watch("vatRegistered")}
                                 {...field}
@@ -1254,7 +1253,7 @@ export default function NewCompanyPage() {
                   <SectionPanel
                     index={3}
                     title="Банкова сметка"
-                    description="По избор: банка, IBAN, SWIFT и сметка"
+                    description="По избор: банка и IBAN; BIC/SWIFT при нужда (за чужд IBAN е препоръчително)"
                     icon={<CreditCard className="h-5 w-5" />}
                     badge={getStatusBadge(getSectionStatus(sections[3]))}
                     helperText={getSectionHelperText(sections[3])}
@@ -1291,36 +1290,23 @@ export default function NewCompanyPage() {
                       )}
                     />
 
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                      <FormField
-                        control={form.control}
-                        name="bankSwift"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>SWIFT/BIC код</FormLabel>
-                            <FormControl>
-                              <Input placeholder="XXXXBGSF" className="h-12" {...field} />
-                            </FormControl>
-                            <FormDescription>Международен банков код</FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="bankAccount"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Номер на сметка</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Номер на сметка" className="h-12" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                    <FormField
+                      control={form.control}
+                      name="bankSwift"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>SWIFT/BIC код</FormLabel>
+                          <FormControl>
+                            <Input placeholder="XXXXBGSF" className="h-12" {...field} />
+                          </FormControl>
+                          <FormDescription>
+                            По избор. За български IBAN обикновено не е задължителен за вътрешни преводи; за чужд IBAN е
+                            препоръчително.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     </div>
                   </SectionPanel>
 
@@ -1439,7 +1425,7 @@ export default function NewCompanyPage() {
                       <Button
                         type="submit"
                         disabled={isLoading || !canSubmit}
-                        className="h-11 w-full justify-center gap-2 border-0 gradient-primary hover:opacity-90 disabled:opacity-50 sm:w-auto sm:min-w-52"
+                        className="h-11 w-full justify-center gap-2 border-0 gradient-primary hover:shadow-md hover:ring-2 hover:ring-emerald-400/25 disabled:opacity-50 sm:w-auto sm:min-w-52"
                       >
                         {isLoading ? (
                           <>

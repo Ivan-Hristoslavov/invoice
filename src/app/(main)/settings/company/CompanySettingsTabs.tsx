@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Card,
@@ -49,9 +50,10 @@ export function CompanySettingsTabs({ company }: CompanySettingsTabsProps) {
   const isNew = !company;
   const { canUseFeature } = useSubscriptionLimit();
   const canUseLogo = canUseFeature('customBranding');
+  const [activeTab, setActiveTab] = useState("info");
 
   return (
-    <Tabs defaultValue="info" className="w-full">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
       <div className="mb-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <TabsList className="flex min-w-max gap-2 rounded-2xl border border-border/60 bg-card/70 p-1">
         <TabsTrigger value="info" className="min-h-10 whitespace-nowrap rounded-xl px-3">
@@ -73,6 +75,7 @@ export function CompanySettingsTabs({ company }: CompanySettingsTabsProps) {
       </TabsList>
       </div>
 
+      {activeTab === "info" && (
       <TabsContent value="info">
         <Card>
           <CardHeader>
@@ -115,8 +118,9 @@ export function CompanySettingsTabs({ company }: CompanySettingsTabsProps) {
           </CardContent>
         </Card>
       </TabsContent>
+      )}
 
-      {!isNew && (
+      {!isNew && activeTab === "bank" && (
         <TabsContent value="bank">
           <Card>
             <CardHeader>
@@ -127,7 +131,7 @@ export function CompanySettingsTabs({ company }: CompanySettingsTabsProps) {
                 <div>
                   <CardTitle>Банкова информация</CardTitle>
                   <CardDescription>
-                    Банковите ви детайли ще се показват на фактурите
+                    IBAN и банка за фактурите. BIC/SWIFT е по избор (за български IBAN често не е нужен).
                   </CardDescription>
                 </div>
               </div>
@@ -137,7 +141,6 @@ export function CompanySettingsTabs({ company }: CompanySettingsTabsProps) {
                 defaultValues={{
                   id: company?.id || "",
                   bankName: company?.bankName || "",
-                  bankAccount: company?.bankAccount || "",
                   bankSwift: company?.bankSwift || "",
                   bankIban: company?.bankIban || "",
                 }}
@@ -149,7 +152,7 @@ export function CompanySettingsTabs({ company }: CompanySettingsTabsProps) {
         </TabsContent>
       )}
 
-      {!isNew && (
+      {!isNew && activeTab === "logo" && (
         <TabsContent value="logo">
           <Card>
             <CardHeader>

@@ -68,7 +68,6 @@ const companyInfoSchema = z.object({
 const bankInfoSchema = z.object({
   id: z.string().optional(),
   bankName: z.string().optional().or(z.literal("")),
-  bankAccount: z.string().optional().or(z.literal("")),
   bankSwift: z.string().optional().or(z.literal("")),
   bankIban: z.string().optional().or(z.literal("")),
 });
@@ -228,7 +227,7 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
           </div>
           <div className="flex gap-2">
             <Input
-              placeholder="Въведете ЕИК (напр. 204676177)"
+              placeholder="Въведете ЕИК (напр. 175074752)"
               inputMode="numeric"
               className="flex-1"
               value={bulstatValue || ""}
@@ -433,7 +432,7 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
                   <FormControl>
                     <div className="flex gap-2">
                       <Input
-                        placeholder="Например: 123456789"
+                        placeholder="Например: 175074752"
                         inputMode="numeric"
                         className="flex-1"
                         {...field}
@@ -522,7 +521,7 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
                 <FormItem>
                   <FormLabel>ДДС номер</FormLabel>
                   <FormControl>
-                    <Input placeholder="Например: BG123456789" {...field} />
+                    <Input placeholder="Например: BG175074752" {...field} />
                   </FormControl>
                   <FormDescription>
                     № по ЗДДС (Задължително, ако сте регистрирани по ДДС)
@@ -571,7 +570,7 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
         </div>
         
         <div className="flex justify-end mt-8">
-          <Button type="submit" className="gradient-primary hover:opacity-90 border-0" disabled={isLoading}>
+          <Button type="submit" className="gradient-primary border-0 hover:shadow-md hover:ring-2 hover:ring-emerald-400/25" disabled={isLoading}>
             {isLoading ? "Запазване..." : isNewCompany ? "Създаване на компания" : "Запазване на промените"}
           </Button>
         </div>
@@ -605,13 +604,13 @@ function BankInfoForm({ defaultValues, isNewCompany = false }: BankInfoFormProps
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, bankAccount: null }),
       });
 
       if (!response.ok) {
         throw new Error("Неуспешно обновяване на банковата информация");
       }
-      
+
       toast.success("Банковата информация е обновена", {
         description: "Банковите ви детайли бяха успешно обновени."
       });
@@ -643,53 +642,41 @@ function BankInfoForm({ defaultValues, isNewCompany = false }: BankInfoFormProps
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
-          name="bankAccount"
+          name="bankIban"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Номер на сметка</FormLabel>
+              <FormLabel>IBAN</FormLabel>
               <FormControl>
-                <Input placeholder="Номер на сметка" {...field} />
+                <Input placeholder="IBAN" {...field} />
               </FormControl>
+              <FormDescription>Международен номер на банковата сметка</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="bankSwift"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>SWIFT/BIC код</FormLabel>
+              <FormControl>
+                <Input placeholder="SWIFT код" {...field} />
+              </FormControl>
+              <FormDescription>
+                По избор. За български IBAN често не е нужен за вътрешни преводи; за чужд IBAN е препоръчително.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
         
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="bankSwift"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>SWIFT/BIC код</FormLabel>
-                <FormControl>
-                  <Input placeholder="SWIFT код" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="bankIban"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>IBAN</FormLabel>
-                <FormControl>
-                  <Input placeholder="IBAN" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        
         <div className="flex justify-end">
-          <Button type="submit" className="gradient-primary hover:opacity-90 border-0" disabled={isLoading}>
+          <Button type="submit" className="gradient-primary border-0 hover:shadow-md hover:ring-2 hover:ring-emerald-400/25" disabled={isLoading}>
             {isLoading ? "Запазване..." : "Запазване на банковата информация"}
           </Button>
         </div>

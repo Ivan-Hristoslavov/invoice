@@ -101,7 +101,7 @@ export function Navbar() {
               href="/invoices/new"
               title="Нова фактура"
               aria-label="Нова фактура"
-              className="flex h-10 w-10 min-h-10 min-w-10 max-h-10 max-w-10 shrink-0 items-center justify-center rounded-full gradient-primary text-white shadow-md transition-opacity hover:opacity-90 focus-visible:outline focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex h-10 w-10 min-h-10 min-w-10 max-h-10 max-w-10 shrink-0 items-center justify-center rounded-full gradient-primary text-white shadow-md transition-shadow hover:shadow-lg hover:ring-2 hover:ring-emerald-400/25 focus-visible:outline focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
             </Link>

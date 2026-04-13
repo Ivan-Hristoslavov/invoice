@@ -44,8 +44,11 @@ const TabsTrigger = React.forwardRef<
     ref={ref as any}
     id={id ?? value ?? ""}
     className={cn(
-      "transition-colors data-[selected=true]:text-primary-foreground data-[selected=false]:text-foreground/65 data-[selected=false]:hover:text-foreground dark:data-[selected=false]:text-foreground/55",
-      "[&_svg]:shrink-0 data-[selected=true]:[&_svg]:text-primary-foreground data-[selected=false]:[&_svg]:text-foreground/60",
+      "min-h-10 rounded-xl px-3 transition-colors",
+      "data-[selected=true]:bg-primary data-[selected=true]:text-primary-foreground data-[selected=true]:shadow-sm",
+      "data-[selected=false]:text-foreground/85 data-[selected=false]:hover:bg-muted/60 data-[selected=false]:hover:text-foreground",
+      "[&_svg]:shrink-0 data-[selected=true]:[&_svg]:text-primary-foreground",
+      "data-[selected=false]:[&_svg]:text-muted-foreground data-[selected=false]:hover:[&_svg]:text-foreground",
       className
     )}
     {...props}

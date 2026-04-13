@@ -265,7 +265,7 @@ export async function POST(request: NextRequest) {
           ? "bulgarian"
           : "general",
       bankName: normalized.bankName,
-      bankAccount: normalized.bankAccount,
+      bankAccount: null,
       bankSwift: normalized.bankSwift,
       bankIban: normalized.bankIban,
     };

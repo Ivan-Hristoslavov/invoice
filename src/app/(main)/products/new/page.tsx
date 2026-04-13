@@ -43,6 +43,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { applyApiValidationDetails } from "@/lib/form-errors";
 import { FIELD_LIMITS } from "@/lib/validations/field-limits";
+import { grossToNetAmount, roundMoney2 } from "@/lib/money-vat";
 
 const PRODUCT_UNITS = [
   { value: "piece", label: "Брой" },
@@ -100,25 +101,29 @@ export default function NewProductPage() {
   });
 
   const formValues = form.watch();
-  const price = parseFloat(formValues.price) || 0;
+  const grossPrice = parseFloat(formValues.price) || 0;
   const taxRate = parseFloat(formValues.taxRate) || 0;
-  const taxAmount = price * (taxRate / 100);
-  const totalPrice = price + taxAmount;
+  const netUnit = grossToNetAmount(grossPrice, taxRate);
+  const taxAmount = roundMoney2(grossPrice - netUnit);
+  const totalPrice = grossPrice;
 
   const getUnitLabel = (val: string) => PRODUCT_UNITS.find((u) => u.value === val)?.label || val;
 
   async function onSubmit(data: ProductFormValues) {
     setIsLoading(true);
     try {
+      const gross = parseFloat(data.price);
+      const rate = data.taxRate ? parseFloat(data.taxRate) : 20;
+      const netStored = grossToNetAmount(gross, rate);
       const response = await fetch("/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: data.name,
           description: data.description || "",
-          price: parseFloat(data.price),
+          price: netStored,
           unit: data.unit,
-          taxRate: data.taxRate ? parseFloat(data.taxRate) : 20,
+          taxRate: rate,
         }),
       });
 
@@ -259,7 +264,9 @@ export default function NewProductPage() {
                     Ценообразуване
                   </Badge>
                   <CardTitle className="text-base">Ценова информация</CardTitle>
-                  <CardDescription>Цена, единица и данъчна ставка</CardDescription>
+                  <CardDescription>
+                    Въведената цена е крайна за единица (с ДДС). В каталога се записва нетната стойност.
+                  </CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -272,7 +279,7 @@ export default function NewProductPage() {
                   <FormItem>
                     <FormLabel className="flex items-center gap-1.5">
                       <DollarSign className="h-3.5 w-3.5" />
-                      Цена *
+                      Цена с ДДС *
                     </FormLabel>
                     <FormControl>
                       <div className="relative">
@@ -291,6 +298,9 @@ export default function NewProductPage() {
                         />
                       </div>
                     </FormControl>
+                    <FormDescription className="text-xs">
+                      Крайна продажна цена за единица, с включен ДДС
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -363,11 +373,11 @@ export default function NewProductPage() {
               </div>
 
               {/* Live price preview */}
-              {price > 0 && (
+              {grossPrice > 0 && (
                 <div className="rounded-lg bg-muted/40 border border-border/50 p-3 space-y-1.5">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Без ДДС</span>
-                    <span className="font-medium">{price.toFixed(2)} €</span>
+                    <span className="text-muted-foreground">Без ДДС (единица)</span>
+                    <span className="font-medium">{netUnit.toFixed(2)} €</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">ДДС ({taxRate}%)</span>
@@ -375,7 +385,7 @@ export default function NewProductPage() {
                   </div>
                   <Separator className="my-1" />
                   <div className="flex justify-between">
-                    <span className="font-semibold">Крайна цена</span>
+                    <span className="font-semibold">Крайна цена (единица)</span>
                     <span className="font-bold text-primary">{totalPrice.toFixed(2)} €</span>
                   </div>
                 </div>
@@ -394,7 +404,7 @@ export default function NewProductPage() {
             <Button
               type="submit"
               disabled={isLoading || !form.formState.isValid}
-              className="gradient-primary hover:opacity-90 border-0 min-w-[140px]"
+              className="gradient-primary border-0 min-w-[140px] hover:shadow-md hover:ring-2 hover:ring-emerald-400/25"
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">

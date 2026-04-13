@@ -329,6 +329,9 @@ export function SubscriptionPlans({ onSuccessRefetchDone }: SubscriptionPlansPro
             BUSINESS: { iconBg: "bg-violet-100 dark:bg-violet-900/50", iconText: "text-violet-500", btnClass: "bg-violet-500 hover:bg-violet-600 text-white shadow-md shadow-violet-500/20", checkBg: "bg-violet-500/10", checkIcon: "text-violet-500" },
           }[planKey];
 
+          /** PRO картата е върху ярък градиент — избягваме text-muted-foreground за четимост */
+          const isProSurface = planKey === "PRO";
+
           const planBody = (
             <>
               {isPopular && !isCurrent ? (
@@ -343,15 +346,24 @@ export function SubscriptionPlans({ onSuccessRefetchDone }: SubscriptionPlansPro
                   <div
                     className={cn(
                       "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl shadow-sm ring-1 ring-black/5 dark:ring-white/10",
-                      planTheme.iconBg,
-                      planTheme.iconText
+                      isProSurface
+                        ? "bg-white/25 ring-emerald-950/15 backdrop-blur-sm dark:bg-white/10 dark:ring-white/20"
+                        : planTheme.iconBg,
+                      isProSurface ? "text-emerald-950 dark:text-emerald-100" : planTheme.iconText
                     )}
                   >
                     <Icon className="h-5 w-5" />
                   </div>
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="truncate text-sm font-semibold leading-tight">{plan.displayName}</h3>
+                      <h3
+                        className={cn(
+                          "truncate text-sm font-semibold leading-tight",
+                          isProSurface && "text-emerald-950 dark:text-emerald-50"
+                        )}
+                      >
+                        {plan.displayName}
+                      </h3>
                       <div className="flex shrink-0 flex-wrap justify-end gap-1">
                         {isCurrent && (
                           <Badge className="h-5 border-0 bg-primary px-2 py-0 text-[10px] font-semibold text-primary-foreground">
@@ -360,7 +372,7 @@ export function SubscriptionPlans({ onSuccessRefetchDone }: SubscriptionPlansPro
                           </Badge>
                         )}
                         {isPopular && !isCurrent && (
-                          <Badge className="h-5 border-0 bg-emerald-500 px-2 py-0 text-[10px] font-semibold text-white">
+                          <Badge className="h-5 border border-emerald-950/15 bg-emerald-950 px-2 py-0 text-[10px] font-semibold text-white shadow-sm dark:border-white/20 dark:bg-emerald-950/90">
                             <Star className="mr-0.5 h-2.5 w-2.5 fill-current" />
                             Популярен
                           </Badge>
@@ -373,7 +385,12 @@ export function SubscriptionPlans({ onSuccessRefetchDone }: SubscriptionPlansPro
                       </div>
                     </div>
                     <p
-                      className="truncate text-[11px] leading-tight text-muted-foreground sm:text-xs"
+                      className={cn(
+                        "truncate text-[11px] leading-tight sm:text-xs",
+                        isProSurface
+                          ? "font-medium text-emerald-950/95 dark:text-emerald-100"
+                          : "text-muted-foreground"
+                      )}
                       title={plan.description}
                     >
                       {plan.description}
@@ -384,27 +401,73 @@ export function SubscriptionPlans({ onSuccessRefetchDone }: SubscriptionPlansPro
                 {/* Price */}
                 <div className="mb-1">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-xl font-bold tracking-tight sm:text-2xl">{formatPrice(price)}</span>
-                    <span className="text-sm font-normal text-muted-foreground">€/мес</span>
+                    <span
+                      className={cn(
+                        "text-xl font-bold tracking-tight sm:text-2xl",
+                        isProSurface && "text-emerald-950 dark:text-white"
+                      )}
+                    >
+                      {formatPrice(price)}
+                    </span>
+                    <span
+                      className={cn(
+                        "text-sm",
+                        isProSurface
+                          ? "font-semibold text-emerald-900 dark:text-emerald-200"
+                          : "font-normal text-muted-foreground"
+                      )}
+                    >
+                      €/мес
+                    </span>
                   </div>
                   {isYearly && plan.yearlyPrice > 0 && (
-                    <p className="mt-0.5 text-xs text-muted-foreground">
+                    <p
+                      className={cn(
+                        "mt-0.5 text-xs",
+                        isProSurface
+                          ? "font-medium text-emerald-900/95 dark:text-emerald-100/95"
+                          : "text-muted-foreground"
+                      )}
+                    >
                       {formatPrice(plan.yearlyPrice)} € общо за 12 месеца
                     </p>
                   )}
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                     {isYearly && savings > 0 && (
                       <>
-                        <span className="inline-flex items-center rounded-md bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        <span
+                          className={cn(
+                            "inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold",
+                            isProSurface
+                              ? "bg-emerald-950/20 text-emerald-950 dark:bg-white/15 dark:text-emerald-50"
+                              : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                          )}
+                        >
                           2 месеца безплатно
                         </span>
-                        <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                        <span
+                          className={cn(
+                            "text-xs font-medium",
+                            isProSurface
+                              ? "text-emerald-950 dark:text-emerald-100"
+                              : "text-emerald-600 dark:text-emerald-400"
+                          )}
+                        >
                           Спестявате {savings.toFixed(0)} € ({savingsPercent}%)
                         </span>
                       </>
                     )}
                     {!isYearly && planKey !== "FREE" && (
-                      <p className="text-xs text-muted-foreground">Таксува се месечно</p>
+                      <p
+                        className={cn(
+                          "text-xs",
+                          isProSurface
+                            ? "font-medium text-emerald-900/95 dark:text-emerald-100/95"
+                            : "text-muted-foreground"
+                        )}
+                      >
+                        Таксува се месечно
+                      </p>
                     )}
                     {planKey === "FREE" && (
                       <p className="text-xs text-muted-foreground">Завинаги безплатен</p>
@@ -413,11 +476,28 @@ export function SubscriptionPlans({ onSuccessRefetchDone }: SubscriptionPlansPro
                 </div>
 
                 <div className="my-3 flex items-center gap-2">
-                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border/80 to-transparent" />
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                  <div
+                    className={cn(
+                      "h-px flex-1 bg-linear-to-r from-transparent to-transparent",
+                      isProSurface ? "via-emerald-950/35 dark:via-white/35" : "via-border/80"
+                    )}
+                  />
+                  <span
+                    className={cn(
+                      "text-[10px] font-bold uppercase tracking-[0.22em]",
+                      isProSurface
+                        ? "text-emerald-950 dark:text-emerald-200"
+                        : "font-semibold text-muted-foreground"
+                    )}
+                  >
                     Функции
                   </span>
-                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border/80 to-transparent" />
+                  <div
+                    className={cn(
+                      "h-px flex-1 bg-linear-to-r from-transparent to-transparent",
+                      isProSurface ? "via-emerald-950/35 dark:via-white/35" : "via-border/80"
+                    )}
+                  />
                 </div>
 
                 <div className="mb-3 flex-1">
@@ -427,17 +507,32 @@ export function SubscriptionPlans({ onSuccessRefetchDone }: SubscriptionPlansPro
                         key={index}
                         className={cn(
                           "flex items-center gap-2 text-xs sm:text-sm",
-                          !feature.included && "text-muted-foreground/50"
+                          isProSurface &&
+                            feature.included &&
+                            "font-medium text-emerald-950 dark:text-emerald-50",
+                          isProSurface &&
+                            !feature.included &&
+                            "text-emerald-900/45 dark:text-emerald-400/45",
+                          !isProSurface && !feature.included && "text-muted-foreground/50"
                         )}
                       >
                         {feature.included ? (
                           <div
                             className={cn(
                               "flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
-                              planTheme.checkBg
+                              isProSurface
+                                ? "bg-emerald-950/15 ring-1 ring-emerald-950/20 dark:bg-white/15 dark:ring-white/25"
+                                : planTheme.checkBg
                             )}
                           >
-                            <Check className={cn("h-3 w-3", planTheme.checkIcon)} />
+                            <Check
+                              className={cn(
+                                "h-3 w-3",
+                                isProSurface
+                                  ? "text-emerald-950 dark:text-emerald-100"
+                                  : planTheme.checkIcon
+                              )}
+                            />
                           </div>
                         ) : (
                           <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted">
@@ -450,7 +545,14 @@ export function SubscriptionPlans({ onSuccessRefetchDone }: SubscriptionPlansPro
                   </ul>
                 </div>
 
-                <div className="mt-auto border-t border-border/40 pt-3.5">
+                <div
+                  className={cn(
+                    "mt-auto border-t pt-3.5",
+                    isProSurface
+                      ? "border-emerald-950/20 dark:border-white/20"
+                      : "border-border/40"
+                  )}
+                >
                   {isCurrent ? (
                     <Button variant="outline" className="h-11 w-full rounded-2xl font-semibold" disabled>
                       <Check className="mr-2 h-4 w-4" />
