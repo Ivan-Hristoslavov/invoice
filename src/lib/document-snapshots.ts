@@ -2,6 +2,34 @@ type CompanyRecord = Record<string, any> | null | undefined;
 type ClientRecord = Record<string, any> | null | undefined;
 type ItemRecord = Record<string, any>;
 
+/** Person receiving goods on an invoice (optional; may differ from buyer MOL). */
+export type GoodsRecipientInput = {
+  name?: string | null;
+  phone?: string | null;
+  mol?: string | null;
+};
+
+export type GoodsRecipientSnapshot = {
+  name: string | null;
+  phone: string | null;
+  mol: string | null;
+};
+
+export function createGoodsRecipientSnapshot(
+  input: GoodsRecipientInput | null | undefined
+): GoodsRecipientSnapshot | null {
+  if (!input || typeof input !== "object") return null;
+  const name = typeof input.name === "string" ? input.name.trim() : "";
+  const phone = typeof input.phone === "string" ? input.phone.trim() : "";
+  const mol = typeof input.mol === "string" ? input.mol.trim() : "";
+  if (!name && !phone && !mol) return null;
+  return {
+    name: name || null,
+    phone: phone || null,
+    mol: mol || null,
+  };
+}
+
 export function createCompanySnapshot(company: CompanyRecord) {
   if (!company) return null;
 
@@ -32,7 +60,7 @@ export function createCompanySnapshot(company: CompanyRecord) {
         ? company.bankAccount
         : {
             bankName: company.bankName ?? null,
-            accountNumber: company.bankAccount ?? null,
+            accountNumber: null,
             iban: company.bankIban ?? null,
             swift: company.bankSwift ?? null,
           },

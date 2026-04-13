@@ -145,12 +145,7 @@ function StepIndicator({ currentStep, steps }: { currentStep: number; steps: { t
 const clientSchema = z.object({
   name: z.string().min(1, "Името на клиента е задължително"),
   email: z.string().email("Моля, въведете валиден имейл").optional().or(z.literal("")),
-  phone: z
-    .string()
-    .min(1, "Телефонът е задължителен")
-    .refine((value) => getDigitsOnly(value).length >= 6, {
-      message: "Въведете валиден телефонен номер с поне 6 цифри",
-    }),
+  phone: z.string().optional().or(z.literal("")),
   address: z.string().min(1, "Адресът е задължителен за издаване на фактури"),
   city: z.string().min(1, "Градът е задължителен"),
   state: z.string().optional().or(z.literal("")),
@@ -170,6 +165,15 @@ const clientSchema = z.object({
   uicType: z.enum(["BULSTAT", "EGN"]).default("BULSTAT"),
   locale: z.string().default("bg"),
 }).superRefine((value, ctx) => {
+  const phoneRaw = (value.phone ?? "").trim();
+  if (phoneRaw && getDigitsOnly(phoneRaw).length < 6) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["phone"],
+      message: "Въведете валиден телефонен номер с поне 6 цифри",
+    });
+  }
+
   const { issues } = validateBulgarianPartyInput(value, {
     skipIdentifierFormatValidation: true,
   });
@@ -466,9 +470,8 @@ function NewClientPageContent() {
     switch (currentStep) {
       case 0: {
         const nameValid = formValues.name.trim().length > 0;
-        const phoneValid = (formValues.phone ?? "").trim().length > 0;
         const emailValid = isValidEmail(formValues.email || "");
-        return nameValid && phoneValid && emailValid;
+        return nameValid && emailValid;
       }
       case 1: {
         const addressValid = (formValues.address ?? "").trim().length > 0;
@@ -632,7 +635,7 @@ function NewClientPageContent() {
                 </div>
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <Input
-                    placeholder="Въведете ЕИК (напр. 204676177)"
+                    placeholder="Въведете ЕИК (напр. 175074752)"
                     inputMode="numeric"
                     className="h-11 flex-1"
                     value={formValues.bulstatNumber || ""}
@@ -718,52 +721,34 @@ function NewClientPageContent() {
                                     type="email"
                                     placeholder="client@example.com"
                                     className={[
-                                      "h-12 pr-10 transition-all duration-200",
+                                      "h-12 pr-10 transition-[border-color,box-shadow] duration-150",
                                       isValidState && "border-emerald-500 focus-visible:ring-emerald-500/20",
                                       isInvalidState && "border-destructive focus-visible:ring-destructive/20",
                                     ].filter(Boolean).join(" ")}
                                     {...field}
                                   />
-                                  <div className="absolute right-3 top-1/2 -translate-y-1/2 transition-all duration-300">
-                                    {isValidState && (
-                                      <CheckCircle2 className="h-5 w-5 text-emerald-500 animate-in fade-in zoom-in-50 duration-200" />
-                                    )}
-                                    {isInvalidState && (
-                                      <XCircle className="h-5 w-5 text-destructive animate-in fade-in zoom-in-50 duration-200" />
-                                    )}
-                                    {!isDirty && (
-                                      <Mail className="h-4 w-4 text-muted-foreground/40" />
-                                    )}
+                                  <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+                                    {isValidState && <CheckCircle2 className="h-5 w-5 text-emerald-500" />}
+                                    {isInvalidState && <XCircle className="h-5 w-5 text-destructive" />}
+                                    {!isDirty && <Mail className="h-4 w-4 text-muted-foreground" />}
                                   </div>
                                 </div>
                               </FormControl>
-                              <div
-                                className="overflow-hidden transition-all duration-300"
-                                style={{
-                                  maxHeight: isInvalidState ? "3rem" : "0",
-                                  opacity: isInvalidState ? 1 : 0,
-                                }}
-                              >
+                              {isInvalidState && (
                                 <div className="flex items-center gap-1.5 pt-1 text-sm text-destructive">
-                                      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                                   <FormMessage />
                                 </div>
-                              </div>
-                              <div
-                                className="overflow-hidden transition-all duration-300"
-                                style={{
-                                  maxHeight: isValidState ? "2rem" : "0",
-                                  opacity: isValidState ? 1 : 0,
-                                }}
-                              >
+                              )}
+                              {isValidState && (
                                 <p className="flex items-center gap-1.5 pt-1 text-xs text-emerald-600 dark:text-emerald-400">
                                   <CheckCircle2 className="h-3 w-3" />
                                   Имейлът изглежда правилен
                                 </p>
-                              </div>
+                              )}
                               {!isDirty && (
                                 <p className="text-xs text-muted-foreground">
-                                  Ще бъде използван за изпращане на фактури
+                                  По избор. Ако е попълнен, може да се ползва за изпращане на фактури.
                                 </p>
                               )}
                             </FormItem>
@@ -790,7 +775,9 @@ function NewClientPageContent() {
                                 onChange={(e) => field.onChange(getDigitsOnly(e.target.value))}
                               />
                             </FormControl>
-                            <p className="text-xs text-muted-foreground">Само цифри, без интервали и символи</p>
+                            <p className="text-xs text-muted-foreground">
+                              По избор. Само цифри, без интервали и символи.
+                            </p>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -922,7 +909,7 @@ function NewClientPageContent() {
                                 <NumericInput
                                   allowDecimal={false}
                                   inputMode="numeric"
-                                  placeholder="123456789"
+                                  placeholder="175074752"
                                   className="h-12 flex-1"
                                   value={field.value || ""}
                                   onChange={(e) => field.onChange(getDigitsOnly(e.target.value))}
@@ -1016,7 +1003,7 @@ function NewClientPageContent() {
                               </span>
                             </FormLabel>
                             <FormControl>
-                              <Input placeholder="BG123456789" className="h-12" {...field} />
+                              <Input placeholder="BG175074752" className="h-12" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1187,7 +1174,7 @@ function NewClientPageContent() {
                   <Button
                     type="submit"
                     disabled={isLoading || !confirmed}
-                    className="h-11 w-full gap-2 justify-center border-0 gradient-primary hover:opacity-90 disabled:opacity-50"
+                    className="h-11 w-full gap-2 justify-center border-0 gradient-primary hover:shadow-md hover:ring-2 hover:ring-emerald-400/25 disabled:opacity-50"
                   >
                     {isLoading ? (
                       <>

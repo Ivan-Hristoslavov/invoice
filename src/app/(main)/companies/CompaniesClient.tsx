@@ -56,9 +56,9 @@ export default function CompaniesClient({ companies, invoiceCounts }: CompaniesC
     isPro,
     getCompanyUsage, 
     canCreateCompany,
-    isLoadingUsage 
+    isLoadingUsage,
   } = useSubscriptionLimit();
-  
+
   const companyUsage = getCompanyUsage();
 
   // Filter companies based on search

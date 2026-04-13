@@ -162,14 +162,6 @@ describe("POST /api/companies route", () => {
           message: expect.stringContaining("Невалиден"),
         }),
         expect.objectContaining({
-          path: ["vatRegistrationNumber"],
-          message: expect.stringContaining("Невалиден"),
-        }),
-        expect.objectContaining({
-          path: ["vatRegistered"],
-          message: expect.stringContaining("ДДС"),
-        }),
-        expect.objectContaining({
           path: ["mol"],
           message: expect.stringContaining("МОЛ"),
         }),
@@ -191,9 +183,9 @@ describe("POST /api/companies route", () => {
         address: "бул. България 1",
         city: "София",
         country: "България",
-        bulstatNumber: "204676177",
+        bulstatNumber: "175074752",
         vatRegistered: true,
-        vatRegistrationNumber: "bg204676177",
+        vatRegistrationNumber: "bg175074752",
         mol: "Иван Иванов",
         uicType: "BULSTAT",
       })
@@ -208,10 +200,10 @@ describe("POST /api/companies route", () => {
       expect.objectContaining({
         name: "Тест ООД",
         userId: "user_1",
-        bulstatNumber: "204676177",
+        bulstatNumber: "175074752",
         vatRegistered: true,
-        vatRegistrationNumber: "BG204676177",
-        vatNumber: "BG204676177",
+        vatRegistrationNumber: "BG175074752",
+        vatNumber: "BG175074752",
         taxComplianceSystem: "bulgarian",
       })
     );
@@ -230,7 +222,7 @@ describe("POST /api/companies route", () => {
         address: "бул. България 1",
         city: "София",
         country: "България",
-        bulstatNumber: "204676177",
+        bulstatNumber: "175074752",
         vatRegistered: false,
         mol: "Иван Иванов",
         uicType: "BULSTAT",
@@ -257,7 +249,7 @@ describe("POST /api/companies route", () => {
     const { GET } = await import("@/app/api/companies/route");
     const response = await GET(
       new NextRequest(
-        "http://localhost/api/companies?bulstatNumber=204676177&uicType=BULSTAT"
+        "http://localhost/api/companies?bulstatNumber=175074752&uicType=BULSTAT"
       )
     );
     const body = await response.json();

@@ -27,6 +27,7 @@ import {
   Banknote,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BreadcrumbsBar } from "@/components/ui/breadcrumbs-bar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -96,7 +97,17 @@ type Invoice = {
     address?: string;
     city?: string;
     country?: string;
+    bulstatNumber?: string;
+    mol?: string;
+    vatNumber?: string;
+    vatRegistrationNumber?: string;
+    vatRegistered?: boolean;
   };
+  goodsRecipientSnapshot?: {
+    name?: string | null;
+    phone?: string | null;
+    mol?: string | null;
+  } | null;
   company: {
     id: string;
     name: string;
@@ -534,6 +545,14 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
 
   return (
     <div className="app-page-shell">
+      <nav aria-label="Навигационна пътека" className="mb-2 border-b border-border/40 pb-2">
+        <BreadcrumbsBar
+          items={[
+            { label: "Фактури", href: "/invoices" },
+            { label: `Фактура №${invoice.invoiceNumber}` },
+          ]}
+        />
+      </nav>
       {/* Header */}
       <div className="app-page-header">
         {/* Top row: Back button */}
@@ -576,7 +595,7 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
                 </Button>
                 <Button
                   size="sm"
-                  className="h-8 rounded-lg border-0 text-xs text-white gradient-primary hover:opacity-90 sm:flex-none"
+                  className="h-8 rounded-lg border-0 text-xs text-white gradient-primary hover:shadow-md hover:ring-2 hover:ring-emerald-400/25 sm:flex-none"
                   onClick={() => setShowIssueModal(true)}
                   disabled={isChangingStatus}
                 >
@@ -693,7 +712,7 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
               <CardTitle className="text-sm font-semibold">Информация за фактурата</CardTitle>
             </CardHeader>
             <Tabs
-              defaultValue="details"
+              value={activeTab}
               onValueChange={setActiveTab}
               className="w-full"
             >
@@ -716,6 +735,7 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
                 </TabsList>
               </div>
 
+              {activeTab === "details" && (
               <TabsContent value="details" className="p-3 pt-3 sm:p-5 sm:pt-4">
                 <div className="grid gap-3 md:grid-cols-2">
                   <div className="rounded-xl border border-border/60 bg-muted/15 p-3">
@@ -731,7 +751,17 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
                     <div className="space-y-1 text-sm text-muted-foreground">
                       <p className="font-medium text-foreground">{invoice.client.name}</p>
                       {invoice.client.email && <p>{invoice.client.email}</p>}
-                      {invoice.client.phone && <p>{invoice.client.phone}</p>}
+                      {invoice.client.phone && <p>Тел.: {invoice.client.phone}</p>}
+                      {invoice.client.bulstatNumber && (
+                        <p>ЕИК: {invoice.client.bulstatNumber}</p>
+                      )}
+                      {(invoice.client.vatNumber || invoice.client.vatRegistrationNumber) && (
+                        <p>
+                          ДДС №:{" "}
+                          {invoice.client.vatNumber || invoice.client.vatRegistrationNumber}
+                        </p>
+                      )}
+                      {invoice.client.mol && <p>МОЛ: {invoice.client.mol}</p>}
                       {invoice.client.address && (
                         <p>
                           {invoice.client.address}
@@ -740,6 +770,26 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
                         </p>
                       )}
                     </div>
+                    {(() => {
+                      const gr = invoice.goodsRecipientSnapshot;
+                      if (!gr || typeof gr !== "object") return null;
+                      const gName = gr.name?.trim();
+                      const gPhone = gr.phone?.trim();
+                      const gMol = gr.mol?.trim();
+                      if (!gName && !gPhone && !gMol) return null;
+                      return (
+                        <div className="mt-3 border-t border-border/50 pt-3">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            Получател на стоката
+                          </p>
+                          <div className="mt-1 space-y-1 text-sm text-muted-foreground">
+                            {gName && <p className="font-medium text-foreground">{gName}</p>}
+                            {gPhone && <p>Тел.: {gPhone}</p>}
+                            {gMol && <p>МОЛ: {gMol}</p>}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
 
@@ -781,7 +831,9 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
                   </div>
                 </div>
               </TabsContent>
+              )}
 
+              {activeTab === "items" && (
               <TabsContent value="items" className="px-0">
                 <div className="space-y-4 px-6 pb-6 md:hidden">
                   {invoice.items.map((item) => (
@@ -917,13 +969,17 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
                   </table>
                 </div>
               </TabsContent>
+              )}
 
               {/* Payments tab removed - invoices are for issuance only */}
 
+              {activeTab === "documents" && (
               <TabsContent value="documents" className="p-4 pt-2 sm:p-6 sm:pt-2">
                 <DocumentsTab invoiceId={invoice.id} documents={documents} />
               </TabsContent>
+              )}
 
+              {activeTab === "history" && (
               <TabsContent value="history" className="p-4 pt-2 sm:p-6 sm:pt-2">
                 {isLoadingAuditLogs ? (
                   <div className="flex items-center justify-center py-8">
@@ -1019,6 +1075,7 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
                   </div>
                 )}
               </TabsContent>
+              )}
             </Tabs>
           </Card>
 

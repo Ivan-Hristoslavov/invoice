@@ -27,9 +27,8 @@ export async function generateNextInvoiceNumber(
 }
 
 /**
- * Validates invoice number: 12-digit core YYCCCCNNNNNN, or optional text prefix + same core.
+ * Validates invoice number: 16-digit core (or legacy 12-digit), optional text prefix.
  */
 export function isValidInvoiceNumber(invoiceNumber: string): boolean {
-  if (/^\d{12}$/.test(invoiceNumber)) return true;
   return parseBulgarianInvoiceNumber(invoiceNumber) !== null;
 }

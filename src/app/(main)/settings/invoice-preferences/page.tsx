@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { BreadcrumbsBar } from "@/components/ui/breadcrumbs-bar";
 import { InvoicePreferencesForm } from "./InvoicePreferencesForm";
 
 export const metadata: Metadata = {
@@ -27,6 +28,13 @@ export default async function InvoicePreferencesPage() {
   return (
     <Card className="glass-card w-full rounded-[28px] border border-border/40 shadow-sm">
       <CardHeader className="space-y-1 pb-4 sm:pb-5">
+        <BreadcrumbsBar
+          className="mb-3 text-xs sm:text-sm"
+          items={[
+            { label: "Настройки", href: "/settings/company" },
+            { label: "Фактури" },
+          ]}
+        />
         <CardTitle className="text-lg sm:text-xl">Настройки на фактури</CardTitle>
         <CardDescription className="max-w-3xl leading-relaxed">
           ДДС, валута, <strong className="font-medium text-foreground">по желание префикс преди номера</strong> (напр.{" "}

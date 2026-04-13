@@ -124,7 +124,7 @@ export async function GET() {
       defaultVatRate: user.defaultVatRate != null ? Number(user.defaultVatRate) : undefined,
       startingInvoiceNumber: user.startingInvoiceNumber ?? undefined,
       invoicePrefix: j.invoicePrefix ?? "",
-      resetNumberingYearly: j.resetNumberingYearly ?? true,
+      resetNumberingYearly: j.resetNumberingYearly ?? false,
       defaultCurrency: j.defaultCurrency ?? "EUR",
       showAmountInWords: j.showAmountInWords ?? true,
       defaultTermsAndConditions: j.defaultTermsAndConditions ?? "",

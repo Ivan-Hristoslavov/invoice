@@ -80,7 +80,10 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
     isOriginal: true,
     notes: "",
     termsAndConditions: "",
-    status: ""
+    status: "",
+    goodsRecipientName: "",
+    goodsRecipientPhone: "",
+    goodsRecipientMol: "",
   });
   
   const [items, setItems] = useState<any[]>([]);
@@ -212,6 +215,8 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
         setInvoice(data);
         
         // Set invoice data
+        const gr = data.goodsRecipientSnapshot;
+        const grObj = gr && typeof gr === "object" ? gr : null;
         setInvoiceData({
           invoiceNumber: data.invoiceNumber,
           issueDate: new Date(data.issueDate).toISOString().substr(0, 10),
@@ -225,7 +230,10 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
           isOriginal: data.isOriginal !== false,
           notes: data.notes || "",
           termsAndConditions: data.termsAndConditions || "",
-          status: data.status
+          status: data.status,
+          goodsRecipientName: typeof grObj?.name === "string" ? grObj.name : "",
+          goodsRecipientPhone: typeof grObj?.phone === "string" ? grObj.phone : "",
+          goodsRecipientMol: typeof grObj?.mol === "string" ? grObj.mol : "",
         });
         
         // Set client
@@ -456,6 +464,11 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
         isOriginal: invoiceData.isOriginal,
         notes: invoiceData.notes,
         termsAndConditions: invoiceData.termsAndConditions,
+        goodsRecipient: {
+          name: invoiceData.goodsRecipientName.trim(),
+          phone: invoiceData.goodsRecipientPhone.trim(),
+          mol: invoiceData.goodsRecipientMol.trim(),
+        },
         items: items.map(item => ({
           id: item.itemId || undefined, // Use existing itemId if available
           description: item.description,
@@ -681,6 +694,58 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                     <p className="text-xs text-muted-foreground">
                       Клиентът не може да бъде променен. За да смените клиента, създайте нова фактура.
                     </p>
+                    {(client?.phone ||
+                      client?.bulstatNumber ||
+                      client?.mol ||
+                      client?.vatNumber ||
+                      client?.vatRegistrationNumber) && (
+                      <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+                        {client?.phone && <p>Тел.: {client.phone}</p>}
+                        {client?.bulstatNumber && <p>ЕИК: {client.bulstatNumber}</p>}
+                        {(client?.vatNumber || client?.vatRegistrationNumber) && (
+                          <p>ДДС №: {client.vatNumber || client.vatRegistrationNumber}</p>
+                        )}
+                        {client?.mol && <p>МОЛ: {client.mol}</p>}
+                      </div>
+                    )}
+                    <div className="space-y-3 rounded-lg border border-border/60 bg-muted/10 p-3">
+                      <p className="text-sm font-medium">
+                        Получател на стоката{" "}
+                        <span className="font-normal text-muted-foreground">(по избор)</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Лице, приело стоката — може да се различава от МОЛ на клиента. Показва се в PDF.
+                      </p>
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="space-y-2 sm:col-span-3">
+                          <Label htmlFor="goodsRecipientName">Име на получателя</Label>
+                          <Input
+                            id="goodsRecipientName"
+                            value={invoiceData.goodsRecipientName}
+                            onChange={(e) => handleInputChange("goodsRecipientName", e.target.value)}
+                            placeholder="Три имена"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="goodsRecipientPhone">Телефон</Label>
+                          <Input
+                            id="goodsRecipientPhone"
+                            value={invoiceData.goodsRecipientPhone}
+                            onChange={(e) => handleInputChange("goodsRecipientPhone", e.target.value)}
+                            placeholder="0888..."
+                          />
+                        </div>
+                        <div className="space-y-2 sm:col-span-2">
+                          <Label htmlFor="goodsRecipientMol">МОЛ (получател)</Label>
+                          <Input
+                            id="goodsRecipientMol"
+                            value={invoiceData.goodsRecipientMol}
+                            onChange={(e) => handleInputChange("goodsRecipientMol", e.target.value)}
+                            placeholder="МОЛ при приемане на стоката"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="company">Компания</Label>

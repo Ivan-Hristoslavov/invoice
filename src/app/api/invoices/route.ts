@@ -14,6 +14,7 @@ import {
 } from "@/lib/invoice-documents";
 import { z } from "zod";
 import { invoiceSchema, invoiceItemSchema } from "@/lib/validations/forms";
+import { createGoodsRecipientSnapshot } from "@/lib/document-snapshots";
 import { ApiStatusCode } from "@/types/api";
 import { checkSubscriptionLimits } from "@/middleware/subscription";
 import cuid from "cuid";
@@ -351,6 +352,9 @@ export async function POST(request: NextRequest) {
                 client,
                 preparedItems,
                 productById
+              ),
+              goodsRecipientSnapshot: createGoodsRecipientSnapshot(
+                validatedData.goodsRecipient ?? null
               ),
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),

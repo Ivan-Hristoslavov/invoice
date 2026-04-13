@@ -13,8 +13,9 @@ import {
   fetchProductsByIds,
   prepareDocumentItems,
 } from "@/lib/invoice-documents";
-import { withDocumentSnapshots } from "@/lib/document-snapshots";
+import { createGoodsRecipientSnapshot, withDocumentSnapshots } from "@/lib/document-snapshots";
 import { normalizeInvoiceStatus } from "@/lib/invoice-status";
+import { invoiceGoodsRecipientSchema } from "@/lib/validations/forms";
 
 // Helper function removed - no longer needed with Supabase
 
@@ -43,6 +44,7 @@ const invoiceUpdateSchema = z.object({
   notes: z.string().optional(),
   termsAndConditions: z.string().optional(),
   items: z.array(invoiceItemSchema).min(1, "Нужен е поне един артикул"),
+  goodsRecipient: invoiceGoodsRecipientSchema,
 });
 
 export async function GET(
@@ -98,7 +100,9 @@ export async function GET(
       await Promise.all([
         supabase
           .from("Client")
-          .select("id, name, email, phone, address, city, country")
+          .select(
+            "id, name, email, phone, address, city, country, bulstatNumber, mol, vatNumber, vatRegistrationNumber, vatRegistered"
+          )
           .eq("id", invoice.clientId)
           .single(),
         supabase.from("Company").select("id, name, email, phone").eq("id", invoice.companyId).single(),
@@ -167,7 +171,12 @@ export async function PUT(
       );
     }
 
-    const data = invoiceUpdateSchema.parse(await request.json());
+    const rawBody = await request.json();
+    const data = invoiceUpdateSchema.parse(rawBody);
+    const shouldPatchGoodsRecipient = Object.prototype.hasOwnProperty.call(
+      rawBody,
+      "goodsRecipient"
+    );
     const { company, client } = await fetchOwnedCompanyAndClient(
       supabase,
       sessionUser.id,
@@ -239,32 +248,39 @@ export async function PUT(
       throw insertItemsError;
     }
 
+    const invoiceUpdatePayload: Record<string, unknown> = {
+      clientId: data.clientId,
+      companyId: data.companyId,
+      issueDate: new Date(data.issueDate).toISOString(),
+      dueDate: new Date(data.dueDate).toISOString(),
+      supplyDate: data.supplyDate ? new Date(data.supplyDate).toISOString() : new Date(data.issueDate).toISOString(),
+      currency: data.currency,
+      placeOfIssue: data.placeOfIssue || invoice.placeOfIssue || "София",
+      paymentMethod:
+        data.paymentMethod === "CARD"
+          ? "CREDIT_CARD"
+          : data.paymentMethod || invoice.paymentMethod || "BANK_TRANSFER",
+      isEInvoice: data.isEInvoice !== undefined ? data.isEInvoice : invoice.isEInvoice,
+      isOriginal: data.isOriginal !== undefined ? data.isOriginal : invoice.isOriginal,
+      notes: data.notes || null,
+      termsAndConditions: data.termsAndConditions || null,
+      subtotal: subtotal.toString(),
+      taxAmount: taxAmount.toString(),
+      total: total.toString(),
+      bulstatNumber: company.bulstatNumber || null,
+      ...createDocumentSnapshots(company, client, preparedItems, productById),
+      updatedAt: new Date().toISOString(),
+    };
+    if (shouldPatchGoodsRecipient) {
+      invoiceUpdatePayload.goodsRecipientSnapshot = createGoodsRecipientSnapshot(
+        data.goodsRecipient ?? null
+      );
+    }
+
     // Update invoice
     const { data: updatedInvoice, error: updateError } = await supabase
       .from("Invoice")
-      .update({
-        clientId: data.clientId,
-        companyId: data.companyId,
-        issueDate: new Date(data.issueDate).toISOString(),
-        dueDate: new Date(data.dueDate).toISOString(),
-        supplyDate: data.supplyDate ? new Date(data.supplyDate).toISOString() : new Date(data.issueDate).toISOString(),
-        currency: data.currency,
-        placeOfIssue: data.placeOfIssue || invoice.placeOfIssue || "София",
-        paymentMethod:
-          data.paymentMethod === "CARD"
-            ? "CREDIT_CARD"
-            : data.paymentMethod || invoice.paymentMethod || "BANK_TRANSFER",
-        isEInvoice: data.isEInvoice !== undefined ? data.isEInvoice : invoice.isEInvoice,
-        isOriginal: data.isOriginal !== undefined ? data.isOriginal : invoice.isOriginal,
-        notes: data.notes || null,
-        termsAndConditions: data.termsAndConditions || null,
-        subtotal: subtotal.toString(),
-        taxAmount: taxAmount.toString(),
-        total: total.toString(),
-        bulstatNumber: company.bulstatNumber || null,
-        ...createDocumentSnapshots(company, client, preparedItems, productById),
-        updatedAt: new Date().toISOString(),
-      })
+      .update(invoiceUpdatePayload)
       .eq("id", id)
       .select()
       .single();

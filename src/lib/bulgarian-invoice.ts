@@ -12,17 +12,21 @@ interface BulgarianInvoiceNumberComponents {
   // Required for legally compliant invoice numbering
   year: string;           // Year as YY
   companyId: string;      // Company identifier (can be last 4 of BULSTAT/EIK)
-  sequentialNumber: number; // Sequential number starting from 1 each year
+  /** Monotonic sequence (10-digit in new format; 6-digit in legacy stored numbers) */
+  sequentialNumber: number;
   type: string;           // Type of document (usually "И" for invoice)
 }
 
 /**
  * Generate a Bulgarian invoice number compliant with NAP regulations
- * Format: YYNNNNNNNNNN where:
- * - YY is the year (e.g., 24 for 2024)
- * - NNNNNNNNNN is the sequential number (e.g., 0000000001)
- * 
- * @param sequenceNumber Sequential number in the year
+ * Format: YYCCCCNNNNNNNNNN (16 digits) where:
+ * - YY is the year (e.g., 26 for 2026)
+ * - CCCC is the last 4 digits of the company EIK (or 0000)
+ * - NNNNNNNNNN is the 10-digit sequential part (e.g., 0000000001)
+ *
+ * Legacy 12-digit numbers (6-digit sequence) are still parsed for existing rows.
+ *
+ * @param sequenceNumber Next sequential index (monotonic, not reset by calendar year)
  * @param companyId Optional company identifier to include in the number
  * @returns A Bulgarian-format invoice number
  */
@@ -38,10 +42,8 @@ export function generateBulgarianInvoiceNumber(
     ? companyEik.slice(-4) 
     : '0000';
   
-  // Format the sequence number to have leading zeros
-  const sequencePart = sequenceNumber.toString().padStart(6, '0');
-  
-  // Format: YYCCCCNNNNNN (without type code suffix)
+  const sequencePart = sequenceNumber.toString().padStart(10, '0');
+
   return `${year}${companyPart}${sequencePart}`;
 }
 
@@ -51,21 +53,40 @@ export function generateBulgarianInvoiceNumber(
  * @param invoiceNumber The invoice number to parse
  * @returns The components of the invoice number
  */
-export function parseBulgarianInvoiceNumber(invoiceNumber: string): BulgarianInvoiceNumberComponents | null {
-  // Core format: YYCCCCNNNNNN (12 digits). Optional user prefix (e.g. Ф-) is ignored.
-  const digits = invoiceNumber.replace(/\D/g, "");
-  if (digits.length < 12) return null;
-  const core = digits.slice(-12);
-  const regex = /^(\d{2})(\d{4})(\d{6})$/;
-  const match = core.match(regex);
+/** 10-digit sequential segment as shown in settings / migration preview (e.g. 1 → 0000000001). */
+export function formatTenDigitSequenceDisplay(sequenceNumber: number): string {
+  if (!Number.isFinite(sequenceNumber) || sequenceNumber < 1) return '0000000001';
+  const n = Math.floor(sequenceNumber);
+  if (n > 9999999999) return '9999999999';
+  return n.toString().padStart(10, '0');
+}
 
-  if (!match) return null;
-  
+export function parseBulgarianInvoiceNumber(invoiceNumber: string): BulgarianInvoiceNumberComponents | null {
+  const digits = invoiceNumber.replace(/\D/g, '');
+  if (digits.length < 12) return null;
+
+  if (digits.length >= 16) {
+    const core16 = digits.slice(-16);
+    const m16 = core16.match(/^(\d{2})(\d{4})(\d{10})$/);
+    if (m16) {
+      return {
+        year: m16[1],
+        companyId: m16[2],
+        sequentialNumber: parseInt(m16[3], 10),
+        type: 'invoice',
+      };
+    }
+  }
+
+  const core12 = digits.slice(-12);
+  const m12 = core12.match(/^(\d{2})(\d{4})(\d{6})$/);
+  if (!m12) return null;
+
   return {
-    year: match[1],
-    companyId: match[2],
-    sequentialNumber: parseInt(match[3], 10),
-    type: 'invoice' // Default type
+    year: m12[1],
+    companyId: m12[2],
+    sequentialNumber: parseInt(m12[3], 10),
+    type: 'invoice',
   };
 }
 

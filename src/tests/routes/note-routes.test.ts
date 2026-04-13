@@ -106,7 +106,7 @@ describe("credit/debit note routes", () => {
     mockGetServerSession.mockResolvedValue({ user: { id: "session-user" } });
     mockResolveSessionUser.mockResolvedValue({ id: "user-1" });
     mockFetchOwnedCompanyAndClient.mockResolvedValue({
-      company: { id: "company-1", bulstatNumber: "204676177", userId: "owner-1" },
+      company: { id: "company-1", bulstatNumber: "175074752", userId: "owner-1" },
       client: { id: "client-1" },
     });
     mockFetchProductsByIds.mockResolvedValue({});

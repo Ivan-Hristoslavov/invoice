@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import jsPDF from 'jspdf';
+import { resolvePdfVisualPrefsForUser } from '@/lib/pdf-visual-preferences.server';
 
 // Colors for professional design - green/emerald for debit notes
 const COLORS = {
@@ -27,6 +28,8 @@ function formatCurrency(amount: number, currency: string): string {
 
 // Server-side PDF generation function for Debit Notes
 export async function generateDebitNotePdfServer(debitNote: any): Promise<Buffer> {
+  const pdfPrefs = await resolvePdfVisualPrefsForUser(debitNote.userId as string | undefined);
+
   // Load fonts from file system
   const fontPath = join(process.cwd(), 'public', 'fonts');
   const regularFont = readFileSync(join(fontPath, 'Roboto-Regular.ttf'));
@@ -69,7 +72,7 @@ export async function generateDebitNotePdfServer(debitNote: any): Promise<Buffer
   let logoHeight = 0;
   
   // Load and add company logo if available
-  if (debitNote.company?.logo) {
+  if (pdfPrefs.showCompanyLogo && debitNote.company?.logo) {
     try {
       const logoResponse = await fetch(debitNote.company.logo);
       if (logoResponse.ok) {

@@ -76,22 +76,22 @@ export function useSubscriptionLimit(): UseSubscriptionLimitResult {
     }
   }, [session, router]);
 
-  // Helper functions for checking capabilities
-  const canCreateInvoice = usage 
-    ? (usage.invoices.limit === -1 || usage.invoices.used < usage.invoices.limit)
-    : true;
+  // Helper functions for checking capabilities (never optimistic when usage not loaded)
+  const canCreateInvoice = usage
+    ? usage.invoices.limit === -1 || usage.invoices.used < usage.invoices.limit
+    : false;
 
-  const canCreateCompany = usage 
-    ? (usage.companies.limit === -1 || usage.companies.used < usage.companies.limit)
-    : true;
+  const canCreateCompany = usage
+    ? usage.companies.limit === -1 || usage.companies.used < usage.companies.limit
+    : false;
 
-  const canCreateClient = usage 
-    ? (usage.clients.limit === -1 || usage.clients.used < usage.clients.limit)
-    : true;
+  const canCreateClient = usage
+    ? usage.clients.limit === -1 || usage.clients.used < usage.clients.limit
+    : false;
 
-  const canCreateProduct = usage 
-    ? (usage.products.limit === -1 || usage.products.used < usage.products.limit)
-    : true;
+  const canCreateProduct = usage
+    ? usage.products.limit === -1 || usage.products.used < usage.products.limit
+    : false;
 
   const canAddUser = usage 
     ? (usage.users.used < usage.users.limit)

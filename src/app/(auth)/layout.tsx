@@ -62,7 +62,7 @@ export default function AuthLayout({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity duration-300">
+            <Link href="/" className="flex items-center gap-3 transition-shadow hover:ring-2 hover:ring-primary/20 rounded-lg">
               <motion.div 
                 className="h-10 w-10 rounded-xl bg-emerald-500/20 backdrop-blur-sm flex items-center justify-center"
                 whileHover={{ scale: 1.1, rotate: 5 }}

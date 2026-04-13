@@ -242,7 +242,7 @@ export function ForgotPasswordForm() {
           >
             <Button 
               type="submit" 
-              className="h-12 w-full max-w-sm rounded-2xl border-0 text-base font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all duration-300 gradient-primary hover:opacity-90"
+              className="h-12 w-full max-w-sm rounded-2xl border-0 text-base font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all duration-300 gradient-primary hover:shadow-md hover:ring-2 hover:ring-emerald-400/25"
               disabled={isLoading}
             >
               {isLoading ? (

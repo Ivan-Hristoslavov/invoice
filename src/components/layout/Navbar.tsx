@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { Avatar } from "@heroui/react";
 import { Plus, Command, FileText, Menu, X } from "lucide-react";
 import { useSidebar } from "@/components/layout/SidebarContext";
 import { useCommandPalette } from "@/components/ui/command-palette";
@@ -13,8 +14,16 @@ import { APP_NAME } from "@/config/constants";
 import { SUBSCRIPTION_PLANS, type SubscriptionPlanKey } from "@/lib/subscription-plans";
 import { cn } from "@/lib/utils";
 
+function userDisplayInitials(name: string | null | undefined, email: string | null | undefined) {
+  const source = (name?.trim() || email?.trim() || "?").replace(/\s+/g, " ");
+  if (!name?.trim() && email?.trim()) return email.trim().slice(0, 2).toUpperCase();
+  const parts = source.split(" ").filter(Boolean);
+  if (parts.length >= 2) return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase() || "?";
+  return source.slice(0, 2).toUpperCase() || "?";
+}
+
 export function Navbar() {
-  const { status } = useSession();
+  const { status, data: session } = useSession();
   const pathname = usePathname();
   const { isOpen, setOpen, isMobile } = useSidebar();
   const isAuthenticated = status === "authenticated";
@@ -101,9 +110,33 @@ export function Navbar() {
               href="/invoices/new"
               title="Нова фактура"
               aria-label="Нова фактура"
-              className="flex h-10 w-10 min-h-10 min-w-10 max-h-10 max-w-10 shrink-0 items-center justify-center rounded-full gradient-primary text-white shadow-md transition-opacity hover:opacity-90 focus-visible:outline focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex h-10 w-10 min-h-10 min-w-10 max-h-10 max-w-10 shrink-0 items-center justify-center rounded-full gradient-primary text-white shadow-md transition-shadow hover:shadow-lg hover:ring-2 hover:ring-emerald-400/25 focus-visible:outline focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          )}
+
+          {session?.user && (
+            <Link
+              href="/settings/profile"
+              className="hidden shrink-0 sm:flex"
+              aria-label={
+                session.user.name
+                  ? `Профил: ${session.user.name}`
+                  : session.user.email
+                    ? `Профил: ${session.user.email}`
+                    : "Профил"
+              }
+            >
+              <Avatar
+                size="sm"
+                className="h-9 w-9 border border-border/60 bg-muted text-xs font-semibold"
+              >
+                <Avatar.Image src={session.user.image ?? undefined} alt="" />
+                <Avatar.Fallback className="bg-muted text-foreground">
+                  {userDisplayInitials(session.user.name, session.user.email)}
+                </Avatar.Fallback>
+              </Avatar>
             </Link>
           )}
 

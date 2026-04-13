@@ -339,7 +339,7 @@ export function RegisterForm() {
 
         <Button
           type="submit"
-          className="h-10 w-full rounded-xl border-0 text-sm font-semibold text-white shadow-md shadow-emerald-500/20 gradient-primary hover:opacity-90"
+          className="h-10 w-full rounded-xl border-0 text-sm font-semibold text-white shadow-md shadow-emerald-500/20 gradient-primary hover:shadow-md hover:ring-2 hover:ring-emerald-400/25"
           disabled={isLoading}
         >
           {isLoading ? (

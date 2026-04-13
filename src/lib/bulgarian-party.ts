@@ -38,6 +38,16 @@ interface ValidationOptions {
   skipIdentifierFormatValidation?: boolean;
 }
 
+/** Когато няма регистрация по ЗДДС, не пазим български ДДС номер (напр. училища, читалища). */
+function applyNonVatRegisteredVatClearing(
+  normalized: ReturnType<typeof normalizePartyInput<BulgarianPartyInput>>
+) {
+  if (normalized.vatRegistered) return;
+  normalized.vatRegistrationNumber = null;
+  const vn = normalized.vatNumber?.toUpperCase();
+  if (vn?.startsWith("BG")) normalized.vatNumber = null;
+}
+
 export function normalizePartyInput<T extends BulgarianPartyInput>(input: T): T {
   return {
     ...input,
@@ -68,6 +78,7 @@ export function normalizePartyInput<T extends BulgarianPartyInput>(input: T): T 
 
 export function buildPartyPayload(input: BulgarianPartyInput) {
   const normalized = normalizePartyInput(input);
+  applyNonVatRegisteredVatClearing(normalized);
   const isBulgarian = isBulgarianParty(normalized);
   const vatNumber =
     normalized.vatRegistrationNumber ?? normalized.vatNumber ?? null;
@@ -104,6 +115,7 @@ export function validateBulgarianPartyInput(
   options: ValidationOptions = {}
 ) {
   const normalized = normalizePartyInput(input);
+  applyNonVatRegisteredVatClearing(normalized);
   const issues: ValidationIssue[] = [];
   const isBulgarian = isBulgarianParty(normalized);
   const normalizedVat =
@@ -177,13 +189,6 @@ export function validateBulgarianPartyInput(
     issues.push({
       path: ["vatRegistrationNumber"],
       message: "Невалиден български ДДС номер. Използвайте формат BGXXXXXXXXX.",
-    });
-  }
-
-  if ((isBulgarian || hasBulgarianVatNumber) && normalizedVat && !normalized.vatRegistered) {
-    issues.push({
-      path: ["vatRegistered"],
-      message: "Маркирайте регистрация по ДДС, когато е въведен ДДС номер.",
     });
   }
 

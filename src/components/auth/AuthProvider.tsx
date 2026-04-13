@@ -6,7 +6,7 @@ import { SessionLoader } from "@/components/layout/SessionLoader";
 
 export function AuthProvider({ children }: PropsWithChildren) {
   return (
-    <SessionProvider>
+    <SessionProvider refetchOnWindowFocus={false} refetchWhenOffline={false}>
       <SessionLoader>{children}</SessionLoader>
     </SessionProvider>
   );

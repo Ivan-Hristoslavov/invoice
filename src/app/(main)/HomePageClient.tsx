@@ -57,6 +57,7 @@ const LANDING_NAV = [
   { href: "/#top", label: "Начало", spy: "top" },
   { href: "/#product", label: "Продукт", spy: "product" },
   { href: "/#pricing", label: "Цени", spy: "pricing" },
+  { href: "/#compliance", label: "Съответствие", spy: "compliance" },
   { href: "/#contact", label: "Контакт", spy: "contact" },
 ] as const;
 
@@ -632,7 +633,7 @@ export default function HomePage() {
                 size="sm"
                 asChild
                 className={cn(
-                  "gradient-primary h-9 shrink-0 border-0 px-2.5 text-xs font-semibold text-white shadow-md hover:opacity-90 sm:px-3",
+                  "gradient-primary h-9 shrink-0 border-2 border-white/20 px-2.5 text-xs font-semibold text-white shadow-md hover:border-white/45 hover:shadow-md hover:shadow-emerald-500/20 sm:px-3",
                   "transition-[height,padding] duration-300 ease-out",
                   isHeaderCompact && "h-8 px-2 text-[11px]"
                 )}
@@ -692,7 +693,7 @@ export default function HomePage() {
                 <Button
                   size="sm"
                   asChild
-                  className="h-12 w-full border-0 px-5 text-sm font-semibold text-white shadow-lg gradient-primary hover:opacity-90 sm:h-12"
+                  className="h-12 w-full border-2 border-white/20 px-5 text-sm font-semibold text-white shadow-lg gradient-primary hover:border-white/45 hover:shadow-lg hover:shadow-emerald-500/25 sm:h-12"
                 >
                   <Link href="/signup" className="flex items-center justify-center whitespace-nowrap">
                     Започнете безплатно
@@ -910,24 +911,38 @@ export default function HomePage() {
                         <div
                           className={cn(
                             "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl shadow-sm ring-1 ring-black/5 dark:ring-white/10",
-                            theme.iconBg,
-                            theme.iconText
+                            plan.popular
+                              ? "bg-white/25 ring-emerald-950/15 backdrop-blur-sm dark:bg-white/10 dark:ring-white/20"
+                              : theme.iconBg,
+                            plan.popular ? "text-emerald-950 dark:text-emerald-100" : theme.iconText
                           )}
                         >
                           <PlanIcon className="h-5 w-5" aria-hidden />
                         </div>
                         <div className="min-w-0 flex-1 space-y-1">
                           <div className="flex items-start justify-between gap-2">
-                            <h3 className="truncate text-sm font-semibold leading-tight">{plan.name}</h3>
+                            <h3
+                              className={cn(
+                                "truncate text-sm font-semibold leading-tight",
+                                plan.popular && "text-emerald-950 dark:text-emerald-50"
+                              )}
+                            >
+                              {plan.name}
+                            </h3>
                             {plan.popular ? (
-                              <Badge className="h-5 shrink-0 border-0 bg-emerald-500 px-2 py-0 text-[10px] font-semibold text-white">
+                              <Badge className="h-5 shrink-0 border border-emerald-950/15 bg-emerald-950 px-2 py-0 text-[10px] font-semibold text-white shadow-sm dark:border-white/20 dark:bg-emerald-950/90">
                                 <Star className="mr-0.5 h-2.5 w-2.5 fill-current" aria-hidden />
                                 Популярен
                               </Badge>
                             ) : null}
                           </div>
                           <p
-                            className="truncate text-[11px] leading-tight text-muted-foreground sm:text-xs"
+                            className={cn(
+                              "truncate text-[11px] leading-tight sm:text-xs",
+                              plan.popular
+                                ? "font-medium text-emerald-950/95 dark:text-emerald-100"
+                                : "text-muted-foreground"
+                            )}
                             title={plan.description}
                           >
                             {plan.description}
@@ -945,30 +960,81 @@ export default function HomePage() {
                           </div>
                         ) : (
                           <div>
-                            <div className="flex items-baseline gap-1">
-                              <span className="text-xl font-bold tracking-tight sm:text-2xl">
-                                {formatPrice(monthlyPrice)}
-                              </span>
-                              <span className="text-sm font-normal text-muted-foreground">€/мес</span>
-                            </div>
+                          <div className="flex items-baseline gap-1">
+                            <span
+                              className={cn(
+                                "text-xl font-bold tracking-tight sm:text-2xl",
+                                plan.popular && "text-emerald-950 dark:text-white"
+                              )}
+                            >
+                              {formatPrice(monthlyPrice)}
+                            </span>
+                            <span
+                              className={cn(
+                                "text-sm font-semibold",
+                                plan.popular
+                                  ? "text-emerald-900 dark:text-emerald-200"
+                                  : "font-normal text-muted-foreground"
+                              )}
+                            >
+                              €/мес
+                            </span>
+                          </div>
                             {isYearly && plan.price.yearly > 0 ? (
-                              <p className="mt-0.5 text-xs text-muted-foreground">
+                              <p
+                                className={cn(
+                                  "mt-0.5 text-xs",
+                                  plan.popular
+                                    ? "font-medium text-emerald-900/95 dark:text-emerald-100/95"
+                                    : "text-muted-foreground"
+                                )}
+                              >
                                 {formatPrice(plan.price.yearly)} € общо за 12 месеца · 2 месеца безплатно
                               </p>
                             ) : null}
                             {!isYearly ? (
-                              <p className="mt-0.5 text-xs text-muted-foreground">Таксува се месечно</p>
+                              <p
+                                className={cn(
+                                  "mt-0.5 text-xs",
+                                  plan.popular
+                                    ? "font-medium text-emerald-900/95 dark:text-emerald-100/95"
+                                    : "text-muted-foreground"
+                                )}
+                              >
+                                Таксува се месечно
+                              </p>
                             ) : null}
                           </div>
                         )}
                       </div>
 
                       <div className="my-3 flex items-center gap-2">
-                        <div className="h-px flex-1 bg-linear-to-r from-transparent via-border/80 to-transparent" />
-                        <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                        <div
+                          className={cn(
+                            "h-px flex-1 bg-linear-to-r from-transparent to-transparent",
+                            plan.popular
+                              ? "via-emerald-950/35 dark:via-white/35"
+                              : "via-border/80"
+                          )}
+                        />
+                        <span
+                          className={cn(
+                            "text-[10px] font-bold uppercase tracking-[0.22em]",
+                            plan.popular
+                              ? "text-emerald-950 dark:text-emerald-200"
+                              : "font-semibold text-muted-foreground"
+                          )}
+                        >
                           Функции
                         </span>
-                        <div className="h-px flex-1 bg-linear-to-r from-transparent via-border/80 to-transparent" />
+                        <div
+                          className={cn(
+                            "h-px flex-1 bg-linear-to-r from-transparent to-transparent",
+                            plan.popular
+                              ? "via-emerald-950/35 dark:via-white/35"
+                              : "via-border/80"
+                          )}
+                        />
                       </div>
 
                       <ul className="mb-3 flex-1 space-y-1.5">
@@ -977,17 +1043,29 @@ export default function HomePage() {
                             key={feat.text}
                             className={cn(
                               "flex items-center gap-2 text-xs sm:text-sm",
-                              !feat.included && "text-muted-foreground/50"
+                              plan.popular && feat.included && "font-medium text-emerald-950 dark:text-emerald-50",
+                              plan.popular && !feat.included && "text-emerald-900/45 dark:text-emerald-400/45",
+                              !plan.popular && !feat.included && "text-muted-foreground/50"
                             )}
                           >
                             {feat.included ? (
                               <div
                                 className={cn(
                                   "flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
-                                  theme.checkBg
+                                  plan.popular
+                                    ? "bg-emerald-950/15 ring-1 ring-emerald-950/20 dark:bg-white/15 dark:ring-white/25"
+                                    : theme.checkBg
                                 )}
                               >
-                                <Check className={cn("h-3 w-3", theme.checkIcon)} aria-hidden />
+                                <Check
+                                  className={cn(
+                                    "h-3 w-3",
+                                    plan.popular
+                                      ? "text-emerald-950 dark:text-emerald-100"
+                                      : theme.checkIcon
+                                  )}
+                                  aria-hidden
+                                />
                               </div>
                             ) : (
                               <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted">
@@ -999,7 +1077,14 @@ export default function HomePage() {
                         ))}
                       </ul>
 
-                      <div className="mt-auto border-t border-border/40 pt-3.5">
+                      <div
+                        className={cn(
+                          "mt-auto border-t pt-3.5",
+                          plan.popular
+                            ? "border-emerald-950/20 dark:border-white/20"
+                            : "border-border/40"
+                        )}
+                      >
                         <Button
                           asChild
                           className={cn(
@@ -1093,6 +1178,69 @@ export default function HomePage() {
         </section>
 
         <section
+          id="compliance"
+          data-landing-spy="compliance"
+          className={cn(LANDING_SCROLL_MARGIN, LANDING_ZONE_OUTER, "bg-transparent")}
+        >
+          <div className="container mx-auto max-w-6xl">
+            <div className={cn(LANDING_ZONE_PANEL, LANDING_ZONE_PANEL_PAD)}>
+              <header className="border-b border-border/50 pb-8 text-center">
+                <div className="flex justify-center">
+                  <LandingSectionLabel>Съответствие</LandingSectionLabel>
+                </div>
+                <h2 className="section-title mt-3">Електронни фактури и българската нормативна рамка</h2>
+                <p className="card-description mx-auto mt-2 max-w-2xl">
+                  {APP_NAME} е софтуер за издаване и проследяване на фактури и известия. По-долу обобщаваме темите,
+                  които обикновено са свързани с електронно фактуриране — без да заместват индивидуален правен или
+                  счетоводен съвет.
+                </p>
+              </header>
+              <div className="prose prose-sm dark:prose-invert mx-auto mt-8 max-w-3xl text-muted-foreground">
+                <p className="text-foreground/90">
+                  Нормативната уредба включва сред другото Закона за електронния документ и електронния подпис (ЗЕДЕП),
+                  Закона за данък върху добавената стойност (ЗДДС) с подзаконовите актове (вкл. ППЗДДС), Закона за
+                  счетоводството (ЗСч) и корпоративното облагане (ЗКПО), както и актуалните разяснения и практика на
+                  НАП. Конкретните задължения зависят от вашия случай (регистрация по ДДС, вид контрагент, формат на
+                  обмен и др.).
+                </p>
+                <ul className="mt-4 space-y-2">
+                  <li>
+                    <strong className="text-foreground">Съдържание и неизменяемост:</strong> издадените документи
+                    трябва да съдържат изискуемите реквизити и да остават проследими след издаване (напр. чрез ясна
+                    номерация и история на промените).
+                  </li>
+                  <li>
+                    <strong className="text-foreground">ДДС и счетоводно отразяване:</strong> коректни данъчни полета,
+                    ставки и връзка с осчетоводяването съгласно приложимите правила.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Електронен обмен:</strong> при използване на външни платформи
+                    или доставчици на услуги проверете условията им и как се покриват изискванията за съхранение и
+                    достъпност на документите.
+                  </li>
+                </ul>
+                <p className="mt-6">
+                  Публично достъпни материали на трети страни могат да помогнат за ориентация. Пример:{" "}
+                  <a
+                    href="https://inv.bg/doc/NAP.pdf"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-primary underline-offset-4 hover:underline"
+                  >
+                    документ на НАП (PDF)
+                  </a>
+                  .
+                </p>
+                <p className="mt-4 rounded-xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 text-sm text-foreground/85 dark:bg-amber-500/10">
+                  Този текст е с информационна цел и не е правно становище. За тълкуване на ЗЕДЕП, ЗДДС, ЗСч, ЗКПО,
+                  ППЗДДС и актовете на НАП се обърнете към специалист.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section
           id="contact"
           data-landing-spy="contact"
           className={cn(LANDING_SCROLL_MARGIN, LANDING_ZONE_OUTER, "bg-transparent")}
@@ -1163,7 +1311,7 @@ export default function HomePage() {
                 <div className="grid grid-cols-1 gap-3 sm:mx-auto sm:max-w-2xl sm:grid-cols-2 sm:gap-4">
                   <Button
                     asChild
-                    className="h-12 w-full border-0 text-base font-semibold text-white shadow-lg gradient-primary hover:opacity-90"
+                    className="h-12 w-full border-2 border-white/20 text-base font-semibold text-white shadow-lg gradient-primary hover:border-white/45 hover:shadow-lg hover:shadow-emerald-500/25"
                   >
                     <Link href="/signup" className="flex items-center justify-center gap-2">
                       Започнете безплатно
@@ -1189,7 +1337,7 @@ export default function HomePage() {
           <div className="rounded-3xl border border-border/70 bg-background/95 p-2.5 shadow-lg backdrop-blur">
             <Button
               asChild
-              className="h-12 w-full border-0 font-semibold text-white shadow-md gradient-primary hover:opacity-90"
+              className="h-12 w-full border-2 border-white/20 font-semibold text-white shadow-md gradient-primary hover:border-white/45 hover:shadow-md hover:shadow-emerald-500/20"
             >
               <Link href="/signup" className="flex items-center justify-center">
                 Започнете безплатно
@@ -1259,6 +1407,14 @@ export default function HomePage() {
                       className="text-muted-foreground hover:text-foreground transition-colors"
                     >
                       Цени
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/#compliance"
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Съответствие (е-фактури)
                     </Link>
                   </li>
                   <li>

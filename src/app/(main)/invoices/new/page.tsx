@@ -6,10 +6,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { 
   ArrowLeft, 
   ArrowRight,
-  Plus, 
+  Plus,
+  Minus,
   Trash2,
   X, 
-  Search, 
   Check, 
   Edit, 
   User, 
@@ -39,6 +39,7 @@ import {
   CardDescription
 } from "@/components/ui/card";
 import { Input, NumericInput } from "@/components/ui/input";
+import { SearchField } from "@/components/ui/search-field";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -51,6 +52,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/lib/toast";
 import { DEFAULT_VAT_RATE } from "@/config/constants";
+import { grossToNetAmount, netToGrossAmount, roundMoney2 } from "@/lib/money-vat";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { UsageCounter, LimitBanner } from "@/components/ui/pro-feature-lock";
 import { FormDatePicker } from "@/components/ui/date-picker";
@@ -59,6 +61,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { createPortal } from "react-dom";
 import { formatInvoicePrice, formatInvoiceLongDate } from "./invoice-new-format";
 import { InvoiceStepIndicator } from "./InvoiceStepIndicator";
+import { evaluateInvoiceItemEditorDraft } from "@/lib/invoice-item-editor-draft";
 
 // Product card component
 function ProductCard({ 
@@ -93,7 +96,9 @@ function ProductCard({
 
         <div className="shrink-0 text-right">
           <p className="text-base font-bold tabular-nums">
-            {formatInvoicePrice(Number(product.price))}
+            {formatInvoicePrice(
+              netToGrossAmount(Number(product.price), Number(product.taxRate) || 0)
+            )}
             <span className="text-xs font-normal text-muted-foreground ml-0.5">{currency}</span>
           </p>
           {product.taxRate ? (
@@ -195,60 +200,124 @@ function StepAccordionTrigger({
   );
 }
 
-// Invoice line item card (compact layout)
+// Invoice line item card (compact layout + inline quantity)
 function InvoiceItemCard({
   item,
   index,
   onEdit,
   onRemove,
+  onQuantityChange,
   canRemove,
-  currency
+  currency,
 }: {
   item: any;
   index: number;
   onEdit: () => void;
   onRemove: () => void;
+  onQuantityChange: (nextQuantity: number) => void;
   canRemove: boolean;
   currency: string;
 }) {
+  const [qtyInput, setQtyInput] = useState(String(item.quantity));
+
+  useEffect(() => {
+    setQtyInput(String(item.quantity));
+  }, [item.id, item.quantity]);
+
+  const unitGross =
+    item.unitPriceGross ?? netToGrossAmount(Number(item.unitPrice), Number(item.taxRate) || 0);
   const itemTotal = item.quantity * item.unitPrice;
   const itemTax = itemTotal * (item.taxRate / 100);
   const itemTotalWithTax = itemTotal + itemTax;
-  
+
+  function commitInlineQuantity() {
+    const digits = qtyInput.replace(/\D/g, "");
+    const n = digits === "" ? NaN : parseInt(digits, 10);
+    const next = Number.isNaN(n) ? 1 : Math.max(1, n);
+    onQuantityChange(next);
+    setQtyInput(String(next));
+  }
+
+  function adjustQuantity(delta: number) {
+    const base = item.quantity;
+    const next = Math.max(1, base + delta);
+    onQuantityChange(next);
+    setQtyInput(String(next));
+  }
+
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-card px-3.5 py-3 shadow-sm transition-all hover:border-primary/30 hover:shadow-md">
-      {/* Index */}
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-bold text-muted-foreground">
-        {index + 1}
-      </span>
-      {/* Content */}
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-foreground">
-          {item.description?.trim() || <span className="italic text-muted-foreground">Без описание</span>}
-        </p>
-        <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-          {item.quantity} бр. × {formatInvoicePrice(item.unitPrice)} {currency} · ДДС {item.taxRate}%
-        </p>
+    <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card px-3.5 py-3 shadow-sm transition-all hover:border-primary/30 hover:shadow-md sm:flex-row sm:items-center sm:gap-3">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-bold text-muted-foreground">
+          {index + 1}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-foreground">
+            {item.description?.trim() || <span className="italic text-muted-foreground">Без описание</span>}
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
+            {formatInvoicePrice(unitGross)} {currency} (с ДДС) · ДДС {item.taxRate}%
+          </p>
+        </div>
       </div>
-      {/* Total */}
-      <div className="shrink-0 text-right">
-        <p className="text-sm font-bold text-primary tabular-nums">
-          {formatInvoicePrice(itemTotalWithTax)} {currency}
-        </p>
-        <p className="text-[10px] text-muted-foreground tabular-nums">
-          + {formatInvoicePrice(itemTax)} ДДС
-        </p>
-      </div>
-      {/* Actions */}
-      <div className="flex shrink-0 items-center gap-1">
-        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl" onClick={onEdit} type="button" aria-label="Редакция">
-          <Edit className="h-3.5 w-3.5" />
-        </Button>
-        {canRemove && (
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl text-destructive hover:bg-destructive/10" onClick={onRemove} type="button" aria-label="Изтрий">
-            <Trash2 className="h-3.5 w-3.5" />
+
+      <div className="flex flex-wrap items-center justify-end gap-2 sm:justify-end sm:gap-3">
+        <div className="flex items-center gap-1 rounded-2xl border border-border/80 bg-background/80 p-0.5 shadow-sm">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 shrink-0 rounded-xl"
+            onClick={() => adjustQuantity(-1)}
+            disabled={item.quantity <= 1}
+            aria-label="Намали количество"
+          >
+            <Minus className="h-3.5 w-3.5" />
           </Button>
-        )}
+          <NumericInput
+            allowDecimal={false}
+            value={qtyInput}
+            onChange={(e) => setQtyInput(e.target.value)}
+            onBlur={commitInlineQuantity}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+            className="h-8 w-12 min-h-0 border-0 bg-transparent px-0 text-center text-sm font-semibold shadow-none sm:h-9 sm:w-14"
+            aria-label="Количество"
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 shrink-0 rounded-xl"
+            onClick={() => adjustQuantity(1)}
+            aria-label="Увеличи количество"
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+
+        <div className="shrink-0 text-right">
+          <p className="text-sm font-bold text-primary tabular-nums">
+            {formatInvoicePrice(itemTotalWithTax)} {currency}
+          </p>
+          <p className="text-[10px] text-muted-foreground tabular-nums">
+            + {formatInvoicePrice(itemTax)} ДДС
+          </p>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl" onClick={onEdit} type="button" aria-label="Редакция">
+            <Edit className="h-3.5 w-3.5" />
+          </Button>
+          {canRemove && (
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl text-destructive hover:bg-destructive/10" onClick={onRemove} type="button" aria-label="Изтрий">
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -261,6 +330,7 @@ function InvoiceItemEditorDialog({
   open,
   onOpenChange,
   onUpdate,
+  onCommit,
   onRemove,
   onDone,
   canRemove,
@@ -271,16 +341,45 @@ function InvoiceItemEditorDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdate: (field: string, value: string | number) => void;
+  onCommit: (payload: { quantity: number; taxRate: number; unitPriceGross: number }) => void;
   onRemove: () => void;
   onDone?: (item: { description: string; quantity: number; unitPrice: number; taxRate: number; productId?: string }) => void;
   canRemove: boolean;
 }) {
-  if (!item) return null;
+  const [qtyDraft, setQtyDraft] = useState("");
+  const [taxDraft, setTaxDraft] = useState("");
+  const [grossDraft, setGrossDraft] = useState("");
+
+  useEffect(() => {
+    if (!open || !item) return;
+    setQtyDraft(String(item.quantity));
+    setTaxDraft(String(item.taxRate));
+    const g = item.unitPriceGross ?? netToGrossAmount(Number(item.unitPrice), Number(item.taxRate) || 0);
+    setGrossDraft(String(roundMoney2(g)));
+  }, [open, item?.id]);
+
+  if (!open || !item) return null;
 
   const isAddMode = mode === "add";
-  const itemTotal = item.quantity * item.unitPrice;
-  const itemTax = itemTotal * (item.taxRate / 100);
-  const itemTotalWithTax = itemTotal + itemTax;
+
+  const {
+    descriptionOk,
+    quantityInvalid,
+    taxInvalid,
+    grossInvalid,
+    canSave,
+    previewNet,
+    itemTotal,
+    itemTax,
+    itemTotalWithTax,
+    quantityParsed,
+    taxParsed,
+    grossParsed,
+  } = evaluateInvoiceItemEditorDraft(item.description, qtyDraft, taxDraft, grossDraft, {
+    taxRate: item.taxRate,
+    unitPrice: item.unitPrice,
+    unitPriceGross: item.unitPriceGross,
+  });
 
   const panel = (
     <div
@@ -317,38 +416,62 @@ function InvoiceItemEditorDialog({
               value={item.description}
               onChange={(e) => onUpdate("description", e.target.value)}
               placeholder={isAddMode ? "Име на артикула..." : "Описание на артикула..."}
-              className="h-11 border-border/60 bg-background/80 text-base font-medium focus:border-primary"
+              aria-invalid={!descriptionOk}
+              className="h-11 border-2 border-border/80 bg-background text-base font-medium data-[invalid=true]:border-destructive"
             />
+            {!descriptionOk ? (
+              <p className="text-xs text-destructive">Въведете име или описание на артикула.</p>
+            ) : null}
           </div>
 
-          <div className="grid grid-cols-3 gap-3 sm:gap-4">
-            <div className="space-y-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+            <div className="space-y-2 rounded-2xl border border-border/60 bg-muted/10 p-3 sm:p-3.5">
               <Label className="text-xs font-semibold sm:text-sm">Количество</Label>
               <NumericInput
                 allowDecimal={false}
-                value={item.quantity}
-                onChange={(e) => onUpdate("quantity", parseInt(e.target.value) || 1)}
-                className="h-10 bg-background/80 text-center text-base font-semibold sm:h-11"
+                value={qtyDraft}
+                onChange={(e) => setQtyDraft(e.target.value)}
+                aria-invalid={quantityInvalid}
+                className="h-10 border-2 border-border/80 bg-background text-center text-base font-semibold shadow-sm sm:h-11"
               />
+              {quantityInvalid ? (
+                <p className="text-xs text-destructive">Минимум 1 брой (можете да изтриете полето временно, докато коригирате).</p>
+              ) : (
+                <p className="text-[11px] text-muted-foreground">Цяло число броя.</p>
+              )}
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 rounded-2xl border border-border/60 bg-muted/10 p-3 sm:p-3.5">
               <Label className="text-xs font-semibold sm:text-sm">ДДС %</Label>
               <NumericInput
-                value={item.taxRate}
-                onChange={(e) => onUpdate("taxRate", parseFloat(e.target.value) || 0)}
-                className="h-10 bg-background/80 text-center text-base font-semibold sm:h-11"
+                value={taxDraft}
+                onChange={(e) => setTaxDraft(e.target.value)}
+                aria-invalid={taxInvalid}
+                className="h-10 border-2 border-border/80 bg-background text-center text-base font-semibold shadow-sm sm:h-11"
               />
+              {taxInvalid ? (
+                <p className="text-xs text-destructive">Стойност между 0 и 100.</p>
+              ) : null}
             </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold sm:text-sm">Цена</Label>
+            <div className="space-y-2 rounded-2xl border border-border/60 bg-muted/10 p-3 sm:p-3.5">
+              <Label className="text-xs font-semibold sm:text-sm">Цена (с ДДС)</Label>
               <NumericInput
-                value={item.unitPrice}
-                onChange={(e) => onUpdate("unitPrice", parseFloat(e.target.value) || 0)}
-                className="h-10 bg-background/80 text-center text-base font-semibold sm:h-11"
+                value={grossDraft}
+                onChange={(e) => setGrossDraft(e.target.value)}
+                aria-invalid={grossInvalid}
+                className="h-10 border-2 border-border/80 bg-background text-center text-base font-semibold shadow-sm sm:h-11"
                 placeholder={currency}
               />
+              {grossInvalid ? (
+                <p className="text-xs text-destructive">Въведете положителна цена с ДДС.</p>
+              ) : null}
             </div>
           </div>
+          <p className="text-xs text-muted-foreground">
+            Нетна цена за единица:{" "}
+            <span className="font-medium text-foreground tabular-nums">
+              {formatInvoicePrice(previewNet)} {currency}
+            </span>
+          </p>
 
           <Separator variant="secondary" />
 
@@ -401,9 +524,18 @@ function InvoiceItemEditorDialog({
             type="button"
             variant="default"
             className="h-10 w-full px-3 text-sm font-semibold sm:h-11 sm:w-auto"
-            disabled={!item.description.trim() || Number(item.unitPrice) <= 0}
+            disabled={!canSave}
             onClick={() => {
-              onDone?.(item);
+              if (!canSave) return;
+              const net = grossToNetAmount(grossParsed, taxParsed);
+              onCommit({ quantity: quantityParsed, taxRate: taxParsed, unitPriceGross: grossParsed });
+              onDone?.({
+                description: item.description.trim(),
+                quantity: quantityParsed,
+                unitPrice: net,
+                taxRate: taxParsed,
+                productId: item.productId,
+              });
               onOpenChange(false);
             }}
           >
@@ -414,7 +546,6 @@ function InvoiceItemEditorDialog({
     </div>
   );
 
-  if (!open) return null;
   return typeof document !== "undefined" ? createPortal(panel, document.body) : null;
 }
 
@@ -455,6 +586,8 @@ function NewInvoiceContent() {
     unitPrice: number;
     taxRate: number;
     productId?: string;
+    /** Edited unit price incl. VAT (optional; derived from net if missing) */
+    unitPriceGross?: number;
   }>>([]);
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
   const [itemEditorMode, setItemEditorMode] = useState<"add" | "edit">("edit");
@@ -471,6 +604,12 @@ function NewInvoiceContent() {
     paymentMethod: "BANK_TRANSFER",
     supplyDate: new Date().toISOString().substr(0, 10),
     isEInvoice: false
+  });
+
+  const [goodsRecipient, setGoodsRecipient] = useState({
+    name: "",
+    phone: "",
+    mol: "",
   });
 
   const steps = [
@@ -660,6 +799,7 @@ function NewInvoiceContent() {
       description: "",
       quantity: 1,
       unitPrice: 0,
+      unitPriceGross: 0,
       taxRate: DEFAULT_VAT_RATE
     }]);
     setItemEditorMode("add");
@@ -672,10 +812,49 @@ function NewInvoiceContent() {
   }, []);
 
   const updateItem = useCallback((id: number, field: string, value: string | number) => {
-    setItems(prev => prev.map(item =>
-      item.id === id ? { ...item, [field]: value } : item
-    ));
+    setItems(prev =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        if (field === "taxRate") {
+          const rate = typeof value === "number" ? value : parseFloat(String(value)) || 0;
+          const gross =
+            item.unitPriceGross ?? netToGrossAmount(Number(item.unitPrice), Number(item.taxRate) || 0);
+          const net = grossToNetAmount(gross, rate);
+          return {
+            ...item,
+            taxRate: rate,
+            unitPrice: net,
+            unitPriceGross: roundMoney2(gross),
+          };
+        }
+        if (field === "unitPrice") {
+          const gross = typeof value === "number" ? value : parseFloat(String(value)) || 0;
+          const net = grossToNetAmount(gross, Number(item.taxRate) || 0);
+          return { ...item, unitPriceGross: roundMoney2(gross), unitPrice: net };
+        }
+        return { ...item, [field]: value };
+      })
+    );
   }, []);
+
+  const commitItemEditor = useCallback(
+    (id: number, payload: { quantity: number; taxRate: number; unitPriceGross: number }) => {
+      setItems((prev) =>
+        prev.map((it) => {
+          if (it.id !== id) return it;
+          const net = grossToNetAmount(payload.unitPriceGross, payload.taxRate);
+          return {
+            ...it,
+            quantity: payload.quantity,
+            taxRate: payload.taxRate,
+            unitPrice: net,
+            unitPriceGross: roundMoney2(payload.unitPriceGross),
+          };
+        })
+      );
+    },
+    []
+  );
 
   const handleItemDone = useCallback((item: { description: string; quantity: number; unitPrice: number; taxRate: number; productId?: string }) => {
     if (item.productId || !item.description.trim()) return;
@@ -717,17 +896,21 @@ function NewInvoiceContent() {
   }, [editingItemId, updateItem]);
 
   const addProduct = useCallback((product: any) => {
+    const rate = Number(product.taxRate) || DEFAULT_VAT_RATE;
+    const net = Number(product.price);
+    const gross = netToGrossAmount(net, rate);
     const newItem = {
       id: Math.max(0, ...items.map(i => i.id)) + 1,
       description: product.name,
       quantity: 1,
-      unitPrice: Number(product.price),
-      taxRate: Number(product.taxRate) || DEFAULT_VAT_RATE,
+      unitPrice: net,
+      unitPriceGross: gross,
+      taxRate: rate,
       productId: product.id
     };
     setItems(prev => [...prev, newItem]);
     toast.success(`"${product.name}" добавен`, {
-      description: `${formatInvoicePrice(Number(product.price))} ${invoiceData.currency}`
+      description: `${formatInvoicePrice(gross)} ${invoiceData.currency} (с ДДС)`
     });
   }, [items, invoiceData.currency]);
 
@@ -828,6 +1011,11 @@ function NewInvoiceContent() {
           paymentMethod: invoiceData.paymentMethod,
           isEInvoice: invoiceData.isEInvoice,
           isOriginal: invoiceData.isOriginal,
+          goodsRecipient: {
+            name: goodsRecipient.name.trim(),
+            phone: goodsRecipient.phone.trim(),
+            mol: goodsRecipient.mol.trim(),
+          },
           items: validItems.map(item => ({
             description: item.description,
             quantity: Number(item.quantity),
@@ -910,15 +1098,14 @@ description: error.message?.includes("план")
                         Изберете съществуващ клиент и веднага ще продължите към следващата стъпка.
                       </CardDescription>
                     </div>
-                    <div className="relative w-full lg:w-80">
-                      <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        type="search"
+                    <div className="w-full lg:w-80">
+                      <SearchField
+                        aria-label="Търсене на клиент"
                         placeholder="Търсене на клиент..."
-                        className="h-11 pl-11 font-medium"
                         value={clientSearchQuery}
-                        disabled={isLoadingClients}
-                        onChange={(event) => setClientSearchQuery(event.target.value)}
+                        isDisabled={isLoadingClients}
+                        onChange={setClientSearchQuery}
+                        className="[&_[data-slot=search-field-group]]:min-h-11 [&_[data-slot=search-field-input]]:font-medium"
                       />
                     </div>
                   </div>
@@ -1143,6 +1330,84 @@ description: error.message?.includes("план")
                           <Edit className="h-3.5 w-3.5" />
                         </Button>
                       </div>
+                      {recipientPreview?.phone ||
+                      recipientPreview?.bulstatNumber ||
+                      recipientPreview?.mol ||
+                      recipientPreview?.vatNumber ||
+                      recipientPreview?.vatRegistrationNumber ? (
+                        <div className="rounded-lg border border-border/60 bg-background/80 px-3 py-2 text-xs text-muted-foreground">
+                          {recipientPreview?.phone && (
+                            <p>
+                              <span className="font-medium text-foreground">Тел.: </span>
+                              {recipientPreview.phone}
+                            </p>
+                          )}
+                          {recipientPreview?.bulstatNumber && (
+                            <p>
+                              <span className="font-medium text-foreground">ЕИК: </span>
+                              {recipientPreview.bulstatNumber}
+                            </p>
+                          )}
+                          {(recipientPreview?.vatNumber || recipientPreview?.vatRegistrationNumber) && (
+                            <p>
+                              <span className="font-medium text-foreground">ДДС №: </span>
+                              {recipientPreview.vatNumber || recipientPreview.vatRegistrationNumber}
+                            </p>
+                          )}
+                          {recipientPreview?.mol && (
+                            <p>
+                              <span className="font-medium text-foreground">МОЛ: </span>
+                              {recipientPreview.mol}
+                            </p>
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
+                    <Separator />
+                    <div className="space-y-4 pt-5">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm font-semibold">
+                          Получател на стоката{" "}
+                          <span className="font-normal text-muted-foreground">(по избор)</span>
+                        </p>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Ако приема стоката друго лице от МОЛ на клиента, попълнете полетата — те се показват в PDF
+                        фактурата.
+                      </p>
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="space-y-2 sm:col-span-3">
+                          <Label className="text-sm font-medium">Име на получателя</Label>
+                          <Input
+                            value={goodsRecipient.name}
+                            onChange={(e) =>
+                              setGoodsRecipient((prev) => ({ ...prev, name: e.target.value }))
+                            }
+                            placeholder="Три имена"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Телефон</Label>
+                          <Input
+                            value={goodsRecipient.phone}
+                            onChange={(e) =>
+                              setGoodsRecipient((prev) => ({ ...prev, phone: e.target.value }))
+                            }
+                            placeholder="напр. 0888..."
+                          />
+                        </div>
+                        <div className="space-y-2 sm:col-span-2">
+                          <Label className="text-sm font-medium">МОЛ (получател)</Label>
+                          <Input
+                            value={goodsRecipient.mol}
+                            onChange={(e) =>
+                              setGoodsRecipient((prev) => ({ ...prev, mol: e.target.value }))
+                            }
+                            placeholder="Материално отговорно лице при приемане"
+                          />
+                        </div>
+                      </div>
                     </div>
                     <Separator />
                     <div className="space-y-4 pt-5">
@@ -1253,14 +1518,13 @@ description: error.message?.includes("план")
                       </div>
                       <p className="mt-0.5 text-xs text-muted-foreground">Кликнете върху продукт, за да го добавите.</p>
                     </div>
-                    <div className="relative w-full sm:w-64">
-                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
-                      <Input
-                        type="search"
+                    <div className="w-full sm:w-64">
+                      <SearchField
+                        aria-label="Търсене в каталога"
                         placeholder="Търсене..."
-                        className="pl-12 pr-3 font-medium"
                         value={productSearchQuery}
-                        onChange={(e) => setProductSearchQuery(e.target.value)}
+                        onChange={setProductSearchQuery}
+                        className="[&_[data-slot=search-field-group]]:min-h-11 [&_[data-slot=search-field-input]]:font-medium"
                       />
                     </div>
                   </div>
@@ -1339,6 +1603,7 @@ description: error.message?.includes("план")
                         setEditingItemId(item.id);
                       }}
                       onRemove={() => removeItem(item.id)}
+                      onQuantityChange={(nextQuantity) => updateItem(item.id, "quantity", nextQuantity)}
                       canRemove={true}
                       currency={invoiceData.currency}
                     />
@@ -1356,6 +1621,10 @@ description: error.message?.includes("план")
               onUpdate={(field, value) => {
                 if (!editingItem) return;
                 updateItem(editingItem.id, field, value);
+              }}
+              onCommit={(payload) => {
+                if (!editingItem) return;
+                commitItemEditor(editingItem.id, payload);
               }}
               onRemove={() => {
                 if (!editingItem) return;
@@ -1426,12 +1695,42 @@ description: error.message?.includes("план")
                           <p className="text-muted-foreground">{recipientPreview.email}</p>
                         )}
                         {recipientPreview?.phone && (
-                          <p className="text-muted-foreground">{recipientPreview.phone}</p>
+                          <p className="text-muted-foreground">Тел.: {recipientPreview.phone}</p>
+                        )}
+                        {recipientPreview?.bulstatNumber && (
+                          <p className="text-muted-foreground">ЕИК: {recipientPreview.bulstatNumber}</p>
+                        )}
+                        {(recipientPreview?.vatNumber || recipientPreview?.vatRegistrationNumber) && (
+                          <p className="text-muted-foreground">
+                            ДДС №:{" "}
+                            {recipientPreview.vatNumber || recipientPreview.vatRegistrationNumber}
+                          </p>
+                        )}
+                        {recipientPreview?.mol && (
+                          <p className="text-muted-foreground">МОЛ: {recipientPreview.mol}</p>
                         )}
                         {(recipientPreview?.city || recipientPreview?.country) && (
                           <p className="text-muted-foreground">
                             {[recipientPreview?.city, recipientPreview?.country].filter(Boolean).join(", ")}
                           </p>
+                        )}
+                        {(goodsRecipient.name.trim() ||
+                          goodsRecipient.phone.trim() ||
+                          goodsRecipient.mol.trim()) && (
+                          <div className="mt-2 border-t border-border/60 pt-2">
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                              Получател на стоката
+                            </p>
+                            {goodsRecipient.name.trim() && (
+                              <p className="text-muted-foreground">{goodsRecipient.name.trim()}</p>
+                            )}
+                            {goodsRecipient.phone.trim() && (
+                              <p className="text-muted-foreground">Тел.: {goodsRecipient.phone.trim()}</p>
+                            )}
+                            {goodsRecipient.mol.trim() && (
+                              <p className="text-muted-foreground">МОЛ: {goodsRecipient.mol.trim()}</p>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
@@ -1451,6 +1750,9 @@ description: error.message?.includes("план")
                       {previewItems.map((item, index) => {
                         const itemTotal = item.quantity * item.unitPrice;
                         const itemTotalWithVat = itemTotal + itemTotal * (item.taxRate / 100);
+                        const unitGross =
+                          item.unitPriceGross ??
+                          netToGrossAmount(Number(item.unitPrice), Number(item.taxRate) || 0);
 
                         return (
                           <div key={item.id} className="flex items-center gap-3 py-3 first:pt-1">
@@ -1460,7 +1762,7 @@ description: error.message?.includes("план")
                             <div className="min-w-0 flex-1">
                               <p className="truncate text-sm font-semibold">{item.description}</p>
                               <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-                                {item.quantity} бр. × {formatInvoicePrice(item.unitPrice)} {invoiceData.currency} · ДДС {item.taxRate}%
+                                {item.quantity} бр. × {formatInvoicePrice(unitGross)} {invoiceData.currency} (с ДДС) · ДДС {item.taxRate}%
                               </p>
                             </div>
                             <div className="shrink-0 text-right">
@@ -1773,7 +2075,7 @@ description: error.message?.includes("план")
                   <Button
                     onClick={handleSubmit}
                     disabled={isLoading}
-                    className="h-11 w-full gap-2 justify-center bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 sm:w-auto"
+                    className="h-11 w-full gap-2 justify-center bg-linear-to-r from-primary to-primary/80 hover:shadow-md hover:ring-2 hover:ring-primary/30 sm:w-auto"
                   >
                     {isLoading ? (
                       <>

@@ -101,6 +101,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         variant: heroVariant,
       }),
       "inline-flex min-h-10 flex-row items-center justify-center gap-1.5 rounded-2xl text-center text-sm font-medium leading-tight whitespace-normal sm:min-h-11 sm:whitespace-nowrap",
+      /* Keep fill/text stable on hover/focus-visible; emphasis = ring + shadow only */
+      "data-[hovered=true]:opacity-100 data-[pressed=true]:opacity-100",
+      "data-[hovered=true]:shadow-md data-[hovered=true]:ring-2 data-[hovered=true]:ring-primary/25",
+      "focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
       (disabled || loading) && "pointer-events-none opacity-60",
       className
     );

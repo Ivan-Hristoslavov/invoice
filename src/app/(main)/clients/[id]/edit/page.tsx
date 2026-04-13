@@ -302,7 +302,7 @@ export default function EditClientPage() {
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Input
-              placeholder="Въведете ЕИК (напр. 204676177)"
+              placeholder="Въведете ЕИК (напр. 175074752)"
               inputMode="numeric"
               className="flex-1"
               value={form.watch("bulstatNumber") || ""}
@@ -504,7 +504,7 @@ export default function EditClientPage() {
                           <NumericInput
                             allowDecimal={false}
                             inputMode="numeric"
-                            placeholder="123456789"
+                            placeholder="175074752"
                             className="h-11 flex-1"
                             value={field.value || ""}
                             onChange={(e) => field.onChange(digitsOnly(e.target.value))}
@@ -582,7 +582,7 @@ export default function EditClientPage() {
                     <FormItem>
                       <FormLabel>ДДС номер</FormLabel>
                       <FormControl>
-                        <Input placeholder="BG123456789" className="h-11" {...field} />
+                        <Input placeholder="BG175074752" className="h-11" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
