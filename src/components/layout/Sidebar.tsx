@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useSidebar } from "@/components/layout/SidebarContext";
 import { APP_NAME } from "@/config/constants";
 import { useSession, signOut } from "next-auth/react";
@@ -95,7 +96,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const { isOpen, setOpen, isMobile } = useSidebar();
   const { data: session, status } = useSession();
-  const isAuthenticated = status === "authenticated";
+  const isSessionLoading = status === "loading";
   const { plan, isLoadingUsage } = useSubscriptionLimit();
   const planDisplayName = plan && plan in SUBSCRIPTION_PLANS
     ? SUBSCRIPTION_PLANS[plan as SubscriptionPlanKey].displayName
@@ -149,11 +150,11 @@ export function Sidebar() {
     return null;
   }
 
-  if (pathname === "/" && !isAuthenticated) {
+  if (pathname === "/" && (status === "unauthenticated" || isSessionLoading)) {
     return null;
   }
 
-  if (!isAuthenticated) {
+  if (status === "unauthenticated") {
     return null;
   }
 
@@ -263,27 +264,40 @@ export function Sidebar() {
         {/* User Section */}
         <div className="border-t p-3 sm:p-3.5">
           <div className="flex items-center gap-2.5 rounded-xl bg-muted/50 px-2.5 py-2 sm:gap-3 sm:px-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-xs font-semibold text-white sm:h-10 sm:w-10 sm:text-sm">
-              {session?.user?.name?.charAt(0).toUpperCase() || 'U'}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="truncate text-sm font-medium">
-                {session?.user?.name || 'Потребител'}
-              </p>
-              <p className="text-xs text-muted-foreground truncate">
-                {session?.user?.email}
-              </p>
-            </div>
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => signOut({ callbackUrl: "/" })}
-              title="Изход"
-              aria-label="Изход"
-            >
-              <LogOut className="h-4 w-4" aria-hidden="true" />
-            </Button>
+            {isSessionLoading ? (
+              <>
+                <Skeleton className="h-9 w-9 shrink-0 rounded-full sm:h-10 sm:w-10" aria-hidden />
+                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                  <Skeleton className="h-4 w-28 rounded-md" aria-hidden />
+                  <Skeleton className="h-3 w-40 rounded-md" aria-hidden />
+                </div>
+                <Skeleton className="h-8 w-8 shrink-0 rounded-md" aria-hidden />
+              </>
+            ) : (
+              <>
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-xs font-semibold text-white sm:h-10 sm:w-10 sm:text-sm">
+                  {session?.user?.name?.charAt(0).toUpperCase() || "U"}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">
+                    {session?.user?.name || "Потребител"}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {session?.user?.email}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  title="Изход"
+                  aria-label="Изход"
+                >
+                  <LogOut className="h-4 w-4" aria-hidden="true" />
+                </Button>
+              </>
+            )}
           </div>
           {/* Version & plan */}
           <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5 text-xs text-muted-foreground">

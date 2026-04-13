@@ -15,9 +15,15 @@ type MainAppShellProps = {
   subscriptionHydration: SubscriptionServerHydration | null;
 };
 
+const sessionProviderProps = {
+  refetchOnWindowFocus: false as const,
+  refetchWhenOffline: false as const,
+};
+
 /**
- * Ensures `useSession` (used by subscription hooks) sits under `SessionProvider` within the (main) tree.
- * Root layout also provides SessionProvider; nesting matches next-auth guidance for route-group client shells.
+ * `SubscriptionUsageProvider` calls `useSession()` and must sit under `SessionProvider`.
+ * Root `AuthProvider` also provides a provider, but the `(main)` client tree still needs
+ * an explicit provider here so Next.js does not evaluate `useSession` outside that context.
  */
 export function MainAppShell({
   children,
@@ -25,7 +31,7 @@ export function MainAppShell({
   subscriptionHydration,
 }: MainAppShellProps) {
   return (
-    <SessionProvider refetchOnWindowFocus={false} refetchWhenOffline={false}>
+    <SessionProvider {...sessionProviderProps}>
       <SubscriptionUsageProvider initialData={usageHydration ?? undefined}>
         <SubscriptionProvider initialData={subscriptionHydration ?? undefined}>
           <MainLayout>{children}</MainLayout>
