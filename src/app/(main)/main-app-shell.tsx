@@ -1,6 +1,5 @@
 "use client";
 
-import { SessionProvider } from "next-auth/react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { SubscriptionProvider } from "@/hooks/subscription-context";
 import {
@@ -15,15 +14,9 @@ type MainAppShellProps = {
   subscriptionHydration: SubscriptionServerHydration | null;
 };
 
-const sessionProviderProps = {
-  refetchOnWindowFocus: false as const,
-  refetchWhenOffline: false as const,
-};
-
 /**
- * `SubscriptionUsageProvider` calls `useSession()` and must sit under `SessionProvider`.
- * Root `AuthProvider` also provides a provider, but the `(main)` client tree still needs
- * an explicit provider here so Next.js does not evaluate `useSession` outside that context.
+ * Session context comes from root `AuthProvider` with a server-hydrated `session` prop.
+ * Do not nest another `SessionProvider` here — it can desync from the server session and hide the shell.
  */
 export function MainAppShell({
   children,
@@ -31,12 +24,10 @@ export function MainAppShell({
   subscriptionHydration,
 }: MainAppShellProps) {
   return (
-    <SessionProvider {...sessionProviderProps}>
-      <SubscriptionUsageProvider initialData={usageHydration ?? undefined}>
-        <SubscriptionProvider initialData={subscriptionHydration ?? undefined}>
-          <MainLayout>{children}</MainLayout>
-        </SubscriptionProvider>
-      </SubscriptionUsageProvider>
-    </SessionProvider>
+    <SubscriptionUsageProvider initialData={usageHydration ?? undefined}>
+      <SubscriptionProvider initialData={subscriptionHydration ?? undefined}>
+        <MainLayout>{children}</MainLayout>
+      </SubscriptionProvider>
+    </SubscriptionUsageProvider>
   );
 }

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { getServerSession } from "next-auth";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { authOptions } from "@/lib/auth";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner-toaster";
 import { CookieConsent } from "@/components/gdpr/CookieConsent";
@@ -105,11 +107,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await getServerSession(authOptions);
+
   return (
     <html lang="bg" suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
@@ -162,7 +166,7 @@ export default function RootLayout({
           defaultTheme="system"
           enableSystem
         >
-          <AuthProvider>
+          <AuthProvider session={session}>
             <div
               id="app-shell"
               className="min-h-screen flex flex-col bg-background text-foreground"

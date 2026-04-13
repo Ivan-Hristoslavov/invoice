@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Save, Plus, Trash2, MoreVertical, Eye, FileCheck, Printer, Download, Search, Package } from "lucide-react";
+import { ArrowLeft, Save, Plus, Minus, Trash2, MoreVertical, Eye, FileCheck, Printer, Download, Search, Package } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { exportInvoiceAsPdf, printInvoicePdf } from "@/lib/invoice-export";
+import { grossToNetAmount, netToGrossAmount } from "@/lib/money-vat";
 
 // Helper function to format price - removes unnecessary trailing zeros
 const formatPrice = (value: number): string => {
@@ -60,6 +61,238 @@ interface EditInvoiceFormProps {
   invoiceId: string;
 }
 
+/** Live `client` can be null (изтрит клиент); ползваме snapshot или поне `clientId` за редакция. */
+function resolveClientForInvoiceEdit(data: Record<string, any>) {
+  if (data.client && typeof data.client === "object") {
+    return data.client;
+  }
+  const snap = data.buyerSnapshot;
+  if (snap && typeof snap === "object" && !Array.isArray(snap)) {
+    return {
+      ...snap,
+      id: snap.id ?? data.clientId,
+    };
+  }
+  if (data.clientId) {
+    return {
+      id: data.clientId,
+      name: "Клиент (няма налични детайли)",
+      email: null,
+      phone: null,
+      address: null,
+      city: null,
+      country: null,
+      bulstatNumber: null,
+      mol: null,
+      vatNumber: null,
+      vatRegistrationNumber: null,
+    };
+  }
+  return null;
+}
+
+function grossUnitStringFromItem(unitPriceStr: string, taxRateStr: string): string {
+  const net = parseFloat(String(unitPriceStr).replace(",", ".")) || 0;
+  const tax = parseFloat(String(taxRateStr).replace(",", ".")) || 0;
+  return String(netToGrossAmount(net, tax));
+}
+
+type EditInvoiceItemCardProps = {
+  item: any;
+  index: number;
+  currency: string;
+  productName?: string;
+  onDescriptionChange: (value: string) => void;
+  onQuantityChange: (value: string) => void;
+  onPriceChange: (value: string) => void;
+  onTaxChange: (value: string) => void;
+  onRemove: () => void;
+  canRemove: boolean;
+};
+
+/** Изваден като отделен компонент (hooks), за да не се пресъздава при всеки render на формата. */
+function EditInvoiceItemCard({
+  item,
+  index,
+  currency,
+  productName,
+  onDescriptionChange,
+  onQuantityChange,
+  onPriceChange,
+  onTaxChange,
+  onRemove,
+  canRemove,
+}: EditInvoiceItemCardProps) {
+  const [qtyInput, setQtyInput] = useState(() => String(item.quantity ?? "1"));
+  const [grossInput, setGrossInput] = useState(() =>
+    grossUnitStringFromItem(String(item.unitPrice ?? ""), String(item.taxRate ?? ""))
+  );
+
+  useEffect(() => {
+    setQtyInput(String(item.quantity ?? "1"));
+  }, [item.id, item.quantity]);
+
+  useEffect(() => {
+    setGrossInput(grossUnitStringFromItem(String(item.unitPrice ?? ""), String(item.taxRate ?? "")));
+  }, [item.id, item.unitPrice, item.taxRate]);
+
+  const q = parseFloat(String(item.quantity).replace(",", ".")) || 0;
+  const p = parseFloat(String(item.unitPrice).replace(",", ".")) || 0;
+  const r = parseFloat(String(item.taxRate).replace(",", ".")) || 0;
+  const itemTotal = q * p;
+  const itemTax = itemTotal * (r / 100);
+  const itemTotalWithTax = itemTotal + itemTax;
+
+  function commitQuantity() {
+    const n = parseFloat(String(qtyInput).replace(",", "."));
+    const next = Number.isNaN(n) || n <= 0 ? 1 : n;
+    onQuantityChange(String(next));
+    setQtyInput(String(next));
+  }
+
+  function adjustQuantity(delta: number) {
+    const base = parseFloat(String(item.quantity).replace(",", ".")) || 1;
+    const next = Math.max(0.01, Math.round((base + delta) * 100) / 100);
+    onQuantityChange(String(next));
+    setQtyInput(String(next));
+  }
+
+  const atMinQty = q <= 0.0101;
+
+  function commitGrossUnit() {
+    const gross = parseFloat(String(grossInput).replace(",", "."));
+    const tax = parseFloat(String(item.taxRate).replace(",", ".")) || 0;
+    if (Number.isNaN(gross) || gross <= 0) {
+      setGrossInput(grossUnitStringFromItem(String(item.unitPrice ?? ""), String(item.taxRate ?? "")));
+      return;
+    }
+    const net = grossToNetAmount(gross, tax);
+    onPriceChange(String(net));
+    setGrossInput(String(netToGrossAmount(net, tax)));
+  }
+
+  const fieldLabelClass =
+    "block text-center text-[10px] font-medium uppercase tracking-wider text-muted-foreground";
+  const numericInputClass =
+    "h-10 w-full text-end text-sm font-medium tabular-nums";
+
+  return (
+    <div className="group rounded-2xl border border-border/60 bg-card/95 shadow-xs transition-all duration-200 hover:border-primary/35 hover:shadow-sm">
+      <div className="flex items-center justify-between border-b border-border/40 bg-muted/20 px-4 py-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs">
+            {index + 1}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold leading-none">Артикул</p>
+            <p className="mt-1 truncate text-xs text-muted-foreground">
+              {productName || "Ръчно добавен ред"}
+            </p>
+          </div>
+        </div>
+        {canRemove && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 rounded-xl p-0 text-destructive opacity-60 transition-all hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+            onClick={onRemove}
+            aria-label={`Премахни артикул ${index + 1}`}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        )}
+      </div>
+
+      <div className="space-y-4 p-4">
+        <div className="space-y-1.5">
+          <label className="block text-xs font-medium text-muted-foreground">Описание</label>
+          <Input
+            value={item.description}
+            onChange={(e) => onDescriptionChange(e.target.value)}
+            placeholder="Описание на артикула..."
+            className="h-10 w-full border-border/60 text-sm font-medium"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 md:items-end">
+          <div className="space-y-1.5">
+            <label className={fieldLabelClass}>К-во</label>
+            <div className="flex items-center gap-0.5 rounded-xl border border-border/60 bg-background/80 p-0.5">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 shrink-0 rounded-lg"
+                onClick={() => adjustQuantity(-1)}
+                disabled={atMinQty}
+                aria-label="Намали количество"
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <NumericInput
+                allowDecimal={true}
+                value={qtyInput}
+                onChange={(e) => setQtyInput(e.target.value)}
+                onBlur={commitQuantity}
+                className="h-9 min-h-0 w-full min-w-0 border-0 bg-transparent px-0.5 text-center text-sm font-semibold tabular-nums shadow-none"
+                aria-label="Количество"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 shrink-0 rounded-lg"
+                onClick={() => adjustQuantity(1)}
+                aria-label="Увеличи количество"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className={fieldLabelClass}>Цена (нето)</label>
+            <NumericInput
+              value={String(item.unitPrice ?? "")}
+              onChange={(e) => onPriceChange(e.target.value)}
+              className={numericInputClass}
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className={fieldLabelClass}>ДДС %</label>
+            <NumericInput
+              value={String(item.taxRate ?? "")}
+              onChange={(e) => onTaxChange(e.target.value)}
+              className={numericInputClass}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className={fieldLabelClass}>Цена (с ДДС)</label>
+            <NumericInput
+              value={grossInput}
+              onChange={(e) => setGrossInput(e.target.value)}
+              onBlur={commitGrossUnit}
+              className={numericInputClass}
+              placeholder={currency}
+              aria-label="Единична цена с включен ДДС"
+            />
+          </div>
+          <div className="space-y-1.5 col-span-2 md:col-span-1">
+            <label className={fieldLabelClass}>Ред общо</label>
+            <div className="flex h-10 items-center justify-end rounded-md border border-primary/15 bg-primary/5 px-3 text-sm font-semibold tabular-nums text-primary">
+              {formatPrice(itemTotalWithTax)} {currency}
+            </div>
+          </div>
+        </div>
+        <p className="text-center text-[11px] leading-snug text-muted-foreground md:text-start">
+          «Цена (с ДДС)» — въведете желаната единична сума с ДДС; при напускане на полето се изчислява «Цена (нето)».
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -92,108 +325,6 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
   const [client, setClient] = useState<any>(null);
   const [productNames, setProductNames] = useState<Record<string, string>>({});
   const [productSearchQuery, setProductSearchQuery] = useState("");
-
-  // Invoice item card component
-  const InvoiceItemCard = ({
-    item,
-    index,
-    onDescriptionChange,
-    onQuantityChange,
-    onPriceChange,
-    onTaxChange,
-    onRemove,
-    canRemove,
-    productName
-  }: {
-    item: any;
-    index: number;
-    onDescriptionChange: (value: string) => void;
-    onQuantityChange: (value: string) => void;
-    onPriceChange: (value: string) => void;
-    onTaxChange: (value: string) => void;
-    onRemove: () => void;
-    canRemove: boolean;
-    productName?: string;
-  }) => {
-    const itemTotal = parseFloat(item.quantity || 0) * parseFloat(item.unitPrice || 0);
-    const itemTax = itemTotal * (parseFloat(item.taxRate || 0) / 100);
-    const itemTotalWithTax = itemTotal + itemTax;
-
-    return (
-      <div className="group rounded-2xl border border-border/60 bg-card/95 shadow-xs transition-all duration-200 hover:border-primary/35 hover:shadow-sm">
-        <div className="flex items-center justify-between border-b border-border/40 bg-muted/20 px-4 py-3">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-xs">
-              {index + 1}
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold leading-none">Артикул</p>
-              <p className="mt-1 truncate text-xs text-muted-foreground">
-                {productName || "Ръчно добавен ред"}
-              </p>
-            </div>
-          </div>
-          {canRemove && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 rounded-xl p-0 text-destructive opacity-60 transition-all hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
-              onClick={onRemove}
-              aria-label={`Премахни артикул ${index + 1}`}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          )}
-        </div>
-
-        <div className="space-y-4 p-4">
-          <div className="space-y-1.5">
-            <label className="block text-xs font-medium text-muted-foreground">Описание</label>
-            <Input
-              value={item.description}
-              onChange={(e) => onDescriptionChange(e.target.value)}
-              placeholder="Описание на артикула..."
-              className="h-10 w-full border-border/60 text-sm font-medium"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="space-y-1.5">
-              <label className="block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">К-во</label>
-              <NumericInput
-                value={item.quantity}
-                onChange={(e) => onQuantityChange(e.target.value)}
-                className="h-10 text-center text-sm font-medium"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Цена</label>
-              <NumericInput
-                value={item.unitPrice}
-                onChange={(e) => onPriceChange(e.target.value)}
-                className="h-10 text-sm font-medium"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">ДДС %</label>
-              <NumericInput
-                value={item.taxRate}
-                onChange={(e) => onTaxChange(e.target.value)}
-                className="h-10 text-center text-sm font-medium"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Общо</label>
-              <div className="flex h-10 items-center rounded-md border border-primary/15 bg-primary/5 px-3 text-sm font-semibold text-primary">
-                {formatPrice(itemTotalWithTax)} {invoiceData.currency}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   // Fetch invoice data on component mount
   useEffect(() => {
@@ -236,8 +367,7 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
           goodsRecipientMol: typeof grObj?.mol === "string" ? grObj.mol : "",
         });
         
-        // Set client
-        setClient(data.client);
+        setClient(resolveClientForInvoiceEdit(data));
         
         // Fetch companies for dropdown
         const companiesResponse = await fetch("/api/companies");
@@ -254,16 +384,19 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
           setProducts(productsData);
         }
         
-        // Set items - ensure quantity is at least 1
-        const itemsData = data.items.map((item: any, index: number) => ({
-          id: index + 1,
-          itemId: item.id,
-          description: item.description,
-          quantity: Math.max(1, parseFloat(item.quantity) || 1),
-          unitPrice: item.unitPrice,
-          taxRate: item.taxRate,
-          productId: item.productId || null
-        }));
+        const itemsData = data.items.map((item: any, index: number) => {
+          const q = parseFloat(String(item.quantity ?? "1").replace(",", "."));
+          const safeQ = Number.isNaN(q) || q <= 0 ? 1 : q;
+          return {
+            id: index + 1,
+            itemId: item.id,
+            description: item.description ?? "",
+            quantity: String(safeQ),
+            unitPrice: String(item.unitPrice ?? ""),
+            taxRate: String(item.taxRate ?? 20),
+            productId: item.productId || null,
+          };
+        });
         setItems(itemsData);
         
         // Store product names for items that have products
@@ -296,32 +429,16 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
     }));
   };
   
-  // Handle item change
   const handleItemChange = (index: number, field: string, value: any) => {
     const newItems = [...items];
-    
-    // Validate quantity - cannot be 0 or negative
-    if (field === 'quantity') {
-      const quantity = parseFloat(value);
-      if (isNaN(quantity) || quantity <= 0) {
-        toast.error("Количеството трябва да е по-голямо от 0");
-        return;
-      }
-      newItems[index][field] = value;
-    } else {
-      newItems[index][field] = value;
+    newItems[index][field] = value;
+
+    const quantity = parseFloat(String(newItems[index].quantity).replace(",", "."));
+    const unitPrice = parseFloat(String(newItems[index].unitPrice).replace(",", "."));
+    if (!Number.isNaN(quantity) && !Number.isNaN(unitPrice)) {
+      newItems[index].subtotal = quantity * unitPrice;
     }
-    
-    // Auto-calculate subtotal based on quantity and unit price
-    if (field === 'quantity' || field === 'unitPrice') {
-      const quantity = field === 'quantity' ? parseFloat(value) : parseFloat(newItems[index].quantity);
-      const unitPrice = field === 'unitPrice' ? parseFloat(value) : parseFloat(newItems[index].unitPrice);
-      
-      if (!isNaN(quantity) && !isNaN(unitPrice)) {
-        newItems[index].subtotal = quantity * unitPrice;
-      }
-    }
-    
+
     setItems(newItems);
   };
   
@@ -332,10 +449,10 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
       {
         id: items.length + 1,
         description: "",
-        quantity: 1,
-        unitPrice: 0, // Default to 0, user should set the price or select a product
-        taxRate: 20
-      }
+        quantity: "1",
+        unitPrice: "0",
+        taxRate: "20",
+      },
     ]);
   };
   
@@ -362,11 +479,11 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
         {
           id: newItemId,
           description: product.name,
-          quantity: 1,
-          unitPrice: product.price,
-          taxRate: product.taxRate || 20,
-          productId: product.id
-        }
+          quantity: "1",
+          unitPrice: String(product.price ?? 0),
+          taxRate: String(product.taxRate ?? 20),
+          productId: product.id,
+        },
       ]);
       // Store product name for this item
       setProductNames(prev => ({
@@ -448,11 +565,28 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
         setIsLoading(false);
         return;
       }
+
+      const hasInvalidPrices = items.some((item) => {
+        const up = parseFloat(String(item.unitPrice).replace(",", "."));
+        return Number.isNaN(up) || up <= 0;
+      });
+      if (hasInvalidPrices) {
+        toast.error("Всички артикули трябва да имат цена по-голяма от 0");
+        setIsLoading(false);
+        return;
+      }
+
+      const effectiveClientId = client?.id ?? invoice?.clientId;
+      if (!effectiveClientId) {
+        toast.error("Липсва клиент за тази фактура.");
+        setIsLoading(false);
+        return;
+      }
       
       // Create request data
       const data = {
         invoiceNumber: invoiceData.invoiceNumber,
-        clientId: client.id,
+        clientId: effectiveClientId,
         companyId: invoiceData.companyId,
         issueDate: invoiceData.issueDate,
         dueDate: invoiceData.dueDate,
@@ -687,7 +821,7 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                     <Label htmlFor="client">Клиент</Label>
                     <Input 
                       id="client" 
-                      value={client.name}
+                      value={client?.name ?? ""}
                       readOnly
                       className="bg-muted"
                     />
@@ -924,19 +1058,16 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                       {items.map((item, index) => {
                         const productName = productNames[item.id] || (item.productId ? products.find(p => p.id === item.productId)?.name : null);
                         return (
-                          <InvoiceItemCard
+                          <EditInvoiceItemCard
                             key={item.id}
                             item={item}
                             index={index}
-                            productName={productName}
-                            onDescriptionChange={(value) => handleItemChange(index, 'description', value)}
-                            onQuantityChange={(value) => {
-                              if (value === '' || parseFloat(value) > 0) {
-                                handleItemChange(index, 'quantity', value);
-                              }
-                            }}
-                            onPriceChange={(value) => handleItemChange(index, 'unitPrice', value)}
-                            onTaxChange={(value) => handleItemChange(index, 'taxRate', value)}
+                            currency={invoiceData.currency}
+                            productName={productName ?? undefined}
+                            onDescriptionChange={(value) => handleItemChange(index, "description", value)}
+                            onQuantityChange={(value) => handleItemChange(index, "quantity", value)}
+                            onPriceChange={(value) => handleItemChange(index, "unitPrice", value)}
+                            onTaxChange={(value) => handleItemChange(index, "taxRate", value)}
                             onRemove={() => removeItem(index)}
                             canRemove={items.length > 1}
                           />
