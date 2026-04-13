@@ -31,12 +31,13 @@ import {
   Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
   CardTitle,
-  CardDescription
+  CardDescription,
 } from "@/components/ui/card";
 import { Input, NumericInput } from "@/components/ui/input";
 import { SearchField } from "@/components/ui/search-field";
@@ -200,7 +201,6 @@ function StepAccordionTrigger({
   );
 }
 
-// Invoice line item card (compact layout + inline quantity)
 function InvoiceItemCard({
   item,
   index,
@@ -245,78 +245,117 @@ function InvoiceItemCard({
     setQtyInput(String(next));
   }
 
+  const descriptionText = String(item.description ?? "").trim();
+
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card px-3.5 py-3 shadow-sm transition-all hover:border-primary/30 hover:shadow-md sm:flex-row sm:items-center sm:gap-3">
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-bold text-muted-foreground">
+    <div className="group overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm transition-all hover:border-primary/35 hover:shadow-md">
+      <div className="flex items-start gap-3 p-3.5 sm:gap-4 sm:p-4">
+        <div
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-sm font-bold text-primary ring-1 ring-primary/20 dark:bg-primary/18"
+          aria-hidden
+        >
           {index + 1}
-        </span>
+        </div>
+
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-foreground">
-            {item.description?.trim() || <span className="italic text-muted-foreground">Без описание</span>}
-          </p>
-          <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-            {formatInvoicePrice(unitGross)} {currency} (с ДДС) · ДДС {item.taxRate}%
-          </p>
-        </div>
-      </div>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              {descriptionText ? (
+                <p
+                  className="line-clamp-2 wrap-break-word text-sm font-semibold leading-snug text-foreground"
+                  title={descriptionText}
+                >
+                  {descriptionText}
+                </p>
+              ) : (
+                <p className="text-sm font-semibold leading-snug italic text-muted-foreground">
+                  Без описание
+                </p>
+              )}
+              <p className="mt-1 flex flex-wrap items-baseline gap-x-1.5 text-xs text-muted-foreground">
+                <span className="tabular-nums">
+                  {formatInvoicePrice(unitGross)} {currency}
+                  <span className="text-muted-foreground/60"> (с ДДС)</span>
+                </span>
+                <span className="text-muted-foreground/30" aria-hidden>·</span>
+                <span>ДДС {item.taxRate}%</span>
+              </p>
+            </div>
 
-      <div className="flex flex-wrap items-center justify-end gap-2 sm:justify-end sm:gap-3">
-        <div className="flex items-center gap-1 rounded-2xl border border-border/80 bg-background/80 p-0.5 shadow-sm">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0 rounded-xl"
-            onClick={() => adjustQuantity(-1)}
-            disabled={item.quantity <= 1}
-            aria-label="Намали количество"
-          >
-            <Minus className="h-3.5 w-3.5" />
-          </Button>
-          <NumericInput
-            allowDecimal={false}
-            value={qtyInput}
-            onChange={(e) => setQtyInput(e.target.value)}
-            onBlur={commitInlineQuantity}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                (e.target as HTMLInputElement).blur();
-              }
-            }}
-            className="h-8 w-12 min-h-0 border-0 bg-transparent px-0 text-center text-sm font-semibold shadow-none sm:h-9 sm:w-14"
-            aria-label="Количество"
-          />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0 rounded-xl"
-            onClick={() => adjustQuantity(1)}
-            aria-label="Увеличи количество"
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </Button>
-        </div>
+            <div className="shrink-0 text-right">
+              <p className="text-base font-bold tabular-nums text-primary sm:text-lg">
+                {formatInvoicePrice(itemTotalWithTax)}
+                <span className="ml-1 text-xs font-semibold">{currency}</span>
+              </p>
+              <p className="text-[11px] tabular-nums text-muted-foreground">
+                ДДС {formatInvoicePrice(itemTax)}
+              </p>
+            </div>
+          </div>
 
-        <div className="shrink-0 text-right">
-          <p className="text-sm font-bold text-primary tabular-nums">
-            {formatInvoicePrice(itemTotalWithTax)} {currency}
-          </p>
-          <p className="text-[10px] text-muted-foreground tabular-nums">
-            + {formatInvoicePrice(itemTax)} ДДС
-          </p>
-        </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-stretch rounded-lg border border-border/80 bg-background/60 dark:bg-background/40">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-l-lg rounded-r-none border-r border-border/60"
+                onClick={() => adjustQuantity(-1)}
+                disabled={item.quantity <= 1}
+                aria-label="Намали количество"
+              >
+                <Minus className="h-3.5 w-3.5" />
+              </Button>
+              <NumericInput
+                allowDecimal={false}
+                value={qtyInput}
+                onChange={(e) => setQtyInput(e.target.value)}
+                onBlur={commitInlineQuantity}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+                className="h-8 w-10 min-h-0 min-w-0 border-0 bg-transparent px-0 text-center text-sm font-semibold tabular-nums shadow-none"
+                aria-label="Количество"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-l-none rounded-r-lg border-l border-border/60"
+                onClick={() => adjustQuantity(1)}
+                aria-label="Увеличи количество"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </Button>
+            </div>
 
-        <div className="flex shrink-0 items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl" onClick={onEdit} type="button" aria-label="Редакция">
-            <Edit className="h-3.5 w-3.5" />
-          </Button>
-          {canRemove && (
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl text-destructive hover:bg-destructive/10" onClick={onRemove} type="button" aria-label="Изтрий">
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          )}
+            <div className="ml-auto flex items-center gap-1.5">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                onClick={onEdit}
+              >
+                <Edit className="h-3.5 w-3.5" />
+                Редакция
+              </Button>
+              {canRemove && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-1.5 rounded-lg px-2.5 text-xs font-medium text-destructive/70 hover:bg-destructive/10 hover:text-destructive"
+                  onClick={onRemove}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Премахни
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1147,14 +1186,22 @@ description: error.message?.includes("план")
               <Separator className="flex-1" />
             </div>
 
-            <Card className="border-primary/15 bg-linear-to-br from-primary/5 via-card to-card">
-              <CardContent className="flex items-center justify-between gap-3 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">Нов клиент?</p>
-                  <p className="text-xs text-muted-foreground">Отворете раздел `Клиенти`, създайте запис и се върнете тук.</p>
+            <Card className="rounded-xl border border-border/80 bg-muted/15 shadow-none dark:bg-muted/10">
+              <CardContent className="flex flex-col gap-2.5 p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:py-2.5 sm:pr-3 sm:pl-3.5">
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <p className="text-sm font-semibold leading-tight text-foreground">Нов клиент?</p>
+                  <p className="text-xs leading-snug text-muted-foreground">
+                    Отворете раздел{" "}
+                    <span className="font-medium text-foreground/85">Клиенти</span>
+                    , създайте запис и се върнете тук.
+                  </p>
                 </div>
-                <Button asChild size="sm" className="shrink-0 gap-1.5 px-4">
-                  <Link href="/clients/new?returnTo=/invoices/new">
+                <Button
+                  asChild
+                  size="sm"
+                  className="h-9 w-full shrink-0 gap-1.5 rounded-lg px-4 sm:w-auto sm:rounded-xl"
+                >
+                  <Link href="/clients/new?returnTo=/invoices/new" className="inline-flex items-center justify-center">
                     Нов клиент
                     <ArrowRight className="h-3.5 w-3.5" />
                   </Link>

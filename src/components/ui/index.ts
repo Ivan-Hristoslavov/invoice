@@ -1,5 +1,6 @@
 // Export all UI components for easier imports
 export * from "./button";
+export * from "./chip";
 export * from "./card";
 export * from "./dropdown-menu";
 export * from "./form";
