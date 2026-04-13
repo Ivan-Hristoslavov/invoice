@@ -26,7 +26,7 @@ export function Navbar() {
   const { status, data: session } = useSession();
   const pathname = usePathname();
   const { isOpen, setOpen, isMobile } = useSidebar();
-  const isAuthenticated = status === "authenticated";
+  const isSessionLoading = status === "loading";
   const { setOpen: setCommandPaletteOpen } = useCommandPalette();
   const { plan, isLoadingUsage, canCreateInvoice } = useSubscriptionLimit();
   const planDisplayName = plan && plan in SUBSCRIPTION_PLANS
@@ -47,11 +47,13 @@ export function Navbar() {
     return null;
   }
 
-  if (pathname === "/" && !isAuthenticated) {
+  // Landing: hide chrome while logged out or session is still resolving
+  if (pathname === "/" && (status === "unauthenticated" || isSessionLoading)) {
     return null;
   }
 
-  if (!isAuthenticated) {
+  // Everywhere else: only hide when we know there is no session (not during `loading`)
+  if (status === "unauthenticated") {
     return null;
   }
 
@@ -72,7 +74,7 @@ export function Navbar() {
           <span className="min-w-0 truncate text-sm font-bold tracking-tight sm:max-w-none sm:text-xl">
             {APP_NAME}
           </span>
-          {isLoadingUsage ? (
+          {isSessionLoading || isLoadingUsage ? (
             <Skeleton className="h-5 w-14 shrink-0 rounded-md sm:w-16" aria-hidden />
           ) : (
             <span
@@ -105,7 +107,7 @@ export function Navbar() {
           </Button>
           
           {/* Quick Add Invoice – фиксиран кръгъл бутон 40×40, без разтягане */}
-          {!isLoadingUsage && canCreateInvoice && (
+          {!isSessionLoading && !isLoadingUsage && canCreateInvoice && (
             <Link
               href="/invoices/new"
               title="Нова фактура"
@@ -116,7 +118,9 @@ export function Navbar() {
             </Link>
           )}
 
-          {session?.user && (
+          {isSessionLoading ? (
+            <Skeleton className="hidden h-9 w-9 shrink-0 rounded-full sm:block" aria-hidden />
+          ) : session?.user ? (
             <Link
               href="/settings/profile"
               className="hidden shrink-0 sm:flex"
@@ -138,7 +142,7 @@ export function Navbar() {
                 </Avatar.Fallback>
               </Avatar>
             </Link>
-          )}
+          ) : null}
 
           {/* Mobile: навигация отдясно – същият размер и закръгленост */}
           {isMobile && (

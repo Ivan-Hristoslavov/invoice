@@ -16,7 +16,6 @@ interface MainLayoutProps {
 export function MainLayout({ children }: MainLayoutProps) {
   const { status } = useSession();
   const pathname = usePathname();
-  const isAuthenticated = status === "authenticated";
   const isAuthPage = pathname.includes("/signin") || pathname.includes("/signup");
 
   // Skip rendering layout on auth pages
@@ -26,17 +25,13 @@ export function MainLayout({ children }: MainLayoutProps) {
     );
   }
 
-  // If on home page and not authenticated - landing page has its own background
-  if (pathname === "/" && !isAuthenticated) {
+  // Landing: full-width content without app chrome while logged out or session is resolving
+  if (pathname === "/" && (status === "unauthenticated" || status === "loading")) {
     return (
       <main className="min-h-screen relative">
         {children}
       </main>
     );
-  }
-
-  if (pathname === "/" && status === "loading") {
-    return <main className="min-h-screen relative" />;
   }
 
   // Standard layout with navigation - fixed sidebar on desktop

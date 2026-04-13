@@ -52,6 +52,15 @@ export function CookieConsent() {
     setConsent(savedConsent);
   }, []);
 
+  /** If consent is already stored or user just chose, never leave `#app-shell` stuck `inert` from a missed effect cleanup. */
+  useLayoutEffect(() => {
+    if (!hasCheckedConsent || consent === null) return;
+    const appShell = document.getElementById("app-shell");
+    if (!appShell) return;
+    appShell.removeAttribute("inert");
+    appShell.removeAttribute("aria-hidden");
+  }, [consent, hasCheckedConsent]);
+
   useEffect(() => {
     if (!hasCheckedConsent || consent !== null) return;
 
