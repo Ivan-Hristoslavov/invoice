@@ -46,9 +46,11 @@ const TabsTrigger = React.forwardRef<
     className={cn(
       "min-h-10 rounded-xl px-3 transition-colors",
       "data-[selected=true]:bg-primary data-[selected=true]:text-primary-foreground data-[selected=true]:shadow-sm",
-      "data-[selected=false]:text-foreground/85 data-[selected=false]:hover:bg-muted/60 data-[selected=false]:hover:text-foreground",
+      "data-[selected=false]:text-foreground/90 data-[selected=false]:hover:bg-muted/60 data-[selected=false]:hover:text-foreground",
+      "dark:data-[selected=false]:text-white dark:data-[selected=false]:hover:text-white",
       "[&_svg]:shrink-0 data-[selected=true]:[&_svg]:text-primary-foreground",
       "data-[selected=false]:[&_svg]:text-muted-foreground data-[selected=false]:hover:[&_svg]:text-foreground",
+      "dark:data-[selected=false]:[&_svg]:text-white/80 dark:data-[selected=false]:hover:[&_svg]:text-white",
       className
     )}
     {...props}
