@@ -61,6 +61,7 @@ describe("invoice-documents", () => {
       {
         id: "company-1",
         name: "Моята Фирма",
+        logo: "https://cdn.example/firm.png",
         bulstatNumber: "175074752",
         bankIban: "BG11AAAA00000000000000",
       },
@@ -76,6 +77,7 @@ describe("invoice-documents", () => {
     expect(snapshots.sellerSnapshot).toMatchObject({
       id: "company-1",
       name: "Моята Фирма",
+      logo: "https://cdn.example/firm.png",
       bulstatNumber: "175074752",
     });
     expect(snapshots.buyerSnapshot).toMatchObject({

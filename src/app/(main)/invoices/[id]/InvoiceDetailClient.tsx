@@ -280,7 +280,7 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
     }
   };
 
-  const handlePrintInvoice = async () => {
+  const handlePrintInvoice = () => {
     try {
       printInvoicePdf(invoice.id);
       toast.info("PDF файлът беше отворен в нов раздел. Използвайте Print от PDF прегледа.");

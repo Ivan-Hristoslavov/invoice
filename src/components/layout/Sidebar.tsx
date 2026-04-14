@@ -27,6 +27,7 @@ import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { SUBSCRIPTION_PLANS, type SubscriptionPlanKey } from "@/lib/subscription-plans";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { ThemeMenu } from "@/components/theme/ThemeMenu";
 
 const mainNavItems = [
   { 
@@ -212,7 +213,7 @@ export function Sidebar() {
                   "group flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm font-medium transition-all duration-200 sm:gap-3 sm:px-3 sm:py-2",
                   active 
                     ? "bg-primary/10 text-primary" 
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    : "text-foreground/80 hover:text-foreground hover:bg-muted"
                 )}
               >
                 <div className={cn(
@@ -223,7 +224,7 @@ export function Sidebar() {
                 )}>
                   <item.icon className={cn(
                     "h-4.5 w-4.5 sm:h-5 sm:w-5",
-                    active ? "text-white" : "text-muted-foreground"
+                    active ? "text-white" : "text-foreground/70"
                   )} aria-hidden="true" />
                 </div>
                 <span>{item.name}</span>
@@ -251,7 +252,7 @@ export function Sidebar() {
                   "flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm font-medium transition-all duration-200 sm:gap-3 sm:px-3",
                   active 
                     ? "bg-primary/10 text-primary" 
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    : "text-foreground/80 hover:text-foreground hover:bg-muted"
                 )}
               >
                 <item.icon className="h-5 w-5" aria-hidden="true" />
@@ -259,6 +260,7 @@ export function Sidebar() {
               </Link>
             );
           })}
+          <ThemeMenu layout="sidebarRow" align="start" className="mt-1" />
         </div>
 
         {/* User Section */}

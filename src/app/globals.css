@@ -812,7 +812,8 @@
     --secondary-foreground: 210 40% 98%;
 
     --muted: 217 18% 22%;
-    --muted-foreground: 215 16% 76%;
+    /* Brighter secondary text in dark mode (avoid muddy gray UI chrome) */
+    --muted-foreground: 215 22% 86%;
     
     /* Opaque surfaces for clear component boundaries */
     --card-opacity: 1;

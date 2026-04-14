@@ -36,6 +36,7 @@ export function createCompanySnapshot(company: CompanyRecord) {
   return {
     id: company.id ?? null,
     name: company.name ?? null,
+    logo: company.logo ?? null,
     email: company.email ?? null,
     phone: company.phone ?? null,
     address: company.address ?? null,
@@ -129,9 +130,18 @@ export function withDocumentSnapshots<T extends Record<string, any>>(
     ? record.itemsSnapshot
     : null;
 
+  // Snapshots historically omitted `logo`; merge from live company so PDF/email can embed it.
+  const company =
+    companySnapshot && liveCompany
+      ? {
+          ...companySnapshot,
+          logo: companySnapshot.logo ?? liveCompany.logo ?? null,
+        }
+      : companySnapshot ?? liveCompany ?? null;
+
   return {
     ...record,
-    company: companySnapshot ?? liveCompany ?? null,
+    company,
     client: clientSnapshot ?? liveClient ?? null,
     items: itemsSnapshot ?? liveItems ?? [],
   };

@@ -10,6 +10,7 @@ import { useSidebar } from "@/components/layout/SidebarContext";
 import { useCommandPalette } from "@/components/ui/command-palette";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ThemeMenu } from "@/components/theme/ThemeMenu";
 import { APP_NAME } from "@/config/constants";
 import { SUBSCRIPTION_PLANS, type SubscriptionPlanKey } from "@/lib/subscription-plans";
 import { cn } from "@/lib/utils";
@@ -105,7 +106,9 @@ export function Navbar() {
               ⌘K
             </kbd>
           </Button>
-          
+
+          <ThemeMenu layout="icon" className="hidden sm:inline-flex" />
+
           {/* Quick Add Invoice – фиксиран кръгъл бутон 40×40, без разтягане */}
           {!isSessionLoading && !isLoadingUsage && canCreateInvoice && (
             <Link

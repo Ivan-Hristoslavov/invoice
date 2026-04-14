@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { BreadcrumbsBar } from "@/components/ui/breadcrumbs-bar";
 import { InvoicePreferencesForm } from "./InvoicePreferencesForm";
+import { getInvoicePreferencesForUser } from "@/lib/invoice-preferences-load";
 
 export const metadata: Metadata = {
   title: `Настройки на фактури | ${APP_NAME}`,
@@ -22,6 +23,11 @@ export default async function InvoicePreferencesPage() {
   const session = await getServerSession(authOptions);
 
   if (!session) {
+    redirect("/signin");
+  }
+
+  const initialPreferences = await getInvoicePreferencesForUser(session.user.id);
+  if (!initialPreferences) {
     redirect("/signin");
   }
 
@@ -44,7 +50,7 @@ export default async function InvoicePreferencesPage() {
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-0">
-        <InvoicePreferencesForm />
+        <InvoicePreferencesForm initialPreferences={initialPreferences} />
       </CardContent>
     </Card>
   );

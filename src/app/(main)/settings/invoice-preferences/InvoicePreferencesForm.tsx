@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import type { InvoicePreferencesPayload } from "@/lib/invoice-preferences-load";
 import { z } from "zod";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -64,59 +65,39 @@ const preferencesSchema = z.object({
 
 type PreferencesFormValues = z.infer<typeof preferencesSchema>;
 
-export function InvoicePreferencesForm() {
+function payloadToFormValues(data: InvoicePreferencesPayload): PreferencesFormValues {
+  return {
+    defaultVatRate: data.defaultVatRate,
+    invoicePrefix: data.invoicePrefix ?? "",
+    resetNumberingYearly: data.resetNumberingYearly,
+    startingInvoiceNumber: data.startingInvoiceNumber,
+    defaultCurrency: data.defaultCurrency,
+    showAmountInWords: data.showAmountInWords,
+    defaultTermsAndConditions: data.defaultTermsAndConditions ?? "",
+    defaultNotes: data.defaultNotes ?? "",
+    showCompanyLogo: data.showCompanyLogo,
+    autoArchiveAfterDays: data.autoArchiveAfterDays,
+    keepDraftDays: data.keepDraftDays,
+  };
+}
+
+export function InvoicePreferencesForm({
+  initialPreferences,
+}: {
+  initialPreferences: InvoicePreferencesPayload;
+}) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingDefaults, setIsLoadingDefaults] = useState(true);
 
   const form = useForm<PreferencesFormValues, unknown, PreferencesFormValues>({
     resolver: zodResolver(preferencesSchema) as any,
-    defaultValues: {
-      defaultVatRate: DEFAULT_VAT_RATE,
-      resetNumberingYearly: false,
-      defaultCurrency: "EUR",
-      showAmountInWords: true,
-      showCompanyLogo: true,
-      autoArchiveAfterDays: 365,
-      keepDraftDays: 30,
-    },
+    defaultValues: payloadToFormValues(initialPreferences),
   });
 
   const migrationStartWatch = useWatch({
     control: form.control,
     name: "startingInvoiceNumber",
   });
-
-  // Load default values from API
-  useEffect(() => {
-    async function loadDefaults() {
-      try {
-        const response = await fetch("/api/settings/invoice-preferences");
-        if (response.ok) {
-          const data = await response.json();
-          form.reset({
-            defaultVatRate: data.defaultVatRate ?? DEFAULT_VAT_RATE,
-            invoicePrefix: data.invoicePrefix ?? "",
-            resetNumberingYearly: data.resetNumberingYearly ?? false,
-            startingInvoiceNumber: data.startingInvoiceNumber ?? undefined,
-            defaultCurrency: data.defaultCurrency ?? "EUR",
-            showAmountInWords: data.showAmountInWords ?? true,
-            defaultTermsAndConditions: data.defaultTermsAndConditions ?? "",
-            defaultNotes: data.defaultNotes ?? "",
-            showCompanyLogo: data.showCompanyLogo ?? true,
-            autoArchiveAfterDays: data.autoArchiveAfterDays ?? 365,
-            keepDraftDays: data.keepDraftDays ?? 30,
-          });
-        }
-      } catch (error) {
-        console.error("Error loading invoice preferences:", error);
-      } finally {
-        setIsLoadingDefaults(false);
-      }
-    }
-
-    loadDefaults();
-  }, [form]);
 
   async function onSubmit(data: PreferencesFormValues) {
     setIsLoading(true);
@@ -157,17 +138,6 @@ export function InvoicePreferencesForm() {
     } finally {
       setIsLoading(false);
     }
-  }
-
-  if (isLoadingDefaults) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-sm text-muted-foreground">Зареждане на настройки...</p>
-        </div>
-      </div>
-    );
   }
 
   return (
@@ -405,22 +375,22 @@ export function InvoicePreferencesForm() {
               control={form.control}
               name="showCompanyLogo"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-xl border border-border/60 bg-background/50 p-4">
-                  <div className="space-y-0.5 pr-3">
-                    <FormLabel className="text-base">
+                <FormItem className="flex flex-row flex-nowrap items-start justify-between gap-4 rounded-xl border border-border/60 bg-background/50 p-4">
+                  <div className="min-w-0 flex-1 space-y-0.5 pr-1">
+                    <p className="text-base font-medium leading-snug text-foreground">
                       Показване на фирмено лого
-                    </FormLabel>
+                    </p>
                     <FormDescription className="text-xs sm:text-sm">
                       Показва каченото фирмено лого в горната част на PDF фактурата. Не изисква допълнителни
                       действия освен ако още не сте качили лого за компанията.
                     </FormDescription>
                   </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
+                  <Switch
+                    className="mt-0.5 shrink-0"
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    aria-label="Показване на фирмено лого в PDF"
+                  />
                 </FormItem>
               )}
             />
@@ -429,22 +399,20 @@ export function InvoicePreferencesForm() {
               control={form.control}
               name="showAmountInWords"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-xl border border-border/60 bg-background/50 p-4">
-                  <div className="space-y-0.5 pr-3">
-                    <FormLabel className="text-base">
-                      Сума с думи
-                    </FormLabel>
+                <FormItem className="flex flex-row flex-nowrap items-start justify-between gap-4 rounded-xl border border-border/60 bg-background/50 p-4">
+                  <div className="min-w-0 flex-1 space-y-0.5 pr-1">
+                    <p className="text-base font-medium leading-snug text-foreground">Сума с думи</p>
                     <FormDescription className="text-xs sm:text-sm">
                       Автоматично добавя крайната сума изписана с думи (блок &quot;Словом&quot;) в PDF според
                       валутата на документа. Не е нужно да въвеждате текст на ръка.
                     </FormDescription>
                   </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
+                  <Switch
+                    className="mt-0.5 shrink-0"
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    aria-label="Показване на сума с думи в PDF"
+                  />
                 </FormItem>
               )}
             />

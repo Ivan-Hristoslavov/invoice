@@ -259,11 +259,27 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
   const displayTotal =
     Number(invoice.total || 0) > 0 ? Number(invoice.total || 0) : calculatedTotal;
 
-  // ---- Brand (subtle, top right) ----
+  // ---- Top row: company logo (left) + app name (right) ----
+  const brandTopY = 6;
+  const brandLogoMaxW = 52;
+  const brandLogoMaxH = 9;
+
+  let brandLogoDrawH = 0;
+  if (pdfPrefs.showCompanyLogo && invoice.company?.logo) {
+    brandLogoDrawH = await embedCompanyLogoInPdf(
+      doc,
+      invoice.company.logo,
+      { x: margin, y: brandTopY, maxW: brandLogoMaxW, maxH: brandLogoMaxH },
+      `invoice:${invoice.id ?? invoice.invoiceNumber ?? "unknown"}`
+    );
+  }
+
   doc.setFont("Roboto", "normal");
   doc.setFontSize(6.5);
   setText(PAL.muted);
-  doc.text(APP_NAME, rightEdge, 11, { align: "right" });
+  const appNameBaselineY =
+    brandLogoDrawH > 0 ? brandTopY + brandLogoDrawH / 2 + 1.2 : 11;
+  doc.text(APP_NAME, rightEdge, appNameBaselineY, { align: "right" });
 
   // ---- Original / copy ----
   doc.setFont("Roboto", "bold");
@@ -271,20 +287,9 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
   setText(PAL.faint);
   doc.text(badgeText, pageWidth / 2, 17, { align: "center" });
 
-  // ---- Logo ----
-  let logoH = 0;
   const headerRowY = 22;
-  if (pdfPrefs.showCompanyLogo && invoice.company?.logo) {
-    logoH = await embedCompanyLogoInPdf(
-      doc,
-      invoice.company.logo,
-      { x: margin, y: headerRowY, maxW: 32, maxH: 18 },
-      `invoice:${invoice.id ?? invoice.invoiceNumber ?? "unknown"}`
-    );
-  }
-
   const splitMid = margin + contentWidth * 0.5;
-  const leftBlockTop = logoH > 0 ? headerRowY + logoH + 4 : headerRowY;
+  const leftBlockTop = headerRowY;
 
   // ---- Left: supplier preview ----
   doc.setFont("Roboto", "normal");

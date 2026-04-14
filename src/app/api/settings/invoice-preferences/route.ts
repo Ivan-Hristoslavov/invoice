@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
+import { getInvoicePreferencesForUser } from "@/lib/invoice-preferences-load";
 
 const invoicePreferencesSchema = z.object({
   defaultVatRate: z.number().min(0).max(100),
@@ -105,34 +106,13 @@ export async function GET() {
       return NextResponse.json({ error: "Неоторизиран достъп" }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: {
-        defaultVatRate: true,
-        startingInvoiceNumber: true,
-        invoicePreferences: true,
-      },
-    });
+    const payload = await getInvoicePreferencesForUser(session.user.id);
 
-    if (!user) {
+    if (!payload) {
       return NextResponse.json({ error: "Потребителят не е намерен" }, { status: 404 });
     }
 
-    const j = parsePreferencesJson(user.invoicePreferences);
-
-    return NextResponse.json({
-      defaultVatRate: user.defaultVatRate != null ? Number(user.defaultVatRate) : undefined,
-      startingInvoiceNumber: user.startingInvoiceNumber ?? undefined,
-      invoicePrefix: j.invoicePrefix ?? "",
-      resetNumberingYearly: j.resetNumberingYearly ?? false,
-      defaultCurrency: j.defaultCurrency ?? "EUR",
-      showAmountInWords: j.showAmountInWords ?? true,
-      defaultTermsAndConditions: j.defaultTermsAndConditions ?? "",
-      defaultNotes: j.defaultNotes ?? "",
-      showCompanyLogo: j.showCompanyLogo ?? true,
-      autoArchiveAfterDays: j.autoArchiveAfterDays ?? 365,
-      keepDraftDays: j.keepDraftDays ?? 30,
-    });
+    return NextResponse.json(payload);
   } catch (error) {
     console.error("Error fetching invoice preferences:", error);
     return NextResponse.json({ error: "Грешка при зареждане на настройките" }, { status: 500 });

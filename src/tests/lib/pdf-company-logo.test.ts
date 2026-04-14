@@ -2,7 +2,24 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   mimeTypeToJspdfFormat,
   embedCompanyLogoInPdf,
+  fitLogoDimensionsToBox,
 } from "@/lib/pdf-company-logo";
+
+describe("fitLogoDimensionsToBox", () => {
+  it("fits a wide image to width", () => {
+    expect(fitLogoDimensionsToBox(300, 100, 30, 20)).toEqual({
+      drawW: 30,
+      drawH: 10,
+    });
+  });
+
+  it("fits a tall image to height", () => {
+    expect(fitLogoDimensionsToBox(100, 200, 30, 20)).toEqual({
+      drawW: 10,
+      drawH: 20,
+    });
+  });
+});
 
 describe("mimeTypeToJspdfFormat", () => {
   it("maps common image types", () => {
@@ -75,15 +92,20 @@ describe("embedCompanyLogoInPdf", () => {
     }) as unknown as typeof fetch;
 
     const addImage = vi.fn();
-    const doc = { addImage } as unknown as import("jspdf").default;
+    const getImageProperties = vi.fn().mockReturnValue({
+      width: 300,
+      height: 100,
+    });
+    const doc = { addImage, getImageProperties } as unknown as import("jspdf").default;
     const h = await embedCompanyLogoInPdf(
       doc,
       "https://cdn.example/logo.png",
       { x: 1, y: 2, maxW: 30, maxH: 20 },
       "test"
     );
-    expect(h).toBe(20);
+    expect(h).toBe(10);
     expect(addImage).toHaveBeenCalledTimes(1);
     expect(addImage.mock.calls[0][1]).toBe("PNG");
+    expect(addImage.mock.calls[0].slice(2)).toEqual([1, 2, 30, 10]);
   });
 });

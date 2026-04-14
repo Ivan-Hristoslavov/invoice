@@ -14,9 +14,11 @@ export function SettingsLayoutClient({
   const { isPending } = useSettingsNav();
 
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col gap-4">
-      <header className="w-full shrink-0">{sidebar}</header>
-      <main className="min-w-0 w-full">
+    <div className="mx-auto flex min-h-full w-full max-w-6xl flex-col gap-4 lg:flex-row lg:items-start lg:gap-8 xl:gap-10">
+      <aside className="w-full shrink-0 lg:sticky lg:top-20 lg:w-60 lg:self-start xl:w-64">
+        {sidebar}
+      </aside>
+      <main className="min-w-0 flex-1">
         <div className="pb-2 sm:pb-4 lg:pb-6">
           {isPending ? <SettingsSkeleton /> : children}
         </div>
