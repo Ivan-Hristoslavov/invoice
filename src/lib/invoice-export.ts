@@ -150,6 +150,104 @@ export function printInvoicePdf(invoiceId: string, isCopy: boolean = false): voi
   openInvoicePdf(invoiceId, isCopy);
 }
 
+function getMicroinvestExportUrl(invoiceId: string, kind: "xml" | "txt") {
+  const path =
+    kind === "xml"
+      ? "/api/invoices/export-microinvest-xml"
+      : "/api/invoices/export-microinvest-txt";
+  return `${path}?invoiceId=${encodeURIComponent(invoiceId)}`;
+}
+
+async function downloadMicroinvestFile(
+  invoiceId: string,
+  kind: "xml" | "txt",
+  defaultFilename: string
+): Promise<void> {
+  const response = await fetch(getMicroinvestExportUrl(invoiceId, kind));
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Microinvest export error:", errorText);
+    throw new Error(
+      kind === "xml"
+        ? "Грешка при експортиране на Microinvest XML"
+        : "Грешка при експортиране на Microinvest TXT"
+    );
+  }
+  const blob = await response.blob();
+  const contentDisposition = response.headers.get("Content-Disposition");
+  let filename = defaultFilename;
+  if (contentDisposition) {
+    const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+    if (filenameMatch?.[1]) filename = filenameMatch[1].replace(/['"]/g, "");
+  }
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", filename);
+  link.style.visibility = "hidden";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+export async function exportInvoiceAsMicroinvestXml(invoiceId: string): Promise<void> {
+  await downloadMicroinvestFile(invoiceId, "xml", `WarehouseProExport-${invoiceId}.xml`);
+}
+
+export async function exportInvoiceAsMicroinvestTxt(invoiceId: string): Promise<void> {
+  await downloadMicroinvestFile(invoiceId, "txt", `WarehouseProExport-${invoiceId}.txt`);
+}
+
+export type MicroinvestXmlRangeFilters = {
+  startDate: string;
+  endDate: string;
+  companyId?: string;
+  clientId?: string;
+  status?: string;
+};
+
+export async function exportInvoicesAsMicroinvestXmlRange(
+  filters: MicroinvestXmlRangeFilters
+): Promise<void> {
+  const params = new URLSearchParams({
+    startDate: filters.startDate,
+    endDate: filters.endDate,
+  });
+  if (filters.companyId) params.set("companyId", filters.companyId);
+  if (filters.clientId) params.set("clientId", filters.clientId);
+  if (filters.status) params.set("status", filters.status);
+
+  const response = await fetch(`/api/invoices/export-microinvest-xml-range?${params.toString()}`);
+  if (!response.ok) {
+    let message = "Грешка при експортиране на Microinvest XML за период";
+    try {
+      const data = (await response.json()) as { error?: string };
+      if (typeof data.error === "string" && data.error) message = data.error;
+    } catch {
+      /* use default */
+    }
+    throw new Error(message);
+  }
+
+  const blob = await response.blob();
+  const contentDisposition = response.headers.get("Content-Disposition");
+  let filename = `WarehouseProExport-range-${filters.startDate}-${filters.endDate}.xml`;
+  if (contentDisposition) {
+    const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+    if (filenameMatch?.[1]) filename = filenameMatch[1].replace(/['"]/g, "");
+  }
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", filename);
+  link.style.visibility = "hidden";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 // Експорт на единично кредитно известие като PDF
 export async function exportCreditNoteAsPdf(creditNoteId: string): Promise<void> {
   try {

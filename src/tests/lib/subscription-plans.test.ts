@@ -13,5 +13,8 @@ describe("subscription-plans export helpers", () => {
     expect(canExportFormat("full", "csv")).toBe(true);
     expect(canExportFormat("full", "json")).toBe(true);
     expect(canExportFormat("full", "pdf")).toBe(true);
+    expect(canExportFormat("full", "microinvestXml")).toBe(true);
+    expect(canExportFormat("full", "microinvestTxt")).toBe(true);
+    expect(canExportFormat("csv", "microinvestXml")).toBe(false);
   });
 });

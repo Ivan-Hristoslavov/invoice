@@ -13,17 +13,21 @@ import {
   UsersRound,
   Scale,
   ScrollText,
+  User,
+  Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-/** Раздели в настройките — без „Екип“ (той е само в страничната навигация) и без отделен „Профил“ в лентата. */
+/** Раздели в настройките — без „Екип“ (той е отделно в страничната навигация). */
 const navItems = [
   { id: "company", title: "Компания", href: "/settings/company", icon: Building },
   { id: "invoice-preferences", title: "Фактури", href: "/settings/invoice-preferences", icon: FileText },
   { id: "tax-compliance", title: "Данъци (НАП)", href: "/settings/tax-compliance", icon: Scale },
   { id: "appearance", title: "Външен вид", href: "/settings/appearance", icon: Palette },
   { id: "security", title: "Сигурност", href: "/settings/security", icon: ShieldCheck },
+  { id: "profile", title: "Профил", href: "/settings/profile", icon: User },
+  { id: "billing", title: "Плащания", href: "/settings/billing", icon: Wallet },
   { id: "subscription", title: "Абонамент", href: "/settings/subscription", icon: CreditCard },
   { id: "audit-logs", title: "Одит", href: "/settings/audit-logs", icon: ScrollText },
 ] as const;
@@ -88,7 +92,7 @@ export function SettingsNav() {
           <div className="min-w-0">
             <h2 className="text-sm font-semibold tracking-tight">Настройки</h2>
             <p className="text-[10px] text-muted-foreground">
-              Компания, фактури, данъци, абонамент и одит
+              Компания, фактури, профил, плащания, абонамент и одит
             </p>
           </div>
         </div>

@@ -27,16 +27,25 @@ RadioGroup.displayName = "RadioGroup";
 // RadioGroupItem: renders a Radio with visible indicator
 const RadioGroupItem = React.forwardRef<
   HTMLLabelElement,
-  Omit<React.ComponentProps<typeof Radio>, "isDisabled"> & { value: string; id?: string; disabled?: boolean }
->(({ className, value, children, disabled, id: _id, ...props }, ref) => (
+  Omit<React.ComponentProps<typeof Radio>, "isDisabled" | "children"> & {
+    value: string;
+    id?: string;
+    disabled?: boolean;
+    children?: React.ReactNode;
+  }
+>(({ className, value, children, disabled, id, ...props }, ref) => (
   <Radio
     ref={ref}
+    id={id}
     value={value}
     isDisabled={disabled}
     className={cn("flex items-center gap-2 cursor-pointer", className)}
     {...props}
   >
-    {children}
+    <Radio.Control>
+      <Radio.Indicator />
+    </Radio.Control>
+    {children ? <Radio.Content>{children}</Radio.Content> : null}
   </Radio>
 ));
 RadioGroupItem.displayName = "RadioGroupItem";

@@ -1,6 +1,7 @@
 "use client";
 
 import { Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function InvoiceStepIndicator({
   currentStep,
@@ -10,44 +11,45 @@ export function InvoiceStepIndicator({
   steps: { title: string; icon: React.ReactNode }[];
 }) {
   return (
-    <div className="overflow-x-auto py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      <div className="mx-auto flex min-w-max items-center justify-center gap-2 px-1">
-        {steps.map((step, index) => (
-          <div key={index} className="flex items-center gap-1.5 sm:gap-2">
-            <div className="flex flex-col items-center gap-2">
+    <div className="w-full">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+        {steps.map((step, index) => {
+          const done = index < currentStep;
+          const active = index === currentStep;
+          return (
+            <div
+              key={index}
+              className={cn(
+                "flex min-h-17 flex-col items-center justify-center gap-1.5 rounded-xl border px-2 py-2.5 text-center transition-all duration-200 sm:min-h-0 sm:py-3",
+                active &&
+                  "border-primary/50 bg-primary/10 shadow-sm shadow-primary/10 ring-1 ring-primary/15",
+                done && !active && "border-emerald-500/35 bg-emerald-500/[0.07]",
+                !active && !done && "border-border/60 bg-muted/25"
+              )}
+            >
               <div
-                className={`
-              relative flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all duration-300 sm:h-10 sm:w-10
-              ${
-                index < currentStep
-                  ? "bg-success border-success text-success-foreground"
-                  : index === currentStep
-                    ? "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/25"
-                    : "bg-muted border-muted-foreground/20 text-muted-foreground"
-              }
-            `}
+                className={cn(
+                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors sm:h-9 sm:w-9 sm:text-sm",
+                  done && "bg-emerald-600 text-white dark:bg-emerald-600",
+                  active && !done && "bg-primary text-primary-foreground",
+                  !active && !done && "bg-muted text-muted-foreground"
+                )}
               >
-                <div className="absolute inset-0 flex items-center justify-center">
-                  {index < currentStep ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    <div className="flex h-4 w-4 items-center justify-center">{step.icon}</div>
-                  )}
-                </div>
+                {done ? <Check className="h-4 w-4 sm:h-[18px] sm:w-[18px]" strokeWidth={2.5} /> : index + 1}
               </div>
               <p
-                className={`hidden whitespace-nowrap text-center text-[11px] font-semibold sm:block ${index === currentStep ? "text-foreground" : "text-muted-foreground"}`}
+                className={cn(
+                  "line-clamp-2 text-[10px] font-semibold leading-tight sm:text-xs",
+                  active && "text-foreground",
+                  done && !active && "text-emerald-800 dark:text-emerald-300",
+                  !active && !done && "text-muted-foreground"
+                )}
               >
                 {step.title}
               </p>
             </div>
-            {index < steps.length - 1 && (
-              <div
-                className={`h-0.5 w-6 transition-all duration-300 sm:w-12 md:w-16 ${index < currentStep ? "bg-success" : "bg-muted-foreground/20"}`}
-              />
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

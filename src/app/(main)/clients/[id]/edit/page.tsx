@@ -41,6 +41,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { useSubscription } from "@/hooks/useSubscription";
 import { ProFeatureLock } from "@/components/ui/pro-feature-lock";
+import { ViesLookupPanel } from "@/components/parties/ViesLookupPanel";
 
 const clientSchema = z.object({
   name: z.string().min(1, "Името на клиента е задължително"),
@@ -60,6 +61,12 @@ const clientSchema = z.object({
   mol: z.string().optional().or(z.literal("")),
   uicType: z.enum(["BULSTAT", "EGN"]).default("BULSTAT"),
   locale: z.string().default("bg"),
+  viesLastCheckAt: z.string().optional().nullable(),
+  viesValid: z.boolean().optional().nullable(),
+  viesCountryCode: z.string().max(2).optional().nullable(),
+  viesNumberLocal: z.string().max(64).optional().nullable(),
+  viesTraderName: z.string().optional().nullable(),
+  viesTraderAddress: z.string().optional().nullable(),
 }).superRefine((value, ctx) => {
   const { issues } = validateBulgarianPartyInput(value);
 
@@ -101,6 +108,12 @@ export default function EditClientPage() {
       mol: "",
       uicType: "BULSTAT",
       locale: "bg",
+      viesLastCheckAt: null,
+      viesValid: null,
+      viesCountryCode: null,
+      viesNumberLocal: null,
+      viesTraderName: null,
+      viesTraderAddress: null,
     },
   });
 
@@ -147,6 +160,12 @@ export default function EditClientPage() {
           mol: client.mol || "",
           uicType: client.uicType || "BULSTAT",
           locale: client.locale || "bg",
+          viesLastCheckAt: client.viesLastCheckAt || null,
+          viesValid: client.viesValid ?? null,
+          viesCountryCode: client.viesCountryCode || null,
+          viesNumberLocal: client.viesNumberLocal || null,
+          viesTraderName: client.viesTraderName || null,
+          viesTraderAddress: client.viesTraderAddress || null,
         });
       } catch (error) {
         console.error("Грешка при зареждане на клиента:", error);
@@ -328,6 +347,12 @@ export default function EditClientPage() {
 
       <Form {...form}>
         <form id="edit-client-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <input type="hidden" {...form.register("viesLastCheckAt")} />
+          <input type="hidden" {...form.register("viesValid")} />
+          <input type="hidden" {...form.register("viesCountryCode")} />
+          <input type="hidden" {...form.register("viesNumberLocal")} />
+          <input type="hidden" {...form.register("viesTraderName")} />
+          <input type="hidden" {...form.register("viesTraderAddress")} />
           <Card className="border-border/60 shadow-sm">
             <CardHeader className="space-y-1 pb-3">
               <CardTitle>Основни данни</CardTitle>
@@ -589,6 +614,23 @@ export default function EditClientPage() {
                   )}
                 />
               </div>
+
+              <ViesLookupPanel
+                control={form.control}
+                getValues={form.getValues}
+                setValue={form.setValue}
+                vatField="vatRegistrationNumber"
+                currentPlan={plan}
+                canUseVies={canUseEikSearch}
+              />
+              {form.watch("viesLastCheckAt") && (
+                <p className="text-xs text-muted-foreground">
+                  Последна VIES:{" "}
+                  {new Date(String(form.watch("viesLastCheckAt"))).toLocaleString("bg-BG")}
+                  {form.watch("viesValid") === true ? " — валиден" : ""}
+                  {form.watch("viesValid") === false ? " — невалиден" : ""}
+                </p>
+              )}
 
               <FormField
                 control={form.control}

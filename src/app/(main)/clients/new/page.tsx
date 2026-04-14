@@ -54,6 +54,7 @@ import { applyApiValidationDetails } from "@/lib/form-errors";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { useSubscription } from "@/hooks/useSubscription";
 import { ProFeatureLock } from "@/components/ui/pro-feature-lock";
+import { ViesLookupPanel } from "@/components/parties/ViesLookupPanel";
 
 type ClientCreationMode = "eik" | "manual";
 
@@ -164,6 +165,12 @@ const clientSchema = z.object({
   mol: z.string().optional().or(z.literal("")),
   uicType: z.enum(["BULSTAT", "EGN"]).default("BULSTAT"),
   locale: z.string().default("bg"),
+  viesLastCheckAt: z.string().optional().nullable(),
+  viesValid: z.boolean().optional().nullable(),
+  viesCountryCode: z.string().max(2).optional().nullable(),
+  viesNumberLocal: z.string().max(64).optional().nullable(),
+  viesTraderName: z.string().optional().nullable(),
+  viesTraderAddress: z.string().optional().nullable(),
 }).superRefine((value, ctx) => {
   const phoneRaw = (value.phone ?? "").trim();
   if (phoneRaw && getDigitsOnly(phoneRaw).length < 6) {
@@ -255,6 +262,12 @@ function NewClientPageContent() {
       mol: "",
       uicType: "BULSTAT",
       locale: "bg",
+      viesLastCheckAt: null,
+      viesValid: null,
+      viesCountryCode: null,
+      viesNumberLocal: null,
+      viesTraderName: null,
+      viesTraderAddress: null,
     },
   });
 
@@ -671,6 +684,12 @@ function NewClientPageContent() {
       {/* Form */}
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit, handleInvalidSubmit)}>
+          <input type="hidden" {...form.register("viesLastCheckAt")} />
+          <input type="hidden" {...form.register("viesValid")} />
+          <input type="hidden" {...form.register("viesCountryCode")} />
+          <input type="hidden" {...form.register("viesNumberLocal")} />
+          <input type="hidden" {...form.register("viesTraderName")} />
+          <input type="hidden" {...form.register("viesTraderAddress")} />
           {/* Step content - all steps rendered but hidden with CSS */}
           <div className="mb-8">
             {/* Step 0: Basic Info */}
@@ -1010,6 +1029,23 @@ function NewClientPageContent() {
                         )}
                       />
                     </div>
+
+                    <ViesLookupPanel
+                      control={form.control}
+                      getValues={form.getValues}
+                      setValue={form.setValue}
+                      vatField="vatRegistrationNumber"
+                      currentPlan={plan}
+                      canUseVies={canUseEikSearch}
+                    />
+                    {form.watch("viesLastCheckAt") && (
+                      <p className="text-xs text-muted-foreground">
+                        Последна VIES:{" "}
+                        {new Date(String(form.watch("viesLastCheckAt"))).toLocaleString("bg-BG")}
+                        {form.watch("viesValid") === true ? " — валиден" : ""}
+                        {form.watch("viesValid") === false ? " — невалиден" : ""}
+                      </p>
+                    )}
 
                     <FormField
                       control={form.control}

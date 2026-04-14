@@ -40,6 +40,12 @@ interface CompanyData {
   bankSwift?: string;
   bankIban?: string;
   logo?: string;
+  viesLastCheckAt?: string | null;
+  viesValid?: boolean | null;
+  viesCountryCode?: string | null;
+  viesNumberLocal?: string | null;
+  viesTraderName?: string | null;
+  viesTraderAddress?: string | null;
 }
 
 interface CompanySettingsTabsProps {
@@ -113,6 +119,12 @@ export function CompanySettingsTabs({ company, showCompanyLogoInPdf }: CompanySe
                 mol: company?.mol || "",
                 accountablePerson: company?.accountablePerson || "",
                 uicType: company?.uicType || "BULSTAT",
+                viesLastCheckAt: company?.viesLastCheckAt ?? null,
+                viesValid: company?.viesValid ?? null,
+                viesCountryCode: company?.viesCountryCode ?? null,
+                viesNumberLocal: company?.viesNumberLocal ?? null,
+                viesTraderName: company?.viesTraderName ?? null,
+                viesTraderAddress: company?.viesTraderAddress ?? null,
               }}
               isNewCompany={isNew}
             />

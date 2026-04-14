@@ -29,6 +29,12 @@ const clientSchema = z.object({
   mol: z.string().max(FIELD_LIMITS.mol).optional().or(z.literal("")),
   uicType: z.enum(["BULSTAT", "EGN"]).optional().default("BULSTAT"),
   locale: z.string().max(10).default("bg"),
+  viesLastCheckAt: z.string().max(40).optional().nullable(),
+  viesValid: z.boolean().optional().nullable(),
+  viesCountryCode: z.string().max(2).optional().nullable(),
+  viesNumberLocal: z.string().max(64).optional().nullable(),
+  viesTraderName: z.string().max(2000).optional().nullable(),
+  viesTraderAddress: z.string().max(4000).optional().nullable(),
 });
 
 export async function GET(
@@ -119,6 +125,12 @@ export async function PUT(
       return NextResponse.json({ error: "Клиентът не е намерен" }, { status: 404 });
     }
 
+    const viesLastCheckAtRaw = validated.viesLastCheckAt?.trim();
+    const viesLastCheckAt =
+      viesLastCheckAtRaw && !Number.isNaN(Date.parse(viesLastCheckAtRaw))
+        ? new Date(viesLastCheckAtRaw).toISOString()
+        : null;
+
     const { data: client, error } = await supabase
       .from("Client")
       .update({
@@ -145,6 +157,12 @@ export async function PUT(
             ? "bulgarian"
             : "general",
         updatedAt: new Date().toISOString(),
+        viesLastCheckAt,
+        viesValid: validated.viesValid ?? null,
+        viesCountryCode: validated.viesCountryCode?.trim().toUpperCase() || null,
+        viesNumberLocal: validated.viesNumberLocal?.trim() || null,
+        viesTraderName: validated.viesTraderName?.trim() || null,
+        viesTraderAddress: validated.viesTraderAddress?.trim() || null,
       })
       .eq("id", id)
       .in("userId", accessibleOwnerIds)
