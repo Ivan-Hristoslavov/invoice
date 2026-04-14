@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { MAX_LOGO_SIZE_BYTES, MAX_LOGO_DIMENSION_PX } from "@/config/constants";
+import { useAsyncLock } from "@/hooks/use-async-lock";
 
 interface LogoUploadProps {
   currentLogoUrl?: string | null;
@@ -49,8 +50,8 @@ export function LogoUpload({
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [isDeletingLogo, setIsDeletingLogo] = useState(false);
+  const uploadLock = useAsyncLock();
+  const deleteLock = useAsyncLock();
   const [previewBroken, setPreviewBroken] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { checkLimit, isFree } = useSubscriptionLimit();
@@ -89,23 +90,22 @@ export function LogoUpload({
       return;
     }
 
-    setIsUploading(true);
-    try {
-      const data = await postLogoFormData(file, file.name || "logo");
-      toast.success("Логото е качено успешно");
-      onLogoUploaded(data.logoUrl);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    } catch (error: unknown) {
-      console.error("Error uploading logo:", error);
-      toast.error("Грешка", {
-        description:
-          error instanceof Error
-            ? error.message
-            : "Възникна грешка при качване на лого. Моля, опитайте отново.",
-      });
-    } finally {
-      setIsUploading(false);
-    }
+    void uploadLock.run(async () => {
+      try {
+        const data = await postLogoFormData(file, file.name || "logo");
+        toast.success("Логото е качено успешно");
+        onLogoUploaded(data.logoUrl);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      } catch (error: unknown) {
+        console.error("Error uploading logo:", error);
+        toast.error("Грешка", {
+          description:
+            error instanceof Error
+              ? error.message
+              : "Възникна грешка при качване на лого. Моля, опитайте отново.",
+        });
+      }
+    });
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -226,56 +226,53 @@ export function LogoUpload({
       return;
     }
 
-    setIsUploading(true);
+    void uploadLock.run(async () => {
+      try {
+        const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
+        const data = await postLogoFormData(croppedBlob, "logo.jpg");
 
-    try {
-      const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
-      const data = await postLogoFormData(croppedBlob, "logo.jpg");
+        toast.success("Логото е качено успешно");
+        onLogoUploaded(data.logoUrl);
+        setIsDialogOpen(false);
+        setImageSrc(null);
+        setCrop({ x: 0, y: 0 });
+        setZoom(1);
+        setCroppedAreaPixels(null);
 
-      toast.success("Логото е качено успешно");
-      onLogoUploaded(data.logoUrl);
-      setIsDialogOpen(false);
-      setImageSrc(null);
-      setCrop({ x: 0, y: 0 });
-      setZoom(1);
-      setCroppedAreaPixels(null);
-
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      } catch (error: unknown) {
+        console.error('Error uploading logo:', error);
+        toast.error("Грешка", {
+          description: error instanceof Error ? error.message : "Възникна грешка при качване на лого. Моля, опитайте отново."
+        });
       }
-    } catch (error: unknown) {
-      console.error('Error uploading logo:', error);
-      toast.error("Грешка", {
-        description: error instanceof Error ? error.message : "Възникна грешка при качване на лого. Моля, опитайте отново."
-      });
-    } finally {
-      setIsUploading(false);
-    }
+    });
   };
 
   const runDeleteLogo = async () => {
-    setIsDeletingLogo(true);
-    try {
-      const response = await fetch(`/api/companies/${companyId}/logo`, {
-        method: "DELETE",
-      });
+    void deleteLock.run(async () => {
+      try {
+        const response = await fetch(`/api/companies/${companyId}/logo`, {
+          method: "DELETE",
+        });
 
-      if (!response.ok) {
-        throw new Error("Грешка при изтриване на лого");
+        if (!response.ok) {
+          throw new Error("Грешка при изтриване на лого");
+        }
+
+        toast.success("Логото е изтрито");
+        onLogoUploaded("");
+        setDeleteDialogOpen(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      } catch (error: unknown) {
+        console.error("Error deleting logo:", error);
+        toast.error("Грешка", {
+          description: "Възникна грешка при изтриване на лого. Моля, опитайте отново.",
+        });
       }
-
-      toast.success("Логото е изтрито");
-      onLogoUploaded("");
-      setDeleteDialogOpen(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    } catch (error: unknown) {
-      console.error("Error deleting logo:", error);
-      toast.error("Грешка", {
-        description: "Възникна грешка при изтриване на лого. Моля, опитайте отново.",
-      });
-    } finally {
-      setIsDeletingLogo(false);
-    }
+    });
   };
 
   const showPreview = Boolean(currentLogoUrl) && !previewBroken;
@@ -353,7 +350,7 @@ export function LogoUpload({
                 variant="outline"
                 onClick={() => fileInputRef.current?.click()}
                 className="flex w-full items-center justify-center gap-2 sm:w-auto"
-                disabled={isFree || isUploading}
+                disabled={isFree || uploadLock.isPending}
               >
                 {isFree ? (
                   <Lock className="h-4 w-4 shrink-0" />
@@ -375,7 +372,7 @@ export function LogoUpload({
                   type="button"
                   variant="outline"
                   onClick={() => setDeleteDialogOpen(true)}
-                  disabled={isUploading}
+                  disabled={uploadLock.isPending}
                   className="flex w-full items-center justify-center gap-2 border-destructive/40 text-destructive hover:bg-destructive/10 sm:w-auto dark:hover:bg-destructive/20"
                 >
                   <X className="h-4 w-4 shrink-0" />
@@ -427,15 +424,16 @@ export function LogoUpload({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 sm:gap-2">
-            <AlertDialogCancel disabled={isDeletingLogo}>Отказ</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteLock.isPending}>Отказ</AlertDialogCancel>
             <Button
               type="button"
               variant="destructive"
-              disabled={isDeletingLogo}
+              disabled={deleteLock.isPending}
+              loading={deleteLock.isPending}
               className="flex w-full items-center justify-center gap-2 sm:w-auto"
               onClick={() => void runDeleteLogo()}
             >
-              {isDeletingLogo ? (
+              {deleteLock.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
                   Изтриване...
@@ -504,17 +502,18 @@ export function LogoUpload({
                 type="button"
                 variant="outline"
                 onClick={() => setIsDialogOpen(false)}
-                disabled={isUploading}
+                disabled={uploadLock.isPending}
               >
                 Отказ
               </Button>
               <Button
                 type="button"
                 onClick={() => void handleUpload()}
-                disabled={isUploading}
+                disabled={uploadLock.isPending}
+                loading={uploadLock.isPending}
                 className="flex items-center justify-center gap-2"
               >
-                {isUploading ? (
+                {uploadLock.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
                     Качване...

@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
-import { LockIcon, Loader2, ArrowRight, ArrowLeft, CheckCircle } from "lucide-react";
+import { LockIcon, ArrowRight, ArrowLeft, CheckCircle } from "lucide-react";
 import { getPasswordValidationError } from "@/lib/validation";
+import { useAsyncLock } from "@/hooks/use-async-lock";
 
 export function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -16,7 +17,7 @@ export function ResetPasswordForm() {
   
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const { run, isPending } = useAsyncLock();
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState("");
 
@@ -39,31 +40,29 @@ export function ResetPasswordForm() {
       return;
     }
 
-    setIsLoading(true);
+    void run(async () => {
+      try {
+        const response = await fetch("/api/auth/reset-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token, password }),
+        });
 
-    try {
-      const response = await fetch("/api/auth/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password }),
-      });
+        const data = await response.json();
 
-      const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || "Нещо се обърка");
+        }
 
-      if (!response.ok) {
-        throw new Error(data.message || "Нещо се обърка");
+        setIsSuccess(true);
+      } catch (err) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Възникна неочаквана грешка");
+        }
       }
-
-      setIsSuccess(true);
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Възникна неочаквана грешка");
-      }
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
 
   const containerVariants = {
@@ -194,18 +193,16 @@ export function ResetPasswordForm() {
           <Button
             type="submit"
             className="w-full h-12 text-base font-semibold gradient-primary text-white border-0 shadow-lg hover:shadow-md hover:ring-2 hover:ring-emerald-400/25"
-            disabled={isLoading}
+            disabled={isPending}
+            loading={isPending}
           >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Обновяване...
-              </>
-            ) : (
+            {!isPending ? (
               <>
                 Задай нова парола
                 <ArrowRight className="ml-2 h-5 w-5" />
               </>
+            ) : (
+              <>Обновяване...</>
             )}
           </Button>
         </motion.div>

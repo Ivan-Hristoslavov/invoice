@@ -56,6 +56,7 @@ import {
 import { FormDatePicker } from "@/components/ui/date-picker";
 import { ContentLoader } from "@/components/ui/loading-spinner";
 import { toast } from "@/lib/toast";
+import { useAsyncLock } from "@/hooks/use-async-lock";
 
 interface EditInvoiceFormProps {
   invoiceId: string;
@@ -295,7 +296,7 @@ function EditInvoiceItemCard({
 
 export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const submitLock = useAsyncLock();
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [invoice, setInvoice] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -530,117 +531,107 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
   // Submit form
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Only allow editing DRAFT invoices
+
     if (invoice.status !== "DRAFT") {
-      toast.error("Можете да редактирате само фактури в статус DRAFT. За отмяна на издадена фактура използвайте функцията за създаване на кредитно известие.");
+      toast.error(
+        "Можете да редактирате само фактури в статус DRAFT. За отмяна на издадена фактура използвайте функцията за създаване на кредитно известие."
+      );
       return;
     }
-    
-    setIsLoading(true);
-    
-    try {
-      // Validate form
-      if (items.length === 0) {
-        toast.error("Трябва да добавите поне един артикул");
-        setIsLoading(false);
-        return;
-      }
-      
-      const hasEmptyItems = items.some(item => !item.description);
-      if (hasEmptyItems) {
-        toast.error("Всички артикули трябва да имат описание");
-        setIsLoading(false);
-        return;
-      }
-      
-      // Validate quantities - all must be greater than 0
-      const hasInvalidQuantities = items.some(item => {
-        const quantity = parseFloat(item.quantity);
-        return isNaN(quantity) || quantity <= 0;
-      });
-      
-      if (hasInvalidQuantities) {
-        toast.error("Всички артикули трябва да имат количество по-голямо от 0");
-        setIsLoading(false);
-        return;
-      }
 
-      const hasInvalidPrices = items.some((item) => {
-        const up = parseFloat(String(item.unitPrice).replace(",", "."));
-        return Number.isNaN(up) || up <= 0;
-      });
-      if (hasInvalidPrices) {
-        toast.error("Всички артикули трябва да имат цена по-голяма от 0");
-        setIsLoading(false);
-        return;
-      }
+    await submitLock.run(async () => {
+      try {
+        if (items.length === 0) {
+          toast.error("Трябва да добавите поне един артикул");
+          return;
+        }
 
-      const effectiveClientId = client?.id ?? invoice?.clientId;
-      if (!effectiveClientId) {
-        toast.error("Липсва клиент за тази фактура.");
-        setIsLoading(false);
-        return;
+        const hasEmptyItems = items.some((item) => !item.description);
+        if (hasEmptyItems) {
+          toast.error("Всички артикули трябва да имат описание");
+          return;
+        }
+
+        const hasInvalidQuantities = items.some((item) => {
+          const quantity = parseFloat(item.quantity);
+          return isNaN(quantity) || quantity <= 0;
+        });
+
+        if (hasInvalidQuantities) {
+          toast.error("Всички артикули трябва да имат количество по-голямо от 0");
+          return;
+        }
+
+        const hasInvalidPrices = items.some((item) => {
+          const up = parseFloat(String(item.unitPrice).replace(",", "."));
+          return Number.isNaN(up) || up <= 0;
+        });
+        if (hasInvalidPrices) {
+          toast.error("Всички артикули трябва да имат цена по-голяма от 0");
+          return;
+        }
+
+        const effectiveClientId = client?.id ?? invoice?.clientId;
+        if (!effectiveClientId) {
+          toast.error("Липсва клиент за тази фактура.");
+          return;
+        }
+
+        const data = {
+          invoiceNumber: invoiceData.invoiceNumber,
+          clientId: effectiveClientId,
+          companyId: invoiceData.companyId,
+          issueDate: invoiceData.issueDate,
+          dueDate: invoiceData.dueDate,
+          supplyDate: invoiceData.supplyDate,
+          currency: invoiceData.currency,
+          placeOfIssue: invoiceData.placeOfIssue,
+          paymentMethod: invoiceData.paymentMethod,
+          isEInvoice: invoiceData.isEInvoice,
+          isOriginal: invoiceData.isOriginal,
+          notes: invoiceData.notes,
+          termsAndConditions: invoiceData.termsAndConditions,
+          goodsRecipient: {
+            name: invoiceData.goodsRecipientName.trim(),
+            phone: invoiceData.goodsRecipientPhone.trim(),
+            mol: invoiceData.goodsRecipientMol.trim(),
+          },
+          items: items.map((item) => ({
+            id: item.itemId || undefined,
+            description: item.description,
+            quantity: Number(item.quantity),
+            unitPrice: Number(item.unitPrice),
+            taxRate: Number(item.taxRate),
+          })),
+        };
+
+        const response = await fetch(`/api/invoices/${invoiceId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Грешка при обновяване на фактура");
+        }
+
+        toast.success("Фактурата е обновена", {
+          description: "Промените бяха запазени успешно.",
+        });
+
+        router.push(`/invoices/${invoiceId}`);
+        router.refresh();
+      } catch (error) {
+        console.error("Error updating invoice:", error);
+        toast.error("Грешка при обновяване на фактурата", {
+          description:
+            error instanceof Error ? error.message : "Моля, опитайте отново по-късно.",
+        });
       }
-      
-      // Create request data
-      const data = {
-        invoiceNumber: invoiceData.invoiceNumber,
-        clientId: effectiveClientId,
-        companyId: invoiceData.companyId,
-        issueDate: invoiceData.issueDate,
-        dueDate: invoiceData.dueDate,
-        supplyDate: invoiceData.supplyDate,
-        currency: invoiceData.currency,
-        placeOfIssue: invoiceData.placeOfIssue,
-        paymentMethod: invoiceData.paymentMethod,
-        isEInvoice: invoiceData.isEInvoice,
-        isOriginal: invoiceData.isOriginal,
-        notes: invoiceData.notes,
-        termsAndConditions: invoiceData.termsAndConditions,
-        goodsRecipient: {
-          name: invoiceData.goodsRecipientName.trim(),
-          phone: invoiceData.goodsRecipientPhone.trim(),
-          mol: invoiceData.goodsRecipientMol.trim(),
-        },
-        items: items.map(item => ({
-          id: item.itemId || undefined, // Use existing itemId if available
-          description: item.description,
-          quantity: Number(item.quantity),
-          unitPrice: Number(item.unitPrice),
-          taxRate: Number(item.taxRate)
-        }))
-      };
-      
-      // Send API request to update invoice
-      const response = await fetch(`/api/invoices/${invoiceId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Грешка при обновяване на фактура");
-      }
-      
-      toast.success("Фактурата е обновена", { 
-        description: "Промените бяха запазени успешно."
-      });
-      
-      // Navigate back to invoice details
-      router.push(`/invoices/${invoiceId}`);
-      router.refresh();
-    } catch (error) {
-      console.error("Error updating invoice:", error);
-      toast.error("Грешка при обновяване на фактурата", {
-        description: error instanceof Error ? error.message : "Моля, опитайте отново по-късно."
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
   
   if (!isLoadingData && (error || !invoice)) {
@@ -772,9 +763,9 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
               <Download className="h-4 w-4" />
               PDF
             </Button>
-            <Button type="submit" form="invoice-form" size="sm" disabled={isLoading} className="shrink-0 gap-1.5">
+            <Button type="submit" form="invoice-form" size="sm" disabled={submitLock.isPending} loading={submitLock.isPending} className="shrink-0 gap-1.5">
               <Save className="h-4 w-4" />
-              {isLoading ? "Запазване..." : "Запази"}
+              {submitLock.isPending ? "Запазване..." : "Запази"}
             </Button>
           </div>
         </div>
@@ -1130,9 +1121,9 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
               <Button variant="outline" asChild className="h-11 w-full justify-center sm:min-w-[120px]">
                 <Link href={`/invoices/${invoiceId}`}>Отказ</Link>
               </Button>
-              <Button type="submit" form="invoice-form" disabled={isLoading} className="h-11 w-full justify-center sm:min-w-[160px]">
+              <Button type="submit" form="invoice-form" disabled={submitLock.isPending} loading={submitLock.isPending} className="h-11 w-full justify-center sm:min-w-[160px]">
                 <Save className="mr-1.5 h-4 w-4" />
-                {isLoading ? "Запазване..." : "Запази промените"}
+                {submitLock.isPending ? "Запазване..." : "Запази промените"}
               </Button>
             </div>
           </div>

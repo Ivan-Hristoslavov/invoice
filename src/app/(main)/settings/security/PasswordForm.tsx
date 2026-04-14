@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,6 +15,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/lib/toast";
+import { useAsyncLock } from "@/hooks/use-async-lock";
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, "Current password is required"),
@@ -34,7 +34,7 @@ const passwordSchema = z.object({
 type PasswordFormValues = z.infer<typeof passwordSchema>;
 
 export function PasswordForm() {
-  const [isLoading, setIsLoading] = useState(false);
+  const submitLock = useAsyncLock();
 
   const form = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordSchema),
@@ -46,39 +46,37 @@ export function PasswordForm() {
   });
 
   async function onSubmit(data: PasswordFormValues) {
-    setIsLoading(true);
-    
-    try {
-      // In a real app, this would send the data to the server
-      const response = await fetch("/api/user/password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          currentPassword: data.currentPassword,
-          newPassword: data.newPassword,
-        }),
-      });
+    await submitLock.run(async () => {
+      try {
+        const response = await fetch("/api/user/password", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            currentPassword: data.currentPassword,
+            newPassword: data.newPassword,
+          }),
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update password");
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to update password");
+        }
+
+        toast.success("Password updated", {
+          description: "Your password has been changed successfully.",
+        });
+
+        form.reset();
+      } catch (error: any) {
+        console.error("Error updating password:", error);
+        toast.error("Error", {
+          description:
+            error.message || "There was an error updating your password. Please try again.",
+        });
       }
-      
-      toast.success("Password updated", {
-        description: "Your password has been changed successfully."
-      });
-      
-      form.reset();
-    } catch (error: any) {
-      console.error("Error updating password:", error);
-      toast.error("Error", {
-        description: error.message || "There was an error updating your password. Please try again."
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    });
   }
 
   return (
@@ -130,8 +128,8 @@ export function PasswordForm() {
         />
         
         <div className="flex justify-end">
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Updating..." : "Update Password"}
+          <Button type="submit" disabled={submitLock.isPending} loading={submitLock.isPending}>
+            {submitLock.isPending ? "Updating..." : "Update Password"}
           </Button>
         </div>
       </form>

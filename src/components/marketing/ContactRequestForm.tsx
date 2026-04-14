@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAsyncLock } from "@/hooks/use-async-lock";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,12 +17,11 @@ const inquiryOptions: { value: InquiryType; label: string }[] = [
 ];
 
 export function ContactRequestForm() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { run, isPending } = useAsyncLock();
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   async function handleSubmit(formData: FormData) {
     setFeedback(null);
-    setIsSubmitting(true);
 
     const payload = {
       name: String(formData.get("name") || ""),
@@ -32,36 +32,36 @@ export function ContactRequestForm() {
       website: String(formData.get("website") || ""),
     };
 
-    try {
-      const response = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+    await run(async () => {
+      try {
+        const response = await fetch("/api/contact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
 
-      const data = (await response.json()) as { message?: string };
-      if (!response.ok) {
+        const data = (await response.json()) as { message?: string };
+        if (!response.ok) {
+          setFeedback({
+            type: "error",
+            message: data.message || "Неуспешно изпращане. Моля, опитайте отново.",
+          });
+          return;
+        }
+
+        setFeedback({
+          type: "success",
+          message: data.message || "Изпратихме запитването успешно.",
+        });
+        const form = document.getElementById("contact-request-form") as HTMLFormElement | null;
+        form?.reset();
+      } catch {
         setFeedback({
           type: "error",
-          message: data.message || "Неуспешно изпращане. Моля, опитайте отново.",
+          message: "Неуспешна връзка със сървъра. Моля, опитайте по-късно.",
         });
-        return;
       }
-
-      setFeedback({
-        type: "success",
-        message: data.message || "Изпратихме запитването успешно.",
-      });
-      const form = document.getElementById("contact-request-form") as HTMLFormElement | null;
-      form?.reset();
-    } catch {
-      setFeedback({
-        type: "error",
-        message: "Неуспешна връзка със сървъра. Моля, опитайте по-късно.",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    });
   }
 
   return (
@@ -132,9 +132,9 @@ export function ContactRequestForm() {
         </p>
       ) : null}
 
-      <Button type="submit" className="w-full" disabled={isSubmitting}>
+      <Button type="submit" className="w-full" disabled={isPending} loading={isPending}>
         <Send className="mr-2 h-4 w-4" />
-        {isSubmitting ? "Изпращане..." : "Изпрати запитване"}
+        {isPending ? "Изпращане..." : "Изпрати запитване"}
       </Button>
     </form>
   );

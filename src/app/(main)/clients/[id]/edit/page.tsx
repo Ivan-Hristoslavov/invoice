@@ -39,6 +39,7 @@ import { validateBulgarianPartyInput } from "@/lib/bulgarian-party";
 import { applyApiValidationDetails } from "@/lib/form-errors";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
+import { useAsyncLock } from "@/hooks/use-async-lock";
 import { useSubscription } from "@/hooks/useSubscription";
 import { ProFeatureLock } from "@/components/ui/pro-feature-lock";
 import { ViesLookupPanel } from "@/components/parties/ViesLookupPanel";
@@ -88,7 +89,7 @@ function digitsOnly(value: string) {
 export default function EditClientPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
-  const [isLoading, setIsLoading] = useState(false);
+  const submitLock = useAsyncLock();
   const [isLoadingClient, setIsLoadingClient] = useState(true);
 
   const form = useForm<ClientFormValues, unknown, ClientFormValues>({
@@ -224,37 +225,35 @@ export default function EditClientPage() {
   }, [form, lookupCompany]);
 
   async function onSubmit(data: ClientFormValues) {
-    setIsLoading(true);
+    await submitLock.run(async () => {
+      try {
+        const response = await fetch(`/api/clients/${params.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        });
 
-    try {
-      const response = await fetch(`/api/clients/${params.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
+        if (!response.ok) {
+          const errorPayload = (await response.json().catch(() => null)) as {
+            error?: string;
+            details?: Array<{ path?: string[]; message?: string }>;
+          } | null;
+          applyApiValidationDetails(form, errorPayload?.details);
+          throw new Error(errorPayload?.error || "Неуспешно обновяване на клиент");
+        }
 
-      if (!response.ok) {
-        const errorPayload = (await response.json().catch(() => null)) as {
-          error?: string;
-          details?: Array<{ path?: string[]; message?: string }>;
-        } | null;
-        applyApiValidationDetails(form, errorPayload?.details);
-        throw new Error(errorPayload?.error || "Неуспешно обновяване на клиент");
+        toast.success("Клиентът е обновен успешно");
+        router.push(`/clients/${params.id}`);
+        router.refresh();
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Неуспешно обновяване на клиент";
+        console.warn("Грешка при обновяване на клиент:", errorMessage);
+        toast.error(errorMessage);
       }
-
-      toast.success("Клиентът е обновен успешно");
-      router.push(`/clients/${params.id}`);
-      router.refresh();
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Неуспешно обновяване на клиент";
-      console.warn("Грешка при обновяване на клиент:", errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
+    });
   }
 
   if (isLoadingClient) {
@@ -284,9 +283,9 @@ export default function EditClientPage() {
             <p className="card-description mt-1">По-компактна форма за контактни, адресни и данъчни данни.</p>
           </div>
         </div>
-          <Button type="submit" form="edit-client-form" disabled={isLoading} className="hidden sm:inline-flex">
+          <Button type="submit" form="edit-client-form" disabled={submitLock.isPending} loading={submitLock.isPending} className="hidden sm:inline-flex">
             <Save className="mr-2 h-4 w-4" />
-            {isLoading ? "Запазване..." : "Запази"}
+            {submitLock.isPending ? "Запазване..." : "Запази"}
           </Button>
         </div>
       </div>
@@ -681,9 +680,9 @@ export default function EditClientPage() {
             <Button type="button" variant="outline" asChild className="btn-responsive">
               <Link href={`/clients/${params.id}`}>Отказ</Link>
             </Button>
-            <Button type="submit" disabled={isLoading} className="btn-responsive gap-2">
+            <Button type="submit" disabled={submitLock.isPending} loading={submitLock.isPending} className="btn-responsive gap-2">
               <Save className="h-4 w-4" />
-              {isLoading ? "Запазване..." : "Запази промените"}
+              {submitLock.isPending ? "Запазване..." : "Запази промените"}
             </Button>
           </div>
         </form>

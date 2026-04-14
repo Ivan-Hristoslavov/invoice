@@ -19,6 +19,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { useAsyncLock } from "@/hooks/use-async-lock";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input, NumericInput } from "@/components/ui/input";
@@ -86,7 +87,7 @@ type ProductFormValues = z.infer<typeof productSchema>;
 
 export default function NewProductPage() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const submitLock = useAsyncLock();
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -110,47 +111,46 @@ export default function NewProductPage() {
   const getUnitLabel = (val: string) => PRODUCT_UNITS.find((u) => u.value === val)?.label || val;
 
   async function onSubmit(data: ProductFormValues) {
-    setIsLoading(true);
-    try {
-      const gross = parseFloat(data.price);
-      const rate = data.taxRate ? parseFloat(data.taxRate) : 20;
-      const netStored = grossToNetAmount(gross, rate);
-      const response = await fetch("/api/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: data.name,
-          description: data.description || "",
-          price: netStored,
-          unit: data.unit,
-          taxRate: rate,
-        }),
-      });
+    await submitLock.run(async () => {
+      try {
+        const gross = parseFloat(data.price);
+        const rate = data.taxRate ? parseFloat(data.taxRate) : 20;
+        const netStored = grossToNetAmount(gross, rate);
+        const response = await fetch("/api/products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: data.name,
+            description: data.description || "",
+            price: netStored,
+            unit: data.unit,
+            taxRate: rate,
+          }),
+        });
 
-      if (!response.ok) {
-        const errorPayload = (await response.json().catch(() => null)) as {
-          error?: string;
-          details?: Array<{ path?: string[]; message?: string }>;
-        } | null;
-        const details = errorPayload?.details;
-        if (details?.length) {
-          applyApiValidationDetails(form, details);
+        if (!response.ok) {
+          const errorPayload = (await response.json().catch(() => null)) as {
+            error?: string;
+            details?: Array<{ path?: string[]; message?: string }>;
+          } | null;
+          const details = errorPayload?.details;
+          if (details?.length) {
+            applyApiValidationDetails(form, details);
+          }
+          throw new Error(errorPayload?.error || "Неуспешно създаване на продукт");
         }
-        throw new Error(errorPayload?.error || "Неуспешно създаване на продукт");
-      }
 
-      toast.success("Продуктът е създаден", {
-        description: data.name,
-      });
-      router.push("/products");
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Моля, проверете полетата и опитайте отново.";
-      console.warn("Грешка при създаване на продукт:", errorMessage);
-      toast.error("Неуспешно създаване", { description: errorMessage });
-    } finally {
-      setIsLoading(false);
-    }
+        toast.success("Продуктът е създаден", {
+          description: data.name,
+        });
+        router.push("/products");
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Моля, проверете полетата и опитайте отново.";
+        console.warn("Грешка при създаване на продукт:", errorMessage);
+        toast.error("Неуспешно създаване", { description: errorMessage });
+      }
+    });
   }
 
   return (
@@ -403,20 +403,12 @@ export default function NewProductPage() {
             </Button>
             <Button
               type="submit"
-              disabled={isLoading || !form.formState.isValid}
+              disabled={submitLock.isPending || !form.formState.isValid}
+              loading={submitLock.isPending}
               className="gradient-primary border-0 min-w-[140px] hover:shadow-md hover:ring-2 hover:ring-emerald-400/25"
             >
-              {isLoading ? (
-                <span className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Създаване...
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <Check className="h-4 w-4" />
-                  Създай продукт
-                </span>
-              )}
+              {!submitLock.isPending && <Check className="h-4 w-4" />}
+              {submitLock.isPending ? "Създаване..." : "Създай продукт"}
             </Button>
           </div>
         </form>

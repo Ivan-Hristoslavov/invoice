@@ -5,12 +5,12 @@ import {
 
 interface NextDocumentNumberOptions {
   supabase: any;
-  table: "CreditNote" | "DebitNote";
-  numberColumn: "creditNoteNumber" | "debitNoteNumber";
+  table: "CreditNote" | "DebitNote" | "VatProtocol117";
+  numberColumn: "creditNoteNumber" | "debitNoteNumber" | "protocolNumber";
   userId: string;
   companyId: string;
   companyEik?: string | null;
-  type: "credit-note" | "debit-note";
+  type: "credit-note" | "debit-note" | "vat-protocol-117";
 }
 
 export async function getNextDocumentNumber({

@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
-import { MailIcon, Loader2, ArrowRight, ArrowLeft } from "lucide-react";
+import { MailIcon, ArrowRight, ArrowLeft } from "lucide-react";
 import { getEmailValidationError } from "@/lib/validation";
+import { useAsyncLock } from "@/hooks/use-async-lock";
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const { run, isPending } = useAsyncLock();
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
@@ -25,33 +26,32 @@ export function ForgotPasswordForm() {
       setError(emailError);
       return;
     }
-    setIsLoading(true);
 
-    try {
-      const response = await fetch("/api/auth/forgot-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
+    void run(async () => {
+      try {
+        const response = await fetch("/api/auth/forgot-password", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email }),
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || "Нещо се обърка");
+        if (!response.ok) {
+          throw new Error(data.message || "Нещо се обърка");
+        }
+
+        setIsSubmitted(true);
+      } catch (error) {
+        if (error instanceof Error) {
+          setError(error.message);
+        } else {
+          setError("Възникна неочаквана грешка");
+        }
       }
-
-      setIsSubmitted(true);
-    } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError("Възникна неочаквана грешка");
-      }
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
 
   const containerVariants = {
@@ -243,18 +243,16 @@ export function ForgotPasswordForm() {
             <Button 
               type="submit" 
               className="h-12 w-full max-w-sm rounded-2xl border-0 text-base font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all duration-300 gradient-primary hover:shadow-md hover:ring-2 hover:ring-emerald-400/25"
-              disabled={isLoading}
+              disabled={isPending}
+              loading={isPending}
             >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Изпращане...
-                </>
-              ) : (
+              {!isPending ? (
                 <>
                   Изпрати линк за възстановяване
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </>
+              ) : (
+                <>Изпращане...</>
               )}
             </Button>
           </motion.div>

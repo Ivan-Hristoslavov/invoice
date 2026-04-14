@@ -18,7 +18,8 @@ export type EntityType =
   | 'CLIENT' 
   | 'COMPANY' 
   | 'PRODUCT' 
-  | 'USER';
+  | 'USER'
+  | 'VAT_PROTOCOL_117';
 
 interface LogActionParams {
   userId: string;

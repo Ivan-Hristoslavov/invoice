@@ -520,3 +520,32 @@ export async function sendTeamInviteEmail({
     `,
   });
 }
+
+export async function sendVatProtocol117Email(params: {
+  to: string;
+  protocolNumber: string;
+  companyName: string;
+  pdfBuffer: Buffer;
+  pdfFilename: string;
+}) {
+  const transporter = getSmtpTransporter();
+  const subject = `Протокол по чл. 117 ЗДДС №${params.protocolNumber} — ${params.companyName}`;
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2>Здравейте!</h2>
+      <p>Изпращаме Ви протокол по <strong>чл. 117 от ЗДДС</strong> с номер <strong>${params.protocolNumber}</strong> от <strong>${params.companyName}</strong>.</p>
+      <p>PDF документът е прикачен към този имейл.</p>
+      <p style="margin-top: 24px; font-size: 14px; color: #6b7280;">
+        Това е автоматично съобщение от ${process.env.NEXT_PUBLIC_APP_NAME || APP_NAME}.
+      </p>
+    </div>
+  `;
+
+  await transporter.sendMail({
+    from: getFromAddress(),
+    to: params.to,
+    subject,
+    html,
+    attachments: [{ filename: params.pdfFilename, content: params.pdfBuffer }],
+  });
+}

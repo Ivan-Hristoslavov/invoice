@@ -32,6 +32,7 @@ import { isIssuedLikeStatus } from "@/lib/invoice-status";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import React from "react";
+import { useAsyncLock } from "@/hooks/use-async-lock";
 
 /** Визуално състояние при грешка — като `aria-invalid` при имейл във формите за вход */
 const FIELD_INVALID =
@@ -148,7 +149,7 @@ function NoteFormContent(config: NoteFormConfig) {
   const searchParams = useSearchParams();
   const invoiceIdFromQuery = searchParams.get("invoiceId");
   const prefillFromInvoiceDoneRef = useRef(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const submitLock = useAsyncLock();
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [clients, setClients] = useState<any[]>([]);
@@ -498,48 +499,47 @@ function NoteFormContent(config: NoteFormConfig) {
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const response = await fetch(config.apiEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          items: items.map((item) => ({
-            description: item.description,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            taxRate: item.taxRate,
-          })),
-        }),
-      });
+    await submitLock.run(async () => {
+      try {
+        const response = await fetch(config.apiEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...formData,
+            items: items.map((item) => ({
+              description: item.description,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              taxRate: item.taxRate,
+            })),
+          }),
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (!response.ok) {
-        const fallbackMsg = `Грешка при създаване на ${config.type === "credit" ? "кредитно" : "дебитно"} известие`;
-        const errorMessage = data.details
-          ? `${data.error || fallbackMsg}: ${JSON.stringify(data.details)}`
-          : data.error || fallbackMsg;
-        throw new Error(errorMessage);
+        if (!response.ok) {
+          const fallbackMsg = `Грешка при създаване на ${config.type === "credit" ? "кредитно" : "дебитно"} известие`;
+          const errorMessage = data.details
+            ? `${data.error || fallbackMsg}: ${JSON.stringify(data.details)}`
+            : data.error || fallbackMsg;
+          throw new Error(errorMessage);
+        }
+
+        const noteData = data[colors.responseKey];
+        setSubmitAttempted(false);
+        toast.success(config.successMessage, {
+          description: `Номер: ${noteData[colors.numberKey]}`,
+        });
+
+        router.push(`${config.redirectPath}/${noteData.id}`);
+      } catch (err: any) {
+        console.error(`Error creating ${config.type} note:`, err);
+        toast.error(
+          err.message ||
+            `Грешка при създаване на ${config.type === "credit" ? "кредитно" : "дебитно"} известие`
+        );
       }
-
-      const noteData = data[colors.responseKey];
-      setSubmitAttempted(false);
-      toast.success(config.successMessage, {
-        description: `Номер: ${noteData[colors.numberKey]}`,
-      });
-
-      router.push(`${config.redirectPath}/${noteData.id}`);
-    } catch (err: any) {
-      console.error(`Error creating ${config.type} note:`, err);
-      toast.error(
-        err.message ||
-          `Грешка при създаване на ${config.type === "credit" ? "кредитно" : "дебитно"} известие`
-      );
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
 
   if (error) {
@@ -1017,12 +1017,12 @@ function NoteFormContent(config: NoteFormConfig) {
           </Button>
           <Button
             type="submit"
-            loading={isLoading}
-            disabled={isLoading}
+            loading={submitLock.isPending}
+            disabled={submitLock.isPending}
             className={`btn-responsive ${colors.button} ${colors.buttonHover}`}
           >
-            {!isLoading && <Check className="h-4 w-4" aria-hidden />}
-            {isLoading ? "Създаване..." : colors.submitLabel}
+            {!submitLock.isPending && <Check className="h-4 w-4" aria-hidden />}
+            {submitLock.isPending ? "Създаване..." : colors.submitLabel}
           </Button>
         </div>
       </form>

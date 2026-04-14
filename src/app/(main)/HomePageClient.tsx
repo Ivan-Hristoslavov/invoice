@@ -21,6 +21,7 @@ import {
   Mail,
   CircleAlert,
   Percent,
+  ClipboardList,
 } from "lucide-react";
 import { Chip } from "@heroui/react";
 import { Badge } from "@/components/ui/badge";
@@ -132,6 +133,13 @@ const features = [
     title: "Реквизити за България",
     description: "ЕИК, ДДС и текстове за счетоводство и НАП.",
     color: "from-emerald-500 to-teal-500",
+  },
+  {
+    icon: ClipboardList,
+    title: "Протокол чл. 117 ЗДДС",
+    description:
+      "Отделен документ и PDF за самоначисляване при ВОП, услуги от ЕС и други случаи по закона — за дневниците по ДДС.",
+    color: "from-teal-500 to-cyan-500",
   },
   {
     icon: BarChart3,

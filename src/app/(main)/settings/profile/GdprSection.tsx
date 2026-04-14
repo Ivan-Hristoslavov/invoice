@@ -22,47 +22,46 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Download, Trash2, Shield, AlertTriangle, Loader2 } from "lucide-react";
+import { Download, Trash2, Shield, AlertTriangle } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { signOut } from "next-auth/react";
+import { useAsyncLock } from "@/hooks/use-async-lock";
 
 interface GdprSectionProps {
   userEmail: string;
 }
 
 export function GdprSection({ userEmail }: GdprSectionProps) {
-  const [isExporting, setIsExporting] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const exportLock = useAsyncLock();
+  const deleteLock = useAsyncLock();
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const handleExportData = async () => {
-    setIsExporting(true);
-    try {
-      const response = await fetch("/api/user/export");
-      
-      if (!response.ok) {
-        throw new Error("Грешка при експорт на данните");
+    void exportLock.run(async () => {
+      try {
+        const response = await fetch("/api/user/export");
+        
+        if (!response.ok) {
+          throw new Error("Грешка при експорт на данните");
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `gdpr-export-${userEmail}-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        toast.success("Данните са експортирани успешно!");
+      } catch (error) {
+        console.error("Export error:", error);
+        toast.error("Грешка при експорт на данните. Моля, опитайте отново.");
       }
-
-      // Get the blob and create download link
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `gdpr-export-${userEmail}-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast.success("Данните са експортирани успешно!");
-    } catch (error) {
-      console.error("Export error:", error);
-      toast.error("Грешка при експорт на данните. Моля, опитайте отново.");
-    } finally {
-      setIsExporting(false);
-    }
+    });
   };
 
   const handleDeleteAccount = async () => {
@@ -71,34 +70,32 @@ export function GdprSection({ userEmail }: GdprSectionProps) {
       return;
     }
 
-    setIsDeleting(true);
-    try {
-      const response = await fetch("/api/user/delete", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ confirmation: deleteConfirmation }),
-      });
+    void deleteLock.run(async () => {
+      try {
+        const response = await fetch("/api/user/delete", {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ confirmation: deleteConfirmation }),
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || "Грешка при изтриване на акаунта");
+        if (!response.ok) {
+          throw new Error(data.error || "Грешка при изтриване на акаунта");
+        }
+
+        toast.success("Акаунтът е изтрит успешно");
+        
+        await signOut({ callbackUrl: "/" });
+      } catch (error: unknown) {
+        console.error("Delete error:", error);
+        toast.error(error instanceof Error ? error.message : "Грешка при изтриване на акаунта");
+        setDeleteDialogOpen(false);
+        setDeleteConfirmation("");
       }
-
-      toast.success("Акаунтът е изтрит успешно");
-      
-      // Sign out and redirect to home page
-      await signOut({ callbackUrl: "/" });
-    } catch (error: any) {
-      console.error("Delete error:", error);
-      toast.error(error.message || "Грешка при изтриване на акаунта");
-    } finally {
-      setIsDeleting(false);
-      setDeleteDialogOpen(false);
-      setDeleteConfirmation("");
-    }
+    });
   };
 
   return (
@@ -125,15 +122,12 @@ export function GdprSection({ userEmail }: GdprSectionProps) {
             <Button
               variant="outline"
               onClick={handleExportData}
-              disabled={isExporting}
+              disabled={exportLock.isPending}
+              loading={exportLock.isPending}
               className="shrink-0"
             >
-              {isExporting ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4 mr-2" />
-              )}
-              {isExporting ? "Експортиране..." : "Експортирай данните"}
+              {!exportLock.isPending ? <Download className="h-4 w-4 mr-2" /> : null}
+              {exportLock.isPending ? "Експортиране..." : "Експортирай данните"}
             </Button>
           </div>
         </CardContent>
@@ -201,21 +195,18 @@ export function GdprSection({ userEmail }: GdprSectionProps) {
                     </div>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel disabled={isDeleting}>
+                               <AlertDialogFooter>
+                  <AlertDialogCancel disabled={deleteLock.isPending}>
                     Отказ
                   </AlertDialogCancel>
                   <Button
                     variant="destructive"
                     onClick={handleDeleteAccount}
-                    disabled={isDeleting || deleteConfirmation !== userEmail}
+                    disabled={deleteLock.isPending || deleteConfirmation !== userEmail}
+                    loading={deleteLock.isPending}
                   >
-                    {isDeleting ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-4 w-4 mr-2" />
-                    )}
-                    {isDeleting ? "Изтриване..." : "Изтрий завинаги"}
+                    {!deleteLock.isPending ? <Trash2 className="h-4 w-4 mr-2" /> : null}
+                    {deleteLock.isPending ? "Изтриване..." : "Изтрий завинаги"}
                   </Button>
                 </AlertDialogFooter>
               </AlertDialogContent>

@@ -15,16 +15,14 @@ import {
   ChevronRight,
   Receipt,
   ArrowDownCircle,
-  ArrowUpCircle
+  ArrowUpCircle,
+  ClipboardList,
 } from "lucide-react";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSidebar } from "@/components/layout/SidebarContext";
-import { APP_NAME } from "@/config/constants";
 import { useSession, signOut } from "next-auth/react";
-import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
-import { SUBSCRIPTION_PLANS, type SubscriptionPlanKey } from "@/lib/subscription-plans";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { ThemeMenu } from "@/components/theme/ThemeMenu";
@@ -53,6 +51,12 @@ const mainNavItems = [
     href: "/debit-notes", 
     icon: ArrowUpCircle,
     gradient: "from-emerald-500 to-teal-600"
+  },
+  {
+    name: "Протокол чл.117",
+    href: "/vat-protocols-117",
+    icon: ClipboardList,
+    gradient: "from-teal-500 to-cyan-600",
   },
   { 
     name: "Клиенти", 
@@ -98,19 +102,6 @@ export function Sidebar() {
   const { isOpen, setOpen, isMobile } = useSidebar();
   const { data: session, status } = useSession();
   const isSessionLoading = status === "loading";
-  const { plan, isLoadingUsage } = useSubscriptionLimit();
-  const planDisplayName = plan && plan in SUBSCRIPTION_PLANS
-    ? SUBSCRIPTION_PLANS[plan as SubscriptionPlanKey].displayName
-    : plan ?? "Безплатен";
-
-  const planBadgeClass =
-    plan === "STARTER"
-      ? "border-blue-500/50 bg-blue-500/10 text-blue-600 dark:text-blue-400"
-      : plan === "PRO"
-        ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-        : plan === "BUSINESS"
-          ? "border-violet-500/50 bg-violet-500/10 text-violet-600 dark:text-violet-400"
-          : "border-border/60 bg-muted/80 text-muted-foreground";
 
   useEffect(() => {
     if (!isMobile || !isOpen) return;
@@ -197,9 +188,13 @@ export function Sidebar() {
         animate={{ x: isMobile && !isOpen ? "100%" : 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
-        {/* Main Navigation */}
-        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 pt-2 pb-3 lg:pb-2" role="navigation" aria-label="Основна навигация">
-          <p className="mb-1.5 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground sm:px-3 sm:text-xs">
+        {/* Main nav: comfortable gap; scroll only on very short viewports */}
+        <nav
+          className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-2.5 pt-2 pb-2"
+          role="navigation"
+          aria-label="Основна навигация"
+        >
+          <p className="mb-1.5 px-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             Меню
           </p>
           {mainNavItems.map((item) => {
@@ -210,26 +205,26 @@ export function Sidebar() {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "group flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm font-medium transition-all duration-200 sm:gap-3 sm:px-3 sm:py-2",
+                  "group flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm font-medium transition-all duration-200",
                   active 
                     ? "bg-primary/10 text-primary" 
                     : "text-foreground/80 hover:text-foreground hover:bg-muted"
                 )}
               >
                 <div className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded-lg transition-all sm:h-8 sm:w-8",
+                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all",
                   active 
-                    ? `bg-linear-to-br ${item.gradient} shadow-lg`
+                    ? `bg-linear-to-br ${item.gradient} shadow-md`
                     : "bg-muted group-hover:bg-muted"
                 )}>
                   <item.icon className={cn(
-                    "h-4.5 w-4.5 sm:h-5 sm:w-5",
+                    "h-4 w-4",
                     active ? "text-white" : "text-foreground/70"
                   )} aria-hidden="true" />
                 </div>
-                <span>{item.name}</span>
+                <span className="min-w-0 flex-1 leading-snug">{item.name}</span>
                 {active && (
-                  <ChevronRight className="h-4 w-4 ml-auto" aria-hidden="true" />
+                  <ChevronRight className="h-4 w-4 shrink-0 opacity-70" aria-hidden="true" />
                 )}
               </Link>
             );
@@ -237,8 +232,8 @@ export function Sidebar() {
         </nav>
 
         {/* Bottom Navigation */}
-        <div className="space-y-1 border-t p-3 sm:p-3.5">
-          <p className="mb-2 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground sm:px-3 sm:text-xs">
+        <div className="shrink-0 space-y-1 border-t px-2.5 py-2.5">
+          <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             Настройки
           </p>
           {bottomNavItems.map((item) => {
@@ -249,49 +244,49 @@ export function Sidebar() {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm font-medium transition-all duration-200 sm:gap-3 sm:px-3",
+                  "flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm font-medium transition-all duration-200",
                   active 
                     ? "bg-primary/10 text-primary" 
                     : "text-foreground/80 hover:text-foreground hover:bg-muted"
                 )}
               >
-                <item.icon className="h-5 w-5" aria-hidden="true" />
+                <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
                 <span>{item.name}</span>
               </Link>
             );
           })}
-          <ThemeMenu layout="sidebarRow" align="start" className="mt-1" />
+          <ThemeMenu layout="sidebarRow" align="start" className="mt-0.5" />
         </div>
 
         {/* User Section */}
-        <div className="border-t p-3 sm:p-3.5">
-          <div className="flex items-center gap-2.5 rounded-xl bg-muted/50 px-2.5 py-2 sm:gap-3 sm:px-3">
+        <div className="shrink-0 border-t px-2.5 py-2.5">
+          <div className="flex items-center gap-2.5 rounded-xl bg-muted/50 px-2.5 py-2">
             {isSessionLoading ? (
               <>
-                <Skeleton className="h-9 w-9 shrink-0 rounded-full sm:h-10 sm:w-10" aria-hidden />
+                <Skeleton className="h-9 w-9 shrink-0 rounded-full" aria-hidden />
                 <div className="flex min-w-0 flex-1 flex-col gap-2">
                   <Skeleton className="h-4 w-28 rounded-md" aria-hidden />
-                  <Skeleton className="h-3 w-40 rounded-md" aria-hidden />
+                  <Skeleton className="h-3 w-36 rounded-md" aria-hidden />
                 </div>
                 <Skeleton className="h-8 w-8 shrink-0 rounded-md" aria-hidden />
               </>
             ) : (
               <>
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-xs font-semibold text-white sm:h-10 sm:w-10 sm:text-sm">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs font-semibold text-white">
                   {session?.user?.name?.charAt(0).toUpperCase() || "U"}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">
+                  <p className="truncate text-sm font-medium leading-tight">
                     {session?.user?.name || "Потребител"}
                   </p>
-                  <p className="truncate text-xs text-muted-foreground">
+                  <p className="truncate text-xs text-muted-foreground leading-tight">
                     {session?.user?.email}
                   </p>
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-8 w-8 shrink-0"
                   onClick={() => signOut({ callbackUrl: "/" })}
                   title="Изход"
                   aria-label="Изход"
@@ -299,21 +294,6 @@ export function Sidebar() {
                   <LogOut className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </>
-            )}
-          </div>
-          {/* Version & plan */}
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5 text-xs text-muted-foreground">
-            <span>{APP_NAME} v1.0.0</span>
-            {!isLoadingUsage && (
-              <span
-                className={cn(
-                  "rounded border px-1.5 py-0.5 text-[10px] font-medium",
-                  planBadgeClass
-                )}
-                title="Текущ план"
-              >
-                {planDisplayName}
-              </span>
             )}
           </div>
         </div>

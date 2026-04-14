@@ -98,6 +98,8 @@ export function SubscriptionProvider({
   const lastFetchedAtRef = useRef(0);
   const lastUserKeyRef = useRef<string | null>(null);
   const cacheRef = useRef<Subscription | null>(null);
+  const checkoutMutationRef = useRef(false);
+  const cancelMutationRef = useRef(false);
 
   const userKey = session?.user
     ? `${(session.user as { id?: string }).id ?? ""}:${session.user.email ?? ""}`
@@ -231,6 +233,8 @@ export function SubscriptionProvider({
 
   const createCheckoutSession = useCallback(
     async (plan: string, billingInterval: "monthly" | "yearly" = "yearly") => {
+      if (checkoutMutationRef.current) return;
+      checkoutMutationRef.current = true;
       try {
         setIsLoading(true);
         const response = await fetch("/api/subscription/direct-link", {
@@ -277,6 +281,7 @@ export function SubscriptionProvider({
         console.error("Checkout error:", err);
         setError(err instanceof Error ? err.message : "Failed to start checkout process");
       } finally {
+        checkoutMutationRef.current = false;
         setIsLoading(false);
       }
     },
@@ -285,6 +290,8 @@ export function SubscriptionProvider({
 
   const cancelSubscription = useCallback(async () => {
     if (!subscription) return;
+    if (cancelMutationRef.current) return;
+    cancelMutationRef.current = true;
 
     try {
       setIsLoading(true);
@@ -307,6 +314,7 @@ export function SubscriptionProvider({
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Cancel failed");
     } finally {
+      cancelMutationRef.current = false;
       setIsLoading(false);
     }
   }, [fetchSubscription, subscription]);
