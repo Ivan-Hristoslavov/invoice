@@ -31,6 +31,12 @@ const clientSchema = z.object({
   mol: z.string().max(FIELD_LIMITS.mol).optional().or(z.literal("")),
   uicType: z.enum(["BULSTAT", "EGN"]).optional().default("BULSTAT"),
   locale: z.string().max(10).default("bg"),
+  viesLastCheckAt: z.string().max(40).optional().nullable(),
+  viesValid: z.boolean().optional().nullable(),
+  viesCountryCode: z.string().max(2).optional().nullable(),
+  viesNumberLocal: z.string().max(64).optional().nullable(),
+  viesTraderName: z.string().max(2000).optional().nullable(),
+  viesTraderAddress: z.string().max(4000).optional().nullable(),
 });
 
 export async function GET(request: NextRequest) {
@@ -176,6 +182,11 @@ export async function POST(request: NextRequest) {
     const json = await request.json();
     const entryMode = json?.entryMode === "manual" ? "manual" : "eik";
     const validatedData = clientSchema.parse(json);
+    const viesLastCheckAtRaw = validatedData.viesLastCheckAt?.trim();
+    const viesLastCheckAt =
+      viesLastCheckAtRaw && !Number.isNaN(Date.parse(viesLastCheckAtRaw))
+        ? new Date(viesLastCheckAtRaw).toISOString()
+        : null;
     const { normalized, issues } = validateBulgarianPartyInput(validatedData, {
       skipIdentifierFormatValidation: entryMode === "manual",
     });
@@ -253,6 +264,12 @@ export async function POST(request: NextRequest) {
         userId: sessionUser.id,
         createdById: sessionUser.id,
         updatedAt: new Date().toISOString(),
+        viesLastCheckAt,
+        viesValid: validatedData.viesValid ?? null,
+        viesCountryCode: validatedData.viesCountryCode?.trim().toUpperCase() || null,
+        viesNumberLocal: validatedData.viesNumberLocal?.trim() || null,
+        viesTraderName: validatedData.viesTraderName?.trim() || null,
+        viesTraderAddress: validatedData.viesTraderAddress?.trim() || null,
       })
       .select()
       .single();

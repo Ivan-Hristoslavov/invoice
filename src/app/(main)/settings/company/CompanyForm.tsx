@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/select";
 import { validateBulgarianPartyInput } from "@/lib/bulgarian-party";
 import { applyApiValidationDetails } from "@/lib/form-errors";
+import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
+import { ViesLookupPanel } from "@/components/parties/ViesLookupPanel";
 
 const companyInfoSchema = z.object({
   id: z.string().optional(),
@@ -53,6 +55,12 @@ const companyInfoSchema = z.object({
   accountablePerson: z.string().optional().or(z.literal("")),
   uicType: z.enum(["BULSTAT", "EGN"]).optional(),
   stripeAccountId: z.string().optional().or(z.literal("")),
+  viesLastCheckAt: z.string().optional().nullable(),
+  viesValid: z.boolean().optional().nullable(),
+  viesCountryCode: z.string().max(2).optional().nullable(),
+  viesNumberLocal: z.string().max(64).optional().nullable(),
+  viesTraderName: z.string().optional().nullable(),
+  viesTraderAddress: z.string().optional().nullable(),
 }).superRefine((value, ctx) => {
   const { issues } = validateBulgarianPartyInput(value, { requireMol: true });
 
@@ -107,6 +115,8 @@ interface CompanyInfoFormProps {
 function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const { plan, canUseFeature } = useSubscriptionLimit();
+  const canUseVies = canUseFeature("eikSearch");
 
   const form = useForm<CompanyInfoValues, unknown, CompanyInfoValues>({
     resolver: zodResolver(companyInfoSchema) as any,
@@ -115,6 +125,12 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
       country: defaultValues.country || "България",
       vatRegistered: defaultValues.vatRegistered ?? false,
       uicType: defaultValues.uicType || "BULSTAT",
+      viesLastCheckAt: defaultValues.viesLastCheckAt ?? null,
+      viesValid: defaultValues.viesValid ?? null,
+      viesCountryCode: defaultValues.viesCountryCode ?? null,
+      viesNumberLocal: defaultValues.viesNumberLocal ?? null,
+      viesTraderName: defaultValues.viesTraderName ?? null,
+      viesTraderAddress: defaultValues.viesTraderAddress ?? null,
     },
   });
 
@@ -210,10 +226,18 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
   }
 
   const bulstatValue = form.watch("bulstatNumber");
+  const viesLast = form.watch("viesLastCheckAt");
+  const viesOk = form.watch("viesValid");
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <input type="hidden" {...form.register("viesLastCheckAt")} />
+        <input type="hidden" {...form.register("viesValid")} />
+        <input type="hidden" {...form.register("viesCountryCode")} />
+        <input type="hidden" {...form.register("viesNumberLocal")} />
+        <input type="hidden" {...form.register("viesTraderName")} />
+        <input type="hidden" {...form.register("viesTraderAddress")} />
         {/* Quick EIK Lookup */}
         <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
           <div className="flex items-start gap-3 mb-3">
@@ -530,6 +554,24 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
                 </FormItem>
               )}
             />
+          </div>
+
+          <div className="mt-4">
+            <ViesLookupPanel
+              control={form.control}
+              getValues={form.getValues}
+              setValue={form.setValue}
+              vatField="vatRegistrationNumber"
+              currentPlan={plan}
+              canUseVies={canUseVies}
+            />
+            {viesLast && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Последна проверка в VIES: {new Date(viesLast).toLocaleString("bg-BG")}
+                {viesOk === true ? " — отговор: валиден" : ""}
+                {viesOk === false ? " — отговор: невалиден" : ""}
+              </p>
+            )}
           </div>
           
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 mt-4">

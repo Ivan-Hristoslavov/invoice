@@ -15,6 +15,7 @@ import {
   LogOut,
   Moon,
   Sun,
+  Monitor,
   Command
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -156,7 +157,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       title: "Настройки",
       description: "Фактури, компания, абонамент",
       icon: Settings,
-      action: () => router.push("/settings/invoice-preferences"),
+      action: () => router.push("/settings/company"),
       keywords: ["settings", "настройки", "preferences"],
       category: "settings",
     },
@@ -180,12 +181,18 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     },
     // Actions
     {
-      id: "toggle-theme",
-      title: theme === "dark" ? "Светла тема" : "Тъмна тема",
-      description: "Смени темата на приложението",
-      icon: theme === "dark" ? Sun : Moon,
-      action: () => setTheme(theme === "dark" ? "light" : "dark"),
-      keywords: ["theme", "тема", "dark", "light", "тъмна", "светла"],
+      id: "cycle-theme",
+      title:
+        theme === "light"
+          ? "Тема: следваща (тъмна)"
+          : theme === "dark"
+            ? "Тема: следваща (системна)"
+            : "Тема: следваща (светла)",
+      description: "Цикъл светла → тъмна → системна",
+      icon: theme === "system" ? Sun : theme === "dark" ? Monitor : Moon,
+      action: () =>
+        setTheme(theme === "light" ? "dark" : theme === "dark" ? "system" : "light"),
+      keywords: ["theme", "тема", "dark", "light", "тъмна", "светла", "system", "системна"],
       category: "actions",
     },
     {

@@ -78,6 +78,33 @@ export type EmbedCompanyLogoLayout = {
 };
 
 /**
+ * Scales intrinsic pixel size to fit inside maxW×maxH (mm) without distortion.
+ */
+export function fitLogoDimensionsToBox(
+  intrinsicW: number,
+  intrinsicH: number,
+  maxW: number,
+  maxH: number
+): { drawW: number; drawH: number } {
+  if (
+    !Number.isFinite(intrinsicW) ||
+    !Number.isFinite(intrinsicH) ||
+    intrinsicW <= 0 ||
+    intrinsicH <= 0 ||
+    maxW <= 0 ||
+    maxH <= 0
+  ) {
+    return { drawW: maxW, drawH: maxH };
+  }
+  const imageAspect = intrinsicW / intrinsicH;
+  const boxAspect = maxW / maxH;
+  if (imageAspect > boxAspect) {
+    return { drawW: maxW, drawH: maxW / imageAspect };
+  }
+  return { drawW: maxH * imageAspect, drawH: maxH };
+}
+
+/**
  * Fetches a public company logo URL and embeds it in the PDF.
  * @returns The height used (mm), or 0 if skipped/failed.
  */
@@ -135,8 +162,25 @@ export async function embedCompanyLogoInPdf(
     }
 
     const logoBase64 = logoBuffer.toString("base64");
-    doc.addImage(logoBase64, imageFormat, layout.x, layout.y, layout.maxW, layout.maxH);
-    return layout.maxH;
+
+    let drawW = layout.maxW;
+    let drawH = layout.maxH;
+    try {
+      const props = doc.getImageProperties(logoBase64);
+      const fitted = fitLogoDimensionsToBox(
+        props.width,
+        props.height,
+        layout.maxW,
+        layout.maxH
+      );
+      drawW = fitted.drawW;
+      drawH = fitted.drawH;
+    } catch {
+      /* keep max box if dimensions cannot be read */
+    }
+
+    doc.addImage(logoBase64, imageFormat, layout.x, layout.y, drawW, drawH);
+    return drawH;
   } catch (error) {
     console.warn(`${LOG_PREFIX} (${context}) could not embed logo:`, error);
     return 0;

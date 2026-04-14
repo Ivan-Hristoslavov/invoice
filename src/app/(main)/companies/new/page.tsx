@@ -24,6 +24,8 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import type { CompanyBookFormFields } from "@/lib/companybook";
+import { applyCompanyBookToForm } from "@/lib/companybook-form-apply";
 import { useCompanyBookLookup } from "@/hooks/useCompanyBookLookup";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +57,8 @@ import { cn } from "@/lib/utils";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { useSubscription } from "@/hooks/useSubscription";
 import { ProFeatureLock } from "@/components/ui/pro-feature-lock";
+import { ViesLookupPanel } from "@/components/parties/ViesLookupPanel";
+import { CompanyBookLookupPanel } from "@/components/parties/CompanyBookLookupPanel";
 
 type CompanySectionStatus = "complete" | "partial" | "missing" | "invalid" | "optional";
 
@@ -167,6 +171,9 @@ function SectionPanel({
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex shrink-0 items-center rounded-lg border border-border/60 bg-muted/50 px-2 py-0.5 text-[11px] font-bold tabular-nums text-muted-foreground">
+                {index + 1} / 4
+              </span>
               <h3 className="text-base font-semibold text-foreground sm:text-lg">{title}</h3>
               <span className={cn("inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium", badge.className)}>
                 {badge.label}
@@ -179,7 +186,7 @@ function SectionPanel({
           </div>
           <ChevronDown className={cn("mt-1 h-5 w-5 shrink-0 text-muted-foreground transition-transform", isOpen && "rotate-180 text-foreground")} />
         </button>
-        {isOpen && <CardContent className="border-t border-border/60 p-5 pt-5 sm:p-6 sm:pt-6">{children}</CardContent>}
+        {isOpen && <CardContent className="border-t border-border/35 p-5 pt-5 sm:p-6 sm:pt-6">{children}</CardContent>}
       </Card>
     </div>
   );
@@ -207,6 +214,12 @@ const companySchema = z.object({
   bankName: z.string().optional().or(z.literal("")),
   bankSwift: z.string().optional().or(z.literal("")),
   bankIban: z.string().optional().or(z.literal("")),
+  viesLastCheckAt: z.string().optional().nullable(),
+  viesValid: z.boolean().optional().nullable(),
+  viesCountryCode: z.string().max(2).optional().nullable(),
+  viesNumberLocal: z.string().max(64).optional().nullable(),
+  viesTraderName: z.string().optional().nullable(),
+  viesTraderAddress: z.string().optional().nullable(),
 }).superRefine((value, ctx) => {
   const { issues } = validateBulgarianPartyInput(value, { requireMol: true });
 
@@ -278,7 +291,7 @@ export default function NewCompanyPage() {
     },
     {
       title: "Данъчни данни",
-      description: "ЕИК, ЗДДС и представляващо лице",
+      description: "ЕИК, регистър, ЗДДС, VIES и МОЛ — подредени на ясни подстъпки",
       icon: <Receipt className="h-5 w-5" />,
       fields: ["bulstatNumber", "uicType", "vatRegistered", "vatRegistrationNumber", "mol", "accountablePerson"] as const,
       requiredFields: ["bulstatNumber", "mol"] as const,
@@ -316,6 +329,12 @@ export default function NewCompanyPage() {
       bankName: "",
       bankSwift: "",
       bankIban: "",
+      viesLastCheckAt: null,
+      viesValid: null,
+      viesCountryCode: null,
+      viesNumberLocal: null,
+      viesTraderName: null,
+      viesTraderAddress: null,
     },
   });
 
@@ -350,38 +369,13 @@ export default function NewCompanyPage() {
     setCurrentStep((prevStep) => (prevStep === stepIndex ? null : stepIndex));
   }, []);
 
-  const handleCompanyBookSuccess = useCallback((fields: Record<string, unknown>) => {
-    const fieldMap: Record<string, keyof CompanyFormInputValues> = {
-      name: "name",
-      address: "address",
-      city: "city",
-      state: "state",
-      zipCode: "zipCode",
-      country: "country",
-      bulstatNumber: "bulstatNumber",
-      vatRegistered: "vatRegistered",
-      vatRegistrationNumber: "vatRegistrationNumber",
-      vatNumber: "vatNumber",
-      mol: "mol",
-      email: "email",
-      phone: "phone",
-      uicType: "uicType",
-    };
-
-    let filledCount = 0;
-    for (const [key, formKey] of Object.entries(fieldMap)) {
-      const val = fields[key];
-      if (val !== undefined && val !== "") {
-        form.setValue(formKey, val as never, { shouldValidate: true, shouldDirty: true });
-        filledCount++;
-      }
-    }
-
-    setLookupResult(fields);
+  const handleCompanyBookSuccess = useCallback((fields: CompanyBookFormFields) => {
+    applyCompanyBookToForm(form.getValues, form.setValue, fields, { overwriteIdentityFields: true });
+    setLookupResult(fields as unknown as Record<string, unknown>);
     setCurrentStep(0);
 
     toast.success("Данните са заредени", {
-      description: `${filledCount} полета бяха автоматично попълнени от Търговския регистър.`,
+      description: "Полетата са попълнени от Търговския регистър.",
     });
   }, [form]);
 
@@ -724,6 +718,12 @@ export default function NewCompanyPage() {
       ) : (
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit, handleInvalidSubmit)} className="mx-auto max-w-5xl space-y-6">
+            <input type="hidden" {...form.register("viesLastCheckAt")} />
+            <input type="hidden" {...form.register("viesValid")} />
+            <input type="hidden" {...form.register("viesCountryCode")} />
+            <input type="hidden" {...form.register("viesNumberLocal")} />
+            <input type="hidden" {...form.register("viesTraderName")} />
+            <input type="hidden" {...form.register("viesTraderAddress")} />
             <Card className="overflow-hidden border-border/70 bg-linear-to-br from-card via-card to-primary/5 shadow-lg shadow-black/5">
               <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
                 <div className="flex items-start gap-4">
@@ -802,6 +802,9 @@ export default function NewCompanyPage() {
                     <p className="text-xs text-muted-foreground">
                       Най-добър резултат ще получите с 9 до 13 цифри, без интервали и символи.
                     </p>
+                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                      След успешно зареждане ще се покажат четирите секции по-долу за преглед и редакция.
+                    </p>
                   </CardContent>
                 </Card>
               </ProFeatureLock>
@@ -845,7 +848,12 @@ export default function NewCompanyPage() {
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-foreground">{section.title}</p>
+                            <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-foreground">
+                              <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold tabular-nums text-muted-foreground">
+                                {index + 1}
+                              </span>
+                              {section.title}
+                            </p>
                             <p className="mt-1 text-xs text-muted-foreground">{getSectionHelperText(section)}</p>
                           </div>
                           <span className={cn("inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-[11px] font-medium", badge.className)}>
@@ -1065,8 +1073,12 @@ export default function NewCompanyPage() {
                     isOpen={currentStep === 2}
                     onToggle={() => toggleSection(2)}
                   >
-                    <div className="grid gap-6 lg:grid-cols-2 [&_label]:text-[15px] [&_label]:font-semibold [&_p]:leading-6">
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <div className="space-y-8 [&_label]:text-[15px] [&_label]:font-semibold [&_p]:leading-6">
+                    <div className="rounded-2xl border border-border/50 bg-muted/10 p-4 sm:p-5">
+                      <p className="mb-4 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                        Стъпка 1 · Идентификатор
+                      </p>
+                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                       <FormField
                         control={form.control}
                         name="bulstatNumber"
@@ -1074,39 +1086,20 @@ export default function NewCompanyPage() {
                           <FormItem>
                             <FormLabel>БУЛСТАТ/ЕИК *</FormLabel>
                             <FormControl>
-                              <div className="flex flex-col gap-2 sm:flex-row">
-                                <Input
-                                  placeholder="175074752"
-                                  className="h-12 flex-1"
-                                  inputMode="numeric"
-                                  {...field}
-                                  onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ""))}
-                                />
-                                {companyCreationMode === "eik" && (
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="h-12 w-full shrink-0 px-3 sm:w-auto"
-                                    disabled={isLookupLoading || !field.value || field.value.length < 9}
-                                    onClick={handleEikLookup}
-                                    title="Зареди данни от Търговски регистър"
-                                  >
-                                    {isLookupLoading ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                      <Search className="h-4 w-4" />
-                                    )}
-                                    <span className="hidden sm:inline ml-1.5">Зареди</span>
-                                  </Button>
-                                )}
-                              </div>
+                              <Input
+                                placeholder="175074752"
+                                className="h-12"
+                                inputMode="numeric"
+                                {...field}
+                                onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ""))}
+                              />
                             </FormControl>
                             <FormDescription>
                               {companyCreationMode === "eik"
-                                ? "Въведете ЕИК и натиснете „Зареди“ за автоматично попълване."
+                                ? "Първоначалното зареждане е от картата по-горе; тук може да коригирате ЕИК и да повторите заявка към регистъра в блока по-долу."
                                 : isCheckingBulstatDuplicate
                                   ? "Проверяваме в системата дали този ЕИК/БУЛСТАТ вече се използва."
-                                  : "При ръчно попълване само проверяваме дали ЕИК/БУЛСТАТ вече съществува в системата."}
+                                  : "Заявка към Търговския регистър само при бутона „Зареди от регистъра“ — без автоматични заявки при писане."}
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -1134,11 +1127,29 @@ export default function NewCompanyPage() {
                           </FormItem>
                         )}
                       />
+                      </div>
                     </div>
 
-                    <Separator />
+                    <div>
+                      <p className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                        Стъпка 2 · Търговски регистър
+                      </p>
+                      <CompanyBookLookupPanel
+                        control={form.control}
+                        getValues={form.getValues}
+                        setValue={form.setValue}
+                        bulstatField="bulstatNumber"
+                        currentPlan={plan}
+                        canUseCompanyBook={canUseEikSearch}
+                        onApplied={(fields) => setLookupResult(fields as unknown as Record<string, unknown>)}
+                      />
+                    </div>
 
-                    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+                    <div className="rounded-2xl border border-border/50 bg-muted/10 p-4 sm:p-5">
+                      <p className="mb-4 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                        Стъпка 3 · Регистрация по ЗДДС
+                      </p>
+                      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
                       <FormField
                         control={form.control}
                         name="vatRegistered"
@@ -1215,7 +1226,36 @@ export default function NewCompanyPage() {
                         )}
                       />
                     </div>
+                    </div>
 
+                    <div>
+                      <p className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                        Стъпка 4 · Проверка в VIES (ЕС ДДС)
+                      </p>
+                      <div className="space-y-2">
+                      <ViesLookupPanel
+                        control={form.control}
+                        getValues={form.getValues}
+                        setValue={form.setValue}
+                        vatField="vatRegistrationNumber"
+                        currentPlan={plan}
+                        canUseVies={canUseEikSearch}
+                      />
+                      {form.watch("viesLastCheckAt") && (
+                        <p className="text-xs text-muted-foreground">
+                          Последна VIES:{" "}
+                          {new Date(String(form.watch("viesLastCheckAt"))).toLocaleString("bg-BG")}
+                          {form.watch("viesValid") === true ? " — валиден" : ""}
+                          {form.watch("viesValid") === false ? " — невалиден" : ""}
+                        </p>
+                      )}
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-border/50 bg-muted/10 p-4 sm:p-5">
+                      <p className="mb-4 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                        Стъпка 5 · Представляващо лице
+                      </p>
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                       <FormField
                         control={form.control}
@@ -1246,6 +1286,7 @@ export default function NewCompanyPage() {
                           </FormItem>
                         )}
                       />
+                    </div>
                     </div>
                     </div>
                   </SectionPanel>

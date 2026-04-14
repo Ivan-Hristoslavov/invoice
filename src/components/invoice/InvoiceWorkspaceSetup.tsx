@@ -101,6 +101,17 @@ export function InvoiceWorkspaceSetup({
             <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
               {description}
             </p>
+            <ol className="max-w-3xl list-decimal space-y-1.5 pl-5 text-sm leading-6 text-muted-foreground">
+              <li>
+                <span className="text-foreground/90">Компания</span> — фирмата издател и номерация на документите.
+              </li>
+              <li>
+                <span className="text-foreground/90">Клиент</span> — получателят по фактурата (поне един запис).
+              </li>
+              <li>
+                <span className="text-foreground/90">Нова фактура</span> — от менюто или бутона „+“ в горната лента.
+              </li>
+            </ol>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">

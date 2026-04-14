@@ -6,6 +6,8 @@ model: inherit
 
 You specialize in Stripe subscription flows for this codebase.
 
+**UI:** Ако пипаш потребителски екрани за плащане/абонамент, ползвай `@heroui/react` където е възможно (`.cursor/rules/heroui-components.mdc`).
+
 Key context:
 - Stripe is used for subscriptions and billing state.
 - The webhook route logs to Supabase and contains legacy branches that should be handled carefully.

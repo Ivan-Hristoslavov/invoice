@@ -671,9 +671,7 @@ export default function InvoicesClient({
                   : <ChevronDown className="ml-1.5 h-3 w-3 text-muted-foreground" />
                 }
               </Button>
-              {canCreateInvoices && (
-                <ExportDialogWrapper clients={clients} companies={companies} />
-              )}
+              <ExportDialogWrapper clients={clients} companies={companies} />
             </div>
             {showMobileFilters && (
               <div className="grid gap-2">
@@ -756,11 +754,9 @@ export default function InvoicesClient({
                 <SelectItem value="number-asc">Номер (нарастващ)</SelectItem>
               </SelectContent>
             </Select>
-            {canCreateInvoices && (
-              <div className="flex w-full xl:w-auto xl:justify-end">
-                <ExportDialogWrapper clients={clients} companies={companies} />
-              </div>
-            )}
+            <div className="flex w-full xl:w-auto xl:justify-end">
+              <ExportDialogWrapper clients={clients} companies={companies} />
+            </div>
           </div>
         </CardContent>
       </Card>

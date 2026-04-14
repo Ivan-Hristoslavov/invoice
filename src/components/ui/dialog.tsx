@@ -59,10 +59,10 @@ const DialogContent = React.forwardRef<
       >
         {children}
         <HeroUIModal.CloseTrigger
-          className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
+          className="absolute right-4 top-4 rounded-md p-1 text-foreground ring-offset-background transition-colors hover:bg-muted/90 hover:text-foreground focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none dark:text-foreground dark:hover:bg-muted"
           aria-label="Затвори"
         >
-          <X className="h-4 w-4" aria-hidden="true" />
+          <X className="h-4 w-4 shrink-0" aria-hidden="true" />
         </HeroUIModal.CloseTrigger>
       </HeroUIModal.Dialog>
     </HeroUIModal.Container>

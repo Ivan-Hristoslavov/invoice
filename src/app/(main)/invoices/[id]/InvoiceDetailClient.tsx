@@ -25,17 +25,32 @@ import {
   TrendingUp,
   TrendingDown,
   Banknote,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuItemIcon,
+  DropdownMenuItemText,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { BreadcrumbsBar } from "@/components/ui/breadcrumbs-bar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/lib/toast";
-import { formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import DocumentsTab from "@/components/invoice/DocumentsTab";
 import { getDocuments } from "@/lib/services/document-service";
-import { exportInvoiceAsPdf, printInvoicePdf } from "@/lib/invoice-export";
+import {
+  exportInvoiceAsPdf,
+  exportInvoiceAsMicroinvestTxt,
+  exportInvoiceAsMicroinvestXml,
+  printInvoicePdf,
+} from "@/lib/invoice-export";
 import { StatusChangeModal } from "@/components/invoice/StatusChangeModal";
 import { CancelInvoiceModal } from "@/components/invoice/CancelInvoiceModal";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
@@ -145,8 +160,9 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
   const [isLoadingAuditLogs, setIsLoadingAuditLogs] = useState(false);
   
   // Subscription limit check for email sending
-  const { canUseFeature, isLoadingUsage } = useSubscriptionLimit();
+  const { canUseFeature, isLoadingUsage, usage } = useSubscriptionLimit();
   const canSendEmail = canUseFeature('emailSending');
+  const canExportMicroinvest = usage?.features.export === "full";
   const normalizedStatus = normalizeInvoiceStatus(invoice.status);
   const isPaidInDb = invoice.persistedStatus === "PAID";
 
@@ -164,9 +180,11 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
       if (response.ok) {
         const data = await response.json();
         setAuditLogs(data.logs || []);
+      } else {
+        toast.error("История", { description: "Неуспешно зареждане на одитния дневник." });
       }
-    } catch (error) {
-      console.error('Error fetching audit logs:', error);
+    } catch {
+      toast.error("История", { description: "Неуспешно зареждане на одитния дневник." });
     } finally {
       setIsLoadingAuditLogs(false);
     }
@@ -242,7 +260,27 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
     }
   };
 
-  const handlePrintInvoice = async () => {
+  const handleExportMicroinvestXml = async () => {
+    try {
+      await exportInvoiceAsMicroinvestXml(invoice.id);
+      toast.success("Файлът за Microinvest (XML) е изтеглен");
+    } catch (error) {
+      console.error("Error exporting Microinvest XML:", error);
+      toast.error("Грешка при експортиране на XML за Склад Pro");
+    }
+  };
+
+  const handleExportMicroinvestTxt = async () => {
+    try {
+      await exportInvoiceAsMicroinvestTxt(invoice.id);
+      toast.success("Файлът за Microinvest (TXT) е изтеглен");
+    } catch (error) {
+      console.error("Error exporting Microinvest TXT:", error);
+      toast.error("Грешка при експортиране на TXT за Склад Pro");
+    }
+  };
+
+  const handlePrintInvoice = () => {
     try {
       printInvoicePdf(invoice.id);
       toast.info("PDF файлът беше отворен в нов раздел. Използвайте Print от PDF прегледа.");
@@ -671,7 +709,7 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
             </>
           )}
 
-          {/* Common actions */}
+          {/* Общи действия: дублиране + компактно меню за изтегляне */}
           <Button
             variant="outline"
             size="sm"
@@ -682,24 +720,56 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
             <Copy className="w-3.5 h-3.5 mr-1" />
             {isDuplicating ? "..." : "Дублирай"}
           </Button>
-          <Button variant="outline" size="sm" className="h-8 rounded-lg text-xs" onClick={handlePrintInvoice}>
-            <Printer className="w-3.5 h-3.5 mr-1" />
-            Принт
-          </Button>
-          <Button variant="outline" size="sm" className="h-8 rounded-lg text-xs" onClick={handleExportPdf} title="Изтегли оригинал">
-            <Download className="w-3.5 h-3.5 mr-1" />
-            PDF
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => exportInvoiceAsPdf(invoice.id, true)}
-            title="Изтегли копие"
-            className="h-8 rounded-lg text-xs text-muted-foreground"
-          >
-            <Copy className="w-3.5 h-3.5 mr-1" />
-            Копие
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              aria-label="Изтегляне и още"
+              className={cn(
+                "inline-flex h-8 shrink-0 items-center justify-center gap-1 rounded-lg border border-border/80 bg-background px-2.5 text-xs font-medium text-foreground shadow-sm outline-none transition-[border-color,box-shadow] duration-150",
+                "data-[hovered=true]:border-primary/45 data-[hovered=true]:shadow-md data-[hovered=true]:ring-2 data-[hovered=true]:ring-primary/25",
+                "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              )}
+            >
+              <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
+              Изтегляне
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={handlePrintInvoice}>
+                <DropdownMenuItemIcon>
+                  <Printer />
+                </DropdownMenuItemIcon>
+                <DropdownMenuItemText>Принт</DropdownMenuItemText>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPdf}>
+                <DropdownMenuItemIcon>
+                  <Download />
+                </DropdownMenuItemIcon>
+                <DropdownMenuItemText>PDF (оригинал)</DropdownMenuItemText>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportInvoiceAsPdf(invoice.id, true)}>
+                <DropdownMenuItemIcon>
+                  <Copy />
+                </DropdownMenuItemIcon>
+                <DropdownMenuItemText>PDF (копие)</DropdownMenuItemText>
+              </DropdownMenuItem>
+              {canExportMicroinvest && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleExportMicroinvestXml}>
+                    <DropdownMenuItemIcon>
+                      <FileText />
+                    </DropdownMenuItemIcon>
+                    <DropdownMenuItemText>Microinvest — XML</DropdownMenuItemText>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportMicroinvestTxt}>
+                    <DropdownMenuItemIcon>
+                      <FileText />
+                    </DropdownMenuItemIcon>
+                    <DropdownMenuItemText>Microinvest — TXT</DropdownMenuItemText>
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
             </div>
           </div>
         </div>

@@ -1,0 +1,12 @@
+---
+description: Предпочитай @heroui/react за UI; custom само когато няма еквивалент
+globs: "**/*.tsx","**/*.ts"
+alwaysApply: false
+---
+
+# HeroUI първо
+
+За нови екрани, форми, модали, пикери, списъци, радио, табове и т.н. използвай **компоненти от `@heroui/react` v3** (съставен API: `Select.Trigger`, `Radio.Control`, `DateRangePicker.Popover`, `RangeCalendar` и др.), с Tailwind класове в тон с приложението.
+- **Custom компоненти** (`src/components/ui/*`) са позволени само когато: (1) HeroUI няма подходящ примитив, (2) трябва тънък адаптер към Next/App Router (напр. споделен `dialog.tsx` върху `Modal`), или (3) съществуващият wrapper вече обвива HeroUI и е установен в проекта.
+- Преди да имплементираш UI от нулата, провери документацията на HeroUI (вкл. MCP `user-heroui-react` → `list_components` / `get_component_docs`).
+- Не смесвай **shadcn/Radix** селекти или родни `<input type="date">` в нови потоци, ако `@heroui/react` предлага `Select`, `DatePicker`, `DateRangePicker`, `Calendar` / `RangeCalendar`.

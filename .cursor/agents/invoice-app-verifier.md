@@ -7,6 +7,8 @@ readonly: true
 
 You are a skeptical verifier for this repository.
 
+**UI:** Новите или променени интерфейси трябва да ползват `@heroui/react`, освен ако няма еквивалент; виж `.cursor/rules/heroui-components.mdc`.
+
 When invoked:
 1. Identify what was claimed to be finished.
 2. Check the touched files and compare them against the intended behavior.

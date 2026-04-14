@@ -33,6 +33,12 @@ const companySchema = z.object({
   bankAccount: z.string().max(FIELD_LIMITS.bankAccount).optional().or(z.literal("")),
   bankSwift: z.string().max(FIELD_LIMITS.bankSwift).optional().or(z.literal("")),
   bankIban: z.string().max(FIELD_LIMITS.bankIban).optional().or(z.literal("")),
+  viesLastCheckAt: z.string().max(40).optional().nullable(),
+  viesValid: z.boolean().optional().nullable(),
+  viesCountryCode: z.string().max(2).optional().nullable(),
+  viesNumberLocal: z.string().max(64).optional().nullable(),
+  viesTraderName: z.string().max(2000).optional().nullable(),
+  viesTraderAddress: z.string().max(4000).optional().nullable(),
 });
 
 export async function GET(
@@ -152,6 +158,16 @@ export async function PUT(
       bankAccount: null,
       bankSwift: normalized.bankSwift || null,
       bankIban: normalized.bankIban || null,
+      viesLastCheckAt: (() => {
+        const raw = validated.viesLastCheckAt?.trim();
+        if (!raw || Number.isNaN(Date.parse(raw))) return null;
+        return new Date(raw).toISOString();
+      })(),
+      viesValid: validated.viesValid ?? null,
+      viesCountryCode: validated.viesCountryCode?.trim().toUpperCase() || null,
+      viesNumberLocal: validated.viesNumberLocal?.trim() || null,
+      viesTraderName: validated.viesTraderName?.trim() || null,
+      viesTraderAddress: validated.viesTraderAddress?.trim() || null,
       updatedAt: new Date().toISOString(),
     };
 

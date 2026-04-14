@@ -108,6 +108,13 @@ model Company {
   certificateThumbprint   String?
   uicType                 String?           @default("BULSTAT")
   taxComplianceSystem     String?           @default("general")
+  /// Last VIES (EU VAT) validation metadata — point-in-time, informational
+  viesLastCheckAt         DateTime?
+  viesValid               Boolean?
+  viesCountryCode         String?           @db.VarChar(2)
+  viesNumberLocal         String?           @db.VarChar(64)
+  viesTraderName          String?
+  viesTraderAddress       String?
   createdAt               DateTime          @default(now())
   updatedAt               DateTime          @updatedAt
   userId                  String
@@ -140,6 +147,13 @@ model Client {
   mol                           String?
   uicType                       String?      @default("BULSTAT")
   taxComplianceSystem           String?      @default("general")
+  /// Last VIES (EU VAT) validation metadata — point-in-time, informational
+  viesLastCheckAt               DateTime?
+  viesValid                     Boolean?
+  viesCountryCode               String?      @db.VarChar(2)
+  viesNumberLocal               String?      @db.VarChar(64)
+  viesTraderName                String?
+  viesTraderAddress             String?
   createdAt                     DateTime     @default(now())
   updatedAt                     DateTime     @updatedAt
   userId                        String

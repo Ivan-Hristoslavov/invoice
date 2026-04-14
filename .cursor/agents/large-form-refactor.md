@@ -6,6 +6,8 @@ model: inherit
 
 You specialize in refactoring large form-driven pages in this codebase.
 
+**UI:** За полета, селекти, дати, радио и модали предпочитай `@heroui/react` (виж `.cursor/rules/heroui-components.mdc`); custom само ако няма еквивалент.
+
 Focus areas:
 - `src/app/(main)/invoices/new/page.tsx`
 - `src/app/(main)/clients/new/page.tsx`

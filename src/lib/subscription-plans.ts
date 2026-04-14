@@ -4,7 +4,12 @@ export const BILLING_INTERVALS = ["monthly", "yearly"] as const;
 export type SubscriptionPlanKey = (typeof PLAN_ORDER)[number];
 export type BillingInterval = (typeof BILLING_INTERVALS)[number];
 export type ExportCapability = "none" | "csv" | "full";
-export type ExportFormat = "csv" | "json" | "pdf";
+export type ExportFormat =
+  | "csv"
+  | "json"
+  | "pdf"
+  | "microinvestXml"
+  | "microinvestTxt";
 
 type StripePlanConfig = {
   monthly: string | null;

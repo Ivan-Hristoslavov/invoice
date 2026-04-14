@@ -188,10 +188,10 @@ function StepAccordionTrigger({
         {isCompleted ? <Check className="h-4 w-4" /> : icon}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <p className="text-base font-semibold">{title}</p>
-          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            {stepIndex + 1}
+          <span className="rounded-full bg-muted px-2.5 py-0.5 text-[10px] font-bold tabular-nums text-muted-foreground">
+            {stepIndex + 1} / 4
           </span>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">{description}</p>
@@ -1139,12 +1139,10 @@ description: error.message?.includes("план")
               </CardContent>
             </Card>
 
-            <div className="flex items-center gap-3">
-              <Separator className="flex-1" />
-              <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+            <div className="flex items-center justify-center py-1">
+              <span className="rounded-full border border-border/70 bg-muted/30 px-4 py-2 text-xs font-semibold text-muted-foreground">
                 или нов клиент
               </span>
-              <Separator className="flex-1" />
             </div>
 
             <Card className="border-primary/15 bg-linear-to-br from-primary/5 via-card to-card">
@@ -1231,14 +1229,13 @@ description: error.message?.includes("план")
                   </div>
                 </div>
               </div>
-              <Separator variant="secondary" />
             </div>
 
-            {/* Flat sections with separators, 2-col on desktop */}
-            <div className="lg:grid lg:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)] lg:divide-x lg:divide-border">
+            {/* Two columns on desktop — spacing only, no vertical rules through the section */}
+            <div className="lg:grid lg:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)] lg:gap-10 xl:gap-12">
               {/* Left: Dates + Payment */}
-              <div className="lg:pr-7">
-                <div className="space-y-4 pb-5">
+              <div className="space-y-0">
+                <div className="space-y-4 rounded-2xl border border-border/50 bg-muted/10 p-4 sm:p-5">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <p className="text-sm font-semibold">Дати на фактурата</p>
@@ -1272,9 +1269,7 @@ description: error.message?.includes("план")
                   </div>
                 </div>
 
-                <Separator />
-
-                <div className="space-y-4 pt-5">
+                <div className="mt-5 space-y-4 rounded-2xl border border-border/50 bg-muted/10 p-4 sm:p-5">
                   <div className="flex items-center gap-2">
                     <CreditCard className="h-4 w-4 text-muted-foreground" />
                     <p className="text-sm font-semibold">Плащане</p>
@@ -1304,14 +1299,11 @@ description: error.message?.includes("план")
                 </div>
               </div>
 
-              {/* Mobile separator between columns */}
-              <Separator className="my-5 lg:hidden" />
-
               {/* Right: Client + Company + Currency */}
-              <div className="lg:pl-7">
+              <div className="mt-8 space-y-5 lg:mt-0">
                 {recipientPreview ? (
                   <>
-                    <div className="space-y-3 pb-5">
+                    <div className="space-y-3 rounded-2xl border border-border/50 bg-muted/10 p-4 sm:p-5">
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-muted-foreground" />
                         <p className="text-sm font-semibold">Клиент</p>
@@ -1363,8 +1355,7 @@ description: error.message?.includes("план")
                         </div>
                       ) : null}
                     </div>
-                    <Separator />
-                    <div className="space-y-4 pt-5">
+                    <div className="space-y-4 rounded-2xl border border-border/50 bg-muted/10 p-4 sm:p-5">
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-muted-foreground" />
                         <p className="text-sm font-semibold">
@@ -1409,8 +1400,7 @@ description: error.message?.includes("план")
                         </div>
                       </div>
                     </div>
-                    <Separator />
-                    <div className="space-y-4 pt-5">
+                    <div className="space-y-4 rounded-2xl border border-border/50 bg-muted/10 p-4 sm:p-5">
                       <div className="flex items-center gap-2">
                         <Building2 className="h-4 w-4 text-muted-foreground" />
                         <p className="text-sm font-semibold">Фирма и валута</p>
@@ -1454,7 +1444,7 @@ description: error.message?.includes("план")
                     </div>
                   </>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-4 rounded-2xl border border-border/50 bg-muted/10 p-4 sm:p-5">
                     <div className="flex items-center gap-2">
                       <Building2 className="h-4 w-4 text-muted-foreground" />
                       <p className="text-sm font-semibold">Фирма и валута</p>
@@ -1539,12 +1529,11 @@ description: error.message?.includes("план")
                     ))}
                   </div>
                 </div>
-                <Separator />
               </>
             )}
 
             {/* Items section */}
-            <div className={products.length > 0 ? "pt-1" : ""}>
+            <div className={products.length > 0 ? "mt-8 border-t border-border/30 pt-8" : ""}>
               <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2.5">
                   <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -1736,9 +1725,7 @@ description: error.message?.includes("план")
                     </div>
                   </div>
 
-                  <Separator />
-
-                  <div className="space-y-3">
+                  <div className="space-y-3 border-t border-border/30 pt-5">
                     <div className="flex items-center gap-2">
                       <ShoppingCart className="h-4 w-4 text-muted-foreground" />
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -1837,7 +1824,7 @@ description: error.message?.includes("план")
                         </span>
                       </div>
                     </div>
-                    <Separator className="my-3 bg-primary/15" />
+                    <div className="my-3 h-px bg-border/40" aria-hidden />
                     <div className="flex items-end justify-between gap-3">
                       <span className="text-sm font-semibold uppercase tracking-wide text-foreground/90">
                         Общо
@@ -1985,11 +1972,11 @@ description: error.message?.includes("план")
                 return (
                   <section
                     key={step.title}
-                    className="overflow-hidden rounded-2xl border border-border bg-background/40 shadow-sm"
+                    className="overflow-hidden rounded-2xl border border-border/70 bg-card/50 shadow-sm"
                   >
                     <button
                       type="button"
-                      className="w-full px-4 py-4 text-left transition-colors hover:bg-muted/20 sm:px-5"
+                      className="w-full px-4 py-4 text-left transition-colors hover:bg-muted/15 sm:px-5 sm:py-4"
                       onClick={() => {
                         if (isUnlocked) setCurrentStep(index);
                       }}
@@ -2005,7 +1992,7 @@ description: error.message?.includes("план")
                       />
                     </button>
                     {isOpen ? (
-                      <div className="border-t border-border/50 px-4 py-5 sm:px-5">
+                      <div className="border-t border-border/30 bg-muted/4 px-4 py-5 sm:px-5 sm:py-6">
                         {renderStepContent(index)}
                       </div>
                     ) : null}
@@ -2014,8 +2001,7 @@ description: error.message?.includes("план")
               })}
             </div>
           </CardContent>
-          <div className="px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:px-6 sm:pb-6">
-            <Separator className="mb-4" />
+          <div className="border-t border-border/40 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-5 sm:px-6 sm:pb-6 sm:pt-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="hidden text-sm text-muted-foreground sm:block">
                 <span className="font-semibold text-foreground">{currentStepDetails.title}</span>

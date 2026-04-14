@@ -89,3 +89,5 @@ export function mapCompanyBookToFormFields(data: CompanyBookResponse) {
     uicType: "BULSTAT" as const,
   };
 }
+
+export type CompanyBookFormFields = ReturnType<typeof mapCompanyBookToFormFields>;

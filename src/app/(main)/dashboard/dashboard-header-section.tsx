@@ -1,6 +1,5 @@
-import Link from "next/link";
 import { Plus, LayoutDashboard } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { LinkButton } from "@/components/dashboard/LinkButton";
 import { AppSectionKicker } from "@/components/app/AppSectionKicker";
 import { InvoiceWorkspaceSetup } from "@/components/invoice/InvoiceWorkspaceSetup";
 import { getDashboardShell } from "./load-dashboard-data";
@@ -16,24 +15,20 @@ export async function DashboardHeaderSection({ userId }: { userId: string }) {
           <h1 className="page-title">Табло</h1>
           <p className="card-description">Фактури, суми и последни действия на един екран</p>
         </div>
-        <Button
-          asChild
+        <LinkButton
+          href={shell.hasInvoiceWorkspaceSetup ? "/invoices/new" : "/invoices"}
+          linkClassName="flex items-center whitespace-nowrap"
           size="2"
           variant="solid"
           color="green"
           className="shadow-lg hover:shadow-xl transition-shadow btn-responsive"
         >
-          <Link
-            href={shell.hasInvoiceWorkspaceSetup ? "/invoices/new" : "/invoices"}
-            className="flex items-center whitespace-nowrap"
-          >
-            <Plus className="mr-1.5 h-4 w-4" />
-            <span className="hidden sm:inline">
-              {shell.hasInvoiceWorkspaceSetup ? "Нова фактура" : "Настрой фактуриране"}
-            </span>
-            <span className="sm:hidden">{shell.hasInvoiceWorkspaceSetup ? "Нова" : "Старт"}</span>
-          </Link>
-        </Button>
+          <Plus className="mr-1.5 h-4 w-4" />
+          <span className="hidden sm:inline">
+            {shell.hasInvoiceWorkspaceSetup ? "Нова фактура" : "Настрой фактуриране"}
+          </span>
+          <span className="sm:hidden">{shell.hasInvoiceWorkspaceSetup ? "Нова" : "Старт"}</span>
+        </LinkButton>
       </div>
 
       {!shell.hasInvoiceWorkspaceSetup && (

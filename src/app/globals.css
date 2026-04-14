@@ -808,11 +808,12 @@
     --primary: 166 76% 45%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 217 18% 22%;
-    --secondary-foreground: 210 40% 96%;
+    --secondary: 217 18% 26%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 217 18% 20%;
-    --muted-foreground: 215 18% 62%;
+    --muted: 217 18% 22%;
+    /* Brighter secondary text in dark mode (avoid muddy gray UI chrome) */
+    --muted-foreground: 215 22% 86%;
     
     /* Opaque surfaces for clear component boundaries */
     --card-opacity: 1;
@@ -831,8 +832,8 @@
     --warning: 38 92% 50%;
     --warning-foreground: 210 40% 98%;
 
-    --border: 217 18% 24%;
-    --input: 217 18% 18%;
+    --border: 217 16% 32%;
+    --input: 217 18% 22%;
     --ring: 166 76% 45%;
 
     --chart-1: 217 91% 60%;

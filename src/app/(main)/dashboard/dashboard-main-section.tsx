@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { LinkButton } from "@/components/dashboard/LinkButton";
 import { format, formatDistanceToNow, differenceInDays } from "date-fns";
 import { bg } from "date-fns/locale";
 import { StatsCard } from "@/components/dashboard/StatsCard";
@@ -189,12 +190,16 @@ export async function DashboardMainSection({
                 Най-новите документи към клиентите ви
               </CardDescription>
             </div>
-            <Button variant="ghost" size="sm" asChild className="tiny-text shrink-0">
-              <Link href="/invoices" className="flex items-center gap-1">
-                <span className="hidden sm:inline">Всички</span>
-                <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              </Link>
-            </Button>
+            <LinkButton
+              href="/invoices"
+              linkClassName="flex items-center gap-1"
+              variant="ghost"
+              size="sm"
+              className="tiny-text shrink-0"
+            >
+              <span className="hidden sm:inline">Всички</span>
+              <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+            </LinkButton>
           </CardHeader>
           <CardContent className="px-3 pb-3 sm:px-5 sm:pb-5">
             {recentInvoices.length === 0 ? (
@@ -206,12 +211,15 @@ export async function DashboardMainSection({
                 <p className="mb-6 max-w-xs text-sm text-muted-foreground">
                   Създайте първата за минути и започнете да проследявате какво ви дължат
                 </p>
-                <Button size="sm" asChild className="shadow-md">
-                  <Link href="/invoices/new" className="flex items-center whitespace-nowrap">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Нова фактура
-                  </Link>
-                </Button>
+                <LinkButton
+                  href="/invoices/new"
+                  linkClassName="flex items-center whitespace-nowrap"
+                  size="sm"
+                  className="shadow-md"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Нова фактура
+                </LinkButton>
               </div>
             ) : (
               <div className="space-y-2.5">
@@ -333,12 +341,16 @@ export async function DashboardMainSection({
                   );
                 })}
                 {overdueCount > 5 && (
-                  <Button variant="ghost" size="sm" asChild className="w-full text-xs text-red-600 hover:text-red-700">
-                    <Link href="/invoices?status=OVERDUE">
-                      Виж всички {overdueCount} просрочени
-                      <ArrowUpRight className="ml-1 h-3 w-3" />
-                    </Link>
-                  </Button>
+                  <LinkButton
+                    href="/invoices?status=OVERDUE"
+                    linkClassName="flex items-center justify-center gap-1"
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-xs text-red-600 hover:text-red-700"
+                  >
+                    Виж всички {overdueCount} просрочени
+                    <ArrowUpRight className="ml-1 h-3 w-3" />
+                  </LinkButton>
                 )}
               </div>
             )}
@@ -359,18 +371,26 @@ export async function DashboardMainSection({
               </CardDescription>
             </div>
             <div className="flex gap-1.5">
-              <Button variant="ghost" size="sm" asChild className="tiny-text shrink-0">
-                <Link href="/credit-notes" className="flex items-center gap-1">
-                  <span className="hidden sm:inline">Кредитни</span>
-                  <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                </Link>
-              </Button>
-              <Button variant="ghost" size="sm" asChild className="tiny-text shrink-0">
-                <Link href="/debit-notes" className="flex items-center gap-1">
-                  <span className="hidden sm:inline">Дебитни</span>
-                  <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                </Link>
-              </Button>
+              <LinkButton
+                href="/credit-notes"
+                linkClassName="flex items-center gap-1"
+                variant="ghost"
+                size="sm"
+                className="tiny-text shrink-0"
+              >
+                <span className="hidden sm:inline">Кредитни</span>
+                <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              </LinkButton>
+              <LinkButton
+                href="/debit-notes"
+                linkClassName="flex items-center gap-1"
+                variant="ghost"
+                size="sm"
+                className="tiny-text shrink-0"
+              >
+                <span className="hidden sm:inline">Дебитни</span>
+                <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              </LinkButton>
             </div>
           </CardHeader>
           <CardContent className="px-3 pb-3 sm:px-5 sm:pb-5">
@@ -468,12 +488,16 @@ export async function DashboardMainSection({
               <CardTitle className="card-title">Последна активност</CardTitle>
               <CardDescription className="card-description">Скорошни действия в акаунта ви</CardDescription>
             </div>
-            <Button variant="ghost" size="sm" asChild className="tiny-text shrink-0">
-              <Link href="/settings/audit-logs" className="flex items-center gap-1">
-                <span className="hidden sm:inline">Всички</span>
-                <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              </Link>
-            </Button>
+            <LinkButton
+              href="/settings/audit-logs"
+              linkClassName="flex items-center gap-1"
+              variant="ghost"
+              size="sm"
+              className="tiny-text shrink-0"
+            >
+              <span className="hidden sm:inline">Всички</span>
+              <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+            </LinkButton>
           </CardHeader>
           <CardContent>
             {!auditLogs || auditLogs.length === 0 ? (

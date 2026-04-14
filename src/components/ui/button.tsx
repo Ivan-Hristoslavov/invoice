@@ -72,6 +72,36 @@ const sizeMap: Record<string, "sm" | "md" | "lg"> = {
   "4": "lg",
 };
 
+/** HeroUI `Button` variant after `variantMap` — shared border/hover shell for `Button` and dialog triggers. */
+export type HeroUIButtonVariant = "primary" | "secondary" | "tertiary" | "outline" | "ghost" | "danger";
+
+const heroVariantBorderAndHover: Record<HeroUIButtonVariant, string> = {
+  primary:
+    "border border-primary/35 shadow-sm transition-[border-color,box-shadow] duration-150 dark:border-primary/45 data-[hovered=true]:border-primary/60 dark:data-[hovered=true]:border-primary/70",
+  secondary:
+    "border border-border/80 shadow-sm transition-[border-color,box-shadow] duration-150 data-[hovered=true]:border-primary/45",
+  tertiary:
+    "border border-border/70 shadow-sm transition-[border-color,box-shadow] duration-150 data-[hovered=true]:border-primary/38",
+  outline:
+    "border border-border/85 shadow-sm transition-[border-color,box-shadow] duration-150 data-[hovered=true]:border-primary/45",
+  ghost:
+    "border border-border/55 shadow-sm transition-[border-color,box-shadow] duration-150 dark:border-border/65 data-[hovered=true]:border-primary/40",
+  danger:
+    "border border-destructive/45 shadow-sm transition-[border-color,box-shadow] duration-150 data-[hovered=true]:border-destructive/85",
+};
+
+/** Layout + interaction ring/focus (use after `buttonVariants({ ... })`). */
+export function heroUIButtonShellClasses(heroVariant: HeroUIButtonVariant): string {
+  return cn(
+    heroVariantBorderAndHover[heroVariant],
+    "data-[hovered=true]:opacity-100 data-[pressed=true]:opacity-100",
+    heroVariant === "danger"
+      ? "data-[hovered=true]:shadow-md data-[hovered=true]:ring-2 data-[hovered=true]:ring-destructive/30"
+      : "data-[hovered=true]:shadow-md data-[hovered=true]:ring-2 data-[hovered=true]:ring-primary/25",
+    "focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+  );
+}
+
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
@@ -101,10 +131,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         variant: heroVariant,
       }),
       "inline-flex min-h-10 flex-row items-center justify-center gap-1.5 rounded-2xl text-center text-sm font-medium leading-tight whitespace-normal sm:min-h-11 sm:whitespace-nowrap",
-      /* Keep fill/text stable on hover/focus-visible; emphasis = ring + shadow only */
-      "data-[hovered=true]:opacity-100 data-[pressed=true]:opacity-100",
-      "data-[hovered=true]:shadow-md data-[hovered=true]:ring-2 data-[hovered=true]:ring-primary/25",
-      "focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+      heroUIButtonShellClasses(heroVariant),
       (disabled || loading) && "pointer-events-none opacity-60",
       className
     );

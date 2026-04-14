@@ -10,6 +10,7 @@ import { useSidebar } from "@/components/layout/SidebarContext";
 import { useCommandPalette } from "@/components/ui/command-palette";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ThemeMenu } from "@/components/theme/ThemeMenu";
 import { APP_NAME } from "@/config/constants";
 import { SUBSCRIPTION_PLANS, type SubscriptionPlanKey } from "@/lib/subscription-plans";
 import { cn } from "@/lib/utils";
@@ -105,18 +106,44 @@ export function Navbar() {
               ⌘K
             </kbd>
           </Button>
-          
+
+          <ThemeMenu layout="icon" className="hidden sm:inline-flex" />
+
           {/* Quick Add Invoice – фиксиран кръгъл бутон 40×40, без разтягане */}
           {!isSessionLoading && !isLoadingUsage && canCreateInvoice && (
             <Link
               href="/invoices/new"
               title="Нова фактура"
               aria-label="Нова фактура"
-              className="flex h-10 w-10 min-h-10 min-w-10 max-h-10 max-w-10 shrink-0 items-center justify-center rounded-full gradient-primary text-white shadow-md transition-shadow hover:shadow-lg hover:ring-2 hover:ring-emerald-400/25 focus-visible:outline focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex h-10 w-10 min-h-10 min-w-10 max-h-10 max-w-10 shrink-0 items-center justify-center rounded-full border border-white/25 gradient-primary text-white shadow-md transition-[box-shadow,border-color] hover:border-white/40 hover:shadow-lg hover:ring-2 hover:ring-emerald-400/25 focus-visible:outline focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
             </Link>
           )}
+
+          {!isSessionLoading && session?.user ? (
+            <Link
+              href="/settings/profile"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border/70 bg-background/90 sm:hidden"
+              aria-label={
+                session.user.name
+                  ? `Профил: ${session.user.name}`
+                  : session.user.email
+                    ? `Профил: ${session.user.email}`
+                    : "Профил"
+              }
+            >
+              <Avatar
+                size="sm"
+                className="h-8 w-8 border border-border/50 bg-muted text-[10px] font-semibold"
+              >
+                <Avatar.Image src={session.user.image ?? undefined} alt="" />
+                <Avatar.Fallback className="bg-muted text-foreground">
+                  {userDisplayInitials(session.user.name, session.user.email)}
+                </Avatar.Fallback>
+              </Avatar>
+            </Link>
+          ) : null}
 
           {isSessionLoading ? (
             <Skeleton className="hidden h-9 w-9 shrink-0 rounded-full sm:block" aria-hidden />

@@ -8,6 +8,10 @@ This project now includes custom Cursor subagents and skills.
 - `stripe-billing-webhooks`
 - `invoice-app-verifier`
 
+## Rules
+
+- `heroui-components` — предпочитай `@heroui/react` за UI; виж `.cursor/rules/heroui-components.mdc`.
+
 ## Skills
 
 - `invoice-lifecycle`
