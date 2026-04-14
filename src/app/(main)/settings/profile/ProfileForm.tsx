@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -17,6 +16,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/lib/toast";
+import { useAsyncLock } from "@/hooks/use-async-lock";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Името трябва да е поне 2 символа"),
@@ -32,7 +32,7 @@ interface ProfileFormProps {
 
 export function ProfileForm({ defaultValues }: ProfileFormProps) {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const submitLock = useAsyncLock();
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -40,34 +40,32 @@ export function ProfileForm({ defaultValues }: ProfileFormProps) {
   });
 
   async function onSubmit(data: ProfileFormValues) {
-    setIsLoading(true);
-    
-    try {
-      const response = await fetch("/api/user/profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name: data.name, phone: data.phone ?? "" }),
-      });
+    await submitLock.run(async () => {
+      try {
+        const response = await fetch("/api/user/profile", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ name: data.name, phone: data.phone ?? "" }),
+        });
 
-      if (!response.ok) {
-        throw new Error("Failed to update profile");
+        if (!response.ok) {
+          throw new Error("Failed to update profile");
+        }
+
+        toast.success("Профилът е обновен", {
+          description: "Вашата профилна информация беше успешно обновена.",
+        });
+
+        router.refresh();
+      } catch (error) {
+        console.error("Error updating profile:", error);
+        toast.error("Грешка", {
+          description: "Възникна грешка при обновяване на профила. Моля, опитайте отново.",
+        });
       }
-      
-      toast.success("Профилът е обновен", {
-        description: "Вашата профилна информация беше успешно обновена."
-      });
-      
-      router.refresh();
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      toast.error("Грешка", {
-        description: "Възникна грешка при обновяване на профила. Моля, опитайте отново."
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    });
   }
 
   return (
@@ -131,8 +129,8 @@ export function ProfileForm({ defaultValues }: ProfileFormProps) {
         />
         
         <div className="flex justify-end">
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Запазване..." : "Запази промените"}
+          <Button type="submit" disabled={submitLock.isPending} loading={submitLock.isPending}>
+            {submitLock.isPending ? "Запазване..." : "Запази промените"}
           </Button>
         </div>
       </form>

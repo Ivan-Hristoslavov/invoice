@@ -30,6 +30,7 @@ import {
 import { validateBulgarianPartyInput } from "@/lib/bulgarian-party";
 import { applyApiValidationDetails } from "@/lib/form-errors";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
+import { useAsyncLock } from "@/hooks/use-async-lock";
 import { ViesLookupPanel } from "@/components/parties/ViesLookupPanel";
 
 const companyInfoSchema = z.object({
@@ -90,9 +91,6 @@ interface CompanyFormProps {
 }
 
 export function CompanyForm({ defaultValues, isBankInfo = false, isNewCompany = false }: CompanyFormProps) {
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-
   // We need to create conditionally different form JSX based on the type
   if (isBankInfo) {
     return <BankInfoForm 
@@ -114,7 +112,7 @@ interface CompanyInfoFormProps {
 
 function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFormProps) {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const submitLock = useAsyncLock();
   const { plan, canUseFeature } = useSubscriptionLimit();
   const canUseVies = canUseFeature("eikSearch");
 
@@ -181,48 +179,47 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
   }, [form, lookupCompany]);
 
   async function onSubmit(data: CompanyInfoValues) {
-    setIsLoading(true);
-    
-    try {
-      const endpoint = isNewCompany ? "/api/companies" : `/api/companies/${data.id}`;
-      const method = isNewCompany ? "POST" : "PUT";
-      
-      const response = await fetch(endpoint, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
+    await submitLock.run(async () => {
+      try {
+        const endpoint = isNewCompany ? "/api/companies" : `/api/companies/${data.id}`;
+        const method = isNewCompany ? "POST" : "PUT";
 
-      if (!response.ok) {
-        const errorPayload = (await response.json().catch(() => null)) as {
-          error?: string;
-          details?: Array<{ path?: string[]; message?: string }>;
-        } | null;
-        applyApiValidationDetails(form, errorPayload?.details);
-        throw new Error(
-          errorPayload?.error || `Неуспешно ${isNewCompany ? "създаване" : "обновяване"} на информацията за компанията`
-        );
+        const response = await fetch(endpoint, {
+          method,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+          const errorPayload = (await response.json().catch(() => null)) as {
+            error?: string;
+            details?: Array<{ path?: string[]; message?: string }>;
+          } | null;
+          applyApiValidationDetails(form, errorPayload?.details);
+          throw new Error(
+            errorPayload?.error ||
+              `Неуспешно ${isNewCompany ? "създаване" : "обновяване"} на информацията за компанията`
+          );
+        }
+
+        toast.success(`Компанията ${isNewCompany ? "създадена" : "обновена"}`, {
+          description: `Информацията за вашата компания беше успешно ${isNewCompany ? "създадена" : "обновена"}.`,
+        });
+
+        router.refresh();
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : `Възникна грешка при ${isNewCompany ? "създаване" : "обновяване"} на вашата компания. Моля, опитайте отново.`;
+        console.warn(`Грешка при ${isNewCompany ? "създаване" : "обновяване"} на компанията:`, errorMessage);
+        toast.error("Грешка", {
+          description: errorMessage,
+        });
       }
-      
-      toast.success(`Компанията ${isNewCompany ? "създадена" : "обновена"}`, {
-        description: `Информацията за вашата компания беше успешно ${isNewCompany ? "създадена" : "обновена"}.`
-      });
-      
-      router.refresh();
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : `Възникна грешка при ${isNewCompany ? "създаване" : "обновяване"} на вашата компания. Моля, опитайте отново.`;
-      console.warn(`Грешка при ${isNewCompany ? "създаване" : "обновяване"} на компанията:`, errorMessage);
-      toast.error("Грешка", {
-        description: errorMessage,
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    });
   }
 
   const bulstatValue = form.watch("bulstatNumber");
@@ -612,8 +609,8 @@ function CompanyInfoForm({ defaultValues, isNewCompany = false }: CompanyInfoFor
         </div>
         
         <div className="flex justify-end mt-8">
-          <Button type="submit" className="gradient-primary border-0 hover:shadow-md hover:ring-2 hover:ring-emerald-400/25" disabled={isLoading}>
-            {isLoading ? "Запазване..." : isNewCompany ? "Създаване на компания" : "Запазване на промените"}
+          <Button type="submit" className="gradient-primary border-0 hover:shadow-md hover:ring-2 hover:ring-emerald-400/25" disabled={submitLock.isPending} loading={submitLock.isPending}>
+            {submitLock.isPending ? "Запазване..." : isNewCompany ? "Създаване на компания" : "Запазване на промените"}
           </Button>
         </div>
       </form>
@@ -628,7 +625,7 @@ interface BankInfoFormProps {
 
 function BankInfoForm({ defaultValues, isNewCompany = false }: BankInfoFormProps) {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const submitLock = useAsyncLock();
 
   const form = useForm<BankInfoValues>({
     resolver: zodResolver(bankInfoSchema),
@@ -636,36 +633,35 @@ function BankInfoForm({ defaultValues, isNewCompany = false }: BankInfoFormProps
   });
 
   async function onSubmit(data: BankInfoValues) {
-    setIsLoading(true);
-    
-    try {
-      const endpoint = `/api/companies/${data.id}`;
-      
-      const response = await fetch(endpoint, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ...data, bankAccount: null }),
-      });
+    await submitLock.run(async () => {
+      try {
+        const endpoint = `/api/companies/${data.id}`;
 
-      if (!response.ok) {
-        throw new Error("Неуспешно обновяване на банковата информация");
+        const response = await fetch(endpoint, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ ...data, bankAccount: null }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Неуспешно обновяване на банковата информация");
+        }
+
+        toast.success("Банковата информация е обновена", {
+          description: "Банковите ви детайли бяха успешно обновени.",
+        });
+
+        router.refresh();
+      } catch (error) {
+        console.error("Грешка при обновяване на банковата информация:", error);
+        toast.error("Грешка", {
+          description:
+            "Възникна грешка при обновяване на банковата информация. Моля, опитайте отново.",
+        });
       }
-
-      toast.success("Банковата информация е обновена", {
-        description: "Банковите ви детайли бяха успешно обновени."
-      });
-      
-      router.refresh();
-    } catch (error) {
-      console.error("Грешка при обновяване на банковата информация:", error);
-      toast.error("Грешка", {
-        description: "Възникна грешка при обновяване на банковата информация. Моля, опитайте отново."
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    });
   }
 
   return (
@@ -718,8 +714,8 @@ function BankInfoForm({ defaultValues, isNewCompany = false }: BankInfoFormProps
         />
         
         <div className="flex justify-end">
-          <Button type="submit" className="gradient-primary border-0 hover:shadow-md hover:ring-2 hover:ring-emerald-400/25" disabled={isLoading}>
-            {isLoading ? "Запазване..." : "Запазване на банковата информация"}
+          <Button type="submit" className="gradient-primary border-0 hover:shadow-md hover:ring-2 hover:ring-emerald-400/25" disabled={submitLock.isPending} loading={submitLock.isPending}>
+            {submitLock.isPending ? "Запазване..." : "Запазване на банковата информация"}
           </Button>
         </div>
       </form>

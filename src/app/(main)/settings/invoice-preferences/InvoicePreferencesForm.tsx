@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { InvoicePreferencesPayload } from "@/lib/invoice-preferences-load";
 import { z } from "zod";
@@ -25,6 +24,7 @@ import { Separator } from "@/components/ui/separator";
 import { Info } from "lucide-react";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
+import { useAsyncLock } from "@/hooks/use-async-lock";
 import { DEFAULT_VAT_RATE } from "@/config/constants";
 import { formatTenDigitSequenceDisplay } from "@/lib/bulgarian-invoice";
 
@@ -87,7 +87,7 @@ export function InvoicePreferencesForm({
   initialPreferences: InvoicePreferencesPayload;
 }) {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const submitLock = useAsyncLock();
 
   const form = useForm<PreferencesFormValues, unknown, PreferencesFormValues>({
     resolver: zodResolver(preferencesSchema) as any,
@@ -100,44 +100,42 @@ export function InvoicePreferencesForm({
   });
 
   async function onSubmit(data: PreferencesFormValues) {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/settings/invoice-preferences", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...data,
-          startingInvoiceNumber:
-            data.startingInvoiceNumber === undefined ||
-            data.startingInvoiceNumber === null ||
-            Number.isNaN(data.startingInvoiceNumber)
-              ? null
-              : data.startingInvoiceNumber,
-        }),
-      });
+    await submitLock.run(async () => {
+      try {
+        const response = await fetch("/api/settings/invoice-preferences", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...data,
+            startingInvoiceNumber:
+              data.startingInvoiceNumber === undefined ||
+              data.startingInvoiceNumber === null ||
+              Number.isNaN(data.startingInvoiceNumber)
+                ? null
+                : data.startingInvoiceNumber,
+          }),
+        });
 
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-      if (!response.ok) {
-        throw new Error(payload?.error || "Неуспешно запазване");
+        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+        if (!response.ok) {
+          throw new Error(payload?.error || "Неуспешно запазване");
+        }
+
+        toast.success("Настройките са запазени", {
+          description: "Промените са записани в базата данни.",
+        });
+
+        router.refresh();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Моля, опитайте отново.";
+        console.error("Error saving preferences:", error);
+        toast.error("Грешка при запазване", {
+          description: message,
+        });
       }
-
-      toast.success("Настройките са запазени", {
-        description: "Промените са записани в базата данни.",
-      });
-
-      router.refresh();
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Моля, опитайте отново.";
-      console.error("Error saving preferences:", error);
-      toast.error("Грешка при запазване", {
-        description: message,
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    });
   }
 
   return (
@@ -477,8 +475,8 @@ export function InvoicePreferencesForm({
         <div className="flex justify-center border-t border-border/50 pt-2 sm:justify-end">
           <Button
             type="submit"
-            loading={isLoading}
-            disabled={isLoading}
+            loading={submitLock.isPending}
+            disabled={submitLock.isPending}
             className="min-w-[200px] rounded-2xl border-0 gradient-primary"
           >
             Запази настройките

@@ -10,6 +10,7 @@ import {
   PlusCircle,
   Zap,
   Settings,
+  ClipboardList,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
@@ -69,6 +70,7 @@ export function DashboardQuickActions({
     },
     { href: "/credit-notes/new", icon: MinusCircle, title: "Ново кредитно известие", desc: "Създайте кредитно известие", gradient: "from-red-500 to-rose-600", show: canCreditNotes },
     { href: "/debit-notes/new", icon: PlusCircle, title: "Ново дебитно известие", desc: "Създайте дебитно известие", gradient: "from-cyan-500 to-blue-600", show: canCreditNotes },
+    { href: "/vat-protocols-117/new", icon: ClipboardList, title: "Протокол чл. 117", desc: "Самоначисляване на ДДС", gradient: "from-teal-500 to-cyan-600", show: canCreditNotes },
     { href: "/clients/new", icon: Users, title: "Нов клиент", desc: "Добавете клиент", gradient: "from-amber-500 to-orange-600", show: canCreateClient },
     { href: "/companies/new", icon: Building, title: "Нова компания", desc: "Добавете фирма", gradient: "from-emerald-500 to-teal-600", show: canCreateCompany },
     { href: "/products/new", icon: FileText, title: "Нов продукт", desc: "Добавете услуга", gradient: "from-slate-500 to-slate-600", show: canCreateProduct },

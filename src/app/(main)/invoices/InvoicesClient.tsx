@@ -68,6 +68,7 @@ import { VoidInvoiceModal } from "@/components/invoice/VoidInvoiceModal";
 import { CancelInvoiceModal } from "@/components/invoice/CancelInvoiceModal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
+import { useAsyncLock } from "@/hooks/use-async-lock";
 import { ProFeatureLock, UsageCounter, LockedButton, LimitBanner } from "@/components/ui/pro-feature-lock";
 import {
   Table,
@@ -140,7 +141,8 @@ export default function InvoicesClient({
   } = useSubscriptionLimit();
   
   const invoiceUsage = getInvoiceUsage();
-  
+  const duplicateLock = useAsyncLock();
+
   // Modal state for status change
   const [statusModal, setStatusModal] = useState<{
     isOpen: boolean;
@@ -259,20 +261,22 @@ export default function InvoicesClient({
 
   // Handle duplicate invoice
   const handleDuplicate = async (invoiceId: string) => {
-    try {
-      const response = await fetch(`/api/invoices/${invoiceId}/duplicate`, { method: "POST" });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Грешка при дублиране");
+    await duplicateLock.run(async () => {
+      try {
+        const response = await fetch(`/api/invoices/${invoiceId}/duplicate`, { method: "POST" });
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Грешка при дублиране");
+        }
+        const data = await response.json();
+        toast.success("Фактурата е дублирана", {
+          description: `Нова чернова ${data.invoiceNumber} е създадена`,
+        });
+        router.push(`/invoices/${data.id}`);
+      } catch (error: any) {
+        toast.error(error.message || "Грешка при дублиране на фактурата");
       }
-      const data = await response.json();
-      toast.success("Фактурата е дублирана", {
-        description: `Нова чернова ${data.invoiceNumber} е създадена`,
-      });
-      router.push(`/invoices/${data.id}`);
-    } catch (error: any) {
-      toast.error(error.message || "Грешка при дублиране на фактурата");
-    }
+    });
   };
 
   // Open cancel modal
@@ -965,7 +969,9 @@ export default function InvoicesClient({
                               size="sm"
                               variant="ghost"
                               className="min-h-0! h-7 min-w-0 flex-1 justify-center rounded-lg bg-violet-500/12 px-1 py-1 text-violet-800 hover:bg-violet-500/20 dark:text-violet-200"
-                              onClick={() => handleDuplicate(invoice.id)}
+                              onClick={() => void handleDuplicate(invoice.id)}
+                              disabled={duplicateLock.isPending}
+                              loading={duplicateLock.isPending}
                               title="Дублирай"
                             >
                               <Copy className="h-3.5 w-3.5" />
@@ -1061,7 +1067,10 @@ export default function InvoicesClient({
                                   </Link>
                                 </DropdownMenuItem>
                               )}
-                            <DropdownMenuItem onClick={() => handleDuplicate(invoice.id)}>
+                            <DropdownMenuItem
+                              isDisabled={duplicateLock.isPending}
+                              onClick={() => void handleDuplicate(invoice.id)}
+                            >
                               <DropdownMenuItemIcon>
                                 <Copy />
                               </DropdownMenuItemIcon>
@@ -1285,7 +1294,13 @@ export default function InvoicesClient({
                                           <DropdownMenuItemText>Преглед</DropdownMenuItemText>
                                         </Link>
                                       </DropdownMenuItem>
-                                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDuplicate(invoice.id); }}>
+                                      <DropdownMenuItem
+                                        isDisabled={duplicateLock.isPending}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          void handleDuplicate(invoice.id);
+                                        }}
+                                      >
                                         <DropdownMenuItemIcon>
                                           <Copy />
                                         </DropdownMenuItemIcon>

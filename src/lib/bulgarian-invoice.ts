@@ -33,7 +33,7 @@ interface BulgarianInvoiceNumberComponents {
 export function generateBulgarianInvoiceNumber(
   sequenceNumber: number,
   companyEik?: string,
-  type: 'invoice' | 'credit-note' | 'debit-note' = 'invoice'
+  type: 'invoice' | 'credit-note' | 'debit-note' | 'vat-protocol-117' = 'invoice'
 ): string {
   const year = format(new Date(), 'yy'); // Get last 2 digits of current year
   

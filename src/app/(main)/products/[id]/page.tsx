@@ -56,6 +56,7 @@ import { Badge } from "@/components/ui/badge";
 import { ContentLoader } from "@/components/ui/loading-spinner";
 import { cn } from "@/lib/utils";
 import { applyApiValidationDetails } from "@/lib/form-errors";
+import { useAsyncLock } from "@/hooks/use-async-lock";
 import { FIELD_LIMITS } from "@/lib/validations/field-limits";
 
 const PRODUCT_UNITS = [
@@ -113,8 +114,8 @@ interface Product {
 export default function ProductPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
-  const [isLoading, setIsLoading] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const submitLock = useAsyncLock();
+  const deleteLock = useAsyncLock();
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoadingProduct, setIsLoadingProduct] = useState(true);
 
@@ -177,85 +178,81 @@ export default function ProductPage() {
   }, [params.id, form, router]);
 
   async function onSubmit(data: ProductFormValues) {
-    setIsLoading(true);
+    await submitLock.run(async () => {
+      try {
+        const response = await fetch(`/api/products/${params.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: data.name,
+            description: data.description || "",
+            price: parseFloat(data.price),
+            unit: data.unit,
+            taxRate: data.taxRate ? parseFloat(data.taxRate) : 20,
+          }),
+        });
 
-    try {
-      const response = await fetch(`/api/products/${params.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: data.name,
-          description: data.description || "",
-          price: parseFloat(data.price),
-          unit: data.unit,
-          taxRate: data.taxRate ? parseFloat(data.taxRate) : 20,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorPayload = (await response.json().catch(() => null)) as {
-          error?: string;
-          details?: Array<{ path?: string[]; message: string }>;
-        } | null;
-        const details = errorPayload?.details;
-        if (details?.length) {
-          applyApiValidationDetails(form, details);
+        if (!response.ok) {
+          const errorPayload = (await response.json().catch(() => null)) as {
+            error?: string;
+            details?: Array<{ path?: string[]; message: string }>;
+          } | null;
+          const details = errorPayload?.details;
+          if (details?.length) {
+            applyApiValidationDetails(form, details);
+          }
+          throw new Error(errorPayload?.error || "Неуспешно обновяване на продукт");
         }
-        throw new Error(errorPayload?.error || "Неуспешно обновяване на продукт");
+
+        toast.success("Продуктът е обновен", {
+          description: "Промените са запазени успешно.",
+        });
+
+        const updatedProduct = await response.json();
+        setProduct(updatedProduct);
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Възникна грешка при обновяване на продукта. Моля, опитайте отново.";
+        console.warn("Грешка при обновяване на продукт:", errorMessage);
+        toast.error("Грешка", {
+          description: errorMessage,
+        });
       }
-
-      toast.success("Продуктът е обновен", {
-        description: "Промените са запазени успешно.",
-      });
-
-      const updatedProduct = await response.json();
-      setProduct(updatedProduct);
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Възникна грешка при обновяване на продукта. Моля, опитайте отново.";
-      console.warn("Грешка при обновяване на продукт:", errorMessage);
-      toast.error("Грешка", {
-        description: errorMessage,
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    });
   }
 
   async function handleDelete() {
-    setIsDeleting(true);
+    await deleteLock.run(async () => {
+      try {
+        const response = await fetch(`/api/products/${params.id}`, {
+          method: "DELETE",
+        });
 
-    try {
-      const response = await fetch(`/api/products/${params.id}`, {
-        method: "DELETE",
-      });
+        if (!response.ok) {
+          const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
+          throw new Error(errorPayload?.error || "Неуспешно изтриване на продукт");
+        }
 
-      if (!response.ok) {
-        const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(errorPayload?.error || "Неуспешно изтриване на продукт");
+        toast.success("Продуктът е изтрит", {
+          description: "Продуктът беше премахнат от каталога.",
+        });
+
+        router.push("/products");
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Възникна грешка при изтриване на продукта. Моля, опитайте отново.";
+        console.warn("Грешка при изтриване на продукт:", errorMessage);
+        toast.error("Грешка", {
+          description: errorMessage,
+        });
       }
-
-      toast.success("Продуктът е изтрит", {
-        description: "Продуктът беше премахнат от каталога.",
-      });
-
-      router.push("/products");
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Възникна грешка при изтриване на продукта. Моля, опитайте отново.";
-      console.warn("Грешка при изтриване на продукт:", errorMessage);
-      toast.error("Грешка", {
-        description: errorMessage,
-      });
-    } finally {
-      setIsDeleting(false);
-    }
+    });
   }
 
   if (!isLoadingProduct && !product) {
@@ -547,10 +544,10 @@ export default function ProductPage() {
                     type="button"
                     variant="outline"
                     className="whitespace-nowrap border-destructive/35 text-destructive hover:bg-destructive/10"
-                    disabled={isDeleting}
+                    disabled={deleteLock.isPending}
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
-                    {isDeleting ? "Изтриване..." : "Изтрий продукта"}
+                    {deleteLock.isPending ? "Изтриване..." : "Изтрий продукта"}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
@@ -563,10 +560,14 @@ export default function ProductPage() {
                   <AlertDialogFooter>
                     <AlertDialogCancel>Отказ</AlertDialogCancel>
                     <AlertDialogAction
-                      onClick={handleDelete}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        void handleDelete();
+                      }}
+                      disabled={deleteLock.isPending}
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
-                      Изтрий
+                      {deleteLock.isPending ? "Изтриване..." : "Изтрий"}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -575,12 +576,12 @@ export default function ProductPage() {
             <Button
               type="submit"
               form="product-edit-form"
-              loading={isLoading}
-              disabled={isLoading}
+              loading={submitLock.isPending}
+              disabled={submitLock.isPending}
               className="min-w-[180px] shrink-0 gradient-primary border-0 sm:ml-auto"
             >
-              {!isLoading && <Save className="h-4 w-4" aria-hidden />}
-              {isLoading ? "Запазване..." : "Запази промените"}
+              {!submitLock.isPending && <Save className="h-4 w-4" aria-hidden />}
+              {submitLock.isPending ? "Запазване..." : "Запази промените"}
             </Button>
           </div>
         </form>

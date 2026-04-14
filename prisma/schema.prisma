@@ -31,6 +31,7 @@ model User {
   companies                         Company[]
   creditNotes                       CreditNote[]
   debitNotes                        DebitNote[]
+  vatProtocol117s                   VatProtocol117[]
   documents                         Document[]
   Invoice_Invoice_createdByIdToUser Invoice[]         @relation("Invoice_createdByIdToUser")
   invoices                          Invoice[]
@@ -121,6 +122,7 @@ model Company {
   user                    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   creditNotes             CreditNote[]
   debitNotes              DebitNote[]
+  vatProtocol117s         VatProtocol117[]
   invoices                Invoice[]
   invoiceSequences        InvoiceSequence[]
   teamInvites             TeamInvite[]
@@ -163,6 +165,7 @@ model Client {
   user                          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   creditNotes                   CreditNote[]
   debitNotes                    DebitNote[]
+  vatProtocol117s               VatProtocol117[]
   invoices                      Invoice[]
 
   @@index([userId, name])
@@ -389,6 +392,59 @@ model DebitNoteItem {
   debitNote   DebitNote @relation(fields: [debitNoteId], references: [id], onDelete: Cascade)
 
   @@index([debitNoteId])
+}
+
+/// Протокол по чл. 117 от ЗДДС — документ от страна получател при изискуем от него ДДС (напр. ВОП, услуги от ЕС)
+model VatProtocol117 {
+  id                    String               @id @default(cuid())
+  protocolNumber        String               @unique
+  companyId             String
+  clientId              String
+  userId                String
+  issueDate             DateTime
+  taxEventDate          DateTime
+  /// INTRA_COMMUNITY_GOODS | INTRA_COMMUNITY_SERVICES | REVERSE_CHARGE_DOMESTIC | OTHER
+  scenario              String
+  supplierInvoiceNumber String?
+  supplierInvoiceDate   DateTime?
+  placeOfIssue          String?
+  legalBasisNote        String?
+  subtotal              Decimal              @db.Decimal(10, 2)
+  taxAmount             Decimal              @db.Decimal(10, 2)
+  total                 Decimal              @db.Decimal(10, 2)
+  currency              String               @default("EUR")
+  notes                 String?
+  sellerSnapshot        Json?
+  buyerSnapshot         Json?
+  itemsSnapshot         Json?
+  /// Резерв за бъдеща интеграция с е-фактуриране / НАП
+  uniqueNapId           String?
+  napStatus             String?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  client                Client               @relation(fields: [clientId], references: [id])
+  company               Company              @relation(fields: [companyId], references: [id])
+  user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items                 VatProtocol117Item[]
+
+  @@unique([protocolNumber, companyId])
+  @@index([userId, issueDate(sort: Desc)])
+}
+
+model VatProtocol117Item {
+  id               String         @id @default(cuid())
+  vatProtocol117Id String
+  description      String
+  quantity         Decimal        @db.Decimal(10, 2)
+  unitPrice        Decimal        @db.Decimal(10, 2)
+  taxRate          Decimal        @default(0) @db.Decimal(5, 2)
+  subtotal         Decimal        @db.Decimal(10, 2)
+  taxAmount        Decimal        @db.Decimal(10, 2)
+  total            Decimal        @db.Decimal(10, 2)
+  unit             String?        @default("бр.")
+  vatProtocol117   VatProtocol117 @relation(fields: [vatProtocol117Id], references: [id], onDelete: Cascade)
+
+  @@index([vatProtocol117Id])
 }
 
 model AuditLog {

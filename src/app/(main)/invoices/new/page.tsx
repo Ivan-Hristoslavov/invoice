@@ -54,6 +54,7 @@ import { toast } from "@/lib/toast";
 import { DEFAULT_VAT_RATE } from "@/config/constants";
 import { grossToNetAmount, netToGrossAmount, roundMoney2 } from "@/lib/money-vat";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
+import { useAsyncLock } from "@/hooks/use-async-lock";
 import { UsageCounter, LimitBanner } from "@/components/ui/pro-feature-lock";
 import { FormDatePicker } from "@/components/ui/date-picker";
 import { InvoiceWorkspaceSetup } from "@/components/invoice/InvoiceWorkspaceSetup";
@@ -556,7 +557,8 @@ function NewInvoiceContent() {
   
   // State
   const [currentStep, setCurrentStep] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+  const submitLock = useAsyncLock();
+  const quickProductLock = useAsyncLock();
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
   const [isLoadingClients, setIsLoadingClients] = useState(true);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
@@ -863,31 +865,33 @@ function NewInvoiceContent() {
       action: {
         label: "Добави",
         onClick: async () => {
-          try {
-            const res = await fetch("/api/products", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                name: item.description.trim(),
-                price: Number(item.unitPrice),
-                unit: "бр.",
-                taxRate: Number(item.taxRate) || 20,
-              }),
-            });
-            if (!res.ok) {
-              const err = await res.json();
-              toast.error(err.error || "Неуспешно създаване на продукт");
-              return;
+          await quickProductLock.run(async () => {
+            try {
+              const res = await fetch("/api/products", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  name: item.description.trim(),
+                  price: Number(item.unitPrice),
+                  unit: "бр.",
+                  taxRate: Number(item.taxRate) || 20,
+                }),
+              });
+              if (!res.ok) {
+                const err = await res.json();
+                toast.error(err.error || "Неуспешно създаване на продукт");
+                return;
+              }
+              const product = await res.json();
+              if (editingItemId != null && product?.id) {
+                updateItem(editingItemId, "productId", product.id);
+              }
+              setProducts((prev) => [...prev, product]);
+              toast.success("Продуктът е добавен в каталога");
+            } catch (e: any) {
+              toast.error(e.message || "Грешка при създаване на продукт");
             }
-            const product = await res.json();
-            if (editingItemId != null && product?.id) {
-              updateItem(editingItemId, "productId", product.id);
-            }
-            setProducts((prev) => [...prev, product]);
-            toast.success("Продуктът е добавен в каталога");
-          } catch (e: any) {
-            toast.error(e.message || "Грешка при създаване на продукт");
-          }
+          });
         },
       },
       cancel: { label: "Пропусни" },
@@ -956,112 +960,110 @@ function NewInvoiceContent() {
   }, [currentStep, invoiceData.companyId, steps.length, validateClientStep, canProceedFromProductsStep]);
 
   const handleSubmit = async () => {
-    setIsLoading(true);
-    
-    try {
-      if (!validateClientStep()) {
-        setCurrentStep(0);
-        return;
-      }
+    await submitLock.run(async () => {
+      try {
+        if (!validateClientStep()) {
+          setCurrentStep(0);
+          return;
+        }
 
-      const ensuredClient = selectedClient;
-      if (!ensuredClient) {
-        setCurrentStep(0);
-        return;
-      }
-      
-      if (!invoiceData.companyId) {
-        toast.error("Моля, изберете фирма");
-        setCurrentStep(1);
-        return;
-      }
-      
-      const validItems = items.filter(
-        (item) => item.description.trim() && Number(item.unitPrice) > 0
-      );
-      if (validItems.length === 0) {
-        const hasItemsWithoutPrice = items.some(
-          (i) => i.description.trim() && Number(i.unitPrice) <= 0
-        );
-        toast.error(
-          hasItemsWithoutPrice
-            ? "Всеки артикул трябва да има име и положителна цена."
-            : "Добавете поне един артикул с име и цена."
-        );
-        setCurrentStep(2);
-        return;
-      }
-      if (validItems.length < items.length) {
-        toast.error("Всеки артикул трябва да има име и положителна цена. Премахнете или попълнете редовете без цена.");
-        setCurrentStep(2);
-        return;
-      }
+        const ensuredClient = selectedClient;
+        if (!ensuredClient) {
+          setCurrentStep(0);
+          return;
+        }
 
-      const response = await fetch("/api/invoices", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          clientId: ensuredClient.id,
-          companyId: invoiceData.companyId,
-          issueDate: invoiceData.issueDate,
-          dueDate: invoiceData.dueDate,
-          supplyDate: invoiceData.supplyDate,
-          currency: invoiceData.currency,
-          placeOfIssue: invoiceData.placeOfIssue,
-          paymentMethod: invoiceData.paymentMethod,
-          isEInvoice: invoiceData.isEInvoice,
-          isOriginal: invoiceData.isOriginal,
-          goodsRecipient: {
-            name: goodsRecipient.name.trim(),
-            phone: goodsRecipient.phone.trim(),
-            mol: goodsRecipient.mol.trim(),
-          },
-          items: validItems.map(item => ({
-            description: item.description,
-            quantity: Number(item.quantity),
-            price: Number(item.unitPrice), // API expects 'price', not 'unitPrice'
-            taxRate: Number(item.taxRate)
-          }))
-        }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        // Handle both formats: { error: "message" } and { error: { message: "message" } }
-        const errorMessage = typeof errorData.error === 'string' 
-          ? errorData.error 
-          : errorData.error?.message || "Грешка при създаване";
-        throw new Error(errorMessage);
-      }
-      
-      const payload = await response.json();
-      // POST /api/invoices returns formatApiResponse(invoice) → { success, data }
-      const createdInvoice = (payload?.data ?? payload) as { id?: string };
-      const newInvoiceId = createdInvoice?.id;
-      if (!newInvoiceId) {
-        console.error("Create invoice: missing id in response", payload);
-        toast.error("Фактурата е създадена, но не можем да я отворим. Вижте списъка с фактури.");
+        if (!invoiceData.companyId) {
+          toast.error("Моля, изберете фирма");
+          setCurrentStep(1);
+          return;
+        }
+
+        const validItems = items.filter(
+          (item) => item.description.trim() && Number(item.unitPrice) > 0
+        );
+        if (validItems.length === 0) {
+          const hasItemsWithoutPrice = items.some(
+            (i) => i.description.trim() && Number(i.unitPrice) <= 0
+          );
+          toast.error(
+            hasItemsWithoutPrice
+              ? "Всеки артикул трябва да има име и положителна цена."
+              : "Добавете поне един артикул с име и цена."
+          );
+          setCurrentStep(2);
+          return;
+        }
+        if (validItems.length < items.length) {
+          toast.error(
+            "Всеки артикул трябва да има име и положителна цена. Премахнете или попълнете редовете без цена."
+          );
+          setCurrentStep(2);
+          return;
+        }
+
+        const response = await fetch("/api/invoices", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            clientId: ensuredClient.id,
+            companyId: invoiceData.companyId,
+            issueDate: invoiceData.issueDate,
+            dueDate: invoiceData.dueDate,
+            supplyDate: invoiceData.supplyDate,
+            currency: invoiceData.currency,
+            placeOfIssue: invoiceData.placeOfIssue,
+            paymentMethod: invoiceData.paymentMethod,
+            isEInvoice: invoiceData.isEInvoice,
+            isOriginal: invoiceData.isOriginal,
+            goodsRecipient: {
+              name: goodsRecipient.name.trim(),
+              phone: goodsRecipient.phone.trim(),
+              mol: goodsRecipient.mol.trim(),
+            },
+            items: validItems.map((item) => ({
+              description: item.description,
+              quantity: Number(item.quantity),
+              price: Number(item.unitPrice),
+              taxRate: Number(item.taxRate),
+            })),
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          const errorMessage =
+            typeof errorData.error === "string"
+              ? errorData.error
+              : errorData.error?.message || "Грешка при създаване";
+          throw new Error(errorMessage);
+        }
+
+        const payload = await response.json();
+        const createdInvoice = (payload?.data ?? payload) as { id?: string };
+        const newInvoiceId = createdInvoice?.id;
+        if (!newInvoiceId) {
+          console.error("Create invoice: missing id in response", payload);
+          toast.error("Фактурата е създадена, но не можем да я отворим. Вижте списъка с фактури.");
+          refreshUsage();
+          router.push("/invoices");
+          return;
+        }
         refreshUsage();
-        router.push("/invoices");
-        return;
-      }
-      // Refresh usage data after successful creation
-      refreshUsage();
 
-      const invoiceUrl = `/invoices/${newInvoiceId}`;
-      toast.success("Фактурата е създадена успешно!");
-      router.push(invoiceUrl);
-    } catch (error: any) {
-      console.error("Error creating invoice:", error);
-      toast.error(error.message || "Грешка при създаване на фактура", {
-        duration: 5000,
-description: error.message?.includes("план")
-          ? "С план Про създавате неограничено и изпращате по имейл."
-          : undefined,
-      });
-    } finally {
-      setIsLoading(false);
-    }
+        const invoiceUrl = `/invoices/${newInvoiceId}`;
+        toast.success("Фактурата е създадена успешно!");
+        router.push(invoiceUrl);
+      } catch (error: any) {
+        console.error("Error creating invoice:", error);
+        toast.error(error.message || "Грешка при създаване на фактура", {
+          duration: 5000,
+          description: error.message?.includes("план")
+            ? "С план Про създавате неограничено и изпращате по имейл."
+            : undefined,
+        });
+      }
+    });
   };
 
   const getCurrencySymbol = (currency: string) => {
@@ -2059,21 +2061,13 @@ description: error.message?.includes("план")
                   </Link>
                 ) : (
                   <Button
-                    onClick={handleSubmit}
-                    disabled={isLoading}
+                    onClick={() => void handleSubmit()}
+                    disabled={submitLock.isPending}
+                    loading={submitLock.isPending}
                     className="h-11 w-full gap-2 justify-center bg-linear-to-r from-primary to-primary/80 hover:shadow-md hover:ring-2 hover:ring-primary/30 sm:w-auto"
                   >
-                    {isLoading ? (
-                      <>
-                        <LoadingSpinner size="small" className="text-white" />
-                        Създаване...
-                      </>
-                    ) : (
-                      <>
-                        <Check className="h-4 w-4" />
-                        Създай фактура
-                      </>
-                    )}
+                    {!submitLock.isPending && <Check className="h-4 w-4" />}
+                    {submitLock.isPending ? "Създаване..." : "Създай фактура"}
                   </Button>
                 )}
               </div>

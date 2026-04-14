@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { AlertTriangle } from 'lucide-react';
+import { useAsyncLock } from '@/hooks/use-async-lock';
 
 interface CancellationSurveyProps {
   isOpen: boolean;
@@ -32,7 +33,7 @@ export function CancellationSurvey({
   const [reason, setReason] = useState<string>('');
   const [feedback, setFeedback] = useState<string>('');
   const [submitted, setSubmitted] = useState<boolean>(false);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const submitLock = useAsyncLock();
 
   const reasons = [
     { value: 'price', label: 'Цената е твърде висока' },
@@ -45,22 +46,16 @@ export function CancellationSurvey({
 
   const handleSubmitSurvey = async () => {
     if (!reason) return;
-    
-    try {
-      setIsSubmitting(true);
-      
-      // Изпращаме данните чрез onSubmit функцията
-      await onSubmit(reason, feedback);
-      
-      // Отбелязваме, че анкетата е изпратена
-      setSubmitted(true);
-    } catch (error) {
-      console.error('Error submitting survey:', error);
-      // Ако има грешка, все пак продължаваме с отказването
-      await onConfirm();
-    } finally {
-      setIsSubmitting(false);
-    }
+
+    void submitLock.run(async () => {
+      try {
+        await onSubmit(reason, feedback);
+        setSubmitted(true);
+      } catch (error) {
+        console.error('Error submitting survey:', error);
+        await onConfirm();
+      }
+    });
   };
 
   return (
@@ -127,17 +122,18 @@ export function CancellationSurvey({
               <Button
                 variant="ghost"
                 onClick={onClose}
-                disabled={isLoading}
+                disabled={isLoading || submitLock.isPending}
                 className="rounded-full border border-border/60"
               >
                 Отказ
               </Button>
               <Button
                 onClick={handleSubmitSurvey}
-                disabled={isLoading || !reason}
+                disabled={isLoading || submitLock.isPending || !reason}
+                loading={submitLock.isPending}
                 className="rounded-full bg-gradient-to-r from-rose-500 to-red-600 text-white hover:from-rose-600 hover:to-red-700 shadow-sm shadow-red-600/20"
               >
-                {isLoading ? 'Обработка...' : 'Потвърди отказване'}
+                {isLoading || submitLock.isPending ? 'Обработка...' : 'Потвърди отказване'}
               </Button>
             </DialogFooter>
           </>

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Loader2, XCircle, ArrowRight } from "lucide-react";
+import { useAsyncLock } from "@/hooks/use-async-lock";
 
 type Status = "idle" | "loading" | "success" | "signing-in" | "error";
 
@@ -20,6 +21,8 @@ export default function ConfirmEmailPage() {
     oneTimeLoginToken: string | null;
   } | null>(null);
 
+  const { run } = useAsyncLock();
+
   const confirm = useCallback(async () => {
     if (!token?.trim()) {
       setStatus("error");
@@ -27,34 +30,36 @@ export default function ConfirmEmailPage() {
       return;
     }
 
-    setStatus("loading");
-    setMessage("");
+    await run(async () => {
+      setStatus("loading");
+      setMessage("");
 
-    try {
-      const res = await fetch("/api/auth/confirm-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: token.trim() }),
-      });
-      const data = await res.json();
+      try {
+        const res = await fetch("/api/auth/confirm-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: token.trim() }),
+        });
+        const data = await res.json();
 
-      if (!res.ok) {
+        if (!res.ok) {
+          setStatus("error");
+          setMessage(data.message || "Неуспешно потвърждение.");
+          return;
+        }
+
+        setMessage(data.message || "Имейлът е потвърден.");
+        setSuccessData({
+          email: data.email ?? "",
+          oneTimeLoginToken: data.oneTimeLoginToken ?? null,
+        });
+        setStatus(data.oneTimeLoginToken ? "signing-in" : "success");
+      } catch {
         setStatus("error");
-        setMessage(data.message || "Неуспешно потвърждение.");
-        return;
+        setMessage("Възникна грешка. Моля, опитайте отново.");
       }
-
-      setMessage(data.message || "Имейлът е потвърден.");
-      setSuccessData({
-        email: data.email ?? "",
-        oneTimeLoginToken: data.oneTimeLoginToken ?? null,
-      });
-      setStatus(data.oneTimeLoginToken ? "signing-in" : "success");
-    } catch {
-      setStatus("error");
-      setMessage("Възникна грешка. Моля, опитайте отново.");
-    }
-  }, [token]);
+    });
+  }, [token, run]);
 
   useEffect(() => {
     if (token && status === "idle") {

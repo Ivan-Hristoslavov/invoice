@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useCompanyBookLookup } from "@/hooks/useCompanyBookLookup";
+import { useAsyncLock } from "@/hooks/use-async-lock";
 import { Button } from "@/components/ui/button";
 import { Input, NumericInput } from "@/components/ui/input";
 import {
@@ -227,7 +228,7 @@ function getStepForClientField(field?: string) {
 function NewClientPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isLoading, setIsLoading] = useState(false);
+  const submitLock = useAsyncLock();
   const [currentStep, setCurrentStep] = useState(0);
   const [confirmed, setConfirmed] = useState(false);
   const [clientCreationMode, setClientCreationMode] = useState<ClientCreationMode | null>(null);
@@ -418,58 +419,53 @@ function NewClientPageContent() {
   ]);
 
   async function onSubmit(data: ClientFormValues) {
-    // Guard against double submission in the same render frame
-    if (isLoading) {
-      return;
-    }
+    await submitLock.run(async () => {
+      try {
+        const response = await fetch("/api/clients", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...data,
+            entryMode: clientCreationMode || "manual",
+          }),
+        });
 
-    setIsLoading(true);
-
-    try {
-      const response = await fetch("/api/clients", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...data,
-          entryMode: clientCreationMode || "manual",
-        }),
-      });
-
-      if (!response.ok) {
-        const errorPayload = (await response.json().catch(() => null)) as {
-          error?: string;
-          details?: Array<{ path?: string[]; message?: string }>;
-        } | null;
-        const invalidFields = applyApiValidationDetails(form, errorPayload?.details);
-        if (invalidFields.length > 0) {
-          setCurrentStep(getStepForClientField(invalidFields[0] as string));
+        if (!response.ok) {
+          const errorPayload = (await response.json().catch(() => null)) as {
+            error?: string;
+            details?: Array<{ path?: string[]; message?: string }>;
+          } | null;
+          const invalidFields = applyApiValidationDetails(form, errorPayload?.details);
+          if (invalidFields.length > 0) {
+            setCurrentStep(getStepForClientField(invalidFields[0] as string));
+          }
+          throw new Error(errorPayload?.error || "Неуспешно създаване на клиент");
         }
-        throw new Error(errorPayload?.error || "Неуспешно създаване на клиент");
+
+        const created = await response.json();
+        toast.success("Клиентът е създаден", {
+          description: "Вашият клиент беше създаден успешно.",
+          action: {
+            label: "Виж клиента",
+            onClick: () => router.push(`/clients/${created.id}`),
+          },
+        });
+
+        const returnTo = searchParams.get("returnTo");
+        router.push(returnTo || `/clients/${created.id}`);
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Възникна грешка при създаване на клиента. Моля, опитайте отново.";
+        console.warn("Грешка при създаване на клиент:", errorMessage);
+        toast.error("Грешка", {
+          description: errorMessage,
+        });
       }
-
-      const created = await response.json();
-      toast.success("Клиентът е създаден", {
-        description: "Вашият клиент беше създаден успешно.",
-        action: {
-          label: "Виж клиента",
-          onClick: () => router.push(`/clients/${created.id}`),
-        },
-      });
-
-      const returnTo = searchParams.get("returnTo");
-      router.push(returnTo || `/clients/${created.id}`);
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Възникна грешка при създаване на клиента. Моля, опитайте отново.";
-      console.warn("Грешка при създаване на клиент:", errorMessage);
-      toast.error("Грешка", {
-        description: errorMessage,
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    });
   }
 
   // Email validation helper
@@ -1209,20 +1205,12 @@ function NewClientPageContent() {
                 ) : (
                   <Button
                     type="submit"
-                    disabled={isLoading || !confirmed}
+                    disabled={submitLock.isPending || !confirmed}
+                    loading={submitLock.isPending}
                     className="h-11 w-full gap-2 justify-center border-0 gradient-primary hover:shadow-md hover:ring-2 hover:ring-emerald-400/25 disabled:opacity-50"
                   >
-                    {isLoading ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Създаване...
-                      </>
-                    ) : (
-                      <>
-                        <Check className="h-4 w-4" />
-                        Създай клиент
-                      </>
-                    )}
+                    {!submitLock.isPending && <Check className="h-4 w-4" />}
+                    {submitLock.isPending ? "Създаване..." : "Създай клиент"}
                   </Button>
                 )}
               </div>

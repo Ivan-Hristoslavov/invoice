@@ -54,6 +54,7 @@ import {
 import { StatusChangeModal } from "@/components/invoice/StatusChangeModal";
 import { CancelInvoiceModal } from "@/components/invoice/CancelInvoiceModal";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
+import { useAsyncLock } from "@/hooks/use-async-lock";
 import { Lock, Crown } from "lucide-react";
 import {
   Tooltip,
@@ -149,11 +150,14 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
   const [activeTab, setActiveTab] = useState("details");
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
-  const [isChangingStatus, setIsChangingStatus] = useState(false);
-  const [isDuplicating, setIsDuplicating] = useState(false);
-  const [isMarkingPaid, setIsMarkingPaid] = useState(false);
-  const [isMarkingUnpaid, setIsMarkingUnpaid] = useState(false);
+  const issueLock = useAsyncLock();
+  const sendEmailLock = useAsyncLock();
+  const cancelInvoiceLock = useAsyncLock();
+  const duplicateLock = useAsyncLock();
+  const markPaidLock = useAsyncLock();
+  const markUnpaidLock = useAsyncLock();
+  const exportLock = useAsyncLock();
+  const commActionBusy = sendEmailLock.isPending || cancelInvoiceLock.isPending;
   const [showIssueModal, setShowIssueModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
@@ -165,13 +169,6 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
   const canExportMicroinvest = usage?.features.export === "full";
   const normalizedStatus = normalizeInvoiceStatus(invoice.status);
   const isPaidInDb = invoice.persistedStatus === "PAID";
-
-  useEffect(() => {
-    return () => {
-      setIsSendingEmail(false);
-      setIsChangingStatus(false);
-    };
-  }, []);
 
   const fetchAuditLogs = useCallback(async () => {
     setIsLoadingAuditLogs(true);
@@ -217,67 +214,87 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
 
   // Issue invoice (change status from DRAFT to ISSUED)
   const handleIssueInvoice = async () => {
-    setIsChangingStatus(true);
-    try {
-      const response = await fetch(`/api/invoices/${invoice.id}/status`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "ISSUED" }),
-      });
-      
-      if (response.ok) {
-        const updatedInvoice = await response.json();
-        setInvoice({ ...invoice, status: updatedInvoice.status, persistedStatus: updatedInvoice.persistedStatus });
-        toast.success("Фактурата е издадена успешно", {
-          description: "Фактурата вече е със статус 'Издадена'"
+    await issueLock.run(async () => {
+      try {
+        const response = await fetch(`/api/invoices/${invoice.id}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "ISSUED" }),
         });
-        router.refresh();
-      } else {
-        const errorData = await response.json();
-        if (errorData.validationErrors?.length > 0) {
-          toast.error(errorData.error, {
-            description: errorData.validationErrors.join("; "),
+
+        if (response.ok) {
+          const updatedInvoice = await response.json();
+          setInvoice({
+            ...invoice,
+            status: updatedInvoice.status,
+            persistedStatus: updatedInvoice.persistedStatus,
           });
+          toast.success("Фактурата е издадена успешно", {
+            description: "Фактурата вече е със статус 'Издадена'",
+          });
+          router.refresh();
         } else {
-          toast.error(errorData.error || "Грешка при издаване на фактурата");
+          const errorData = await response.json();
+          if (errorData.validationErrors?.length > 0) {
+            toast.error(errorData.error, {
+              description: errorData.validationErrors.join("; "),
+            });
+          } else {
+            toast.error(errorData.error || "Грешка при издаване на фактурата");
+          }
+          throw new Error(errorData.error);
         }
-        throw new Error(errorData.error);
+      } catch (error) {
+        console.error("Error issuing invoice:", error);
+        toast.error("Грешка при издаване на фактурата");
       }
-    } catch (error) {
-      console.error("Error issuing invoice:", error);
-      toast.error("Грешка при издаване на фактурата");
-    } finally {
-      setIsChangingStatus(false);
-    }
+    });
   };
 
   const handleExportPdf = async () => {
-    try {
-      await exportInvoiceAsPdf(invoice.id);
-    } catch (error) {
-      console.error("Error exporting PDF:", error);
-      toast.error("Грешка при експортиране на PDF");
-    }
+    await exportLock.run(async () => {
+      try {
+        await exportInvoiceAsPdf(invoice.id);
+      } catch (error) {
+        console.error("Error exporting PDF:", error);
+        toast.error("Грешка при експортиране на PDF");
+      }
+    });
+  };
+
+  const handleExportPdfCopy = async () => {
+    await exportLock.run(async () => {
+      try {
+        await exportInvoiceAsPdf(invoice.id, true);
+      } catch (error) {
+        console.error("Error exporting PDF copy:", error);
+        toast.error("Грешка при експортиране на PDF");
+      }
+    });
   };
 
   const handleExportMicroinvestXml = async () => {
-    try {
-      await exportInvoiceAsMicroinvestXml(invoice.id);
-      toast.success("Файлът за Microinvest (XML) е изтеглен");
-    } catch (error) {
-      console.error("Error exporting Microinvest XML:", error);
-      toast.error("Грешка при експортиране на XML за Склад Pro");
-    }
+    await exportLock.run(async () => {
+      try {
+        await exportInvoiceAsMicroinvestXml(invoice.id);
+        toast.success("Файлът за Microinvest (XML) е изтеглен");
+      } catch (error) {
+        console.error("Error exporting Microinvest XML:", error);
+        toast.error("Грешка при експортиране на XML за Склад Pro");
+      }
+    });
   };
 
   const handleExportMicroinvestTxt = async () => {
-    try {
-      await exportInvoiceAsMicroinvestTxt(invoice.id);
-      toast.success("Файлът за Microinvest (TXT) е изтеглен");
-    } catch (error) {
-      console.error("Error exporting Microinvest TXT:", error);
-      toast.error("Грешка при експортиране на TXT за Склад Pro");
-    }
+    await exportLock.run(async () => {
+      try {
+        await exportInvoiceAsMicroinvestTxt(invoice.id);
+        toast.success("Файлът за Microinvest (TXT) е изтеглен");
+      } catch (error) {
+        console.error("Error exporting Microinvest TXT:", error);
+        toast.error("Грешка при експортиране на TXT за Склад Pro");
+      }
+    });
   };
 
   const handlePrintInvoice = () => {
@@ -291,136 +308,130 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
   };
 
   const handleSendInvoiceOnly = async () => {
-    try {
-      setIsSendingEmail(true);
-      
-      const response = await fetch(`/api/invoices/${invoice.id}/send`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: 'invoice_only'
-        }),
-      });
+    await sendEmailLock.run(async () => {
+      try {
+        const response = await fetch(`/api/invoices/${invoice.id}/send`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type: "invoice_only",
+          }),
+        });
 
-      if (!response.ok) {
-        const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(errorPayload?.error || "Грешка при изпращане на фактурата");
+        if (!response.ok) {
+          const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
+          throw new Error(errorPayload?.error || "Грешка при изпращане на фактурата");
+        }
+
+        toast.success("Фактурата е изпратена успешно", {
+          description: `Фактурата е изпратена на ${invoice.client.email}`,
+        });
+      } catch (error) {
+        console.error("Error sending invoice:", error);
+        toast.error(
+          error instanceof Error ? error.message : "Грешка при изпращане на фактурата"
+        );
       }
-      
-      toast.success("Фактурата е изпратена успешно", {
-        description: `Фактурата е изпратена на ${invoice.client.email}`,
-      });
-    } catch (error) {
-      console.error('Error sending invoice:', error);
-      toast.error(
-        error instanceof Error ? error.message : "Грешка при изпращане на фактурата"
-      );
-    } finally {
-      setIsSendingEmail(false);
-    }
+    });
   };
 
   const handleCancelInvoice = async (reason: string) => {
-    try {
-      setIsSendingEmail(true);
-      const response = await fetch(`/api/invoices/${invoice.id}/cancel`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason: reason.trim() }),
-      });
-      
-      if (response.ok) {
-        await response.json();
-        toast.success("Фактурата е отменена", {
-          description: "Кредитното известие е създадено успешно",
+    await cancelInvoiceLock.run(async () => {
+      try {
+        const response = await fetch(`/api/invoices/${invoice.id}/cancel`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reason: reason.trim() }),
         });
-        router.refresh();
-        router.push(`/invoices/${invoice.id}`);
-      } else {
-        const error = await response.json();
-        toast.error(error.error || "Грешка при отмяна на фактурата");
+
+        if (response.ok) {
+          await response.json();
+          toast.success("Фактурата е отменена", {
+            description: "Кредитното известие е създадено успешно",
+          });
+          router.refresh();
+          router.push(`/invoices/${invoice.id}`);
+        } else {
+          const error = await response.json();
+          toast.error(error.error || "Грешка при отмяна на фактурата");
+        }
+      } catch (error) {
+        console.error("Error cancelling invoice:", error);
+        toast.error("Грешка при отмяна на фактурата");
       }
-    } catch (error) {
-      console.error('Error cancelling invoice:', error);
-      toast.error("Грешка при отмяна на фактурата");
-    } finally {
-      setIsSendingEmail(false);
-    }
+    });
   };
 
   const handleDuplicateInvoice = async () => {
-    setIsDuplicating(true);
-    try {
-      const response = await fetch(`/api/invoices/${invoice.id}/duplicate`, { method: "POST" });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Грешка при дублиране");
+    await duplicateLock.run(async () => {
+      try {
+        const response = await fetch(`/api/invoices/${invoice.id}/duplicate`, { method: "POST" });
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Грешка при дублиране");
+        }
+        const data = await response.json();
+        toast.success("Фактурата е дублирана успешно", {
+          description: `Нова чернова ${data.invoiceNumber} е създадена`,
+        });
+        router.push(`/invoices/${data.id}`);
+      } catch (error: any) {
+        toast.error(error.message || "Грешка при дублиране на фактурата");
       }
-      const data = await response.json();
-      toast.success("Фактурата е дублирана успешно", {
-        description: `Нова чернова ${data.invoiceNumber} е създадена`,
-      });
-      router.push(`/invoices/${data.id}`);
-    } catch (error: any) {
-      toast.error(error.message || "Грешка при дублиране на фактурата");
-    } finally {
-      setIsDuplicating(false);
-    }
+    });
   };
 
   const handleMarkPaid = async () => {
-    setIsMarkingPaid(true);
-    try {
-      const response = await fetch(`/api/invoices/${invoice.id}/mark-paid`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        toast.error(payload.error || "Грешка при маркиране като платена");
-        return;
+    await markPaidLock.run(async () => {
+      try {
+        const response = await fetch(`/api/invoices/${invoice.id}/mark-paid`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          toast.error(payload.error || "Грешка при маркиране като платена");
+          return;
+        }
+        setInvoice({
+          ...invoice,
+          persistedStatus: "PAID",
+          paidAt: payload.paidAt ?? new Date().toISOString(),
+        });
+        toast.success("Фактурата е маркирана като платена");
+        router.refresh();
+      } catch {
+        toast.error("Грешка при маркиране като платена");
       }
-      setInvoice({
-        ...invoice,
-        persistedStatus: "PAID",
-        paidAt: payload.paidAt ?? new Date().toISOString(),
-      });
-      toast.success("Фактурата е маркирана като платена");
-      router.refresh();
-    } catch {
-      toast.error("Грешка при маркиране като платена");
-    } finally {
-      setIsMarkingPaid(false);
-    }
+    });
   };
 
   const handleMarkUnpaid = async () => {
-    setIsMarkingUnpaid(true);
-    try {
-      const response = await fetch(`/api/invoices/${invoice.id}/mark-unpaid`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        toast.error(payload.error || "Грешка при маркиране като неплатена");
-        return;
+    await markUnpaidLock.run(async () => {
+      try {
+        const response = await fetch(`/api/invoices/${invoice.id}/mark-unpaid`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          toast.error(payload.error || "Грешка при маркиране като неплатена");
+          return;
+        }
+        setInvoice({
+          ...invoice,
+          persistedStatus: "UNPAID",
+          paidAt: null,
+        });
+        toast.success("Фактурата е маркирана като неплатена");
+        router.refresh();
+      } catch {
+        toast.error("Грешка при маркиране като неплатена");
       }
-      setInvoice({
-        ...invoice,
-        persistedStatus: "UNPAID",
-        paidAt: null,
-      });
-      toast.success("Фактурата е маркирана като неплатена");
-      router.refresh();
-    } catch {
-      toast.error("Грешка при маркиране като неплатена");
-    } finally {
-      setIsMarkingUnpaid(false);
-    }
+    });
   };
 
   const getStatusIcon = () => {
@@ -511,12 +522,13 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
                 variant="outline"
                 size="sm"
                 className="w-full justify-start text-left h-8"
-                onClick={handleSendInvoiceOnly}
-                disabled={isSendingEmail}
+                onClick={() => void handleSendInvoiceOnly()}
+                disabled={sendEmailLock.isPending}
+                loading={sendEmailLock.isPending}
               >
                 <Send className="w-3.5 h-3.5 mr-2 shrink-0 text-gray-600" />
                 <span className="text-xs font-medium">
-                  {isSendingEmail ? "Изпращане..." : "Изпрати фактура"}
+                  {sendEmailLock.isPending ? "Изпращане..." : "Изпрати фактура"}
                 </span>
               </Button>
             ) : (
@@ -554,11 +566,11 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
                 size="sm"
                 className="w-full justify-start text-left h-8"
                 onClick={() => setShowCancelModal(true)}
-                disabled={isSendingEmail}
+                disabled={commActionBusy}
               >
                 <AlertTriangle className="w-3.5 h-3.5 mr-2 shrink-0" />
                 <span className="text-xs font-medium">
-                  {isSendingEmail ? "Отмяна..." : "Отмени фактура"}
+                  {commActionBusy ? "Отмяна..." : "Отмени фактура"}
                 </span>
               </Button>
             )}
@@ -635,10 +647,11 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
                   size="sm"
                   className="h-8 rounded-lg border-0 text-xs text-white gradient-primary hover:shadow-md hover:ring-2 hover:ring-emerald-400/25 sm:flex-none"
                   onClick={() => setShowIssueModal(true)}
-                  disabled={isChangingStatus}
+                  disabled={issueLock.isPending}
+                  loading={issueLock.isPending}
                 >
                   <FileCheck className="w-3.5 h-3.5 mr-1" />
-                  {isChangingStatus ? "..." : "Издай"}
+                  {issueLock.isPending ? "..." : "Издай"}
                 </Button>
               </>
             )}
@@ -651,12 +664,13 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
                   variant="outline"
                   size="sm"
                   className="h-8 rounded-lg text-xs sm:flex-none border-sky-500/40 text-sky-800 hover:bg-sky-500/10 dark:text-sky-200"
-                  onClick={handleMarkPaid}
-                  disabled={isMarkingPaid}
+                  onClick={() => void handleMarkPaid()}
+                  disabled={markPaidLock.isPending}
+                  loading={markPaidLock.isPending}
                 >
                   <Banknote className="w-3.5 h-3.5 mr-1 shrink-0" />
                   <span className="truncate">
-                    {isMarkingPaid ? "..." : "Маркирай като платена"}
+                    {markPaidLock.isPending ? "..." : "Маркирай като платена"}
                   </span>
                 </Button>
               )}
@@ -665,12 +679,13 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
                   variant="outline"
                   size="sm"
                   className="h-8 rounded-lg text-xs sm:flex-none"
-                  onClick={handleMarkUnpaid}
-                  disabled={isMarkingUnpaid}
+                  onClick={() => void handleMarkUnpaid()}
+                  disabled={markUnpaidLock.isPending}
+                  loading={markUnpaidLock.isPending}
                 >
                   <Clock className="w-3.5 h-3.5 mr-1 shrink-0" />
                   <span className="truncate">
-                    {isMarkingUnpaid ? "..." : "Маркирай като неплатена"}
+                    {markUnpaidLock.isPending ? "..." : "Маркирай като неплатена"}
                   </span>
                 </Button>
               )}
@@ -701,7 +716,7 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
                 size="sm"
                 className="h-8 rounded-lg text-xs sm:flex-none"
                 onClick={() => setShowCancelModal(true)}
-                disabled={isSendingEmail}
+                disabled={commActionBusy}
               >
                 <AlertTriangle className="w-3.5 h-3.5 mr-1" />
                 Отмени
@@ -714,11 +729,12 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
             variant="outline"
             size="sm"
             className="h-8 rounded-lg text-xs"
-            onClick={handleDuplicateInvoice}
-            disabled={isDuplicating}
+            onClick={() => void handleDuplicateInvoice()}
+            disabled={duplicateLock.isPending}
+            loading={duplicateLock.isPending}
           >
             <Copy className="w-3.5 h-3.5 mr-1" />
-            {isDuplicating ? "..." : "Дублирай"}
+            {duplicateLock.isPending ? "..." : "Дублирай"}
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -739,13 +755,19 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
                 </DropdownMenuItemIcon>
                 <DropdownMenuItemText>Принт</DropdownMenuItemText>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportPdf}>
+              <DropdownMenuItem
+                isDisabled={exportLock.isPending}
+                onClick={() => void handleExportPdf()}
+              >
                 <DropdownMenuItemIcon>
                   <Download />
                 </DropdownMenuItemIcon>
                 <DropdownMenuItemText>PDF (оригинал)</DropdownMenuItemText>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => exportInvoiceAsPdf(invoice.id, true)}>
+              <DropdownMenuItem
+                isDisabled={exportLock.isPending}
+                onClick={() => void handleExportPdfCopy()}
+              >
                 <DropdownMenuItemIcon>
                   <Copy />
                 </DropdownMenuItemIcon>
@@ -754,13 +776,19 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
               {canExportMicroinvest && (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleExportMicroinvestXml}>
+                  <DropdownMenuItem
+                    isDisabled={exportLock.isPending}
+                    onClick={() => void handleExportMicroinvestXml()}
+                  >
                     <DropdownMenuItemIcon>
                       <FileText />
                     </DropdownMenuItemIcon>
                     <DropdownMenuItemText>Microinvest — XML</DropdownMenuItemText>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleExportMicroinvestTxt}>
+                  <DropdownMenuItem
+                    isDisabled={exportLock.isPending}
+                    onClick={() => void handleExportMicroinvestTxt()}
+                  >
                     <DropdownMenuItemIcon>
                       <FileText />
                     </DropdownMenuItemIcon>

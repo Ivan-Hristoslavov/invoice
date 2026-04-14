@@ -27,6 +27,7 @@ import { toast } from "@/lib/toast";
 import type { CompanyBookFormFields } from "@/lib/companybook";
 import { applyCompanyBookToForm } from "@/lib/companybook-form-apply";
 import { useCompanyBookLookup } from "@/hooks/useCompanyBookLookup";
+import { useAsyncLock } from "@/hooks/use-async-lock";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -266,7 +267,7 @@ function getStepForCompanyField(field?: string) {
 
 export default function NewCompanyPage() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const submitLock = useAsyncLock();
   const [currentStep, setCurrentStep] = useState<number | null>(0);
   const [confirmed, setConfirmed] = useState(false);
   const [companyCreationMode, setCompanyCreationMode] = useState<CompanyCreationMode | null>(null);
@@ -493,50 +494,50 @@ export default function NewCompanyPage() {
   }, [clearDuplicateBulstatError, scrollToTop]);
 
   async function onSubmit(data: CompanyFormValues) {
-    setIsLoading(true);
-    
-    try {
-      const response = await fetch("/api/companies", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
+    await submitLock.run(async () => {
+      try {
+        const response = await fetch("/api/companies", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        });
 
-      if (!response.ok) {
-        const errorPayload = (await response.json().catch(() => null)) as {
-          error?: string;
-          details?: Array<{ path?: string[]; message?: string }>;
-        } | null;
-        const invalidFields = applyApiValidationDetails(form, errorPayload?.details);
-        if (invalidFields.length > 0) {
-          focusSection(getStepForCompanyField(invalidFields[0] as string));
+        if (!response.ok) {
+          const errorPayload = (await response.json().catch(() => null)) as {
+            error?: string;
+            details?: Array<{ path?: string[]; message?: string }>;
+          } | null;
+          const invalidFields = applyApiValidationDetails(form, errorPayload?.details);
+          if (invalidFields.length > 0) {
+            focusSection(getStepForCompanyField(invalidFields[0] as string));
+          }
+          throw new Error(errorPayload?.error || "Неуспешно създаване на компания");
         }
-        throw new Error(errorPayload?.error || "Неуспешно създаване на компания");
+
+        await refreshUsage();
+
+        toast.success("Компанията е създадена", {
+          description: "Вашата компания беше създадена успешно.",
+          action: {
+            label: "Виж компании",
+            onClick: () => router.push("/companies"),
+          },
+        });
+
+        router.push("/companies");
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Възникна грешка при създаване на вашата компания. Моля, опитайте отново.";
+        console.warn("Грешка при създаване на компания:", errorMessage);
+        toast.error("Грешка", {
+          description: errorMessage,
+        });
       }
-
-      await refreshUsage();
-
-      toast.success("Компанията е създадена", {
-        description: "Вашата компания беше създадена успешно.",
-        action: {
-          label: "Виж компании",
-          onClick: () => router.push("/companies"),
-        },
-      });
-
-      router.push("/companies");
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Възникна грешка при създаване на вашата компания. Моля, опитайте отново.";
-      console.warn("Грешка при създаване на компания:", errorMessage);
-      toast.error("Грешка", {
-        description: errorMessage,
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    });
   }
 
   // Email validation helper
@@ -1465,20 +1466,12 @@ export default function NewCompanyPage() {
                       </p>
                       <Button
                         type="submit"
-                        disabled={isLoading || !canSubmit}
+                        disabled={submitLock.isPending || !canSubmit}
+                        loading={submitLock.isPending}
                         className="h-11 w-full justify-center gap-2 border-0 gradient-primary hover:shadow-md hover:ring-2 hover:ring-emerald-400/25 disabled:opacity-50 sm:w-auto sm:min-w-52"
                       >
-                        {isLoading ? (
-                          <>
-                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                            Създаване...
-                          </>
-                        ) : (
-                          <>
-                            <Check className="h-4 w-4" />
-                            Създай компания
-                          </>
-                        )}
+                        {!submitLock.isPending && <Check className="h-4 w-4" />}
+                        {submitLock.isPending ? "Създаване..." : "Създай компания"}
                       </Button>
                     </div>
                       </CardContent>

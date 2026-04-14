@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/lib/toast";
+import { useAsyncLock } from "@/hooks/use-async-lock";
 
 interface UserRoleActionsProps {
   userId: string;
@@ -52,7 +53,7 @@ export default function UserRoleActions({
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const mutationLock = useAsyncLock();
   const [selectedRole, setSelectedRole] = useState<Role>(currentRole);
   const canEditRole = currentRole !== "OWNER";
   
@@ -63,63 +64,61 @@ export default function UserRoleActions({
       return;
     }
     
-    setIsLoading(true);
-    
-    try {
-      const response = await fetch(`/api/users/${userId}/role`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          role: selectedRole,
-          companyId,
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error("Неуспешно обновяване на ролята на потребителя");
+    void mutationLock.run(async () => {
+      try {
+        const response = await fetch(`/api/users/${userId}/role`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            role: selectedRole,
+            companyId,
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error("Неуспешно обновяване на ролята на потребителя");
+        }
+        
+        toast.success("Ролята на потребителя е обновена успешно");
+        router.refresh();
+      } catch (error) {
+        console.error("Грешка при обновяване на ролята на потребителя:", error);
+        toast.error("Неуспешно обновяване на ролята на потребителя");
+      } finally {
+        setIsOpen(false);
       }
-      
-      toast.success("Ролята на потребителя е обновена успешно");
-      router.refresh();
-    } catch (error) {
-      console.error("Грешка при обновяване на ролята на потребителя:", error);
-      toast.error("Неуспешно обновяване на ролята на потребителя");
-    } finally {
-      setIsLoading(false);
-      setIsOpen(false);
-    }
+    });
   };
   
   // Function to remove user from company
   const handleRemoveUser = async () => {
-    setIsLoading(true);
-    
-    try {
-      const response = await fetch(`/api/users/${userId}/role`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          companyId,
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error("Неуспешно премахване на потребителя");
+    void mutationLock.run(async () => {
+      try {
+        const response = await fetch(`/api/users/${userId}/role`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            companyId,
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error("Неуспешно премахване на потребителя");
+        }
+        
+        toast.success("Потребителят е премахнат успешно");
+        router.refresh();
+      } catch (error) {
+        console.error("Грешка при премахване на потребителя:", error);
+        toast.error("Неуспешно премахване на потребителя");
+      } finally {
+        setIsDeleteDialogOpen(false);
       }
-      
-      toast.success("Потребителят е премахнат успешно");
-      router.refresh();
-    } catch (error) {
-      console.error("Грешка при премахване на потребителя:", error);
-      toast.error("Неуспешно премахване на потребителя");
-    } finally {
-      setIsLoading(false);
-      setIsDeleteDialogOpen(false);
-    }
+    });
   };
   
   return (
@@ -216,8 +215,8 @@ export default function UserRoleActions({
               <Button variant="outline" onClick={() => setIsOpen(false)}>
                 Отказ
               </Button>
-              <Button onClick={handleUpdateRole} disabled={isLoading}>
-                {isLoading ? "Обновяване..." : "Запази промените"}
+              <Button onClick={handleUpdateRole} disabled={mutationLock.isPending} loading={mutationLock.isPending}>
+                {mutationLock.isPending ? "Обновяване..." : "Запази промените"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -251,9 +250,10 @@ export default function UserRoleActions({
               <Button
                 variant="destructive"
                 onClick={handleRemoveUser}
-                disabled={isLoading}
+                disabled={mutationLock.isPending}
+                loading={mutationLock.isPending}
               >
-                {isLoading ? "Премахване..." : "Премахни потребител"}
+                {mutationLock.isPending ? "Премахване..." : "Премахни потребител"}
               </Button>
             </DialogFooter>
           </DialogContent>

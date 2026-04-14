@@ -39,6 +39,7 @@ import {
   downloadCsv,
   type ParsedClientRow,
 } from "@/lib/clients-import";
+import { useAsyncLock } from "@/hooks/use-async-lock";
 
 export default function ClientsImportPage() {
   const router = useRouter();
@@ -47,7 +48,7 @@ export default function ClientsImportPage() {
   const [file, setFile] = useState<File | null>(null);
   const [parsedRows, setParsedRows] = useState<ParsedClientRow[]>([]);
   const [isParsing, setIsParsing] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
+  const importLock = useAsyncLock();
   const [importResult, setImportResult] = useState<{
     imported: number;
     failed: number;
@@ -113,30 +114,29 @@ export default function ClientsImportPage() {
       toast.error("Няма валидни редове за импортиране.");
       return;
     }
-    setIsImporting(true);
-    try {
-      const res = await fetch("/api/clients/import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rows: validRows.map((r) => r.data) }),
-      });
-      const result = await res.json();
-      if (!res.ok) {
-        toast.error(result.error || "Грешка при импорт.");
-        return;
+    void importLock.run(async () => {
+      try {
+        const res = await fetch("/api/clients/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rows: validRows.map((r) => r.data) }),
+        });
+        const result = await res.json();
+        if (!res.ok) {
+          toast.error(result.error || "Грешка при импорт.");
+          return;
+        }
+        setImportResult(result);
+        if (result.imported > 0) {
+          toast.success(`Успешно импортирани: ${result.imported} клиента.`);
+        }
+        if (result.failed > 0) {
+          toast.error(`Неуспешни: ${result.failed} реда.`);
+        }
+      } catch {
+        toast.error("Неуспешен импорт. Моля, опитайте отново.");
       }
-      setImportResult(result);
-      if (result.imported > 0) {
-        toast.success(`Успешно импортирани: ${result.imported} клиента.`);
-      }
-      if (result.failed > 0) {
-        toast.error(`Неуспешни: ${result.failed} реда.`);
-      }
-    } catch {
-      toast.error("Неуспешен импорт. Моля, опитайте отново.");
-    } finally {
-      setIsImporting(false);
-    }
+    });
   };
 
   const handleDownloadTemplate = () => {
@@ -217,9 +217,9 @@ export default function ClientsImportPage() {
               </Button>
               <Button
                 onClick={handleImport}
-                disabled={validRows.length === 0 || isImporting || !!importResult}
+                disabled={validRows.length === 0 || importLock.isPending || !!importResult}
               >
-                {isImporting ? (
+                {importLock.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Импортиране...

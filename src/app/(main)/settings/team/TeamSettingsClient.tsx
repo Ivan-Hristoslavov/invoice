@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import UserRoleActions from "../users/user-role-actions";
 import { UsageCounter, LockedButton, LimitBanner } from "@/components/ui/pro-feature-lock";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
+import { useAsyncLock } from "@/hooks/use-async-lock";
 
 type TeamRole = "OWNER" | "ADMIN" | "MANAGER" | "ACCOUNTANT" | "VIEWER";
 
@@ -90,99 +91,96 @@ export default function TeamSettingsClient({
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<string>("MANAGER");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [pendingInviteId, setPendingInviteId] = useState<string | null>(null);
+  const createInviteLock = useAsyncLock();
+  const inviteActionLock = useAsyncLock();
   const { canAddUser, getUserUsage, isLoadingUsage, isBusiness } = useSubscriptionLimit();
 
   const userUsage = getUserUsage();
   const canManageInvites = currentUserRole === "OWNER" || currentUserRole === "ADMIN";
   const inviteCount = invites.length;
 
-  async function handleCreateInvite() {
+  function handleCreateInvite() {
     if (!email.trim()) return;
 
-    try {
-      setIsSubmitting(true);
-      const response = await fetch("/api/team/invites", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          companyId: company.id,
-          email,
-          role,
-        }),
-      });
+    void createInviteLock.run(async () => {
+      try {
+        const response = await fetch("/api/team/invites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            companyId: company.id,
+            email,
+            role,
+          }),
+        });
 
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "Неуспешно изпращане на поканата");
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Неуспешно изпращане на поканата");
 
-      if (payload.inviteUrl && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(payload.inviteUrl);
-        if (payload.emailSent === false) {
-          toast.warning(payload.emailError || "Поканата е създадена, но имейлът не беше изпратен. Линкът е копиран.");
+        if (payload.inviteUrl && navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(payload.inviteUrl);
+          if (payload.emailSent === false) {
+            toast.warning(payload.emailError || "Поканата е създадена, но имейлът не беше изпратен. Линкът е копиран.");
+          } else {
+            toast.success("Поканата е изпратена по имейл и линкът е копиран");
+          }
         } else {
-          toast.success("Поканата е изпратена по имейл и линкът е копиран");
+          if (payload.emailSent === false) {
+            toast.warning(payload.emailError || "Поканата е създадена, но имейлът не беше изпратен.");
+          } else {
+            toast.success("Поканата е изпратена по имейл");
+          }
         }
-      } else {
-        if (payload.emailSent === false) {
-          toast.warning(payload.emailError || "Поканата е създадена, но имейлът не беше изпратен.");
-        } else {
-          toast.success("Поканата е изпратена по имейл");
-        }
+
+        setEmail("");
+        setRole("MANAGER");
+        router.refresh();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Неуспешно изпращане на поканата");
       }
-
-      setEmail("");
-      setRole("MANAGER");
-      router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Неуспешно изпращане на поканата");
-    } finally {
-      setIsSubmitting(false);
-    }
+    });
   }
 
-  async function handleInviteAction(inviteId: string, action: "copy" | "resend" | "revoke") {
-    try {
-      setPendingInviteId(inviteId);
-
-      if (action === "copy") {
-        const invite = invites.find((entry) => entry.id === inviteId);
-        const inviteUrl =
-          invite && typeof window !== "undefined"
-            ? `${window.location.origin}/team/accept?token=${invite.token}`
-            : null;
-        if (!inviteUrl) throw new Error("Линкът за поканата липсва");
-        await navigator.clipboard.writeText(inviteUrl);
-        toast.success("Линкът за поканата е копиран");
-        return;
-      }
-
-      const response = await fetch(`/api/team/invites/${inviteId}`, {
-        method: action === "revoke" ? "DELETE" : "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: action === "resend" ? JSON.stringify({ action: "resend" }) : undefined,
-      });
-
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "Неуспешна операция");
-
-      if (action === "resend" && payload.inviteUrl && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(payload.inviteUrl);
-        if (payload.emailSent === false) {
-          toast.warning(payload.emailError || "Поканата е обновена, но имейлът не беше изпратен. Линкът е копиран.");
-        } else {
-          toast.success("Поканата е изпратена отново по имейл и линкът е копиран");
+  function handleInviteAction(inviteId: string, action: "copy" | "resend" | "revoke") {
+    void inviteActionLock.run(async () => {
+      try {
+        if (action === "copy") {
+          const invite = invites.find((entry) => entry.id === inviteId);
+          const inviteUrl =
+            invite && typeof window !== "undefined"
+              ? `${window.location.origin}/team/accept?token=${invite.token}`
+              : null;
+          if (!inviteUrl) throw new Error("Линкът за поканата липсва");
+          await navigator.clipboard.writeText(inviteUrl);
+          toast.success("Линкът за поканата е копиран");
+          return;
         }
-      } else {
-        toast.success(action === "revoke" ? "Поканата е оттеглена" : "Поканата е обновена");
-      }
 
-      router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Неуспешна операция");
-    } finally {
-      setPendingInviteId(null);
-    }
+        const response = await fetch(`/api/team/invites/${inviteId}`, {
+          method: action === "revoke" ? "DELETE" : "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: action === "resend" ? JSON.stringify({ action: "resend" }) : undefined,
+        });
+
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Неуспешна операция");
+
+        if (action === "resend" && payload.inviteUrl && navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(payload.inviteUrl);
+          if (payload.emailSent === false) {
+            toast.warning(payload.emailError || "Поканата е обновена, но имейлът не беше изпратен. Линкът е копиран.");
+          } else {
+            toast.success("Поканата е изпратена отново по имейл и линкът е копиран");
+          }
+        } else {
+          toast.success(action === "revoke" ? "Поканата е оттеглена" : "Поканата е обновена");
+        }
+
+        router.refresh();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Неуспешна операция");
+      }
+    });
   }
 
   return (
@@ -352,9 +350,14 @@ export default function TeamSettingsClient({
                     Проверяваме плана...
                   </Button>
                 ) : canAddUser ? (
-                  <Button onClick={handleCreateInvite} disabled={isSubmitting || !email.trim()} className="btn-responsive">
+                  <Button
+                    onClick={handleCreateInvite}
+                    disabled={createInviteLock.isPending || !email.trim()}
+                    loading={createInviteLock.isPending}
+                    className="btn-responsive"
+                  >
                     <MailPlus className="mr-2 h-4 w-4" />
-                    {isSubmitting ? "Изпращане..." : "Създай покана"}
+                    {createInviteLock.isPending ? "Изпращане..." : "Създай покана"}
                   </Button>
                 ) : isBusiness ? (
                   <div className="space-y-2">
@@ -405,7 +408,7 @@ export default function TeamSettingsClient({
                           variant="outline"
                           size="sm"
                           onClick={() => handleInviteAction(invite.id, "copy")}
-                          disabled={pendingInviteId === invite.id}
+                          disabled={inviteActionLock.isPending}
                           className="w-full justify-center"
                         >
                           <Copy className="mr-2 h-4 w-4" />
@@ -416,7 +419,7 @@ export default function TeamSettingsClient({
                           variant="outline"
                           size="sm"
                           onClick={() => handleInviteAction(invite.id, "resend")}
-                          disabled={pendingInviteId === invite.id}
+                          disabled={inviteActionLock.isPending}
                           className="w-full justify-center"
                         >
                           <RefreshCcw className="mr-2 h-4 w-4" />
@@ -427,7 +430,7 @@ export default function TeamSettingsClient({
                           variant="destructive"
                           size="sm"
                           onClick={() => handleInviteAction(invite.id, "revoke")}
-                          disabled={pendingInviteId === invite.id}
+                          disabled={inviteActionLock.isPending}
                           className="w-full justify-center md:col-span-2 xl:col-span-1"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
