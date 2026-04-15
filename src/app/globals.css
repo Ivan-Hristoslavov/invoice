@@ -202,17 +202,22 @@
 @utility glass-card {
   /* ============================================
      Cards & surfaces - solid backgrounds, clear borders
+     Light: fine elevation shadow; dark: flat (no muddy halo)
      ============================================ */
   background: hsl(var(--card)) !important;
   border: 1px solid hsl(var(--border)) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+  box-shadow:
+    0 1px 2px hsl(var(--foreground) / 0.04),
+    0 6px 20px hsl(var(--foreground) / 0.05) !important;
 
   .dark & {
     background: hsl(var(--card)) !important;
     border: 1px solid hsl(var(--border)) !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
+    box-shadow: none !important;
   }
 }
 
@@ -222,6 +227,7 @@
     border: 1px solid hsl(var(--border)) !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
+    box-shadow: none !important;
   }
 }
 
@@ -599,7 +605,7 @@
 /* Landing / subscription pricing — subtle dot grid + glass cards (teal–violet brand) */
 @utility pricing-dot-bg {
   background-image: radial-gradient(
-    rgba(148, 163, 184, 0.14) 1px,
+    rgba(100, 116, 139, 0.09) 1px,
     transparent 1px
   );
   background-size: 22px 22px;
@@ -745,31 +751,32 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+    /* Light theme: neutral-warm canvas, clearer surface ladder, softer chrome */
+    --background: 220 18% 96.5%;
+    --foreground: 224 32% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 224 32% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 224 32% 12%;
 
     /* Green–blue gradient design system (emerald → teal → cyan) */
-    --primary: 166 76% 42%;
+    --primary: 166 72% 40%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 220 14% 93.5%;
+    --secondary-foreground: 224 32% 12%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215 16% 47%;
-    
+    --muted: 220 12% 91.5%;
+    --muted-foreground: 220 10% 42%;
+
     /* Opaque surfaces for clear component boundaries */
     --card-opacity: 1;
     --popover-opacity: 1;
     --muted-opacity: 1;
 
-    --accent: 174 72% 48%;
+    --accent: 174 68% 46%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 84.2% 60.2%;
@@ -781,9 +788,9 @@
     --warning: 38 92% 50%;
     --warning-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 85%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 166 76% 42%;
+    --border: 220 13% 86%;
+    --input: 220 12% 89.5%;
+    --ring: 166 72% 40%;
 
     --chart-1: 221 83% 53%;
     --chart-2: 262 83% 58%;
@@ -791,7 +798,7 @@
     --chart-4: 174 86% 45%;
     --chart-5: 48 96% 53%;
 
-    --radius: 0.5rem;
+    --radius: 0.625rem;
   }
 
   /* Softer dark theme – green–blue gradient system */
