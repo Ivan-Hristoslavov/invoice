@@ -169,5 +169,7 @@ describe("HomePage", () => {
 
     expect(screen.getAllByText("Фактури и PDF").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Няколко фирми").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/VIES проверка/i).length).toBeGreaterThan(0);
+    expect(screen.getByLabelText("Акценти за съответствие")).toBeInTheDocument();
   });
 });

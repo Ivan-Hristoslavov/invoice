@@ -16,14 +16,16 @@ import {
   ArrowRight,
   Star,
   Crown,
-  CreditCard,
   Menu,
   Mail,
   CircleAlert,
   Percent,
   ClipboardList,
+  Globe2,
+  FileCheck2,
+  History,
 } from "lucide-react";
-import { Chip } from "@heroui/react";
+import { Card as HeroCard, Chip } from "@heroui/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -140,6 +142,13 @@ const features = [
     description:
       "Отделен документ и PDF за самоначисляване при ВОП, услуги от ЕС и други случаи по закона — за дневниците по ДДС.",
     color: "from-teal-500 to-cyan-500",
+  },
+  {
+    icon: Globe2,
+    title: "VIES проверка (EU VAT)",
+    description:
+      "Проверка на ДДС номер на контрагент от ЕС през официалната VIES услуга — преди фактура или протокол.",
+    color: "from-sky-500 to-blue-600",
   },
   {
     icon: BarChart3,
@@ -345,6 +354,48 @@ const heroHighlights = [
   { value: "Stripe", label: "Абонамент през Stripe" },
 ] as const;
 
+/** Видими trust сигнали под заглавието — HeroUI Chip. */
+const heroTrustSignals = [
+  { key: "p117", label: "Протокол чл. 117" },
+  { key: "vies", label: "VIES (EU VAT)" },
+  { key: "bgvat", label: "Български ДДС реквизити" },
+] as const;
+
+const landingTrustPillars = [
+  {
+    icon: ClipboardList,
+    title: "Протокол по чл. 117",
+    description:
+      "Отделен номериран документ и PDF за случаите на самоначисляване — по-лесно проследяване в дневниците и при одит.",
+    accent: "from-teal-500/25 via-emerald-500/10 to-transparent",
+    ring: "ring-teal-500/25 dark:ring-teal-400/20",
+  },
+  {
+    icon: Globe2,
+    title: "VIES в реално време",
+    description:
+      "Проверка на валидност на EU VAT номер преди да фактурирате или приемете документ от контрагент в Общността.",
+    accent: "from-sky-500/25 via-blue-500/10 to-transparent",
+    ring: "ring-sky-500/25 dark:ring-sky-400/20",
+  },
+  {
+    icon: FileCheck2,
+    title: "PDF и ясни реквизити",
+    description:
+      "Издадените документи са с очакваните полета за България; експорт за архив и счетоводство.",
+    accent: "from-violet-500/20 via-indigo-500/10 to-transparent",
+    ring: "ring-violet-500/20 dark:ring-violet-400/15",
+  },
+  {
+    icon: History,
+    title: "История и контрол",
+    description:
+      "Статуси, корекции и хронология — по-малко объркване при месечно затваряне и при екипна работа.",
+    accent: "from-amber-500/20 via-orange-500/10 to-transparent",
+    ring: "ring-amber-500/25 dark:ring-amber-400/15",
+  },
+] as const;
+
 const pricingTrustNotes = [
   "Без дългосрочен договор",
   "Смяна на план според нуждите",
@@ -376,6 +427,14 @@ const faqItems = [
   {
     q: "Къде задавам префикс на фактурите (напр. Ф-)?",
     a: "След вход: Настройки → Фактури. Там са по желание префикс преди номера (напр. Ф-, ФАК-), дали номерацията се нулира всяка година и начален номер при преход от друга система. Самият номер на фактурата е последователен; префиксът е за удобство, не е задължителен.",
+  },
+  {
+    q: "Какво е протокол по чл. 117 ЗДДС и защо ми трябва?",
+    a: "Това е документ за случаите на самоначисляване на ДДС по закона (напр. ВОП или услуги от ЕС при определени условия). В приложението е отделен от фактурата, с PDF — за по-лесно отразяване в дневниците. За конкретна хипотеза се консултирайте със счетоводител.",
+  },
+  {
+    q: "Какво е VIES и как ни помага?",
+    a: "VIES е системата за проверка на ДДС номера на контрагенти от ЕС. Бърза проверка преди фактура или протокол намалява риска от грешка при данъчни номера. Резултатът е информативен и не замества правен или счетоводен съвет.",
   },
 ] as const;
 
@@ -483,7 +542,7 @@ export default function HomePage() {
               worstRating: "1",
             },
             description:
-              "Фактури и известия за български фирми — ясни реквизити и проследяване на документи",
+              "Фактури, протокол чл. 117 ЗДДС и VIES за български фирми — реквизити, PDF и проследяване на документи",
             url: process.env.NEXT_PUBLIC_APP_URL || "https://invoicy.bg",
             inLanguage: "bg-BG",
           }),
@@ -694,8 +753,30 @@ export default function HomePage() {
                 <span className="gradient-primary-text block sm:inline">професионално</span>
                 <span className="block sm:inline"> за минути</span>
               </h1>
+              <motion.div
+                initial={shouldReduceEffects ? undefined : { opacity: 0, y: 8 }}
+                animate={shouldReduceEffects ? undefined : { opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                className="mb-5 flex flex-wrap items-center justify-center gap-2"
+                aria-label="Акценти за съответствие"
+              >
+                {heroTrustSignals.map((item) => (
+                  <Chip
+                    key={item.key}
+                    color="success"
+                    variant="soft"
+                    size="sm"
+                    className="border border-emerald-500/40 bg-emerald-500/12 shadow-sm backdrop-blur-[2px] dark:border-emerald-400/35 dark:bg-emerald-500/15"
+                  >
+                    <Chip.Label className="text-[11px] font-semibold tracking-wide sm:text-xs">
+                      {item.label}
+                    </Chip.Label>
+                  </Chip>
+                ))}
+              </motion.div>
               <p className="card-description mx-auto mb-6 max-w-xl text-base sm:text-lg">
-                Фактури и известия за България. Без плащания през нас — само документи и проследяване.
+                Фактури, протокол по чл. 117 ЗДДС и VIES проверка за контрагенти от ЕС — на едно място. Без плащания
+                през нас: документи, PDF и проследяване.
               </p>
               <div className="mx-auto mb-8 grid w-full max-w-lg grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                 <Button
@@ -748,6 +829,133 @@ export default function HomePage() {
                   Всичко за ежедневна работа с фактури и известия.
                 </p>
               </header>
+
+              <div className="mt-8 sm:mt-10">
+                <motion.div
+                  initial={shouldReduceEffects ? undefined : { opacity: 0, y: 16 }}
+                  whileInView={shouldReduceEffects ? undefined : { opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-40px" }}
+                  transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                  className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-5"
+                >
+                  <HeroCard
+                    variant="secondary"
+                    className={cn(
+                      "relative overflow-hidden border border-emerald-500/25 bg-card/80 shadow-md backdrop-blur-md lg:col-span-5",
+                      "dark:border-emerald-400/20 dark:bg-card/50"
+                    )}
+                  >
+                    <div
+                      className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-linear-to-br from-emerald-500/25 to-cyan-500/10 blur-2xl"
+                      aria-hidden
+                    />
+                    <HeroCard.Header className="relative z-1 gap-3 pb-2 sm:pb-3">
+                      <Chip
+                        color="success"
+                        variant="tertiary"
+                        size="sm"
+                        className="w-fit border border-emerald-500/40 bg-emerald-500/8 dark:border-emerald-400/35"
+                      >
+                        <Chip.Label className="text-[10px] font-semibold uppercase tracking-[0.18em] sm:text-[11px]">
+                          Доверие
+                        </Chip.Label>
+                      </Chip>
+                      <HeroCard.Title className="text-balance text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+                        Готови за ДДС процесите в България и ЕС
+                      </HeroCard.Title>
+                      <HeroCard.Description className="text-sm leading-relaxed text-muted-foreground sm:text-base">
+                        Протокол чл. 117 и VIES не са „екстри“ — те са ежедневни инструменти за коректни дневници и
+                        спокойствие при контрол. {APP_NAME} ги държи до фактурите и клиентите ви.
+                      </HeroCard.Description>
+                    </HeroCard.Header>
+                    <HeroCard.Content className="relative z-1 flex flex-wrap gap-2 pt-0">
+                      <Chip
+                        color="success"
+                        variant="soft"
+                        size="sm"
+                        className="border border-emerald-500/35 dark:border-emerald-400/30"
+                      >
+                        <Chip.Label className="text-[11px] font-semibold sm:text-xs">чл. 117 · PDF</Chip.Label>
+                      </Chip>
+                      <Chip
+                        color="accent"
+                        variant="soft"
+                        size="sm"
+                        className="border border-sky-500/35 dark:border-sky-400/30"
+                      >
+                        <Chip.Label className="text-[11px] font-semibold sm:text-xs">VIES · EU VAT</Chip.Label>
+                      </Chip>
+                      <Chip
+                        color="warning"
+                        variant="soft"
+                        size="sm"
+                        className="border border-amber-500/35 dark:border-amber-400/25"
+                      >
+                        <Chip.Label className="text-[11px] font-semibold sm:text-xs">НАП реквизити</Chip.Label>
+                      </Chip>
+                    </HeroCard.Content>
+                  </HeroCard>
+
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:col-span-7 lg:gap-4">
+                    {landingTrustPillars.map((pillar, index) => {
+                      const Icon = pillar.icon;
+                      return (
+                        <motion.div
+                          key={pillar.title}
+                          initial={shouldReduceEffects ? undefined : { opacity: 0, y: 12 }}
+                          whileInView={shouldReduceEffects ? undefined : { opacity: 1, y: 0 }}
+                          viewport={{ once: true, margin: "-32px" }}
+                          transition={{
+                            duration: 0.4,
+                            delay: shouldReduceEffects ? 0 : index * 0.06,
+                            ease: [0.22, 1, 0.36, 1],
+                          }}
+                        >
+                          <HeroCard
+                            variant="tertiary"
+                            className={cn(
+                              "group relative h-full overflow-hidden border bg-card/70 shadow-sm backdrop-blur-sm transition-[box-shadow,transform] duration-300",
+                              "hover:-translate-y-0.5 hover:shadow-md dark:bg-card/45",
+                              pillar.ring
+                            )}
+                          >
+                            <div
+                              className={cn(
+                                "pointer-events-none absolute inset-0 opacity-80 transition-opacity duration-300 group-hover:opacity-100",
+                                "bg-linear-to-br",
+                                pillar.accent
+                              )}
+                              aria-hidden
+                            />
+                            <HeroCard.Content className="relative z-1 flex gap-3 p-4 sm:p-5">
+                              <div
+                                className={cn(
+                                  "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-background/80 shadow-inner ring-1 ring-border/50",
+                                  "text-emerald-700 dark:text-emerald-300"
+                                )}
+                              >
+                                <Icon className="h-5 w-5" aria-hidden />
+                              </div>
+                              <div className="min-w-0 space-y-1.5">
+                                <HeroCard.Title className="text-base font-semibold leading-snug text-foreground">
+                                  {pillar.title}
+                                </HeroCard.Title>
+                                <HeroCard.Description className="text-sm leading-relaxed text-muted-foreground">
+                                  {pillar.description}
+                                </HeroCard.Description>
+                              </div>
+                            </HeroCard.Content>
+                          </HeroCard>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+                <p className="small-text mx-auto mt-4 max-w-2xl text-center leading-relaxed text-muted-foreground">
+                  Информационен акцент — не замества счетоводен или правен съвет. За конкретен казус винаги може да се
+                  обърнете към специалист.
+                </p>
+              </div>
 
               <div className="mt-8 space-y-10 sm:mt-10 sm:space-y-12">
                 <div>
@@ -1220,6 +1428,16 @@ export default function HomePage() {
                   <li>
                     <strong className="text-foreground">ДДС и счетоводно отразяване:</strong> коректни данъчни полета,
                     ставки и връзка с осчетоводяването съгласно приложимите правила.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Протокол по чл. 117 ЗДДС:</strong> при приложимите хипотези на
+                    самоначисляване е важно да имате ясен документ (вкл. PDF) за дневниците и при проверка — в приложението
+                    той е отделен от фактурата.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Контрагенти от ЕС и VIES:</strong> проверката на валидност на
+                    ДДС номер в Общността (VIES) е практическа стъпка преди издаване или приемане на документ; резултатът
+                    е информативен и не замества тълкуване на конкретния казус.
                   </li>
                   <li>
                     <strong className="text-foreground">Електронен обмен:</strong> при използване на външни платформи
