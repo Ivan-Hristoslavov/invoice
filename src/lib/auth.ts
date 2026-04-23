@@ -6,6 +6,23 @@ import cuid from "cuid";
 import { createAdminClient } from "@/lib/supabase/server";
 import { consumeMagicLinkToken, findOrCreateMagicLinkUser } from "@/lib/magic-link";
 import { consumeOneTimeLoginToken } from "@/lib/email-verification";
+import { rateLimit } from "@/lib/rate-limit";
+
+/** Brute-force guard: 10 failed credentials attempts per email+IP per 15 minutes. */
+const LOGIN_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_LIMIT_MAX_ATTEMPTS = 10;
+
+function buildLoginKey(email: string, req?: { headers?: Record<string, string | string[] | undefined> }): string {
+  const headers = req?.headers ?? {};
+  const forwarded = headers["x-forwarded-for"];
+  const realIp = headers["x-real-ip"];
+  const raw = Array.isArray(forwarded) ? forwarded[0] : forwarded;
+  const ip = (raw || (Array.isArray(realIp) ? realIp[0] : realIp) || "unknown")
+    .toString()
+    .split(",")[0]
+    .trim();
+  return `login:${email}:${ip}`;
+}
 
 const oneDayInSeconds = 60 * 60 * 24;
 const isProduction = process.env.NODE_ENV === "production";
@@ -49,7 +66,7 @@ export const authOptions: NextAuthOptions = {
         magicToken: { label: "Magic token", type: "text" },
         oneTimeLoginToken: { label: "One-time login token", type: "text" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email) {
           return null;
         }
@@ -57,6 +74,17 @@ export const authOptions: NextAuthOptions = {
         const normalizedEmail = credentials.email.trim().toLowerCase();
         const magicToken = credentials.magicToken?.trim();
         const oneTimeLoginToken = credentials.oneTimeLoginToken?.trim();
+
+        // Apply brute-force guard only for password-based attempts.
+        if (!magicToken && !oneTimeLoginToken && credentials.password) {
+          const { success } = await rateLimit(buildLoginKey(normalizedEmail, req as any), {
+            windowMs: LOGIN_LIMIT_WINDOW_MS,
+            maxRequests: LOGIN_LIMIT_MAX_ATTEMPTS,
+          });
+          if (!success) {
+            throw new Error("TooManyAttempts");
+          }
+        }
 
         if (oneTimeLoginToken) {
           const email = await consumeOneTimeLoginToken(oneTimeLoginToken);

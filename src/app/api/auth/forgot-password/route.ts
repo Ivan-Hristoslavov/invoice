@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
-import crypto from "crypto";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { isValidEmail } from "@/lib/validation";
 import { getAppBaseUrl } from "@/lib/app-url";
+import { generateRawToken, hashToken } from "@/lib/token-hash";
 
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request.headers);
-    const limiter = rateLimit(`forgot-password:${ip}`, { windowMs: 300_000, maxRequests: 3 });
+    const limiter = await rateLimit(`forgot-password:${ip}`, { windowMs: 300_000, maxRequests: 3 });
     if (!limiter.success) {
       return NextResponse.json(
         { message: "Твърде много заявки. Моля, опитайте отново след няколко минути." },
@@ -55,18 +55,19 @@ export async function POST(request: NextRequest) {
       .delete()
       .eq("userId", user.id);
 
-    // Generate secure token
-    const token = crypto.randomBytes(32).toString("hex");
+    // Generate secure token; store only the SHA-256 hash in the DB.
+    const rawToken = generateRawToken(32);
+    const tokenHash = hashToken(rawToken);
     const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
     await supabase.from("PasswordResetToken").insert({
-      token,
+      token: tokenHash,
       userId: user.id,
       expires: expires.toISOString(),
     });
 
     const baseUrl = getAppBaseUrl();
-    const resetUrl = `${baseUrl}/reset-password?token=${token}`;
+    const resetUrl = `${baseUrl}/reset-password?token=${rawToken}`;
 
     await sendPasswordResetEmail({
       to: user.email!,

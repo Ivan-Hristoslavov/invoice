@@ -92,6 +92,7 @@ type Invoice = {
   invoiceNumber: string;
   issueDate: string;
   dueDate: string;
+  supplyDate?: string | null;
   status: string;
   /** Raw DB status from `getInvoiceWithDetails` (e.g. UNPAID, PAID). */
   persistedStatus?: string;
@@ -104,7 +105,11 @@ type Invoice = {
   notes?: string;
   termsAndConditions?: string;
   currency: string;
+  placeOfIssue?: string | null;
+  isEInvoice?: boolean;
   paymentMethod?: string;
+  reverseCharge?: boolean | null;
+  supplyType?: string | null;
   client: {
     id: string;
     name: string;
@@ -501,6 +506,23 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
         return "Друго";
       default:
         return paymentMethod;
+    }
+  };
+
+  const getSupplyTypeLabel = (supplyType?: string | null) => {
+    const normalized = (supplyType || "DOMESTIC").toUpperCase();
+    switch (normalized) {
+      case "REVERSE_CHARGE_DOMESTIC":
+        return "Обратно начисляване (чл. 82 ЗДДС)";
+      case "INTRA_COMMUNITY":
+        return "Вътреобщностна доставка (чл. 53 ЗДДС)";
+      case "EXPORT":
+        return "Износ извън ЕС (чл. 28 ЗДДС)";
+      case "NOT_VAT_REGISTERED":
+        return "Нерегистрирано по ЗДДС лице (чл. 113, ал. 9 ЗДДС)";
+      case "DOMESTIC":
+      default:
+        return "Стандартна (чл. 113, ал. 1 ЗДДС)";
     }
   };
 
@@ -903,6 +925,19 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
                         <span className="text-muted-foreground">Дата на плащане</span>
                         <span>{format(new Date(invoice.dueDate), "dd.MM.yyyy")}</span>
                       </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-muted-foreground">Дата на данъчно събитие</span>
+                        <span>
+                          {format(
+                            new Date(invoice.supplyDate || invoice.issueDate),
+                            "dd.MM.yyyy"
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-muted-foreground">Място на издаване</span>
+                        <span>{invoice.placeOfIssue || "София"}</span>
+                      </div>
                       {invoice.paidAt && (
                         <div className="flex items-center justify-between gap-4">
                           <span className="text-muted-foreground">Платена на</span>
@@ -913,12 +948,28 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
                         <span className="text-muted-foreground">Валута</span>
                         <span>{invoice.currency}</span>
                       </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-muted-foreground">Е-фактура</span>
+                        <span>{invoice.isEInvoice ? "Да" : "Не"}</span>
+                      </div>
                       {invoice.paymentMethod && (
                         <div className="flex items-center justify-between gap-4">
                           <span className="text-muted-foreground">Начин на плащане</span>
                           <span>{getPaymentMethodText(invoice.paymentMethod)}</span>
                         </div>
                       )}
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-muted-foreground">Тип на доставката</span>
+                        <span>{getSupplyTypeLabel(invoice.supplyType)}</span>
+                      </div>
+                      {invoice.reverseCharge ? (
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="text-muted-foreground">Обратно начисляване</span>
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:text-amber-300">
+                            Чл. 82 ЗДДС
+                          </span>
+                        </div>
+                      ) : null}
                       {createdByName && (
                         <div className="flex items-center justify-between gap-4">
                           <span className="text-muted-foreground">Създадена от</span>

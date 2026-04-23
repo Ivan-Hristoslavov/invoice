@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   try {
     // Rate limit checkout attempts per IP (prevents abuse / spam)
     const ip = getClientIp(req.headers);
-    const { success, remaining, resetIn } = rateLimit(`checkout:${ip}`, {
+    const { success, remaining, resetIn } = await rateLimit(`checkout:${ip}`, {
       windowMs: 60_000,
       maxRequests: 10,
     });

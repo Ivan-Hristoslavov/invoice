@@ -158,6 +158,66 @@ function numberToWordsBG(num: number, currency: string = 'EUR'): string {
   return result || num.toString();
 }
 
+/**
+ * Legal footer lines for a Bulgarian invoice, chosen by supplyType.
+ * Falls back to general ZDDS reference for unknown scenarios.
+ */
+function resolveLegalFooterLines(supplyType: string | null | undefined): string[] {
+  const baseZsch =
+    "Документът е валиден без подпис и печат съгласно чл. 7 от Закона за счетоводството";
+  const normalized = (supplyType || "DOMESTIC").toUpperCase();
+  switch (normalized) {
+    case "REVERSE_CHARGE_DOMESTIC":
+      return [
+        "Основание за издаване: чл. 113, ал. 1 от ЗДДС",
+        "Обратно начисляване — данъкът е изискуем от получателя съгласно чл. 82, ал. 2-5 от ЗДДС",
+        baseZsch,
+      ];
+    case "INTRA_COMMUNITY":
+      return [
+        "Основание за издаване: чл. 113, ал. 1 от ЗДДС",
+        "Вътреобщностна доставка — нулева ставка съгласно чл. 53, ал. 1 от ЗДДС; данъкът е изискуем от получателя в държавата по пристигане",
+        baseZsch,
+      ];
+    case "EXPORT":
+      return [
+        "Основание за издаване: чл. 113, ал. 1 от ЗДДС",
+        "Износ извън ЕС — нулева ставка съгласно чл. 28 от ЗДДС",
+        baseZsch,
+      ];
+    case "NOT_VAT_REGISTERED":
+      return [
+        "Основание за издаване: чл. 113, ал. 9 от ЗДДС — лицето не е регистрирано по ЗДДС",
+        baseZsch,
+      ];
+    case "DOMESTIC":
+    default:
+      return [
+        "Основание за издаване: чл. 113, ал. 1 от ЗДДС",
+        "Съгласно чл. 6, ал. 1 от Закона за счетоводството и чл. 114 от ЗДДС",
+        baseZsch,
+      ];
+  }
+}
+
+function resolveSupplyTypeLabel(supplyType: string | null | undefined): string | null {
+  const normalized = (supplyType || "DOMESTIC").toUpperCase();
+  switch (normalized) {
+    case "REVERSE_CHARGE_DOMESTIC":
+      return "Обратно начисляване (чл. 82, ал. 2-5 ЗДДС)";
+    case "INTRA_COMMUNITY":
+      return "Вътреобщностна доставка (чл. 53 ЗДДС)";
+    case "EXPORT":
+      return "Износ извън ЕС (чл. 28 ЗДДС)";
+    case "NOT_VAT_REGISTERED":
+      return "Нерегистрирано по ЗДДС лице (чл. 113, ал. 9 ЗДДС)";
+    case "DOMESTIC":
+      return null;
+    default:
+      return null;
+  }
+}
+
 // Format currency
 function formatCurrency(amount: number, currency: string): string {
   const formatted = amount.toFixed(2);
@@ -525,7 +585,49 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
 
   setDraw(PAL.border, 0.15);
   doc.line(x0, yPos, x0 + contentWidth, yPos);
-  yPos += 10;
+  yPos += 6;
+
+  // ---- VAT exempt reasons per line (if any) ----
+  const exemptLines: string[] = [];
+  if (Array.isArray(invoice.items)) {
+    invoice.items.forEach((item: any, index: number) => {
+      const reason =
+        typeof item?.vatExemptReason === "string" ? item.vatExemptReason.trim() : "";
+      if (Number(item?.taxRate ?? 0) === 0 && reason) {
+        const desc = String(item?.description ?? "").slice(0, 60);
+        exemptLines.push(
+          `Ред ${index + 1}${desc ? ` (${desc})` : ""}: основание за 0% ДДС — ${reason}`
+        );
+      }
+    });
+  }
+
+  if (exemptLines.length > 0) {
+    doc.setFont("Roboto", "bold");
+    doc.setFontSize(7.5);
+    setText(PAL.muted);
+    doc.text("Основания за нулева ставка", margin, yPos);
+    yPos += 4;
+    doc.setFont("Roboto", "normal");
+    doc.setFontSize(7.5);
+    setText(PAL.text);
+    exemptLines.forEach((line) => {
+      const wrapped = doc.splitTextToSize(line, contentWidth);
+      doc.text(wrapped, margin, yPos);
+      yPos += wrapped.length * 3.5;
+    });
+    yPos += 4;
+  }
+
+  // ---- Supply type badge (for non-domestic) ----
+  const supplyTypeLabel = resolveSupplyTypeLabel(invoice.supplyType);
+  if (supplyTypeLabel) {
+    doc.setFont("Roboto", "bold");
+    doc.setFontSize(8);
+    setText(PAL.accent);
+    doc.text(`Тип на доставката: ${supplyTypeLabel}`, margin, yPos);
+    yPos += 5;
+  }
 
   // ---- Totals (spacing, no heavy box) ----
   const totalsW = 78;
@@ -652,11 +754,7 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
   doc.setFont("Roboto", "normal");
   doc.setFontSize(6.5);
   setText(PAL.faint);
-  const legalText = [
-    "Основание за издаване: чл. 113, ал. 1 от ЗДДС",
-    "Съгласно чл. 6, ал. 1 от Закона за счетоводството и чл. 114 от ЗДДС",
-    "Документът е валиден без подпис и печат съгласно чл. 7 от Закона за счетоводството",
-  ];
+  const legalText = resolveLegalFooterLines(invoice.supplyType);
   legalText.forEach((text, i) => doc.text(text, margin, yPos + i * 3.5));
 
   yPos = pageHeight - 22;

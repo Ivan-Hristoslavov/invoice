@@ -102,12 +102,16 @@ export function createItemSnapshots(
         ? productById.get(item.productId)
         : null;
 
+    const rawReason =
+      typeof item.vatExemptReason === "string" ? item.vatExemptReason.trim() : "";
+
     return {
       productId: item.productId ?? null,
       description: item.description,
       quantity: Number(item.quantity ?? 0),
       unitPrice: Number(item.unitPrice ?? item.price ?? 0),
       taxRate: Number(item.taxRate ?? 0),
+      vatExemptReason: rawReason.length > 0 ? rawReason : null,
       subtotal: Number(item.subtotal ?? 0),
       taxAmount: Number(item.taxAmount ?? 0),
       total: Number(item.total ?? 0),

@@ -50,7 +50,7 @@ function getSmtpTransporter() {
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req.headers);
-    const limiter = rateLimit(`contact:${ip}`, { windowMs: 300_000, maxRequests: 5 });
+    const limiter = await rateLimit(`contact:${ip}`, { windowMs: 300_000, maxRequests: 5 });
     if (!limiter.success) {
       return NextResponse.json(
         { message: "Твърде много заявки. Моля, опитайте отново след няколко минути." },

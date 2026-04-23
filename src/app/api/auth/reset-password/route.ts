@@ -3,11 +3,12 @@ import { createAdminClient } from "@/lib/supabase/server";
 import bcrypt from "bcryptjs";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { getPasswordValidationError } from "@/lib/validation";
+import { hashToken } from "@/lib/token-hash";
 
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request.headers);
-    const limiter = rateLimit(`reset-password:${ip}`, { windowMs: 300_000, maxRequests: 5 });
+    const limiter = await rateLimit(`reset-password:${ip}`, { windowMs: 300_000, maxRequests: 5 });
     if (!limiter.success) {
       return NextResponse.json(
         { message: "Твърде много заявки. Моля, опитайте отново след няколко минути." },
@@ -33,11 +34,12 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createAdminClient();
+    const tokenHash = hashToken(token);
 
     const { data: resetToken, error } = await supabase
       .from("PasswordResetToken")
       .select("id, userId, expires")
-      .eq("token", token)
+      .eq("token", tokenHash)
       .single();
 
     if (error || !resetToken) {

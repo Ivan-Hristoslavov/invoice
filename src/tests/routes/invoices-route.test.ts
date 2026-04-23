@@ -53,6 +53,7 @@ vi.mock("@/lib/invoice-documents", () => ({
 
 vi.mock("@/lib/invoice-sequence", () => ({
   getNextInvoiceSequence: mockGetNextInvoiceSequence,
+  rollbackInvoiceSequence: vi.fn(),
 }));
 
 vi.mock("@/lib/team", () => ({
@@ -242,8 +243,13 @@ describe("POST /api/invoices route", () => {
         subtotal: "200",
         taxAmount: "40",
         total: "240",
+        placeOfIssue: "София",
+        supplyDate: "2026-03-14T00:00:00.000Z",
+        isEInvoice: false,
         paymentMethod: "CREDIT_CARD",
         sellerSnapshot: { name: "Тест ООД" },
+        reverseCharge: false,
+        supplyType: "DOMESTIC",
       })
     );
     expect(insertedItemsPayload).toEqual([
@@ -253,8 +259,127 @@ describe("POST /api/invoices route", () => {
         unitPrice: "100",
         unit: "бр.",
         total: "240",
+        vatExemptReason: null,
       }),
     ]);
     expect(body.success).toBe(true);
+  });
+
+  it("persists reverseCharge flag and supplyType for intra-community delivery", async () => {
+    const { supabase, getInsertedInvoicePayload } = createInvoiceSupabaseMock();
+    mockCreateAdminClient.mockReturnValue(supabase);
+    mockFetchOwnedCompanyAndClient.mockResolvedValue({
+      company: { id: "company_1", bulstatNumber: "175074752", name: "Тест ООД" },
+      client: { id: "client_1", name: "Клиент ЕООД" },
+    });
+    mockPrepareDocumentItems.mockReturnValue({
+      preparedItems: [
+        {
+          id: "item_1",
+          productId: null,
+          description: "ЕС услуга",
+          quantity: 1,
+          unitPrice: 100,
+          unit: "бр.",
+          taxRate: 0,
+          vatExemptReason: "чл. 53, ал. 1 ЗДДС",
+          subtotal: 100,
+          taxAmount: 0,
+          total: 100,
+        },
+      ],
+      subtotal: 100,
+      taxAmount: 0,
+      total: 100,
+    });
+
+    const { POST } = await import("@/app/api/invoices/route");
+
+    const response = await POST(
+      createRequest({
+        clientId: "client_1",
+        companyId: "company_1",
+        issueDate: "2026-03-14",
+        dueDate: "2026-03-20",
+        supplyType: "INTRA_COMMUNITY",
+        reverseCharge: true,
+        items: [
+          {
+            description: "ЕС услуга",
+            quantity: 1,
+            price: 100,
+            taxRate: 0,
+            vatExemptReason: "чл. 53, ал. 1 ЗДДС",
+          },
+        ],
+      })
+    );
+
+    expect(response.status).toBe(201);
+    expect(getInsertedInvoicePayload()).toEqual(
+      expect.objectContaining({
+        reverseCharge: true,
+        supplyType: "INTRA_COMMUNITY",
+      })
+    );
+  });
+
+  it("persists vatExemptReason on InvoiceItem rows for 0% VAT lines", async () => {
+    const { supabase, getInsertedItemsPayload } = createInvoiceSupabaseMock();
+    mockCreateAdminClient.mockReturnValue(supabase);
+    mockFetchOwnedCompanyAndClient.mockResolvedValue({
+      company: { id: "company_1", bulstatNumber: "175074752", name: "Тест ООД" },
+      client: { id: "client_1", name: "Клиент ЕООД" },
+    });
+    mockPrepareDocumentItems.mockReturnValue({
+      preparedItems: [
+        {
+          id: "item_1",
+          productId: null,
+          description: "Износ",
+          quantity: 1,
+          unitPrice: 500,
+          unit: "бр.",
+          taxRate: 0,
+          vatExemptReason: "чл. 28 ЗДДС",
+          subtotal: 500,
+          taxAmount: 0,
+          total: 500,
+        },
+      ],
+      subtotal: 500,
+      taxAmount: 0,
+      total: 500,
+    });
+
+    const { POST } = await import("@/app/api/invoices/route");
+
+    const response = await POST(
+      createRequest({
+        clientId: "client_1",
+        companyId: "company_1",
+        issueDate: "2026-03-14",
+        dueDate: "2026-03-20",
+        supplyType: "EXPORT",
+        reverseCharge: false,
+        items: [
+          {
+            description: "Износ",
+            quantity: 1,
+            price: 500,
+            taxRate: 0,
+            vatExemptReason: "чл. 28 ЗДДС",
+          },
+        ],
+      })
+    );
+
+    expect(response.status).toBe(201);
+    expect(getInsertedItemsPayload()).toEqual([
+      expect.objectContaining({
+        description: "Износ",
+        vatExemptReason: "чл. 28 ЗДДС",
+      }),
+    ]);
   });
 });

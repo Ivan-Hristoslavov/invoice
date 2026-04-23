@@ -342,14 +342,27 @@ function InvoiceItemEditorDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdate: (field: string, value: string | number) => void;
-  onCommit: (payload: { quantity: number; taxRate: number; unitPriceGross: number }) => void;
+  onCommit: (payload: {
+    quantity: number;
+    taxRate: number;
+    unitPriceGross: number;
+    vatExemptReason?: string;
+  }) => void;
   onRemove: () => void;
-  onDone?: (item: { description: string; quantity: number; unitPrice: number; taxRate: number; productId?: string }) => void;
+  onDone?: (item: {
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    taxRate: number;
+    productId?: string;
+    vatExemptReason?: string;
+  }) => void;
   canRemove: boolean;
 }) {
   const [qtyDraft, setQtyDraft] = useState("");
   const [taxDraft, setTaxDraft] = useState("");
   const [grossDraft, setGrossDraft] = useState("");
+  const [exemptReasonDraft, setExemptReasonDraft] = useState("");
 
   useEffect(() => {
     if (!open || !item) return;
@@ -357,6 +370,7 @@ function InvoiceItemEditorDialog({
     setTaxDraft(String(item.taxRate));
     const g = item.unitPriceGross ?? netToGrossAmount(Number(item.unitPrice), Number(item.taxRate) || 0);
     setGrossDraft(String(roundMoney2(g)));
+    setExemptReasonDraft(typeof item.vatExemptReason === "string" ? item.vatExemptReason : "");
   }, [open, item?.id]);
 
   if (!open || !item) return null;
@@ -454,7 +468,7 @@ function InvoiceItemEditorDialog({
               ) : null}
             </div>
             <div className="space-y-2 rounded-2xl border border-border/60 bg-muted/10 p-3 sm:p-3.5">
-              <Label className="text-xs font-semibold sm:text-sm">Цена (с ДДС)</Label>
+              <Label className="text-xs font-semibold sm:text-sm">Ед. цена (брутно, с ДДС)</Label>
               <NumericInput
                 value={grossDraft}
                 onChange={(e) => setGrossDraft(e.target.value)}
@@ -468,11 +482,32 @@ function InvoiceItemEditorDialog({
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            Нетна цена за единица:{" "}
+            <span className="font-medium text-foreground">Нето за единица:</span>{" "}
             <span className="font-medium text-foreground tabular-nums">
               {formatInvoicePrice(previewNet)} {currency}
             </span>
+            {" · "}
+            <span className="text-muted-foreground">
+              Бруто се взема от полето „Ед. цена (брутно, с ДДС)"
+            </span>
           </p>
+
+          {Number(taxDraft) === 0 ? (
+            <div className="space-y-2 rounded-2xl border border-amber-500/40 bg-amber-500/5 p-3">
+              <Label className="text-xs font-semibold sm:text-sm">
+                Основание за 0% ДДС
+              </Label>
+              <Input
+                value={exemptReasonDraft}
+                onChange={(e) => setExemptReasonDraft(e.target.value)}
+                placeholder="напр. чл. 69, ал. 2, т. 1 ЗДДС"
+                className="h-10 border-2 border-border/80 bg-background text-sm sm:h-11"
+              />
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
+                Задължително при ДДС ставка 0% съгласно чл. 114, ал. 1, т. 12 ЗДДС.
+              </p>
+            </div>
+          ) : null}
 
           <Separator variant="secondary" />
 
@@ -525,17 +560,30 @@ function InvoiceItemEditorDialog({
             type="button"
             variant="default"
             className="h-10 w-full px-3 text-sm font-semibold sm:h-11 sm:w-auto"
-            disabled={!canSave}
+            disabled={
+              !canSave || (taxParsed === 0 && !exemptReasonDraft.trim())
+            }
             onClick={() => {
               if (!canSave) return;
+              if (taxParsed === 0 && !exemptReasonDraft.trim()) {
+                return;
+              }
               const net = grossToNetAmount(grossParsed, taxParsed);
-              onCommit({ quantity: quantityParsed, taxRate: taxParsed, unitPriceGross: grossParsed });
+              const trimmedReason =
+                taxParsed === 0 ? exemptReasonDraft.trim() : "";
+              onCommit({
+                quantity: quantityParsed,
+                taxRate: taxParsed,
+                unitPriceGross: grossParsed,
+                vatExemptReason: trimmedReason || undefined,
+              });
               onDone?.({
                 description: item.description.trim(),
                 quantity: quantityParsed,
                 unitPrice: net,
                 taxRate: taxParsed,
                 productId: item.productId,
+                vatExemptReason: trimmedReason || undefined,
               });
               onOpenChange(false);
             }}
@@ -590,22 +638,31 @@ function NewInvoiceContent() {
     productId?: string;
     /** Edited unit price incl. VAT (optional; derived from net if missing) */
     unitPriceGross?: number;
+    /** Legal basis for 0% VAT (chl. 53 / chl. 28 / chl. 69 ZDDS etc.) */
+    vatExemptReason?: string;
   }>>([]);
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
   const [itemEditorMode, setItemEditorMode] = useState<"add" | "edit">("edit");
-  
+
   const [invoiceData, setInvoiceData] = useState({
     invoiceNumber: "",
     issueDate: new Date().toISOString().substr(0, 10),
     dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().substr(0, 10),
     companyId: "",
-    currency: "EUR",
+    currency: "BGN",
     bulstatNumber: "",
     isOriginal: true,
     placeOfIssue: "София",
     paymentMethod: "BANK_TRANSFER",
     supplyDate: new Date().toISOString().substr(0, 10),
-    isEInvoice: false
+    isEInvoice: false,
+    supplyType: "DOMESTIC" as
+      | "DOMESTIC"
+      | "REVERSE_CHARGE_DOMESTIC"
+      | "INTRA_COMMUNITY"
+      | "EXPORT"
+      | "NOT_VAT_REGISTERED",
+    reverseCharge: false,
   });
 
   const [goodsRecipient, setGoodsRecipient] = useState({
@@ -840,7 +897,15 @@ function NewInvoiceContent() {
   }, []);
 
   const commitItemEditor = useCallback(
-    (id: number, payload: { quantity: number; taxRate: number; unitPriceGross: number }) => {
+    (
+      id: number,
+      payload: {
+        quantity: number;
+        taxRate: number;
+        unitPriceGross: number;
+        vatExemptReason?: string;
+      }
+    ) => {
       setItems((prev) =>
         prev.map((it) => {
           if (it.id !== id) return it;
@@ -851,6 +916,10 @@ function NewInvoiceContent() {
             taxRate: payload.taxRate,
             unitPrice: net,
             unitPriceGross: roundMoney2(payload.unitPriceGross),
+            vatExemptReason:
+              payload.taxRate === 0
+                ? (payload.vatExemptReason ?? "").trim() || undefined
+                : undefined,
           };
         })
       );
@@ -1016,6 +1085,8 @@ function NewInvoiceContent() {
             paymentMethod: invoiceData.paymentMethod,
             isEInvoice: invoiceData.isEInvoice,
             isOriginal: invoiceData.isOriginal,
+            supplyType: invoiceData.supplyType,
+            reverseCharge: invoiceData.reverseCharge,
             goodsRecipient: {
               name: goodsRecipient.name.trim(),
               phone: goodsRecipient.phone.trim(),
@@ -1026,6 +1097,10 @@ function NewInvoiceContent() {
               quantity: Number(item.quantity),
               price: Number(item.unitPrice),
               taxRate: Number(item.taxRate),
+              vatExemptReason:
+                typeof (item as any).vatExemptReason === "string"
+                  ? (item as any).vatExemptReason.trim() || undefined
+                  : undefined,
             })),
           }),
         });
@@ -1298,6 +1373,68 @@ function NewInvoiceContent() {
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+
+                <div className="mt-5 space-y-4 rounded-2xl border border-border/50 bg-muted/10 p-4 sm:p-5">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-sm font-semibold">Тип на доставката</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">ЗДДС сценарий</Label>
+                    <Select
+                      value={invoiceData.supplyType}
+                      onValueChange={(value) => {
+                        const next = value as typeof invoiceData.supplyType;
+                        const requiresRc =
+                          next === "REVERSE_CHARGE_DOMESTIC" || next === "INTRA_COMMUNITY";
+                        setInvoiceData((prev) => ({
+                          ...prev,
+                          supplyType: next,
+                          reverseCharge: requiresRc ? true : prev.reverseCharge,
+                        }));
+                        if (next !== "DOMESTIC") {
+                          setItems((prev) => prev.map((it) => ({ ...it, taxRate: 0 })));
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="DOMESTIC">Стандартна (чл. 113, ал. 1 ЗДДС)</SelectItem>
+                        <SelectItem value="REVERSE_CHARGE_DOMESTIC">Обратно начисляване (чл. 82 ЗДДС)</SelectItem>
+                        <SelectItem value="INTRA_COMMUNITY">Вътреобщностна доставка (чл. 53 ЗДДС)</SelectItem>
+                        <SelectItem value="EXPORT">Износ извън ЕС (чл. 28 ЗДДС)</SelectItem>
+                        <SelectItem value="NOT_VAT_REGISTERED">Нерегистрирано по ЗДДС лице (чл. 113, ал. 9 ЗДДС)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {invoiceData.supplyType !== "DOMESTIC" ? (
+                      <p className="text-[11px] leading-relaxed text-muted-foreground">
+                        За избрания тип доставка всички редове трябва да са с ДДС 0% и да имат
+                        основание за нулева ставка. Редовете бяха преместени на 0% автоматично.
+                      </p>
+                    ) : null}
+                  </div>
+                  {(invoiceData.supplyType === "REVERSE_CHARGE_DOMESTIC" ||
+                    invoiceData.supplyType === "INTRA_COMMUNITY") ? (
+                    <label className="flex items-start gap-2 rounded-xl border border-border/50 bg-background/60 p-3 text-sm">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 h-4 w-4"
+                        checked={invoiceData.reverseCharge}
+                        onChange={(e) =>
+                          setInvoiceData((prev) => ({ ...prev, reverseCharge: e.target.checked }))
+                        }
+                      />
+                      <span>
+                        <span className="font-medium">Обратно начисляване</span>
+                        <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                          Данъкът е изискуем от получателя. Ще се отрази в PDF и в справките към НАП.
+                        </span>
+                      </span>
+                    </label>
+                  ) : null}
                 </div>
               </div>
 

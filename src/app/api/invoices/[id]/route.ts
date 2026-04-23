@@ -15,7 +15,11 @@ import {
 } from "@/lib/invoice-documents";
 import { createGoodsRecipientSnapshot, withDocumentSnapshots } from "@/lib/document-snapshots";
 import { normalizeInvoiceStatus } from "@/lib/invoice-status";
-import { invoiceGoodsRecipientSchema } from "@/lib/validations/forms";
+import {
+  invoiceGoodsRecipientSchema,
+  supplyTypeSchema,
+  SUPPLY_TYPES_REQUIRING_ZERO_VAT,
+} from "@/lib/validations/forms";
 
 // Helper function removed - no longer needed with Supabase
 
@@ -27,25 +31,53 @@ const invoiceItemSchema = z.object({
   quantity: z.number().min(0.01, "Количеството трябва да е по-голямо от 0"),
   unitPrice: z.number().min(0.01, "Цената е задължителна и трябва да е положителна"),
   taxRate: z.number().min(0, "ДДС не може да е отрицателно"),
+  vatExemptReason: z.string().max(500).optional(),
 });
 
-const invoiceUpdateSchema = z.object({
-  invoiceNumber: z.string().min(1, "Номерът на фактурата е задължителен"),
-  clientId: z.string().min(1, "Клиентът е задължителен"),
-  companyId: z.string().min(1, "Компанията е задължителна"),
-  issueDate: z.string().min(1, "Дата на издаване е задължителна"),
-  dueDate: z.string().min(1, "Падежната дата е задължителна"),
-  supplyDate: z.string().optional(),
-  currency: z.string().min(1, "Валутата е задължителна"),
-  placeOfIssue: z.string().optional(),
-  paymentMethod: z.string().optional(),
-  isEInvoice: z.boolean().optional(),
-  isOriginal: z.boolean().optional(),
-  notes: z.string().optional(),
-  termsAndConditions: z.string().optional(),
-  items: z.array(invoiceItemSchema).min(1, "Нужен е поне един артикул"),
-  goodsRecipient: invoiceGoodsRecipientSchema,
-});
+const invoiceUpdateSchema = z
+  .object({
+    invoiceNumber: z.string().min(1, "Номерът на фактурата е задължителен"),
+    clientId: z.string().min(1, "Клиентът е задължителен"),
+    companyId: z.string().min(1, "Компанията е задължителна"),
+    issueDate: z.string().min(1, "Дата на издаване е задължителна"),
+    dueDate: z.string().min(1, "Падежната дата е задължителна"),
+    supplyDate: z.string().optional(),
+    currency: z.string().min(1, "Валутата е задължителна"),
+    placeOfIssue: z.string().optional(),
+    paymentMethod: z.string().optional(),
+    isEInvoice: z.boolean().optional(),
+    isOriginal: z.boolean().optional(),
+    reverseCharge: z.boolean().optional(),
+    supplyType: supplyTypeSchema.optional(),
+    notes: z.string().optional(),
+    termsAndConditions: z.string().optional(),
+    items: z.array(invoiceItemSchema).min(1, "Нужен е поне един артикул"),
+    goodsRecipient: invoiceGoodsRecipientSchema,
+  })
+  .superRefine((data, ctx) => {
+    if (data.supplyType && SUPPLY_TYPES_REQUIRING_ZERO_VAT.includes(data.supplyType)) {
+      const nonZeroItem = data.items.find((item) => Number(item.taxRate) !== 0);
+      if (nonZeroItem) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "При избран тип на доставката с нулева ставка всички артикули трябва да са с ДДС 0%",
+          path: ["items"],
+        });
+      }
+    }
+    for (let i = 0; i < data.items.length; i++) {
+      const item = data.items[i];
+      if (Number(item.taxRate) === 0 && !item.vatExemptReason?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "При ДДС ставка 0% е необходимо основание за освобождаване (напр. чл. 69, ал. 2 ЗДДС)",
+          path: ["items", i, "vatExemptReason"],
+        });
+      }
+    }
+  });
 
 export async function GET(
   request: NextRequest,
@@ -216,6 +248,7 @@ export async function PUT(
       unitPrice: item.unitPrice.toString(),
       unit: item.unit,
       taxRate: item.taxRate.toString(),
+      vatExemptReason: item.vatExemptReason ?? null,
       subtotal: item.subtotal.toString(),
       taxAmount: item.taxAmount.toString(),
       total: item.total.toString(),
@@ -262,6 +295,9 @@ export async function PUT(
           : data.paymentMethod || invoice.paymentMethod || "BANK_TRANSFER",
       isEInvoice: data.isEInvoice !== undefined ? data.isEInvoice : invoice.isEInvoice,
       isOriginal: data.isOriginal !== undefined ? data.isOriginal : invoice.isOriginal,
+      reverseCharge:
+        data.reverseCharge !== undefined ? data.reverseCharge : invoice.reverseCharge ?? false,
+      supplyType: data.supplyType || invoice.supplyType || "DOMESTIC",
       notes: data.notes || null,
       termsAndConditions: data.termsAndConditions || null,
       subtotal: subtotal.toString(),

@@ -8,27 +8,47 @@ import { cn } from "@/lib/utils";
 
 const COOKIE_CONSENT_KEY = "cookie-consent";
 const COOKIE_CONSENT_EVENT = "cookie-consent-change";
+const COOKIE_CONSENT_MAX_AGE_SECONDS = 60 * 60 * 24 * 365; // 1 year
 
 type ConsentValue = "all" | "essential" | null;
 
 function readCookieConsent(): ConsentValue {
-  if (typeof window === "undefined") return null;
+  if (typeof document === "undefined") return null;
 
   try {
-    const savedConsent = localStorage.getItem(COOKIE_CONSENT_KEY);
-    return savedConsent === "all" || savedConsent === "essential"
-      ? savedConsent
-      : null;
+    const match = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith(`${COOKIE_CONSENT_KEY}=`));
+    if (!match) {
+      // Back-compat: honour an existing localStorage value if present.
+      const legacy =
+        typeof window !== "undefined"
+          ? window.localStorage?.getItem(COOKIE_CONSENT_KEY)
+          : null;
+      return legacy === "all" || legacy === "essential" ? legacy : null;
+    }
+    const raw = decodeURIComponent(match.split("=")[1] ?? "");
+    return raw === "all" || raw === "essential" ? raw : null;
   } catch {
     return null;
   }
 }
 
 function saveCookieConsent(value: Exclude<ConsentValue, null>) {
+  if (typeof document === "undefined") return;
   try {
-    localStorage.setItem(COOKIE_CONSENT_KEY, value);
+    const secure =
+      typeof window !== "undefined" && window.location.protocol === "https:"
+        ? "; Secure"
+        : "";
+    document.cookie =
+      `${COOKIE_CONSENT_KEY}=${encodeURIComponent(value)}` +
+      `; Max-Age=${COOKIE_CONSENT_MAX_AGE_SECONDS}` +
+      `; Path=/; SameSite=Lax${secure}`;
+    // Keep legacy key in sync so older sessions see the same value.
+    window.localStorage?.setItem(COOKIE_CONSENT_KEY, value);
   } catch {
-    // Ignore storage failures and still close the modal for this session.
+    // Ignore storage failures; session will still display the modal.
   }
 
   window.dispatchEvent(new Event(COOKIE_CONSENT_EVENT));

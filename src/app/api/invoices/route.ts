@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { parseBulgarianInvoiceNumber } from "@/lib/bulgarian-invoice";
 import { createAdminClient } from "@/lib/supabase/server";
 import { withErrorHandling } from "@/middleware/error-handler";
 import { withRateLimit } from "@/middleware/rate-limiter";
@@ -96,7 +97,7 @@ export async function GET(request: NextRequest) {
         
         // Конструиране на филтри
         const filters: any = {
-          userId: session.user.id,
+          userId: sessionUser.id,
         };
         
         if (params.status) {
@@ -294,14 +295,21 @@ export async function POST(request: NextRequest) {
         let invoiceError: any = null;
         
         for (let attempt = 0; attempt < maxRetries; attempt++) {
+          // Track the sequence we issued in this iteration so we can roll it
+          // back if the Invoice INSERT fails, avoiding gaps in the series.
+          let currentIssuedSequence: number | null = null;
           try {
             // Get next invoice number using InvoiceSequence (per-user numbering, 10-digit format)
-            const { getNextInvoiceSequence } = await import("@/lib/invoice-sequence");
-            const { invoiceNumber } = await getNextInvoiceSequence(
+            const { getNextInvoiceSequence, rollbackInvoiceSequence } = await import(
+              "@/lib/invoice-sequence"
+            );
+            const { invoiceNumber, sequence } = await getNextInvoiceSequence(
               company.userId,
               validatedData.companyId,
               company.bulstatNumber
             );
+            currentIssuedSequence = sequence;
+            void rollbackInvoiceSequence; // keep lazy import reachable for catch
             
             // Check if invoice number already exists for this user (race condition check)
             const { data: existingInvoice } = await supabase
@@ -345,6 +353,8 @@ export async function POST(request: NextRequest) {
                   : validatedData.paymentMethod || "BANK_TRANSFER",
               isEInvoice: validatedData.isEInvoice || false,
               isOriginal: validatedData.isOriginal !== false,
+              reverseCharge: validatedData.reverseCharge === true,
+              supplyType: validatedData.supplyType || "DOMESTIC",
               bulstatNumber: company.bulstatNumber || null,
               createdById: sessionUser.id,
               ...createDocumentSnapshots(
@@ -381,6 +391,23 @@ export async function POST(request: NextRequest) {
             break; // Success, exit retry loop
           } catch (error: any) {
             invoiceError = error;
+            if (currentIssuedSequence !== null) {
+              try {
+                const { rollbackInvoiceSequence } = await import(
+                  "@/lib/invoice-sequence"
+                );
+                await rollbackInvoiceSequence(
+                  company.userId,
+                  validatedData.companyId,
+                  currentIssuedSequence
+                );
+              } catch (rollbackError) {
+                console.error(
+                  "Failed to roll back invoice sequence after INSERT error:",
+                  rollbackError
+                );
+              }
+            }
             if (attempt === maxRetries - 1) {
               // Last attempt, throw error
               throw error;
@@ -404,6 +431,7 @@ export async function POST(request: NextRequest) {
           unitPrice: item.unitPrice.toString(),
           unit: item.unit,
           taxRate: item.taxRate.toString(),
+          vatExemptReason: item.vatExemptReason ?? null,
           subtotal: item.subtotal.toString(),
           taxAmount: item.taxAmount.toString(),
           total: item.total.toString(),
@@ -412,9 +440,27 @@ export async function POST(request: NextRequest) {
         const { error: itemsError } = await supabase
           .from("InvoiceItem")
           .insert(itemsData);
-        
+
         if (itemsError) {
           await supabase.from("Invoice").delete().eq("id", invoiceId).eq("userId", company.userId);
+          try {
+            const parsed = parseBulgarianInvoiceNumber(invoice.invoiceNumber as string);
+            if (parsed?.sequentialNumber != null) {
+              const { rollbackInvoiceSequence } = await import(
+                "@/lib/invoice-sequence"
+              );
+              await rollbackInvoiceSequence(
+                company.userId,
+                validatedData.companyId,
+                parsed.sequentialNumber
+              );
+            }
+          } catch (rollbackError) {
+            console.error(
+              "Failed to roll back invoice sequence after items insert error:",
+              rollbackError
+            );
+          }
           throw itemsError;
         }
         

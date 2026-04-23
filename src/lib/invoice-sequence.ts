@@ -186,3 +186,37 @@ export async function getCurrentSequence(userId: string, companyId: string): Pro
 
   return sequence?.sequence ?? 0;
 }
+
+/**
+ * Compensating rollback when an Invoice INSERT fails after we already bumped
+ * the InvoiceSequence. Decrements the sequence by exactly 1 iff the current
+ * value still matches the one we just issued — prevents race conditions where
+ * a parallel successful create already advanced the counter further.
+ */
+export async function rollbackInvoiceSequence(
+  userId: string,
+  companyId: string,
+  issuedSequence: number
+): Promise<void> {
+  const supabase = createAdminClient();
+
+  const { data: existing, error } = await supabase
+    .from('InvoiceSequence')
+    .select('id, sequence')
+    .eq('userId', userId)
+    .eq('companyId', companyId)
+    .eq('year', GLOBAL_SEQUENCE_YEAR)
+    .maybeSingle();
+
+  if (error || !existing) return;
+  if (existing.sequence !== issuedSequence) return;
+
+  await supabase
+    .from('InvoiceSequence')
+    .update({
+      sequence: Math.max(0, issuedSequence - 1),
+      updatedAt: new Date().toISOString(),
+    })
+    .eq('id', existing.id)
+    .eq('sequence', issuedSequence);
+}
