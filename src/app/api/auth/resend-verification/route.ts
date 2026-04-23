@@ -12,7 +12,7 @@ import { getAppBaseUrl } from "@/lib/app-url";
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request.headers);
-    const limiter = rateLimit(`resend-verification:${ip}`, {
+    const limiter = await rateLimit(`resend-verification:${ip}`, {
       windowMs: 300_000,
       maxRequests: 3,
     });

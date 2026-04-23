@@ -25,8 +25,8 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
-      - name: Unit tests (lib + API routes)
-        run: npx vitest run src/tests/lib src/tests/routes
+      - name: Unit tests with coverage gates
+        run: npm run test:coverage
 
       - name: Build
         run: npm run build

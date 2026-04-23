@@ -24,6 +24,10 @@ model User {
   invoicePreferences                Json?
   phone                             String?
   profileCompletedAt                DateTime?
+  /// Soft-delete timestamp. Set when the user requests account deletion.
+  deletedAt                         DateTime?
+  /// Timestamp when PII was scrubbed from this row (retention-safe deletion).
+  anonymizedAt                      DateTime?
   accounts                          Account[]
   auditLogs                         AuditLog[]
   Client_Client_createdByIdToUser   Client[]          @relation("Client_createdByIdToUser")
@@ -118,8 +122,8 @@ model Company {
   viesTraderAddress       String?
   createdAt               DateTime          @default(now())
   updatedAt               DateTime          @updatedAt
-  userId                  String
-  user                    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId                  String?
+  user                    User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
   creditNotes             CreditNote[]
   debitNotes              DebitNote[]
   vatProtocol117s         VatProtocol117[]
@@ -158,11 +162,11 @@ model Client {
   viesTraderAddress             String?
   createdAt                     DateTime     @default(now())
   updatedAt                     DateTime     @updatedAt
-  userId                        String
+  userId                        String?
   locale                        String       @default("en")
   createdById                   String?
   User_Client_createdByIdToUser User?        @relation("Client_createdByIdToUser", fields: [createdById], references: [id])
-  user                          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                          User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
   creditNotes                   CreditNote[]
   debitNotes                    DebitNote[]
   vatProtocol117s               VatProtocol117[]
@@ -207,7 +211,7 @@ model Invoice {
   invoiceNumber                               String
   clientId                                    String
   companyId                                   String
-  userId                                      String
+  userId                                      String?
   issueDate                                   DateTime
   dueDate                                     DateTime
   status                                      InvoiceStatus    @default(DRAFT)
@@ -233,6 +237,8 @@ model Invoice {
   cancelledAt                                 DateTime?
   cancelledBy                                 String?
   reverseCharge                               Boolean          @default(false)
+  /// Supply type for ZDDS scenario selection: DOMESTIC | REVERSE_CHARGE_DOMESTIC | INTRA_COMMUNITY | EXPORT | NOT_VAT_REGISTERED
+  supplyType                                  String           @default("DOMESTIC")
   creditNoteId                                String?          @unique
   invoiceSequenceId                           String?          @unique
   sellerSnapshot                              Json?
@@ -250,7 +256,7 @@ model Invoice {
   User_Invoice_createdByIdToUser              User?            @relation("Invoice_createdByIdToUser", fields: [createdById], references: [id])
   CreditNote_Invoice_creditNoteIdToCreditNote CreditNote?      @relation("Invoice_creditNoteIdToCreditNote", fields: [creditNoteId], references: [id])
   sequence                                    InvoiceSequence? @relation(fields: [invoiceSequenceId], references: [id])
-  user                                        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                                        User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
   items                                       InvoiceItem[]
   /// Legacy table; not exposed on Prisma Client (see model Payment @@ignore)
   payments                                    Payment[]       @ignore
@@ -259,6 +265,7 @@ model Invoice {
   @@unique([invoiceNumber, companyId])
   @@index([userId, status])
   @@index([userId, issueDate(sort: Desc)])
+  @@index([userId, supplyType])
   @@index([clientId])
   @@index([companyId])
   @@index([createdById])
@@ -307,7 +314,7 @@ model CreditNote {
   invoiceId                                String?          @unique
   companyId                                String
   clientId                                 String
-  userId                                   String
+  userId                                   String?
   issueDate                                DateTime
   reason                                   String?
   subtotal                                 Decimal          @db.Decimal(10, 2)
@@ -323,7 +330,7 @@ model CreditNote {
   client                                   Client           @relation(fields: [clientId], references: [id])
   company                                  Company          @relation(fields: [companyId], references: [id])
   invoice                                  Invoice?         @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
-  user                                     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                                     User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
   items                                    CreditNoteItem[]
   Invoice_Invoice_creditNoteIdToCreditNote Invoice?         @relation("Invoice_creditNoteIdToCreditNote")
 
@@ -354,7 +361,7 @@ model DebitNote {
   invoiceId       String?
   companyId       String
   clientId        String
-  userId          String
+  userId          String?
   issueDate       DateTime
   reason          String?
   subtotal        Decimal         @db.Decimal(10, 2)
@@ -370,7 +377,7 @@ model DebitNote {
   client          Client          @relation(fields: [clientId], references: [id])
   company         Company         @relation(fields: [companyId], references: [id])
   invoice         Invoice?        @relation(fields: [invoiceId], references: [id])
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
   items           DebitNoteItem[]
 
   @@unique([debitNoteNumber, companyId])
@@ -400,7 +407,7 @@ model VatProtocol117 {
   protocolNumber        String               @unique
   companyId             String
   clientId              String
-  userId                String
+  userId                String?
   issueDate             DateTime
   taxEventDate          DateTime
   /// INTRA_COMMUNITY_GOODS | INTRA_COMMUNITY_SERVICES | REVERSE_CHARGE_DOMESTIC | OTHER
@@ -424,7 +431,7 @@ model VatProtocol117 {
   updatedAt             DateTime             @updatedAt
   client                Client               @relation(fields: [clientId], references: [id])
   company               Company              @relation(fields: [companyId], references: [id])
-  user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                  User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
   items                 VatProtocol117Item[]
 
   @@unique([protocolNumber, companyId])

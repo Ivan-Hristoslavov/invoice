@@ -116,6 +116,27 @@ export const invoiceGoodsRecipientSchema = z
   })
   .optional();
 
+/**
+ * Supply type classifies the invoice for Bulgarian ZDDS purposes and drives
+ * PDF legal footer selection, VAT rate enforcement, and issuing validation.
+ */
+export const supplyTypeSchema = z.enum([
+  "DOMESTIC",
+  "REVERSE_CHARGE_DOMESTIC",
+  "INTRA_COMMUNITY",
+  "EXPORT",
+  "NOT_VAT_REGISTERED",
+]);
+
+export type SupplyType = z.infer<typeof supplyTypeSchema>;
+
+export const SUPPLY_TYPES_REQUIRING_ZERO_VAT: readonly SupplyType[] = [
+  "REVERSE_CHARGE_DOMESTIC",
+  "INTRA_COMMUNITY",
+  "EXPORT",
+  "NOT_VAT_REGISTERED",
+] as const;
+
 export const invoiceSchema = z.object({
   clientId: z.string().min(1, "Клиентът е задължителен"),
   companyId: z.string().min(1, "Фирмата е задължителна"),
@@ -123,13 +144,14 @@ export const invoiceSchema = z.object({
   dueDate: z.string().refine(str => !isNaN(Date.parse(str)), "Невалидна дата"),
   supplyDate: z.string().refine(str => !isNaN(Date.parse(str)), "Невалидна дата").optional(),
   status: z.enum(['DRAFT', 'ISSUED', 'VOIDED', 'CANCELLED']).default('DRAFT'),
-  currency: z.string().optional().default('EUR'),
+  currency: z.string().optional().default('BGN'),
   locale: z.string().optional().default('bg'),
   placeOfIssue: z.string().optional().default('София'),
   paymentMethod: z.string().optional().default('BANK_TRANSFER'),
   isEInvoice: z.boolean().optional().default(false),
   isOriginal: z.boolean().optional().default(true),
   reverseCharge: z.boolean().default(false),
+  supplyType: supplyTypeSchema.default("DOMESTIC"),
   items: z.array(invoiceItemSchema).min(1, "Фактурата трябва да има поне един артикул"),
   goodsRecipient: invoiceGoodsRecipientSchema,
   notes: z.string().max(FIELD_LIMITS.notes, "Бележките са твърде дълги").optional(),
@@ -141,6 +163,28 @@ export const invoiceSchema = z.object({
 }, {
   message: "Падежната дата трябва да бъде след датата на издаване",
   path: ["dueDate"],
+}).superRefine((data, ctx) => {
+  if (SUPPLY_TYPES_REQUIRING_ZERO_VAT.includes(data.supplyType)) {
+    const nonZeroItem = data.items.find((item) => Number(item.taxRate) !== 0);
+    if (nonZeroItem) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "При избран тип на доставката с нулева ставка всички артикули трябва да са с ДДС 0%",
+        path: ["items"],
+      });
+    }
+  }
+  const requiresReverseCharge =
+    data.supplyType === "REVERSE_CHARGE_DOMESTIC" ||
+    data.supplyType === "INTRA_COMMUNITY";
+  if (requiresReverseCharge && data.reverseCharge !== true) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Изберете флаг „Обратно начисляване“ за този тип доставка",
+      path: ["reverseCharge"],
+    });
+  }
 });
 
 // Payment related schemas

@@ -56,7 +56,7 @@ export async function GET(
 
     const { data: fullInvoice, error: fullError } = await supabase
       .from("Invoice")
-      .select("*, company:Company(*), items:InvoiceItem(*)")
+      .select("*, company:Company(*), client:Client(*), items:InvoiceItem(*)")
       .eq("id", id)
       .single();
 
@@ -168,7 +168,7 @@ export async function PATCH(
     if (requestedStatus === "ISSUED") {
       const { data: fullInvoice, error: fullError } = await supabase
         .from("Invoice")
-        .select("*, company:Company(*), items:InvoiceItem(*)")
+        .select("*, company:Company(*), client:Client(*), items:InvoiceItem(*)")
         .eq("id", id)
         .single();
 

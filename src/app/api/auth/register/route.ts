@@ -21,7 +21,7 @@ const registerSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req.headers);
-    const limiter = rateLimit(`register:${ip}`, { windowMs: 300_000, maxRequests: 5 });
+    const limiter = await rateLimit(`register:${ip}`, { windowMs: 300_000, maxRequests: 5 });
     if (!limiter.success) {
       return NextResponse.json(
         { message: "Твърде много заявки. Моля, опитайте отново след няколко минути." },
@@ -57,8 +57,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash password (cost 12 matches reset-password and 2026 baseline).
+    const hashedPassword = await bcrypt.hash(password, 12);
 
     // Generate CUID for user ID
     const userId = cuid();
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
     if (createError) {
       console.error("Грешка при регистрация:", createError);
       return NextResponse.json(
-        { message: "Възникна грешка при регистрация", error: createError.message },
+        { message: "Възникна грешка при регистрация" },
         { status: 500 }
       );
     }

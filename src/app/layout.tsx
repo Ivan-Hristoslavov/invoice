@@ -7,7 +7,7 @@ import { authOptions } from "@/lib/auth";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner-toaster";
 import { CookieConsent } from "@/components/gdpr/CookieConsent";
-import { Analytics } from "@vercel/analytics/next";
+import { AnalyticsGate } from "@/components/gdpr/AnalyticsGate";
 import { APP_NAME, APP_DEFAULT_TITLE, APP_DESCRIPTION, SEO_KEYWORDS } from "@/config/constants";
 import { Providers } from "./providers";
 
@@ -178,7 +178,7 @@ export default async function RootLayout({
           </AuthProvider>
         </ThemeProvider>
         </Providers>
-        <Analytics />
+        <AnalyticsGate />
       </body>
     </html>
   );

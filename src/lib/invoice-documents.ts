@@ -79,6 +79,9 @@ export function prepareDocumentItems(
     subtotal += lineSubtotal;
     taxAmount += lineTax;
 
+    const rawReason = typeof item.vatExemptReason === "string" ? item.vatExemptReason.trim() : "";
+    const vatExemptReason = rawReason.length > 0 ? rawReason : null;
+
     return {
       id: item.id,
       productId: item.productId || null,
@@ -87,6 +90,7 @@ export function prepareDocumentItems(
       unitPrice: itemPrice,
       unit: item.unit || product?.unit || "бр.",
       taxRate: itemTaxRate,
+      vatExemptReason,
       subtotal: lineSubtotal,
       taxAmount: lineTax,
       total: lineSubtotal + lineTax,

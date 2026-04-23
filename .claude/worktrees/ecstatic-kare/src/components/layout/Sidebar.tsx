@@ -285,6 +285,21 @@ export function Sidebar() {
               <LogOut className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
+          {/* Version & plan */}
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5 text-xs text-muted-foreground">
+            <span>{APP_NAME} v1.0.0</span>
+            {!isLoadingUsage && (
+              <span
+                className={cn(
+                  "rounded border px-1.5 py-0.5 text-[10px] font-medium",
+                  planBadgeClass
+                )}
+                title="Текущ план"
+              >
+                {planDisplayName}
+              </span>
+            )}
+          </div>
         </div>
       </motion.aside>
     </>

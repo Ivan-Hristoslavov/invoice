@@ -5,7 +5,7 @@ import { rateLimit, getClientIp } from "@/lib/rate-limit";
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request.headers);
-    const limiter = rateLimit(`confirm-email:${ip}`, {
+    const limiter = await rateLimit(`confirm-email:${ip}`, {
       windowMs: 300_000,
       maxRequests: 10,
     });
