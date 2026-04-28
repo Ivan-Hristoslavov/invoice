@@ -56,9 +56,23 @@ export function applyViesResultToForm<T extends FieldValues & ViesExtendedFormVa
   }
   if (formFields.bulstatNumber?.trim()) {
     const key = "bulstatNumber" as Path<T>;
-    const cur = trimStr(getValues(key));
-    if (!cur || overwrite) {
+    if (overwrite) {
       setValue(key, formFields.bulstatNumber as T[Path<T>], { shouldValidate: true, shouldDirty: true });
+    } else {
+      const cur = trimStr(getValues(key));
+      if (!cur) {
+        setValue(key, formFields.bulstatNumber as T[Path<T>], { shouldValidate: true, shouldDirty: true });
+      }
+    }
+  }
+
+  if (overwrite && formFields.vatRegistrationNumber?.trim()) {
+    // Keep BG VAT-driven identifiers in sync on confirmed overwrite flows.
+    const bulstatKey = "bulstatNumber" as Path<T>;
+    const normalizedVat = formFields.vatRegistrationNumber.replace(/\s/g, "").toUpperCase();
+    const bgVatMatch = normalizedVat.match(/^BG(\d+)$/);
+    if (bgVatMatch?.[1]) {
+      setValue(bulstatKey, bgVatMatch[1] as T[Path<T>], { shouldValidate: true, shouldDirty: true });
     }
   }
 

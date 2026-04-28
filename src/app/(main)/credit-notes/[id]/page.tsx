@@ -23,6 +23,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { resolveSessionUser } from "@/lib/session-user";
 import { format } from "date-fns";
 import { bg } from "date-fns/locale";
+import { CreditNoteSendButton } from "./CreditNoteSendButton";
 
 export const metadata: Metadata = {
   title: `Сторно документ | ${APP_NAME}`,
@@ -145,6 +146,7 @@ export default async function CreditNoteDetailPage({
                 PDF
               </Link>
             </Button>
+            <CreditNoteSendButton id={id} clientEmail={client?.email ?? null} />
           </div>
         </div>
       </div>

@@ -902,7 +902,6 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
                       <SelectValue placeholder="Изберете валута" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="BGN">BGN - Лев</SelectItem>
                       <SelectItem value="EUR">EUR - Евро</SelectItem>
                       <SelectItem value="USD">USD - Долар</SelectItem>
                     </SelectContent>

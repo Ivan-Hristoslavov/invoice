@@ -3,6 +3,7 @@ import {
   buildMicroinvestWarehouseXml,
   buildMicroinvestWarehouseXmlBatch,
   buildMicroinvestWarehouseTxt,
+  buildMicroinvestWarehouseTxtBatch,
   microinvestPaymentType,
 } from "@/lib/invoice-export-microinvest";
 import { parseEuVatInput } from "@/lib/vies";
@@ -81,6 +82,36 @@ describe("invoice-export-microinvest", () => {
     expect(txt).toContain("FORMAT=MICROINVEST_WAREHOUSE_EXPORT_V1");
     expect(txt).toContain("StockReceiptType=2");
     expect(txt).toContain("PartnerName=X");
+  });
+
+  it("builds TXT batch with FormScript commands and END", () => {
+    const txt = buildMicroinvestWarehouseTxtBatch(
+      [
+        {
+          invoiceNumber: "A-1",
+          issueDate: "2024-01-10T00:00:00.000Z",
+          total: 120,
+          paymentMethod: "BANK_TRANSFER",
+          notes: "Продажба A",
+          client: { name: "Client A", address: "Addr A" },
+        },
+        {
+          invoiceNumber: "A-2",
+          issueDate: "2024-01-11T00:00:00.000Z",
+          total: 60,
+          paymentMethod: "CASH",
+          notes: "Продажба B",
+          client: { name: "Client B", address: "Addr B" },
+        },
+      ],
+      { includePrint: true }
+    );
+
+    expect(txt).toContain("F3\r\nCLEAR");
+    expect(txt).toContain("Основание за плащане - информация за получателя=Продажба A");
+    expect(txt).toContain("Основание за плащане - информация за получателя=Продажба B");
+    expect(txt).toContain("\r\nPRINT\r\n");
+    expect(txt.trimEnd().endsWith("END")).toBe(true);
   });
 });
 

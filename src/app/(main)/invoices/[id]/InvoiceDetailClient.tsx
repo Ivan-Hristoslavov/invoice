@@ -312,7 +312,17 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
     }
   };
 
-  const handleSendInvoiceOnly = async () => {
+  const handlePrintInvoiceCopy = () => {
+    try {
+      printInvoicePdf(invoice.id, true);
+      toast.info("PDF (копие) беше отворен в нов раздел. Използвайте Print от PDF прегледа.");
+    } catch (error) {
+      console.error("Error printing invoice copy:", error);
+      toast.error("Грешка при принтирането на копието");
+    }
+  };
+
+  const handleSendInvoiceOnly = async (isCopy: boolean = false) => {
     await sendEmailLock.run(async () => {
       try {
         const response = await fetch(`/api/invoices/${invoice.id}/send`, {
@@ -322,6 +332,7 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
           },
           body: JSON.stringify({
             type: "invoice_only",
+            copy: isCopy,
           }),
         });
 
@@ -330,8 +341,8 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
           throw new Error(errorPayload?.error || "Грешка при изпращане на фактурата");
         }
 
-        toast.success("Фактурата е изпратена успешно", {
-          description: `Фактурата е изпратена на ${invoice.client.email}`,
+        toast.success(`Фактурата (${isCopy ? "копие" : "оригинал"}) е изпратена успешно`, {
+          description: `Изпратено на ${invoice.client.email}`,
         });
       } catch (error) {
         console.error("Error sending invoice:", error);
@@ -540,19 +551,34 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
         <CardContent className="px-4 pb-4 pt-0">
           <div className="grid gap-2">
             {canSendEmail ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start text-left h-8"
-                onClick={() => void handleSendInvoiceOnly()}
-                disabled={sendEmailLock.isPending}
-                loading={sendEmailLock.isPending}
-              >
-                <Send className="w-3.5 h-3.5 mr-2 shrink-0 text-gray-600" />
-                <span className="text-xs font-medium">
-                  {sendEmailLock.isPending ? "Изпращане..." : "Изпрати фактура"}
-                </span>
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-start text-left h-8"
+                  onClick={() => void handleSendInvoiceOnly(false)}
+                  disabled={sendEmailLock.isPending}
+                  loading={sendEmailLock.isPending}
+                >
+                  <Send className="w-3.5 h-3.5 mr-2 shrink-0 text-gray-600" />
+                  <span className="text-xs font-medium">
+                    {sendEmailLock.isPending ? "Изпращане..." : "Изпрати оригинал"}
+                  </span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-start text-left h-8"
+                  onClick={() => void handleSendInvoiceOnly(true)}
+                  disabled={sendEmailLock.isPending}
+                  loading={sendEmailLock.isPending}
+                >
+                  <Copy className="w-3.5 h-3.5 mr-2 shrink-0 text-gray-600" />
+                  <span className="text-xs font-medium">
+                    {sendEmailLock.isPending ? "Изпращане..." : "Изпрати копие"}
+                  </span>
+                </Button>
+              </>
             ) : (
               <TooltipProvider>
                 <Tooltip>
@@ -775,7 +801,13 @@ export default function InvoiceDetailClient({ initialInvoice, createdByName }: I
                 <DropdownMenuItemIcon>
                   <Printer />
                 </DropdownMenuItemIcon>
-                <DropdownMenuItemText>Принт</DropdownMenuItemText>
+                <DropdownMenuItemText>Принт (оригинал)</DropdownMenuItemText>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handlePrintInvoiceCopy}>
+                <DropdownMenuItemIcon>
+                  <Copy />
+                </DropdownMenuItemIcon>
+                <DropdownMenuItemText>Принт (копие)</DropdownMenuItemText>
               </DropdownMenuItem>
               <DropdownMenuItem
                 isDisabled={exportLock.isPending}

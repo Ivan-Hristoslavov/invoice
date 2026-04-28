@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useCompanyBookLookup } from "@/hooks/useCompanyBookLookup";
+import { useCompanyBookSearch } from "@/hooks/useCompanyBookSearch";
 import { useAsyncLock } from "@/hooks/use-async-lock";
 import { Button } from "@/components/ui/button";
 import { Input, NumericInput } from "@/components/ui/input";
@@ -335,6 +336,14 @@ function NewClientPageContent() {
     onSuccess: handleCompanyBookSuccess,
     onError: (msg) => toast.error("Грешка при търсене", { description: msg }),
   });
+  const {
+    search: searchCompanyBook,
+    isSearching: isCompanyBookSearching,
+  } = useCompanyBookSearch({
+    onError: (msg) => toast.error("Грешка при търсене", { description: msg }),
+  });
+  const [companySearchQuery, setCompanySearchQuery] = useState("");
+  const [companySearchResults, setCompanySearchResults] = useState<Array<{ uic: string; name: string }>>([]);
 
   const handleEikLookup = useCallback(async () => {
     const eik = form.getValues("bulstatNumber")?.replace(/\D/g, "");
@@ -344,6 +353,21 @@ function NewClientPageContent() {
     }
     await lookupCompany(eik);
   }, [form, lookupCompany]);
+
+  const handleCompanyNameSearch = useCallback(async () => {
+    const payload = await searchCompanyBook("companies", companySearchQuery, 5);
+    if (!payload || !("results" in payload)) {
+      setCompanySearchResults([]);
+      return;
+    }
+
+    setCompanySearchResults(
+      payload.results.map((item) => ({
+        uic: item.uic,
+        name: item.name,
+      }))
+    );
+  }, [searchCompanyBook, companySearchQuery]);
 
   useEffect(() => {
     if (clientCreationMode !== "manual") {
@@ -664,6 +688,59 @@ function NewClientPageContent() {
                     )}
                     Зареди данни
                   </Button>
+                </div>
+                <div className="mt-3 space-y-2 rounded-md border border-border/60 bg-background/60 p-3">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Търсене по име на фирма
+                  </p>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Input
+                      placeholder="напр. Алфа Трейд"
+                      className="h-10 flex-1"
+                      value={companySearchQuery}
+                      onChange={(e) => setCompanySearchQuery(e.target.value)}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-10 gap-2"
+                      disabled={isCompanyBookSearching || companySearchQuery.trim().length < 3}
+                      onClick={handleCompanyNameSearch}
+                    >
+                      {isCompanyBookSearching ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Search className="h-4 w-4" />
+                      )}
+                      Търси
+                    </Button>
+                  </div>
+                  {companySearchResults.length > 0 && (
+                    <div className="space-y-2">
+                      {companySearchResults.map((item) => (
+                        <div
+                          key={`${item.uic}-${item.name}`}
+                          className="flex items-center justify-between rounded-md border border-border/60 bg-background px-3 py-2"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium">{item.name}</p>
+                            <p className="text-xs text-muted-foreground">ЕИК: {item.uic}</p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            className="ml-3 h-8"
+                            onClick={() => {
+                              form.setValue("bulstatNumber", item.uic, { shouldValidate: true, shouldDirty: true });
+                              void lookupCompany(item.uic);
+                            }}
+                          >
+                            Зареди
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Най-добър резултат ще получите с 9 до 13 цифри, без интервали и символи.

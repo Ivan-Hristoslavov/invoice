@@ -46,7 +46,8 @@ export async function POST(
       );
     }
 
-    await request.json().catch(() => null);
+    const payload = (await request.json().catch(() => null)) as { copy?: boolean } | null;
+    const isCopy = payload?.copy === true;
     const { id } = await params;
 
     const supabase = createAdminClient();
@@ -88,6 +89,7 @@ export async function POST(
       invoiceNumber: invoice.invoiceNumber,
       type: 'invoice_only',
       userId: sessionUser.id,
+      isCopy,
     });
 
     if (!isIssuedLikeStatus(invoice.status)) {

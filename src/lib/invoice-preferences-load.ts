@@ -5,6 +5,7 @@ import { DEFAULT_VAT_RATE } from "@/config/constants";
 export type InvoicePreferencesPayload = {
   defaultVatRate: number;
   startingInvoiceNumber?: number;
+  startingVatProtocolNumber?: number;
   invoicePrefix: string;
   resetNumberingYearly: boolean;
   defaultCurrency: string;
@@ -26,6 +27,7 @@ type PrefsJson = {
   showCompanyLogo?: boolean;
   autoArchiveAfterDays?: number;
   keepDraftDays?: number;
+  startingVatProtocolNumber?: number | null;
 };
 
 function parsePreferencesJson(value: Prisma.JsonValue | null): PrefsJson {
@@ -54,6 +56,8 @@ export async function getInvoicePreferencesForUser(
   return {
     defaultVatRate: user.defaultVatRate != null ? Number(user.defaultVatRate) : DEFAULT_VAT_RATE,
     startingInvoiceNumber: user.startingInvoiceNumber ?? undefined,
+    startingVatProtocolNumber:
+      typeof j.startingVatProtocolNumber === "number" ? j.startingVatProtocolNumber : undefined,
     invoicePrefix: j.invoicePrefix ?? "",
     resetNumberingYearly: j.resetNumberingYearly ?? false,
     defaultCurrency: j.defaultCurrency ?? "EUR",

@@ -248,7 +248,6 @@ describe("POST /api/invoices route", () => {
         isEInvoice: false,
         paymentMethod: "CREDIT_CARD",
         sellerSnapshot: { name: "Тест ООД" },
-        reverseCharge: false,
         supplyType: "DOMESTIC",
       })
     );
@@ -259,13 +258,12 @@ describe("POST /api/invoices route", () => {
         unitPrice: "100",
         unit: "бр.",
         total: "240",
-        vatExemptReason: null,
       }),
     ]);
     expect(body.success).toBe(true);
   });
 
-  it("persists reverseCharge flag and supplyType for intra-community delivery", async () => {
+  it("persists supplyType for intra-community delivery", async () => {
     const { supabase, getInsertedInvoicePayload } = createInvoiceSupabaseMock();
     mockCreateAdminClient.mockReturnValue(supabase);
     mockFetchOwnedCompanyAndClient.mockResolvedValue({
@@ -318,13 +316,12 @@ describe("POST /api/invoices route", () => {
     expect(response.status).toBe(201);
     expect(getInsertedInvoicePayload()).toEqual(
       expect.objectContaining({
-        reverseCharge: true,
         supplyType: "INTRA_COMMUNITY",
       })
     );
   });
 
-  it("persists vatExemptReason on InvoiceItem rows for 0% VAT lines", async () => {
+  it("accepts vatExemptReason input for 0% VAT lines", async () => {
     const { supabase, getInsertedItemsPayload } = createInvoiceSupabaseMock();
     mockCreateAdminClient.mockReturnValue(supabase);
     mockFetchOwnedCompanyAndClient.mockResolvedValue({
@@ -378,8 +375,71 @@ describe("POST /api/invoices route", () => {
     expect(getInsertedItemsPayload()).toEqual([
       expect.objectContaining({
         description: "Износ",
-        vatExemptReason: "чл. 28 ЗДДС",
+        taxRate: "0",
       }),
     ]);
+  });
+
+  it("forces NOT_VAT_REGISTERED supplyType for non-VAT registered issuer", async () => {
+    const { supabase, getInsertedInvoicePayload } = createInvoiceSupabaseMock();
+    mockCreateAdminClient.mockReturnValue(supabase);
+    mockFetchOwnedCompanyAndClient.mockResolvedValue({
+      company: {
+        id: "company_1",
+        bulstatNumber: "175074752",
+        name: "Тест ООД",
+        vatRegistered: false,
+      },
+      client: { id: "client_1", name: "Клиент ЕООД" },
+    });
+    mockPrepareDocumentItems.mockReturnValue({
+      preparedItems: [
+        {
+          id: "item_1",
+          productId: null,
+          description: "Услуга",
+          quantity: 1,
+          unitPrice: 120,
+          unit: "бр.",
+          taxRate: 0,
+          vatExemptReason: "чл. 113, ал. 9 ЗДДС",
+          subtotal: 120,
+          taxAmount: 0,
+          total: 120,
+        },
+      ],
+      subtotal: 120,
+      taxAmount: 0,
+      total: 120,
+    });
+
+    const { POST } = await import("@/app/api/invoices/route");
+
+    const response = await POST(
+      createRequest({
+        clientId: "client_1",
+        companyId: "company_1",
+        issueDate: "2026-03-14",
+        dueDate: "2026-03-20",
+        supplyType: "INTRA_COMMUNITY",
+        reverseCharge: true,
+        items: [
+          {
+            description: "Услуга",
+            quantity: 1,
+            price: 120,
+            taxRate: 0,
+            vatExemptReason: "чл. 113, ал. 9 ЗДДС",
+          },
+        ],
+      })
+    );
+
+    expect(response.status).toBe(201);
+    expect(getInsertedInvoicePayload()).toEqual(
+      expect.objectContaining({
+        supplyType: "NOT_VAT_REGISTERED",
+      })
+    );
   });
 });

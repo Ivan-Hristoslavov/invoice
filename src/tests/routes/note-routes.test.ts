@@ -8,7 +8,8 @@ const mockFetchOwnedCompanyAndClient = vi.fn();
 const mockFetchProductsByIds = vi.fn();
 const mockPrepareDocumentItems = vi.fn();
 const mockCreateDocumentSnapshots = vi.fn();
-const mockGetNextDocumentNumber = vi.fn();
+const mockGetNextInvoiceSequence = vi.fn();
+const mockRollbackInvoiceSequence = vi.fn();
 
 vi.mock("next-auth", () => ({
   getServerSession: mockGetServerSession,
@@ -33,8 +34,9 @@ vi.mock("@/lib/invoice-documents", () => ({
   createDocumentSnapshots: mockCreateDocumentSnapshots,
 }));
 
-vi.mock("@/lib/document-numbering", () => ({
-  getNextDocumentNumber: mockGetNextDocumentNumber,
+vi.mock("@/lib/invoice-sequence", () => ({
+  getNextInvoiceSequence: mockGetNextInvoiceSequence,
+  rollbackInvoiceSequence: mockRollbackInvoiceSequence,
 }));
 
 function createRequest(url: string) {
@@ -47,6 +49,30 @@ function createRequest(url: string) {
       companyId: "company-1",
       clientId: "client-1",
       invoiceId: "invoice-1",
+      issueDate: "2026-03-14",
+      reason: "Корекция",
+      currency: "EUR",
+      items: [
+        {
+          description: "Услуга",
+          quantity: 1,
+          unitPrice: 100,
+          taxRate: 20,
+        },
+      ],
+    }),
+  });
+}
+
+function createRequestWithoutInvoice(url: string) {
+  return new NextRequest(`http://localhost${url}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      companyId: "company-1",
+      clientId: "client-1",
       issueDate: "2026-03-14",
       reason: "Корекция",
       currency: "EUR",
@@ -132,7 +158,11 @@ describe("credit/debit note routes", () => {
       buyerSnapshot: {},
       itemsSnapshot: [],
     });
-    mockGetNextDocumentNumber.mockResolvedValue("CN-1");
+    mockGetNextInvoiceSequence.mockResolvedValue({
+      invoiceNumber: "2612340000000002",
+      sequence: 2,
+    });
+    mockRollbackInvoiceSequence.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -153,6 +183,19 @@ describe("credit/debit note routes", () => {
     expect(insertSpy).not.toHaveBeenCalled();
   });
 
+  it("requires source invoice for credit notes", async () => {
+    const { supabase, insertSpy } = createSupabaseMock("ISSUED");
+    mockCreateAdminClient.mockReturnValue(supabase);
+
+    const { POST } = await import("@/app/api/credit-notes/route");
+    const response = await POST(createRequestWithoutInvoice("/api/credit-notes"));
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(String(body.error)).toMatch(/Невалидни данни/i);
+    expect(insertSpy).not.toHaveBeenCalled();
+  });
+
   it("blocks debit notes for cancelled invoices", async () => {
     const { supabase, insertSpy } = createSupabaseMock("CANCELLED");
     mockCreateAdminClient.mockReturnValue(supabase);
@@ -166,20 +209,35 @@ describe("credit/debit note routes", () => {
     expect(insertSpy).not.toHaveBeenCalled();
   });
 
+  it("requires source invoice for debit notes", async () => {
+    const { supabase, insertSpy } = createSupabaseMock("ISSUED");
+    mockCreateAdminClient.mockReturnValue(supabase);
+
+    const { POST } = await import("@/app/api/debit-notes/route");
+    const response = await POST(createRequestWithoutInvoice("/api/debit-notes"));
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(String(body.error)).toMatch(/Невалидни данни/i);
+    expect(insertSpy).not.toHaveBeenCalled();
+  });
+
   it("creates debit notes against the owner-scoped invoice data for team members", async () => {
     const { supabase, insertSpy } = createSupabaseMock("UNPAID");
     mockCreateAdminClient.mockReturnValue(supabase);
-    mockGetNextDocumentNumber.mockResolvedValue("DN-1");
+    mockGetNextInvoiceSequence.mockResolvedValue({
+      invoiceNumber: "2612340000000002",
+      sequence: 2,
+    });
 
     const { POST } = await import("@/app/api/debit-notes/route");
     const response = await POST(createRequest("/api/debit-notes"));
 
     expect(response.status).toBe(200);
-    expect(mockGetNextDocumentNumber).toHaveBeenCalledWith(
-      expect.objectContaining({
-        userId: "owner-1",
-        companyId: "company-1",
-      })
+    expect(mockGetNextInvoiceSequence).toHaveBeenCalledWith(
+      "owner-1",
+      "company-1",
+      "175074752"
     );
     expect(insertSpy).toHaveBeenCalledWith(
       expect.objectContaining({

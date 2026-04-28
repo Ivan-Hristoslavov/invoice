@@ -48,6 +48,29 @@ function applyNonVatRegisteredVatClearing(
   if (vn?.startsWith("BG")) normalized.vatNumber = null;
 }
 
+function ensureBulgarianVatPrefix(
+  normalized: ReturnType<typeof normalizePartyInput<BulgarianPartyInput>>
+) {
+  const isBulgarian = isBulgarianParty(normalized);
+  if (!isBulgarian || !normalized.vatRegistered) return;
+
+  const withPrefix = (value?: string | null) => {
+    const trimmed = value?.trim();
+    if (!trimmed) return null;
+    return trimmed.toUpperCase().startsWith("BG")
+      ? trimmed.toUpperCase()
+      : `BG${trimmed}`;
+  };
+
+  const normalizedVat = withPrefix(
+    normalized.vatRegistrationNumber ?? normalized.vatNumber
+  );
+  if (!normalizedVat) return;
+
+  normalized.vatRegistrationNumber = normalizedVat;
+  normalized.vatNumber = normalizedVat;
+}
+
 export function normalizePartyInput<T extends BulgarianPartyInput>(input: T): T {
   return {
     ...input,
@@ -78,6 +101,7 @@ export function normalizePartyInput<T extends BulgarianPartyInput>(input: T): T 
 
 export function buildPartyPayload(input: BulgarianPartyInput) {
   const normalized = normalizePartyInput(input);
+  ensureBulgarianVatPrefix(normalized);
   applyNonVatRegisteredVatClearing(normalized);
   const isBulgarian = isBulgarianParty(normalized);
   const vatNumber =
@@ -115,6 +139,7 @@ export function validateBulgarianPartyInput(
   options: ValidationOptions = {}
 ) {
   const normalized = normalizePartyInput(input);
+  ensureBulgarianVatPrefix(normalized);
   applyNonVatRegisteredVatClearing(normalized);
   const issues: ValidationIssue[] = [];
   const isBulgarian = isBulgarianParty(normalized);

@@ -11,6 +11,7 @@ interface NextDocumentNumberOptions {
   companyId: string;
   companyEik?: string | null;
   type: "credit-note" | "debit-note" | "vat-protocol-117";
+  startingNumber?: number | null;
 }
 
 export async function getNextDocumentNumber({
@@ -21,6 +22,7 @@ export async function getNextDocumentNumber({
   companyId,
   companyEik,
   type,
+  startingNumber,
 }: NextDocumentNumberOptions) {
   const yearPrefix = new Date().getFullYear().toString().slice(-2);
   const companyPrefix =
@@ -44,7 +46,11 @@ export async function getNextDocumentNumber({
   const parsed = typeof lastNumber === "string"
     ? parseBulgarianInvoiceNumber(lastNumber)
     : null;
-  const nextSequence = parsed?.sequentialNumber ? parsed.sequentialNumber + 1 : 1;
+  const nextFromExisting = parsed?.sequentialNumber ? parsed.sequentialNumber + 1 : 1;
+  const nextSequence =
+    typeof startingNumber === "number" && Number.isFinite(startingNumber)
+      ? Math.max(nextFromExisting, Math.max(1, Math.trunc(startingNumber)))
+      : nextFromExisting;
 
   return generateBulgarianInvoiceNumber(nextSequence, companyEik ?? undefined, type);
 }

@@ -37,7 +37,6 @@ export const DEFAULT_VAT_RATE = 20; // Default Bulgarian VAT rate
 
 // Supported currencies
 export const CURRENCIES: Record<string, { symbol: string; name: string; locale: string }> = {
-  BGN: { symbol: "лв", name: "Лев", locale: "bg-BG" },
   EUR: { symbol: "€", name: "Евро", locale: "bg-BG" },
   USD: { symbol: "$", name: "Долар", locale: "en-US" },
 };

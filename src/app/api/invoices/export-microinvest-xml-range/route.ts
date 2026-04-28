@@ -113,7 +113,10 @@ export async function GET(request: NextRequest) {
 
     if (ids.length === 0) {
       return NextResponse.json(
-        { error: "Няма фактури за избрания период и филтри." },
+        {
+          error:
+            "Няма операции (фактури) за избрания период и филтри. Проверете датите и филтрите за фирма/клиент/статус.",
+        },
         { status: 404 }
       );
     }

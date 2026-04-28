@@ -127,6 +127,21 @@ export function VatProtocol117Form() {
   const filteredProducts = products.filter((p) =>
     (p.name || "").toLowerCase().includes(productSearchQuery.trim().toLowerCase())
   );
+  const selectedClient = clients.find((client) => client.id === formData.clientId);
+
+  async function sendCreatedProtocolByEmail(protocolId: string) {
+    try {
+      const res = await fetch(`/api/vat-protocols-117/${protocolId}/send`, { method: "POST" });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        toast.error(data.error || "Неуспешно изпращане по имейл");
+        return;
+      }
+      toast.success("Протоколът е изпратен на имейла на доставчика");
+    } catch {
+      toast.error("Неуспешно изпращане по имейл");
+    }
+  }
 
   function addItemFromProduct(product: any) {
     const price = Number(product.price) || 0;
@@ -214,8 +229,18 @@ export function VatProtocol117Form() {
           throw new Error(msg);
         }
 
+        const clientEmail = selectedClient?.email?.trim();
+        const protocolId = data.vatProtocol117.id;
         toast.success("Протоколът по чл. 117 е създаден", {
           description: `Номер: ${data.vatProtocol117.protocolNumber}`,
+          actionProps: clientEmail
+            ? {
+                children: "Изпрати по имейл",
+                onPress: () => {
+                  void sendCreatedProtocolByEmail(protocolId);
+                },
+              }
+            : undefined,
         });
         router.push(`/vat-protocols-117/${data.vatProtocol117.id}`);
       } catch (err: any) {

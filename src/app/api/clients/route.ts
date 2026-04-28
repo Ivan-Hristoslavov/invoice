@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
     // Server-side search via ilike (faster than JS filtering)
     if (query) {
       clientQuery = clientQuery.or(
-        `name.ilike.%${query}%,email.ilike.%${query}%,city.ilike.%${query}%,country.ilike.%${query}%`
+        `name.ilike.%${query}%,email.ilike.%${query}%,city.ilike.%${query}%,country.ilike.%${query}%,bulstatNumber.ilike.%${query}%`
       );
     }
 

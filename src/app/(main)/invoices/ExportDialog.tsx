@@ -30,6 +30,7 @@ import {
   exportInvoicesToJson,
   exportInvoiceAsPdf,
   exportInvoicesAsMicroinvestXmlRange,
+  exportInvoicesAsMicroinvestTxtRange,
 } from "@/lib/invoice-export";
 import { useRouter } from "next/navigation";
 import { Download, FileCode2, FileSpreadsheet, FileText } from "lucide-react";
@@ -63,7 +64,7 @@ interface ExportDialogProps {
   children?: ReactNode;
 }
 
-type ExportFormat = "csv" | "json" | "pdf" | "microinvestXml";
+type ExportFormat = "csv" | "json" | "pdf" | "microinvestXml" | "microinvestTxt";
 
 function ExportRangeCalendar({ ariaLabel }: { ariaLabel: string }) {
   return (
@@ -146,7 +147,7 @@ export default function ExportDialog({
   const canExportPdf = exportCapability === "full" && Boolean(invoiceId);
   const canExportMicroinvestXml = canExportFormat(exportCapability, "microinvestXml");
   const showCsvJsonBlock = exportFormat === "csv" || exportFormat === "json";
-  const showMicroinvestBlock = exportFormat === "microinvestXml";
+  const showMicroinvestBlock = exportFormat === "microinvestXml" || exportFormat === "microinvestTxt";
   const showSharedFilters = showCsvJsonBlock || showMicroinvestBlock;
 
   const csvJsonPickerValue = useMemo(
@@ -182,8 +183,8 @@ export default function ExportDialog({
         toast.success("Фактурите са експортирани успешно като CSV");
       } else if (exportFormat === "json") {
         if (!canExportJson) throw new Error("JSON експортът изисква ПРО или БИЗНЕС план.");
-        const result = await exportInvoicesToJson(filters);
-        toast.success(`${result.invoices.length} фактури са експортирани като JSON`);
+        await exportInvoicesToJson(filters);
+        toast.success("Фактурите са експортирани успешно като JSON");
       } else if (exportFormat === "pdf" && invoiceId) {
         if (!canExportPdf) throw new Error("PDF експортът изисква ПРО или БИЗНЕС план.");
         await exportInvoiceAsPdf(invoiceId);
@@ -206,6 +207,24 @@ export default function ExportDialog({
           ...(status ? { status } : {}),
         });
         toast.success("Microinvest XML за периода е изтеглен");
+      } else if (exportFormat === "microinvestTxt") {
+        if (!canExportMicroinvestXml) {
+          throw new Error("Microinvest TXT е наличен в плановете Про и Бизнес.");
+        }
+        if (!microRangeStart || !microRangeEnd) {
+          throw new Error("Изберете начална и крайна дата за периода.");
+        }
+        if (microRangeStart > microRangeEnd) {
+          throw new Error("Началната дата не може да е след крайната.");
+        }
+        await exportInvoicesAsMicroinvestTxtRange({
+          startDate: microRangeStart,
+          endDate: microRangeEnd,
+          ...(companyId ? { companyId } : {}),
+          ...(clientId ? { clientId } : {}),
+          ...(status ? { status } : {}),
+        });
+        toast.success("Microinvest TXT за периода е изтеглен");
       }
 
       handleOpenChange(false);
@@ -311,6 +330,28 @@ export default function ExportDialog({
                   </Label>
                 </Radio.Content>
               </Radio>
+              <Radio
+                value="microinvestTxt"
+                isDisabled={!canExportMicroinvestXml}
+                className={radioCardClass}
+              >
+                <Radio.Control className="mt-0.5 shrink-0">
+                  <Radio.Indicator />
+                </Radio.Control>
+                <Radio.Content className="min-w-0">
+                  <Label
+                    className={
+                      canExportMicroinvestXml
+                        ? "flex cursor-pointer items-center gap-2 text-sm font-medium text-foreground"
+                        : "flex cursor-not-allowed items-center gap-2 text-sm font-medium text-muted-foreground"
+                    }
+                  >
+                    <FileCode2 className="h-4 w-4 shrink-0 text-primary" />
+                    Microinvest TXT (период)
+                    {!canExportMicroinvestXml && " — ПРО / БИЗНЕС"}
+                  </Label>
+                </Radio.Content>
+              </Radio>
             </RadioGroup>
             {exportCapability === "csv" && (
               <Description className="text-sm text-muted-foreground">
@@ -340,7 +381,7 @@ export default function ExportDialog({
                     <Select.Value />
                     <Select.Indicator />
                   </Select.Trigger>
-                  <Select.Popover className="z-[6000]">
+                  <Select.Popover className="z-6000">
                     <ListBox>
                       <ListBox.Item id={ALL_COMPANIES_KEY} textValue="Всички фирми">
                         Всички фирми
@@ -369,7 +410,7 @@ export default function ExportDialog({
                     <Select.Value />
                     <Select.Indicator />
                   </Select.Trigger>
-                  <Select.Popover className="z-[6000]">
+                  <Select.Popover className="z-6000">
                     <ListBox>
                       <ListBox.Item id={ALL_CLIENTS_KEY} textValue="Всички клиенти">
                         Всички клиенти
@@ -398,7 +439,7 @@ export default function ExportDialog({
                     <Select.Value />
                     <Select.Indicator />
                   </Select.Trigger>
-                  <Select.Popover className="z-[6000]">
+                  <Select.Popover className="z-6000">
                     <ListBox>
                       <ListBox.Item id={ALL_STATUS_KEY} textValue="Всички статуси">
                         Всички статуси
@@ -560,8 +601,9 @@ export default function ExportDialog({
                       </DateRangePicker.Popover>
                     </DateRangePicker>
                     <Description className="text-xs text-muted-foreground">
-                      Един XML файл с отделен блок за всяка фактура по дата на издаване в избрания интервал (до
-                      400 фактури).
+                      {exportFormat === "microinvestXml"
+                        ? "Един XML файл с отделен блок за всяка фактура по дата на издаване в избрания интервал (до 400 фактури)."
+                        : "Един TXT файл за Microinvest FormScript с операции за избрания период (до 400 фактури)."}
                     </Description>
                   </div>
                 </>

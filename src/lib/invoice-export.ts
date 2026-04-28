@@ -52,7 +52,7 @@ export async function exportInvoicesToJson(filters?: {
   status?: string;
   startDate?: string;
   endDate?: string;
-}): Promise<any> {
+}): Promise<void> {
   // Изграждане на параметрите за заявката
   const params = new URLSearchParams({
     format: 'json',
@@ -73,8 +73,26 @@ export async function exportInvoicesToJson(filters?: {
     throw new Error('Грешка при експортирането на фактурите');
   }
 
-  // Връщане на JSON данните
-  return response.json();
+  const jsonText = await response.text();
+  const blob = new Blob([jsonText], { type: "application/json;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  let filename = `fakturi-export-${new Date().toISOString().slice(0, 10)}.json`;
+  const contentDisposition = response.headers.get("Content-Disposition");
+  if (contentDisposition) {
+    const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+    if (filenameMatch?.[1]) filename = filenameMatch[1].replace(/['"]/g, "");
+  }
+
+  link.setAttribute("href", url);
+  link.setAttribute("download", filename);
+  link.style.visibility = "hidden";
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 // Експорт на единична фактура като PDF (server-generated)
@@ -219,6 +237,15 @@ export type MicroinvestXmlRangeFilters = {
   status?: string;
 };
 
+export type MicroinvestTxtRangeFilters = {
+  startDate: string;
+  endDate: string;
+  companyId?: string;
+  clientId?: string;
+  status?: string;
+  includePrint?: boolean;
+};
+
 export async function exportInvoicesAsMicroinvestXmlRange(
   filters: MicroinvestXmlRangeFilters
 ): Promise<void> {
@@ -245,6 +272,50 @@ export async function exportInvoicesAsMicroinvestXmlRange(
   const blob = await response.blob();
   const contentDisposition = response.headers.get("Content-Disposition");
   let filename = `WarehouseProExport-range-${filters.startDate}-${filters.endDate}.xml`;
+  if (contentDisposition) {
+    const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+    if (filenameMatch?.[1]) filename = filenameMatch[1].replace(/['"]/g, "");
+  }
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", filename);
+  link.style.visibility = "hidden";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+export async function exportInvoicesAsMicroinvestTxtRange(
+  filters: MicroinvestTxtRangeFilters
+): Promise<void> {
+  const params = new URLSearchParams({
+    startDate: filters.startDate,
+    endDate: filters.endDate,
+  });
+  if (filters.companyId) params.set("companyId", filters.companyId);
+  if (filters.clientId) params.set("clientId", filters.clientId);
+  if (filters.status) params.set("status", filters.status);
+  if (typeof filters.includePrint === "boolean") {
+    params.set("includePrint", filters.includePrint ? "true" : "false");
+  }
+
+  const response = await fetch(`/api/invoices/export-microinvest-txt-range?${params.toString()}`);
+  if (!response.ok) {
+    let message = "Грешка при експортиране на Microinvest TXT за период";
+    try {
+      const data = (await response.json()) as { error?: string };
+      if (typeof data.error === "string" && data.error) message = data.error;
+    } catch {
+      /* use default */
+    }
+    throw new Error(message);
+  }
+
+  const blob = await response.blob();
+  const contentDisposition = response.headers.get("Content-Disposition");
+  let filename = `WarehouseProExport-range-${filters.startDate}-${filters.endDate}.txt`;
   if (contentDisposition) {
     const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
     if (filenameMatch?.[1]) filename = filenameMatch[1].replace(/['"]/g, "");

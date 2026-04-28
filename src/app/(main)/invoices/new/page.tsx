@@ -63,6 +63,18 @@ import { createPortal } from "react-dom";
 import { formatInvoicePrice, formatInvoiceLongDate } from "./invoice-new-format";
 import { InvoiceStepIndicator } from "./InvoiceStepIndicator";
 import { evaluateInvoiceItemEditorDraft } from "@/lib/invoice-item-editor-draft";
+import { generateBulgarianInvoiceNumber } from "@/lib/bulgarian-invoice";
+import { mapCompanyBookToFormFields } from "@/lib/companybook";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Product card component
 function ProductCard({ 
@@ -247,7 +259,7 @@ function InvoiceItemCard({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card px-3.5 py-3 shadow-sm transition-all hover:border-primary/30 hover:shadow-md sm:flex-row sm:items-center sm:gap-3">
+    <div className="flex flex-col gap-3 rounded-3xl border border-border/70 bg-linear-to-br from-card to-card/80 px-4 py-3.5 shadow-sm transition-all hover:border-primary/30 hover:shadow-md sm:flex-row sm:items-center sm:gap-3">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-bold text-muted-foreground">
           {index + 1}
@@ -263,7 +275,7 @@ function InvoiceItemCard({
       </div>
 
       <div className="flex flex-wrap items-center justify-end gap-2 sm:justify-end sm:gap-3">
-        <div className="flex items-center gap-1 rounded-2xl border border-border/80 bg-background/80 p-0.5 shadow-sm">
+        <div className="flex items-center gap-1 rounded-2xl border border-border/80 bg-background/80 p-1 shadow-sm">
           <Button
             type="button"
             variant="ghost"
@@ -285,7 +297,7 @@ function InvoiceItemCard({
                 (e.target as HTMLInputElement).blur();
               }
             }}
-            className="h-8 w-12 min-h-0 border-0 bg-transparent px-0 text-center text-sm font-semibold shadow-none sm:h-9 sm:w-14"
+            className="h-8 w-14 min-h-0 border-0 bg-transparent px-0 text-center text-sm font-semibold shadow-none sm:h-9 sm:w-16"
             aria-label="Количество"
           />
           <Button
@@ -300,8 +312,8 @@ function InvoiceItemCard({
           </Button>
         </div>
 
-        <div className="shrink-0 text-right">
-          <p className="text-sm font-bold text-primary tabular-nums">
+        <div className="shrink-0 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-right">
+          <p className="text-sm font-bold text-emerald-600 tabular-nums dark:text-emerald-400">
             {formatInvoicePrice(itemTotalWithTax)} {currency}
           </p>
           <p className="text-[10px] text-muted-foreground tabular-nums">
@@ -323,6 +335,14 @@ function InvoiceItemCard({
     </div>
   );
 }
+
+const ZDDS_ZERO_VAT_REASONS = [
+  "чл. 28 ЗДДС (износ)",
+  "чл. 53 ЗДДС (вътреобщностна доставка)",
+  "чл. 69, ал. 2 ЗДДС",
+  "чл. 82 ЗДДС (обратно начисляване)",
+  "Друго основание",
+] as const;
 
 function InvoiceItemEditorDialog({
   item,
@@ -363,6 +383,7 @@ function InvoiceItemEditorDialog({
   const [taxDraft, setTaxDraft] = useState("");
   const [grossDraft, setGrossDraft] = useState("");
   const [exemptReasonDraft, setExemptReasonDraft] = useState("");
+  const [selectedExemptReason, setSelectedExemptReason] = useState("");
 
   useEffect(() => {
     if (!open || !item) return;
@@ -370,8 +391,11 @@ function InvoiceItemEditorDialog({
     setTaxDraft(String(item.taxRate));
     const g = item.unitPriceGross ?? netToGrossAmount(Number(item.unitPrice), Number(item.taxRate) || 0);
     setGrossDraft(String(roundMoney2(g)));
-    setExemptReasonDraft(typeof item.vatExemptReason === "string" ? item.vatExemptReason : "");
-  }, [open, item?.id]);
+    const initialReason = typeof item.vatExemptReason === "string" ? item.vatExemptReason : "";
+    const matchedPreset = ZDDS_ZERO_VAT_REASONS.find((reason) => reason === initialReason);
+    setSelectedExemptReason(matchedPreset || (initialReason ? "Друго основание" : ""));
+    setExemptReasonDraft(matchedPreset ? matchedPreset : initialReason);
+  }, [open, item]);
 
   if (!open || !item) return null;
 
@@ -497,12 +521,36 @@ function InvoiceItemEditorDialog({
               <Label className="text-xs font-semibold sm:text-sm">
                 Основание за 0% ДДС
               </Label>
-              <Input
-                value={exemptReasonDraft}
-                onChange={(e) => setExemptReasonDraft(e.target.value)}
-                placeholder="напр. чл. 69, ал. 2, т. 1 ЗДДС"
-                className="h-10 border-2 border-border/80 bg-background text-sm sm:h-11"
-              />
+              <Select
+                value={selectedExemptReason}
+                onValueChange={(value) => {
+                  setSelectedExemptReason(value);
+                  if (value !== "Друго основание") {
+                    setExemptReasonDraft(value);
+                  } else if (exemptReasonDraft.trim() === "") {
+                    setExemptReasonDraft("");
+                  }
+                }}
+              >
+                <SelectTrigger className="h-10 border-2 border-border/80 bg-background text-sm sm:h-11">
+                  <SelectValue placeholder="Изберете основание" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ZDDS_ZERO_VAT_REASONS.map((reason) => (
+                    <SelectItem key={reason} value={reason}>
+                      {reason}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedExemptReason === "Друго основание" ? (
+                <Input
+                  value={exemptReasonDraft}
+                  onChange={(e) => setExemptReasonDraft(e.target.value)}
+                  placeholder="Въведете правно основание"
+                  className="h-10 border-2 border-border/80 bg-background text-sm sm:h-11"
+                />
+              ) : null}
               <p className="text-[11px] leading-relaxed text-muted-foreground">
                 Задължително при ДДС ставка 0% съгласно чл. 114, ал. 1, т. 12 ЗДДС.
               </p>
@@ -615,6 +663,10 @@ function NewInvoiceContent() {
   const [clients, setClients] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [clientSearchQuery, setClientSearchQuery] = useState("");
+  const [eikLookupQuery, setEikLookupQuery] = useState("");
+  const [isEikLookupLoading, setIsEikLookupLoading] = useState(false);
+  const [isClientCreateFromEikLoading, setIsClientCreateFromEikLoading] = useState(false);
+  const [companyBookMatch, setCompanyBookMatch] = useState<Record<string, any> | null>(null);
   const [productSearchQuery, setProductSearchQuery] = useState("");
   const isLoadingData = isLoadingCompanies || isLoadingClients || isLoadingProducts;
   
@@ -623,9 +675,11 @@ function NewInvoiceContent() {
     isFree, 
     getInvoiceUsage, 
     canCreateInvoice,
+    canUseFeature,
     isLoadingUsage,
     refreshUsage
   } = useSubscriptionLimit();
+  const canUseEikSearch = canUseFeature("eikSearch");
   
   const invoiceUsage = getInvoiceUsage();
   
@@ -649,7 +703,7 @@ function NewInvoiceContent() {
     issueDate: new Date().toISOString().substr(0, 10),
     dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().substr(0, 10),
     companyId: "",
-    currency: "BGN",
+    currency: "EUR",
     bulstatNumber: "",
     isOriginal: true,
     placeOfIssue: "София",
@@ -678,7 +732,7 @@ function NewInvoiceContent() {
     { title: "Преглед", icon: <Receipt className="h-5 w-5" /> },
   ];
   const stepDescriptions = [
-    "Изберете съществуващ клиент или отворете раздел Клиенти за нов запис.",
+    "Изберете съществуващ клиент или потърсете по ЕИК.",
     "Попълнете основните данни и фирмата издател.",
     "Добавете редовете по фактурата и проверете сумите.",
     "Прегледайте документа преди окончателното създаване.",
@@ -688,6 +742,78 @@ function NewInvoiceContent() {
     setSelectedClient(client);
     setCurrentStep(1);
   }, []);
+
+  const handleLookupByEik = useCallback(async () => {
+    const normalizedEik = eikLookupQuery.replace(/\D/g, "");
+    if (!normalizedEik || normalizedEik.length < 9) {
+      toast.error("Въведете валиден ЕИК (поне 9 цифри).");
+      return;
+    }
+    if (!canUseEikSearch) {
+      toast.error("Търсенето по ЕИК е налично от план Стартер.");
+      return;
+    }
+
+    setIsEikLookupLoading(true);
+    try {
+      const response = await fetch(`/api/companybook/${normalizedEik}`);
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload) {
+        const message =
+          payload?.error ||
+          "Не успяхме да заредим данните по ЕИК. Моля, опитайте отново.";
+        throw new Error(message);
+      }
+      const mapped = mapCompanyBookToFormFields(payload);
+      setCompanyBookMatch(mapped);
+    } catch (error: any) {
+      toast.error(error?.message || "Грешка при търсене в регистъра.");
+    } finally {
+      setIsEikLookupLoading(false);
+    }
+  }, [canUseEikSearch, eikLookupQuery]);
+
+  const handleCreateClientFromEik = useCallback(async () => {
+    if (!companyBookMatch) return;
+    setIsClientCreateFromEikLoading(true);
+    try {
+      const candidateEik = String(companyBookMatch.bulstatNumber || "").trim();
+      const existing = clients.find((client) => client.bulstatNumber === candidateEik);
+      if (existing) {
+        handleExistingClientSelect(existing);
+        setCompanyBookMatch(null);
+        toast.success("Избрахме съществуващ клиент със същия ЕИК.");
+        return;
+      }
+
+      const response = await fetch("/api/clients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...companyBookMatch,
+          entryMode: "eik",
+          locale: "bg",
+          uicType: "BULSTAT",
+        }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload) {
+        const message =
+          payload?.error || "Неуспешно създаване на клиент от данните по ЕИК.";
+        throw new Error(message);
+      }
+
+      setClients((prev) => [...prev, payload]);
+      handleExistingClientSelect(payload);
+      setCompanyBookMatch(null);
+      setEikLookupQuery("");
+      toast.success("Клиентът е добавен и избран за фактурата.");
+    } catch (error: any) {
+      toast.error(error?.message || "Грешка при създаване на клиент.");
+    } finally {
+      setIsClientCreateFromEikLoading(false);
+    }
+  }, [clients, companyBookMatch, handleExistingClientSelect]);
 
   // Fetch data
   useEffect(() => {
@@ -758,8 +884,10 @@ function NewInvoiceContent() {
           setInvoiceData(prev => ({ ...prev, invoiceNumber: data.invoiceNumber }));
         }
       } catch (error) {
-        const currentYear = new Date().getFullYear();
-        setInvoiceData(prev => ({ ...prev, invoiceNumber: `${currentYear}000001` }));
+        setInvoiceData(prev => ({
+          ...prev,
+          invoiceNumber: generateBulgarianInvoiceNumber(1),
+        }));
       }
     }
 
@@ -799,6 +927,28 @@ function NewInvoiceContent() {
     () => companies.find((company) => company.id === invoiceData.companyId),
     [companies, invoiceData.companyId]
   );
+  const isSelectedCompanyNonVatRegistered = selectedCompany?.vatRegistered === false;
+
+  useEffect(() => {
+    if (!invoiceData.companyId || !isSelectedCompanyNonVatRegistered) return;
+
+    setInvoiceData((prev) => {
+      if (prev.supplyType === "NOT_VAT_REGISTERED" && !prev.reverseCharge) {
+        return prev;
+      }
+      return {
+        ...prev,
+        supplyType: "NOT_VAT_REGISTERED",
+        reverseCharge: false,
+      };
+    });
+
+    setItems((prev) =>
+      prev.map((item) =>
+        Number(item.taxRate) === 0 ? item : { ...item, taxRate: 0 }
+      )
+    );
+  }, [invoiceData.companyId, isSelectedCompanyNonVatRegistered]);
 
   const previewItems = useMemo(
     () => items.filter((item) => item.description.trim()),
@@ -966,7 +1116,7 @@ function NewInvoiceContent() {
       cancel: { label: "Пропусни" },
       duration: 7000,
     });
-  }, [editingItemId, updateItem]);
+  }, [editingItemId, quickProductLock, updateItem]);
 
   const addProduct = useCallback((product: any) => {
     const rate = Number(product.taxRate) || DEFAULT_VAT_RATE;
@@ -1142,7 +1292,7 @@ function NewInvoiceContent() {
   };
 
   const getCurrencySymbol = (currency: string) => {
-    const symbols: Record<string, string> = { BGN: 'лв', EUR: '€', USD: '$' };
+    const symbols: Record<string, string> = { EUR: '€', USD: '$' };
     return symbols[currency] || currency;
   };
 
@@ -1178,7 +1328,7 @@ function NewInvoiceContent() {
                     <div className="w-full lg:w-80">
                       <SearchField
                         aria-label="Търсене на клиент"
-                        placeholder="Търсене на клиент..."
+                        placeholder="Търсене по име, имейл, град или ЕИК..."
                         value={clientSearchQuery}
                         isDisabled={isLoadingClients}
                         onChange={setClientSearchQuery}
@@ -1216,24 +1366,36 @@ function NewInvoiceContent() {
               </CardContent>
             </Card>
 
-            <div className="flex items-center justify-center py-1">
-              <span className="rounded-full border border-border/70 bg-muted/30 px-4 py-2 text-xs font-semibold text-muted-foreground">
-                или нов клиент
-              </span>
-            </div>
-
-            <Card className="border-primary/15 bg-linear-to-br from-primary/5 via-card to-card">
-              <CardContent className="flex items-center justify-between gap-3 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">Нов клиент?</p>
-                  <p className="text-xs text-muted-foreground">Отворете раздел `Клиенти`, създайте запис и се върнете тук.</p>
+            <Card className="border-emerald-500/30 bg-emerald-500/5">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Търсене по ЕИК</CardTitle>
+                <CardDescription>
+                  Ако не откривате клиента локално, потърсете фирмата в регистъра и я добавете директно.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <NumericInput
+                    value={eikLookupQuery}
+                    allowDecimal={false}
+                    onChange={(e) => setEikLookupQuery(e.target.value)}
+                    placeholder="напр. 175074752"
+                    className="h-11 flex-1"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => void handleLookupByEik()}
+                    disabled={!canUseEikSearch || isEikLookupLoading || eikLookupQuery.replace(/\D/g, "").length < 9}
+                    className="h-11 sm:w-auto"
+                  >
+                    {isEikLookupLoading ? "Търсене..." : "Търси в регистъра"}
+                  </Button>
                 </div>
-                <Button asChild size="sm" className="shrink-0 gap-1.5 px-4">
-                  <Link href="/clients/new?returnTo=/invoices/new">
-                    Нов клиент
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </Link>
-                </Button>
+                {!canUseEikSearch ? (
+                  <p className="text-xs text-muted-foreground">
+                    Търсенето по ЕИК е налично от план Стартер.
+                  </p>
+                ) : null}
               </CardContent>
             </Card>
 
@@ -1384,6 +1546,7 @@ function NewInvoiceContent() {
                     <Label className="text-sm font-medium">ЗДДС сценарий</Label>
                     <Select
                       value={invoiceData.supplyType}
+                      disabled={isSelectedCompanyNonVatRegistered}
                       onValueChange={(value) => {
                         const next = value as typeof invoiceData.supplyType;
                         const requiresRc =
@@ -1409,6 +1572,12 @@ function NewInvoiceContent() {
                         <SelectItem value="NOT_VAT_REGISTERED">Нерегистрирано по ЗДДС лице (чл. 113, ал. 9 ЗДДС)</SelectItem>
                       </SelectContent>
                     </Select>
+                    {isSelectedCompanyNonVatRegistered ? (
+                      <p className="text-[11px] leading-relaxed text-muted-foreground">
+                        Фирмата не е регистрирана по ЗДДС. Сценарият е фиксиран на „Нерегистрирано по
+                        ЗДДС лице“ съгласно чл. 113, ал. 9 ЗДДС.
+                      </p>
+                    ) : null}
                     {invoiceData.supplyType !== "DOMESTIC" ? (
                       <p className="text-[11px] leading-relaxed text-muted-foreground">
                         За избрания тип доставка всички редове трябва да са с ДДС 0% и да имат
@@ -1573,7 +1742,6 @@ function NewInvoiceContent() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="BGN">🇧🇬 BGN - Лев</SelectItem>
                               <SelectItem value="EUR">🇪🇺 EUR - Евро</SelectItem>
                               <SelectItem value="USD">🇺🇸 USD - Долар</SelectItem>
                             </SelectContent>
@@ -1617,7 +1785,6 @@ function NewInvoiceContent() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="BGN">🇧🇬 BGN - Лев</SelectItem>
                             <SelectItem value="EUR">🇪🇺 EUR - Евро</SelectItem>
                             <SelectItem value="USD">🇺🇸 USD - Долар</SelectItem>
                           </SelectContent>
@@ -2106,7 +2273,6 @@ function NewInvoiceContent() {
             <div className="space-y-3 sm:space-y-4">
               {steps.map((step, index) => {
                 const isOpen = index === currentStep;
-                const isUnlocked = index <= currentStep;
 
                 return (
                   <section
@@ -2116,10 +2282,7 @@ function NewInvoiceContent() {
                     <button
                       type="button"
                       className="w-full px-4 py-4 text-left transition-colors hover:bg-muted/15 sm:px-5 sm:py-4"
-                      onClick={() => {
-                        if (isUnlocked) setCurrentStep(index);
-                      }}
-                      disabled={!isUnlocked}
+                      onClick={() => setCurrentStep(index)}
                       aria-expanded={isOpen}
                     >
                       <StepAccordionTrigger
@@ -2213,6 +2376,47 @@ function NewInvoiceContent() {
           </div>
         </Card>
         )}
+
+        <AlertDialog
+          open={Boolean(companyBookMatch)}
+          onOpenChange={(open) => {
+            if (!open) setCompanyBookMatch(null);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Добавяне на клиент от ЕИК</AlertDialogTitle>
+              <AlertDialogDescription>
+                Намерихме фирма в регистъра. Потвърдете, за да създадем клиент и да го изберем във фактурата.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            {companyBookMatch ? (
+              <div className="space-y-1 text-sm text-muted-foreground">
+                <p><span className="font-medium text-foreground">Име:</span> {String(companyBookMatch.name || "—")}</p>
+                <p><span className="font-medium text-foreground">ЕИК:</span> {String(companyBookMatch.bulstatNumber || "—")}</p>
+                <p><span className="font-medium text-foreground">Град:</span> {String(companyBookMatch.city || "—")}</p>
+                <p><span className="font-medium text-foreground">Адрес:</span> {String(companyBookMatch.address || "—")}</p>
+              </div>
+            ) : null}
+            <AlertDialogFooter>
+              <AlertDialogCancel
+                disabled={isClientCreateFromEikLoading}
+                onClick={() => setCompanyBookMatch(null)}
+              >
+                Отказ
+              </AlertDialogCancel>
+              <AlertDialogAction
+                disabled={isClientCreateFromEikLoading}
+                onClick={(e) => {
+                  e.preventDefault();
+                  void handleCreateClientFromEik();
+                }}
+              >
+                {isClientCreateFromEikLoading ? "Създаване..." : "Потвърди и добави"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useCompanyBookLookup } from "@/hooks/useCompanyBookLookup";
+import { useCompanyBookSearch } from "@/hooks/useCompanyBookSearch";
 import type { CompanyBookFormFields } from "@/lib/companybook";
 import { applyCompanyBookToForm } from "@/lib/companybook-form-apply";
 import { ProFeatureLock } from "@/components/ui/pro-feature-lock";
@@ -29,6 +30,7 @@ interface CompanyBookLookupPanelProps<T extends FieldValues> {
   canUseCompanyBook: boolean;
   /** Called after a successful merge so parent can set lookupResult / UI state */
   onApplied?: (fields: CompanyBookFormFields) => void;
+  showSearchByName?: boolean;
 }
 
 const PREVIEW_FIELDS = [
@@ -46,6 +48,7 @@ export function CompanyBookLookupPanel<T extends FieldValues>({
   currentPlan,
   canUseCompanyBook,
   onApplied,
+  showSearchByName = true,
 }: CompanyBookLookupPanelProps<T>) {
   const { createCheckoutSession } = useSubscription();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -54,6 +57,12 @@ export function CompanyBookLookupPanel<T extends FieldValues>({
     trimStr(getValues(bulstatField)).replace(/\D/g, "")
   );
   const [overwriteDialogOpen, setOverwriteDialogOpen] = useState(false);
+  const [searchScope, setSearchScope] = useState<"companies" | "people" | "shared">("companies");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResult, setSearchResult] = useState<{
+    companies: Array<{ uic: string; name: string }>;
+    people: Array<{ id: string; name: string; indent: string }>;
+  } | null>(null);
   const [overwritePreview, setOverwritePreview] = useState<{
     previous: Record<(typeof PREVIEW_FIELDS)[number]["key"], string>;
     fields: CompanyBookFormFields;
@@ -115,6 +124,13 @@ export function CompanyBookLookupPanel<T extends FieldValues>({
     onSuccess: handleSuccess,
     onError: (msg) => toast.error("Търсене в регистъра", { description: msg }),
   });
+  const {
+    search,
+    isSearching,
+    error: searchError,
+  } = useCompanyBookSearch({
+    onError: (msg) => toast.error("Търсене в регистъра", { description: msg }),
+  });
 
   const runLookup = useCallback(async () => {
     const eik = localEik.replace(/\D/g, "") || trimStr(getValues(bulstatField)).replace(/\D/g, "");
@@ -126,6 +142,53 @@ export function CompanyBookLookupPanel<T extends FieldValues>({
     }
     await lookup(eik);
   }, [lookup, localEik, getValues, bulstatField]);
+
+  const runSearch = useCallback(async () => {
+    if (searchScope === "companies") {
+      const payload = await search("companies", searchQuery, 5);
+      if (!payload) {
+        setSearchResult(null);
+        return;
+      }
+      setSearchResult({
+        companies: payload.results.map((item) => ({ uic: item.uic, name: item.name })),
+        people: [],
+      });
+      return;
+    }
+
+    if (searchScope === "people") {
+      const payload = await search("people", searchQuery, 5);
+      if (!payload) {
+        setSearchResult(null);
+        return;
+      }
+      setSearchResult({
+        companies: [],
+        people: payload.results.map((item) => ({
+          id: item.id,
+          name: item.name,
+          indent: item.indent,
+        })),
+      });
+      return;
+    }
+
+    const payload = await search("shared", searchQuery, 5);
+    if (!payload) {
+      setSearchResult(null);
+      return;
+    }
+
+    setSearchResult({
+      companies: payload.companies.map((item) => ({ uic: item.uic, name: item.name })),
+      people: payload.people.map((item) => ({
+        id: item.id,
+        name: item.name,
+        indent: item.indent,
+      })),
+    });
+  }, [search, searchScope, searchQuery]);
 
   if (!canUseCompanyBook) {
     return (
@@ -188,6 +251,86 @@ export function CompanyBookLookupPanel<T extends FieldValues>({
         </Button>
       </div>
       {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
+      {showSearchByName && (
+        <div className="mt-4 rounded-lg border border-border/70 bg-background/70 p-3">
+          <p className="mb-2 text-xs font-semibold text-muted-foreground">
+            Търсене по име (фирми/лица)
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <select
+              value={searchScope}
+              onChange={(e) => setSearchScope(e.target.value as "companies" | "people" | "shared")}
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="companies">Фирми</option>
+              <option value="people">Лица</option>
+              <option value="shared">Общо търсене</option>
+            </select>
+            <Input
+              className="h-10 flex-1"
+              placeholder="напр. Алфа Трейд"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 gap-2"
+              onClick={runSearch}
+              disabled={isSearching || searchQuery.trim().length < 3}
+            >
+              {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              Търси
+            </Button>
+          </div>
+          {searchError && <p className="mt-2 text-xs text-destructive">{searchError}</p>}
+          {searchResult && (
+            <div className="mt-3 space-y-2">
+              {searchResult.companies.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">Фирми</p>
+                  {searchResult.companies.map((item) => (
+                    <div
+                      key={`${item.uic}-${item.name}`}
+                      className="flex items-center justify-between rounded-md border border-border/60 bg-background px-3 py-2"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">{item.name}</p>
+                        <p className="text-xs text-muted-foreground">ЕИК: {item.uic}</p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="ml-3 h-8"
+                        onClick={() => {
+                          setLocalEik(item.uic);
+                          void lookup(item.uic);
+                        }}
+                      >
+                        Зареди
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {searchResult.people.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">Лица</p>
+                  {searchResult.people.map((item) => (
+                    <div
+                      key={`${item.id}-${item.indent}`}
+                      className="rounded-md border border-border/60 bg-background px-3 py-2"
+                    >
+                      <p className="text-sm font-medium">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">ИД: {item.indent}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <AlertDialog
         open={overwriteDialogOpen}

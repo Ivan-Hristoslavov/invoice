@@ -26,6 +26,27 @@ import {
 } from "@/lib/invoice-status";
 import { getAccessibleCompaniesForUser } from "@/lib/team";
 
+function normalizeInvoiceMutationError(error: unknown): Error {
+  const fallbackMessage = "Неуспешно създаване на фактура. Моля, опитайте отново.";
+  if (error instanceof Error) return error;
+
+  const maybeError = error as
+    | { message?: string; code?: string; details?: string | null }
+    | undefined;
+  const message = maybeError?.message || fallbackMessage;
+  const normalized = new Error(message);
+
+  if (maybeError?.code === "23505") {
+    normalized.name = "ValidationError";
+  } else if (maybeError?.code === "23503") {
+    normalized.name = "ValidationError";
+    normalized.message =
+      "Невалидни данни за фактурата (липсващ клиент, фирма или артикул).";
+  }
+
+  return normalized;
+}
+
 // Schema для валидация на заявката
 const InvoiceQuerySchema = z.object({
   page: z.coerce.number().optional().default(1),
@@ -287,18 +308,23 @@ export async function POST(request: NextRequest) {
         }));
         const { preparedItems, subtotal, taxAmount, total } =
           prepareDocumentItems(preparedInputItems, productById);
-        const invoiceId = cuid();
-        
+        const normalizedSupplyType =
+          company.vatRegistered === false
+            ? "NOT_VAT_REGISTERED"
+            : validatedData.supplyType || "DOMESTIC";
+
         // Retry logic for invoice creation (handles duplicate invoice numbers)
         const maxRetries = 3;
         let invoice: any = null;
         let invoiceError: any = null;
+        let createdInvoiceId: string | null = null;
         
         for (let attempt = 0; attempt < maxRetries; attempt++) {
           // Track the sequence we issued in this iteration so we can roll it
           // back if the Invoice INSERT fails, avoiding gaps in the series.
           let currentIssuedSequence: number | null = null;
           try {
+            const invoiceId = cuid();
             // Get next invoice number using InvoiceSequence (per-user numbering, 10-digit format)
             const { getNextInvoiceSequence, rollbackInvoiceSequence } = await import(
               "@/lib/invoice-sequence"
@@ -312,12 +338,19 @@ export async function POST(request: NextRequest) {
             void rollbackInvoiceSequence; // keep lazy import reachable for catch
             
             // Check if invoice number already exists for this user (race condition check)
-            const { data: existingInvoice } = await supabase
+            const { data: existingInvoice, error: existingInvoiceLookupError } = await supabase
               .from("Invoice")
               .select("id")
               .eq("invoiceNumber", invoiceNumber)
               .eq("userId", company.userId)
               .single();
+            const notFoundCode =
+              existingInvoiceLookupError &&
+              (existingInvoiceLookupError.code === "PGRST116" ||
+                existingInvoiceLookupError.code === "406");
+            if (existingInvoiceLookupError && !notFoundCode) {
+              throw existingInvoiceLookupError;
+            }
             
             if (existingInvoice) {
               // Invoice number already exists, retry with new number
@@ -353,8 +386,7 @@ export async function POST(request: NextRequest) {
                   : validatedData.paymentMethod || "BANK_TRANSFER",
               isEInvoice: validatedData.isEInvoice || false,
               isOriginal: validatedData.isOriginal !== false,
-              reverseCharge: validatedData.reverseCharge === true,
-              supplyType: validatedData.supplyType || "DOMESTIC",
+              supplyType: normalizedSupplyType,
               bulstatNumber: company.bulstatNumber || null,
               createdById: sessionUser.id,
               ...createDocumentSnapshots(
@@ -387,10 +419,11 @@ export async function POST(request: NextRequest) {
             }
             
             invoice = insertedInvoice;
+            createdInvoiceId = invoiceId;
             invoiceError = null;
             break; // Success, exit retry loop
           } catch (error: any) {
-            invoiceError = error;
+            invoiceError = normalizeInvoiceMutationError(error);
             if (currentIssuedSequence !== null) {
               try {
                 const { rollbackInvoiceSequence } = await import(
@@ -410,7 +443,7 @@ export async function POST(request: NextRequest) {
             }
             if (attempt === maxRetries - 1) {
               // Last attempt, throw error
-              throw error;
+              throw normalizeInvoiceMutationError(error);
             }
             // Wait before retry
             await new Promise(resolve => setTimeout(resolve, 100 * (attempt + 1)));
@@ -422,16 +455,19 @@ export async function POST(request: NextRequest) {
         }
         
         // Create invoice items
+        if (!createdInvoiceId) {
+          throw new Error("Липсва идентификатор на фактурата след създаване.");
+        }
+
         const itemsData = preparedItems.map(item => ({
           id: item.id,
-          invoiceId: invoiceId,
+          invoiceId: createdInvoiceId,
           productId: item.productId,
           description: item.description,
           quantity: item.quantity.toString(),
           unitPrice: item.unitPrice.toString(),
           unit: item.unit,
           taxRate: item.taxRate.toString(),
-          vatExemptReason: item.vatExemptReason ?? null,
           subtotal: item.subtotal.toString(),
           taxAmount: item.taxAmount.toString(),
           total: item.total.toString(),
@@ -442,7 +478,11 @@ export async function POST(request: NextRequest) {
           .insert(itemsData);
 
         if (itemsError) {
-          await supabase.from("Invoice").delete().eq("id", invoiceId).eq("userId", company.userId);
+          await supabase
+            .from("Invoice")
+            .delete()
+            .eq("id", createdInvoiceId)
+            .eq("userId", company.userId);
           try {
             const parsed = parseBulgarianInvoiceNumber(invoice.invoiceNumber as string);
             if (parsed?.sequentialNumber != null) {
@@ -461,7 +501,7 @@ export async function POST(request: NextRequest) {
               rollbackError
             );
           }
-          throw itemsError;
+          throw normalizeInvoiceMutationError(itemsError);
         }
         
         // Get full invoice with relations
@@ -473,7 +513,7 @@ export async function POST(request: NextRequest) {
             company:Company(*),
             items:InvoiceItem(*)
           `)
-          .eq("id", invoiceId)
+          .eq("id", createdInvoiceId)
           .single();
         
         // Log audit action
@@ -483,15 +523,15 @@ export async function POST(request: NextRequest) {
           userId: sessionUser.id,
           action: 'CREATE',
           entityType: 'INVOICE',
-          entityId: invoiceId,
-          invoiceId: invoiceId,
+          entityId: createdInvoiceId,
+          invoiceId: createdInvoiceId,
           ipAddress: headers.get('x-forwarded-for') || headers.get('x-real-ip') || undefined,
           userAgent: headers.get('user-agent') || undefined,
         });
         
         // Връщане на форматиран отговор
         return NextResponse.json(
-          formatApiResponse(fullInvoice), 
+          formatApiResponse(fullInvoice),
           { status: ApiStatusCode.CREATED }
         );
       })

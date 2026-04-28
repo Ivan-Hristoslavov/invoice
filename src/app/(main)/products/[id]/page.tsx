@@ -42,7 +42,6 @@ import {
 } from "@/components/ui/select";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -118,6 +117,7 @@ export default function ProductPage() {
   const deleteLock = useAsyncLock();
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoadingProduct, setIsLoadingProduct] = useState(true);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -237,10 +237,14 @@ export default function ProductPage() {
           throw new Error(errorPayload?.error || "Неуспешно изтриване на продукт");
         }
 
-        toast.success("Продуктът е изтрит", {
-          description: "Продуктът беше премахнат от каталога.",
+        const payload = (await response.json()) as { archived?: boolean };
+        toast.success(payload.archived ? "Продуктът е архивиран" : "Продуктът е изтрит", {
+          description: payload.archived
+            ? "Продуктът участва във фактури и беше деактивиран."
+            : "Продуктът беше премахнат от каталога.",
         });
 
+        setIsDeleteDialogOpen(false);
         router.push("/products");
       } catch (error) {
         const errorMessage =
@@ -538,7 +542,7 @@ export default function ProductPage() {
                   Към каталога
                 </Link>
               </Button>
-              <AlertDialog>
+              <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <AlertDialogTrigger asChild>
                   <Button
                     type="button"
@@ -558,17 +562,15 @@ export default function ProductPage() {
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Отказ</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={(e) => {
-                        e.preventDefault();
-                        void handleDelete();
-                      }}
+                    <AlertDialogCancel disabled={deleteLock.isPending}>Отказ</AlertDialogCancel>
+                    <Button
+                      type="button"
+                      onClick={() => void handleDelete()}
                       disabled={deleteLock.isPending}
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
                       {deleteLock.isPending ? "Изтриване..." : "Изтрий"}
-                    </AlertDialogAction>
+                    </Button>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
