@@ -23,6 +23,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { resolveSessionUser } from "@/lib/session-user";
 import { format } from "date-fns";
 import { bg } from "date-fns/locale";
+import { DebitNoteSendButton } from "./DebitNoteSendButton";
 
 export const metadata: Metadata = {
   title: `Дебитно известие | ${APP_NAME}`,
@@ -145,6 +146,7 @@ export default async function DebitNoteDetailPage({
                 PDF
               </Link>
             </Button>
+            <DebitNoteSendButton id={id} clientEmail={client?.email ?? null} />
           </div>
         </div>
       </div>

@@ -46,6 +46,12 @@ const preferencesSchema = z.object({
     .min(1, "Началният номер трябва да е поне 1")
     .max(9999999999, "Началният номер не може да надхвърля 9999999999")
     .optional(),
+  startingVatProtocolNumber: z
+    .number()
+    .int()
+    .min(1, "Началният номер трябва да е поне 1")
+    .max(9999999999, "Началният номер не може да надхвърля 9999999999")
+    .optional(),
   
   // Настройки за валута
   defaultCurrency: z.string().default("EUR"),
@@ -71,6 +77,7 @@ function payloadToFormValues(data: InvoicePreferencesPayload): PreferencesFormVa
     invoicePrefix: data.invoicePrefix ?? "",
     resetNumberingYearly: data.resetNumberingYearly,
     startingInvoiceNumber: data.startingInvoiceNumber,
+    startingVatProtocolNumber: data.startingVatProtocolNumber,
     defaultCurrency: data.defaultCurrency,
     showAmountInWords: data.showAmountInWords,
     defaultTermsAndConditions: data.defaultTermsAndConditions ?? "",
@@ -115,6 +122,12 @@ export function InvoicePreferencesForm({
               Number.isNaN(data.startingInvoiceNumber)
                 ? null
                 : data.startingInvoiceNumber,
+            startingVatProtocolNumber:
+              data.startingVatProtocolNumber === undefined ||
+              data.startingVatProtocolNumber === null ||
+              Number.isNaN(data.startingVatProtocolNumber)
+                ? null
+                : data.startingVatProtocolNumber,
           }),
         });
 
@@ -183,7 +196,6 @@ export function InvoicePreferencesForm({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="BGN">BGN - Лев</SelectItem>
                       <SelectItem value="EUR">EUR - Евро</SelectItem>
                       <SelectItem value="USD">USD - Долар</SelectItem>
                     </SelectContent>
@@ -291,6 +303,30 @@ export function InvoicePreferencesForm({
                         : 1
                     )}
                   </span>
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="startingVatProtocolNumber"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Начален номер на протокол чл. 117</FormLabel>
+                <FormControl>
+                  <NumericInput
+                    allowDecimal={false}
+                    {...field}
+                    value={field.value || ""}
+                    onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                    placeholder="Напр. 1 за 0000000001"
+                    className="min-h-11 rounded-2xl text-sm"
+                  />
+                </FormControl>
+                <FormDescription>
+                  Отделна серия за протоколите по чл. 117. Следващият нов протокол ще започва поне от този номер.
                 </FormDescription>
                 <FormMessage />
               </FormItem>

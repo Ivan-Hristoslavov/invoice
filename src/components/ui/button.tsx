@@ -18,10 +18,12 @@ function mergeRefs<T>(...refs: (React.Ref<T> | undefined)[]) {
 export interface ButtonProps {
   variant?:
     | "default"
+    | "primary"
     | "destructive"
     | "outline"
     | "outline-solid"
     | "secondary"
+    | "subtle"
     | "ghost"
     | "link"
     | "soft"
@@ -49,6 +51,8 @@ export interface ButtonProps {
 
 const variantMap: Record<string, "primary" | "secondary" | "tertiary" | "outline" | "ghost" | "danger"> = {
   default: "primary",
+  primary: "primary",
+  subtle: "tertiary",
   destructive: "danger",
   "outline-solid": "outline",
   outline: "outline",

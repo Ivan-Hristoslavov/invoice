@@ -17,6 +17,13 @@ const invoicePreferencesSchema = z.object({
     .max(9999999999)
     .nullable()
     .optional(),
+  startingVatProtocolNumber: z
+    .number()
+    .int()
+    .min(1)
+    .max(9999999999)
+    .nullable()
+    .optional(),
   defaultCurrency: z.string().min(1).max(8),
   showAmountInWords: z.boolean(),
   defaultTermsAndConditions: z.string().max(1000).optional().nullable(),
@@ -36,6 +43,7 @@ export type InvoicePreferencesJson = {
   showCompanyLogo?: boolean;
   autoArchiveAfterDays?: number;
   keepDraftDays?: number;
+  startingVatProtocolNumber?: number | null;
 };
 
 function parsePreferencesJson(value: Prisma.JsonValue | null): InvoicePreferencesJson {
@@ -70,6 +78,11 @@ export async function POST(request: NextRequest) {
       showCompanyLogo: validatedData.showCompanyLogo,
       autoArchiveAfterDays: validatedData.autoArchiveAfterDays,
       keepDraftDays: validatedData.keepDraftDays,
+      startingVatProtocolNumber:
+        validatedData.startingVatProtocolNumber === null ||
+        validatedData.startingVatProtocolNumber === undefined
+          ? null
+          : validatedData.startingVatProtocolNumber,
     };
 
     await prisma.user.update({

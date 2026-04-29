@@ -15,6 +15,10 @@ import { z } from "zod";
 import { FIELD_LIMITS } from "@/lib/validations/field-limits";
 import { VAT_PROTOCOL_117_SCENARIOS } from "@/lib/vat-protocol-117-scenarios";
 
+type InvoicePreferencesJson = {
+  startingVatProtocolNumber?: number | null;
+};
+
 const vatProtocol117Schema = z.object({
   companyId: z.string().min(1, "Компанията е задължителна"),
   clientId: z.string().min(1, "Клиентът (доставчик) е задължителен"),
@@ -100,6 +104,25 @@ export async function POST(request: NextRequest) {
     let protocolNumber = "";
     let protocolRow: any = null;
     let protocolError: any = null;
+    const { data: userRow, error: userRowError } = await supabase
+      .from("User")
+      .select("invoicePreferences")
+      .eq("id", sessionUser.id)
+      .maybeSingle();
+
+    if (userRowError) {
+      console.error("Error loading user preferences for VatProtocol117:", userRowError);
+      return NextResponse.json(
+        { error: "Неуспешно зареждане на настройките за номерация" },
+        { status: 500 }
+      );
+    }
+
+    const invoicePreferences = userRow?.invoicePreferences as InvoicePreferencesJson | null | undefined;
+    const startingVatProtocolNumber =
+      typeof invoicePreferences?.startingVatProtocolNumber === "number"
+        ? invoicePreferences.startingVatProtocolNumber
+        : null;
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       protocolNumber = await getNextDocumentNumber({
@@ -110,6 +133,7 @@ export async function POST(request: NextRequest) {
         companyId: validatedData.companyId,
         companyEik: company.bulstatNumber,
         type: "vat-protocol-117",
+        startingNumber: startingVatProtocolNumber,
       });
 
       const supplierInvoiceDateIso = validatedData.supplierInvoiceDate

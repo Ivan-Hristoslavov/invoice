@@ -15,6 +15,7 @@ export type AuditAction =
 export type EntityType = 
   | 'INVOICE' 
   | 'CREDIT_NOTE' 
+  | 'DEBIT_NOTE'
   | 'CLIENT' 
   | 'COMPANY' 
   | 'PRODUCT' 

@@ -10,6 +10,8 @@ const variantToHero: Record<
   "primary" | "secondary" | "tertiary" | "outline" | "ghost" | "danger"
 > = {
   default: "primary",
+  primary: "primary",
+  subtle: "tertiary",
   destructive: "danger",
   "outline-solid": "outline",
   outline: "outline",

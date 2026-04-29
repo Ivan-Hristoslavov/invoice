@@ -63,9 +63,10 @@ type SendInvoiceEmailOptions = {
   invoiceNumber: string;
   type: 'invoice_only' | 'invoice_with_payment';
   paymentLink?: string;
+  isCopy?: boolean;
 };
 
-export async function sendInvoiceEmail({ to, invoiceNumber, type, paymentLink, userId }: SendInvoiceEmailOptions & { userId?: string }) {
+export async function sendInvoiceEmail({ to, invoiceNumber, type, paymentLink, isCopy, userId }: SendInvoiceEmailOptions & { userId?: string }) {
   try {
     let subject = `Фактура #${invoiceNumber}`;
     const supabase = createAdminClient();
@@ -144,7 +145,7 @@ export async function sendInvoiceEmail({ to, invoiceNumber, type, paymentLink, u
                 snapshotInvoice.company.bankAccountDetails || bankAccount || null,
             }
           : null,
-        isOriginal: true,
+        isOriginal: !isCopy,
       };
       const pdf = await exportInvoicePdfBuffer(invoice.id, fullInvoice);
       attachments.push({ filename: pdf.filename, content: pdf.buffer });
@@ -538,6 +539,78 @@ export async function sendVatProtocol117Email(params: {
       <p style="margin-top: 24px; font-size: 14px; color: #6b7280;">
         Това е автоматично съобщение от ${process.env.NEXT_PUBLIC_APP_NAME || APP_NAME}.
       </p>
+    </div>
+  `;
+
+  await transporter.sendMail({
+    from: getFromAddress(),
+    to: params.to,
+    subject,
+    html,
+    attachments: [{ filename: params.pdfFilename, content: params.pdfBuffer }],
+  });
+}
+
+export async function sendCreditNoteEmail(params: {
+  to: string;
+  creditNoteNumber: string;
+  invoiceNumber?: string | null;
+  companyName: string;
+  pdfBuffer: Buffer;
+  pdfFilename: string;
+}) {
+  const transporter = getSmtpTransporter();
+  const appName = process.env.NEXT_PUBLIC_APP_NAME || APP_NAME;
+  const companyLabel = params.companyName?.trim() || appName;
+  const subject = `Кредитно известие №${params.creditNoteNumber} — ${companyLabel}`;
+  const referenceLine = params.invoiceNumber
+    ? `<p>Документът е издаден към фактура <strong>№${params.invoiceNumber}</strong>.</p>`
+    : "";
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2>Здравейте!</h2>
+      <p>Изпращаме Ви кредитно известие <strong>№${params.creditNoteNumber}</strong> от <strong>${companyLabel}</strong>.</p>
+      ${referenceLine}
+      <p>Можете да намерите PDF файла на документа в прикачените файлове.</p>
+      <br>
+      <p>Поздрави,</p>
+      <p>Екипът на ${appName}</p>
+    </div>
+  `;
+
+  await transporter.sendMail({
+    from: getFromAddress(),
+    to: params.to,
+    subject,
+    html,
+    attachments: [{ filename: params.pdfFilename, content: params.pdfBuffer }],
+  });
+}
+
+export async function sendDebitNoteEmail(params: {
+  to: string;
+  debitNoteNumber: string;
+  invoiceNumber?: string | null;
+  companyName: string;
+  pdfBuffer: Buffer;
+  pdfFilename: string;
+}) {
+  const transporter = getSmtpTransporter();
+  const appName = process.env.NEXT_PUBLIC_APP_NAME || APP_NAME;
+  const companyLabel = params.companyName?.trim() || appName;
+  const subject = `Дебитно известие №${params.debitNoteNumber} — ${companyLabel}`;
+  const referenceLine = params.invoiceNumber
+    ? `<p>Документът е издаден към фактура <strong>№${params.invoiceNumber}</strong>.</p>`
+    : "";
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2>Здравейте!</h2>
+      <p>Изпращаме Ви дебитно известие <strong>№${params.debitNoteNumber}</strong> от <strong>${companyLabel}</strong>.</p>
+      ${referenceLine}
+      <p>Можете да намерите PDF файла на документа в прикачените файлове.</p>
+      <br>
+      <p>Поздрави,</p>
+      <p>Екипът на ${appName}</p>
     </div>
   `;
 

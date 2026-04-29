@@ -161,6 +161,7 @@ function NoteFormContent(config: NoteFormConfig) {
   /** След опит за изпращане показваме оцветяване на невалидни полета (като при имейл в auth формите). */
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [selectedInvoiceInfo, setSelectedInvoiceInfo] = useState<{
+    invoiceNumber: string;
     total: number;
     existingNotesTotal: number;
     remaining: number;
@@ -340,6 +341,20 @@ function NoteFormContent(config: NoteFormConfig) {
     });
   }, [formData.clientId, formData.companyId, sourceInvoices]);
 
+  const selectedInvoiceOption = useMemo(() => {
+    if (!formData.invoiceId) return null;
+    const existing = eligibleInvoices.find((invoice) => invoice.id === formData.invoiceId);
+    if (existing) return existing;
+    if (selectedInvoiceInfo?.invoiceNumber) {
+      return {
+        id: formData.invoiceId,
+        invoiceNumber: selectedInvoiceInfo.invoiceNumber,
+        client: { name: "" },
+      };
+    }
+    return null;
+  }, [eligibleInvoices, formData.invoiceId, selectedInvoiceInfo?.invoiceNumber]);
+
   const addItem = useCallback(() => {
     setItems((prev) => {
       const maxId = prev.length > 0 ? Math.max(...prev.map((i) => i.id)) : 0;
@@ -436,6 +451,7 @@ function NoteFormContent(config: NoteFormConfig) {
         if (!res.ok) return;
         const inv = (await res.json()) as {
           total?: string | number;
+          invoiceNumber?: string;
           creditNote?: { total?: string | number } | null;
           debitNotes?: Array<{ total?: string | number }>;
         };
@@ -454,6 +470,7 @@ function NoteFormContent(config: NoteFormConfig) {
 
         if (!cancelled) {
           setSelectedInvoiceInfo({
+            invoiceNumber: inv.invoiceNumber || "",
             total: invoiceTotal,
             existingNotesTotal: notesTotal,
             remaining: Math.max(0, invoiceTotal - notesTotal),
@@ -476,6 +493,11 @@ function NoteFormContent(config: NoteFormConfig) {
 
     if (!formData.companyId || !formData.clientId) {
       toast.error("Моля, изберете компания и клиент");
+      return;
+    }
+
+    if (!formData.invoiceId) {
+      toast.error("Изборът на свързана фактура е задължителен");
       return;
     }
 
@@ -556,6 +578,7 @@ function NoteFormContent(config: NoteFormConfig) {
 
   const companyInvalid = submitAttempted && !formData.companyId;
   const clientInvalid = submitAttempted && !formData.clientId;
+  const invoiceInvalid = submitAttempted && !formData.invoiceId;
   const reasonInvalid = submitAttempted && !formData.reason.trim();
   const issueDateInvalid = submitAttempted && !formData.issueDate;
 
@@ -654,25 +677,29 @@ function NoteFormContent(config: NoteFormConfig) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="invoiceId">Свързана издадена фактура</Label>
+                  <Label htmlFor="invoiceId">Свързана издадена фактура *</Label>
                   <Select
-                    value={formData.invoiceId || "none"}
+                    value={formData.invoiceId || ""}
                     onValueChange={(value) =>
                       setFormData((prev) => ({
                         ...prev,
-                        invoiceId: value === "none" ? "" : value,
+                        invoiceId: value,
                       }))
                     }
                     aria-label="Изберете свързана фактура"
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger
+                      className={cn("w-full", invoiceInvalid && FIELD_INVALID)}
+                      aria-invalid={invoiceInvalid}
+                    >
                       <SelectValue placeholder="Изберете издадена фактура" />
                     </SelectTrigger>
                     <SelectContent className="z-100 max-h-[300px]">
-                      <SelectItem value="none">Без свързана фактура</SelectItem>
-                      {eligibleInvoices.map((invoice) => (
+                      {(selectedInvoiceOption ? [selectedInvoiceOption] : [])
+                        .concat(eligibleInvoices.filter((invoice) => invoice.id !== selectedInvoiceOption?.id))
+                        .map((invoice) => (
                         <SelectItem key={invoice.id} value={invoice.id}>
-                          {invoice.invoiceNumber} - {invoice.client?.name || "Клиент"}
+                          {invoice.invoiceNumber || "Фактура"} - {invoice.client?.name || "Клиент"}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -680,6 +707,11 @@ function NoteFormContent(config: NoteFormConfig) {
                   <p className="text-xs text-muted-foreground">
                     Показват се само издадени фактури за избраните фирма и клиент.
                   </p>
+                  {invoiceInvalid ? (
+                    <p className="text-xs text-destructive" role="alert">
+                      Изберете издадена фактура
+                    </p>
+                  ) : null}
                   {formData.invoiceId && formData.invoiceId !== "" && selectedInvoiceInfo && (
                     <div className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/20 p-3 space-y-1.5">
                       <div className="flex items-center justify-between text-sm">
@@ -778,7 +810,6 @@ function NoteFormContent(config: NoteFormConfig) {
                     </SelectTrigger>
                     <SelectContent className="z-100">
                       <SelectItem value="EUR">EUR (€)</SelectItem>
-                      <SelectItem value="BGN">BGN (лв)</SelectItem>
                       <SelectItem value="USD">USD ($)</SelectItem>
                     </SelectContent>
                   </Select>

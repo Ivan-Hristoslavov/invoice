@@ -144,7 +144,7 @@ export const invoiceSchema = z.object({
   dueDate: z.string().refine(str => !isNaN(Date.parse(str)), "Невалидна дата"),
   supplyDate: z.string().refine(str => !isNaN(Date.parse(str)), "Невалидна дата").optional(),
   status: z.enum(['DRAFT', 'ISSUED', 'VOIDED', 'CANCELLED']).default('DRAFT'),
-  currency: z.string().optional().default('BGN'),
+  currency: z.string().optional().default('EUR'),
   locale: z.string().optional().default('bg'),
   placeOfIssue: z.string().optional().default('София'),
   paymentMethod: z.string().optional().default('BANK_TRANSFER'),

@@ -174,3 +174,58 @@ export function buildMicroinvestWarehouseTxt(fullInvoice: InvoiceExportLike): st
     .map(([k, v]) => `${k}=${v}`)
     .join("\n");
 }
+
+function sanitizeFormScriptValue(value: string): string {
+  return value.replace(/[\r\n]+/g, " ").trim();
+}
+
+function toFormScriptRows(inv: InvoiceExportLike, includePrint: boolean): string[] {
+  const client = inv.client as Record<string, unknown> | null | undefined;
+  const p = buildMicroinvestPartnerFields(client);
+  const issueDate = formatMicroinvestDate(inv.issueDate);
+  const amount = microinvestMoney(inv.total);
+  const paymentDesc =
+    inv.paymentMethod === "CASH"
+      ? "В брой"
+      : inv.paymentMethod === "CREDIT_CARD"
+        ? "Карта"
+        : "Банков превод";
+
+  const operationDescription =
+    typeof inv.notes === "string" && inv.notes.trim()
+      ? inv.notes.trim()
+      : `Фактура ${String(inv.invoiceNumber || "").trim()}`;
+
+  const rows = [
+    "F3",
+    "CLEAR",
+    `До=${sanitizeFormScriptValue(p.name)}`,
+    `Адрес=${sanitizeFormScriptValue(p.address)}`,
+    `Подаване=${sanitizeFormScriptValue(issueDate)}`,
+    `Платете на - име на получателя=${sanitizeFormScriptValue(p.name)}`,
+    `Вид валута=BGN`,
+    `Сума=${sanitizeFormScriptValue(amount)}`,
+    `Основание за плащане - информация за получателя=${sanitizeFormScriptValue(operationDescription)}`,
+    `Наредител - име=Фактура ${sanitizeFormScriptValue(String(inv.invoiceNumber || ""))}`,
+    `Вид плащане=${sanitizeFormScriptValue(paymentDesc)}`,
+    "SAVE",
+  ];
+
+  if (includePrint) rows.push("PRINT");
+  return rows;
+}
+
+export function buildMicroinvestWarehouseTxtBatch(
+  invoices: InvoiceExportLike[],
+  options?: { includePrint?: boolean }
+): string {
+  const includePrint = options?.includePrint ?? true;
+  const lines: string[] = [];
+
+  for (const inv of invoices) {
+    lines.push(...toFormScriptRows(inv, includePrint));
+  }
+
+  lines.push("END");
+  return lines.join("\r\n");
+}

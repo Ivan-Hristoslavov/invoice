@@ -36,6 +36,7 @@ const OVERWRITE_PREVIEW_FIELDS = [
   { key: "address" as const, label: "Адрес" },
   { key: "city" as const, label: "Град" },
   { key: "country" as const, label: "Държава" },
+  { key: "bulstatNumber" as const, label: "БУЛСТАТ/ЕИК" },
 ];
 
 export function ViesLookupPanel<T extends FieldValues & ViesExtendedFormValues>({
@@ -50,10 +51,7 @@ export function ViesLookupPanel<T extends FieldValues & ViesExtendedFormValues>(
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [localVat, setLocalVat] = useState(() => trimStr(getValues(vatField)));
   const [overwriteDialogOpen, setOverwriteDialogOpen] = useState(false);
-  const [overwritePreview, setOverwritePreview] = useState<{
-    previous: Record<(typeof OVERWRITE_PREVIEW_FIELDS)[number]["key"], string>;
-    formFields: ViesFormAutofill;
-  } | null>(null);
+  const [overwritePreview, setOverwritePreview] = useState<ViesOverwritePreview | null>(null);
   const pendingViesApplyRef = useRef<{
     formFields: ViesFormAutofill;
     persistence: ViesPersistencePayload;
@@ -103,23 +101,13 @@ export function ViesLookupPanel<T extends FieldValues & ViesExtendedFormValues>(
       formFields: ViesFormAutofill;
       persistence: ViesPersistencePayload;
     }) => {
-      const hasConflict = Boolean(
-        trimStr(getValues("name" as Path<T>)) ||
-          trimStr(getValues("address" as Path<T>)) ||
-          trimStr(getValues("city" as Path<T>))
-      );
-      if (!hasConflict) {
+      const preview = buildViesOverwritePreview(getValues, formFields);
+      if (!preview) {
         applyViesResultToForm(getValues, setValue, formFields, persistence, { overwriteExisting: true });
         return;
       }
-      const previous = {
-        name: trimStr(getValues("name" as Path<T>)),
-        address: trimStr(getValues("address" as Path<T>)),
-        city: trimStr(getValues("city" as Path<T>)),
-        country: trimStr(getValues("country" as Path<T>)),
-      };
       pendingViesApplyRef.current = { formFields, persistence };
-      setOverwritePreview({ previous, formFields });
+      setOverwritePreview(preview);
       setOverwriteDialogOpen(true);
     },
     [getValues, setValue]
@@ -212,35 +200,30 @@ export function ViesLookupPanel<T extends FieldValues & ViesExtendedFormValues>(
             <AlertDialogDescription className="text-base leading-relaxed text-muted-foreground">
               Има вече попълнени данни. Да се презапишат ли с информацията от VIES?
             </AlertDialogDescription>
-            {overwritePreview && hasAnyViesPreviewText(overwritePreview.formFields) && (
+            {overwritePreview && overwritePreview.changes.length > 0 && (
               <div className="max-h-[min(48vh,360px)] overflow-y-auto rounded-xl border border-border/60 bg-muted/30 px-4 py-3">
                 <p className="mb-3 text-sm font-semibold text-foreground sm:text-base">
-                  Сравнение: ново от VIES → текущо във формата
+                  Сравнение: текущо във формата → ново от VIES
                 </p>
                 <ul className="space-y-4">
-                  {OVERWRITE_PREVIEW_FIELDS.map(({ key, label }) => {
-                    const next = trimStr(overwritePreview.formFields[key]);
-                    const prev = overwritePreview.previous[key];
-                    if (!next && !prev) return null;
-                    return (
-                      <li
-                        key={key}
-                        className="grid gap-1.5 border-b border-border/50 pb-4 last:border-0 last:pb-0"
-                      >
-                        <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground sm:text-sm">
-                          {label}
-                        </span>
-                        <span className="text-xs text-muted-foreground sm:text-sm">Ново (VIES)</span>
-                        <span className="wrap-break-word font-mono text-sm leading-relaxed text-emerald-700 dark:text-emerald-400 sm:text-base">
-                          {next || "—"}
-                        </span>
-                        <span className="text-xs text-muted-foreground sm:text-sm">Текущо във формата</span>
-                        <span className="wrap-break-word font-mono text-sm leading-relaxed text-foreground/85 line-through decoration-destructive/70 sm:text-base">
-                          {prev || "—"}
-                        </span>
-                      </li>
-                    );
-                  })}
+                  {overwritePreview.changes.map((change) => (
+                    <li
+                      key={change.key}
+                      className="grid gap-1.5 border-b border-border/50 pb-4 last:border-0 last:pb-0"
+                    >
+                      <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground sm:text-sm">
+                        {change.label}
+                      </span>
+                      <span className="text-xs text-muted-foreground sm:text-sm">Текущо във формата</span>
+                      <span className="wrap-break-word font-mono text-sm leading-relaxed text-foreground/85 line-through decoration-destructive/70 sm:text-base">
+                        {change.previous || "—"}
+                      </span>
+                      <span className="text-xs text-muted-foreground sm:text-sm">Ново (VIES)</span>
+                      <span className="wrap-break-word font-mono text-sm leading-relaxed text-emerald-700 dark:text-emerald-400 sm:text-base">
+                        {change.next || "—"}
+                      </span>
+                    </li>
+                  ))}
                 </ul>
               </div>
             )}
@@ -281,8 +264,29 @@ function trimStr(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function hasAnyViesPreviewText(formFields: ViesFormAutofill): boolean {
-  return OVERWRITE_PREVIEW_FIELDS.some(({ key }) => Boolean(trimStr(formFields[key])));
+type ViesOverwritePreview = {
+  changes: Array<{
+    key: (typeof OVERWRITE_PREVIEW_FIELDS)[number]["key"];
+    label: string;
+    previous: string;
+    next: string;
+  }>;
+};
+
+function buildViesOverwritePreview<T extends FieldValues & ViesExtendedFormValues>(
+  getValues: UseFormGetValues<T>,
+  formFields: ViesFormAutofill
+): ViesOverwritePreview | null {
+  const changes = OVERWRITE_PREVIEW_FIELDS.flatMap(({ key, label }) => {
+    const previous = trimStr(getValues(key as Path<T>));
+    const next = trimStr(formFields[key]);
+    if (!next) return [];
+    if (previous === next) return [];
+    return [{ key, label, previous, next }];
+  });
+
+  if (changes.length === 0) return null;
+  return { changes };
 }
 
 /** Canonical EU VAT key (e.g. EL + digits) so GR/EL prefixes match after parse. */

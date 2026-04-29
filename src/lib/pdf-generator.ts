@@ -163,39 +163,38 @@ function numberToWordsBG(num: number, currency: string = 'EUR'): string {
  * Falls back to general ZDDS reference for unknown scenarios.
  */
 function resolveLegalFooterLines(supplyType: string | null | undefined): string[] {
-  const baseZsch =
-    "Документът е валиден без подпис и печат съгласно чл. 7 от Закона за счетоводството";
+  const signatureStampLine =
+    "Подписът и печатът не са задължителни реквизити на фактурата съгласно чл. 6, ал. 1 ЗСч, чл. 114 ЗДДС и чл. 78 ППЗДДС.";
   const normalized = (supplyType || "DOMESTIC").toUpperCase();
   switch (normalized) {
     case "REVERSE_CHARGE_DOMESTIC":
       return [
         "Основание за издаване: чл. 113, ал. 1 от ЗДДС",
         "Обратно начисляване — данъкът е изискуем от получателя съгласно чл. 82, ал. 2-5 от ЗДДС",
-        baseZsch,
+        signatureStampLine,
       ];
     case "INTRA_COMMUNITY":
       return [
         "Основание за издаване: чл. 113, ал. 1 от ЗДДС",
         "Вътреобщностна доставка — нулева ставка съгласно чл. 53, ал. 1 от ЗДДС; данъкът е изискуем от получателя в държавата по пристигане",
-        baseZsch,
+        signatureStampLine,
       ];
     case "EXPORT":
       return [
         "Основание за издаване: чл. 113, ал. 1 от ЗДДС",
         "Износ извън ЕС — нулева ставка съгласно чл. 28 от ЗДДС",
-        baseZsch,
+        signatureStampLine,
       ];
     case "NOT_VAT_REGISTERED":
       return [
         "Основание за издаване: чл. 113, ал. 9 от ЗДДС — лицето не е регистрирано по ЗДДС",
-        baseZsch,
+        signatureStampLine,
       ];
     case "DOMESTIC":
     default:
       return [
         "Основание за издаване: чл. 113, ал. 1 от ЗДДС",
-        "Съгласно чл. 6, ал. 1 от Закона за счетоводството и чл. 114 от ЗДДС",
-        baseZsch,
+        signatureStampLine,
       ];
   }
 }
@@ -348,34 +347,6 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
   doc.text(badgeText, pageWidth / 2, 17, { align: "center" });
 
   const headerRowY = 22;
-  const splitMid = margin + contentWidth * 0.5;
-  const leftBlockTop = headerRowY;
-
-  // ---- Left: supplier preview ----
-  doc.setFont("Roboto", "normal");
-  doc.setFontSize(7);
-  setText(PAL.muted);
-  doc.text("Доставчик", margin, leftBlockTop);
-  doc.setFont("Roboto", "bold");
-  doc.setFontSize(12);
-  setText(PAL.ink);
-  doc.text(invoice.company?.name || "", margin, leftBlockTop + 4);
-  doc.setFont("Roboto", "normal");
-  doc.setFontSize(8.5);
-  setText(PAL.text);
-  let ly = leftBlockTop + 9;
-  if (invoice.company?.address) {
-    doc.text(invoice.company.address, margin, ly);
-    ly += 4;
-  }
-  if (invoice.company?.city) {
-    doc.text(invoice.company.city, margin, ly);
-    ly += 4;
-  }
-  if (invoice.company?.phone) {
-    doc.text(`Тел. ${invoice.company.phone}`, margin, ly);
-    ly += 4;
-  }
 
   // ---- Right: title block ----
   doc.setFont("Roboto", "bold");
@@ -389,7 +360,7 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
   setText(PAL.muted);
   doc.text(`Статус · ${statusText}`, rightEdge, headerRowY + 24, { align: "right" });
 
-  let yPos = Math.max(ly + 6, headerRowY + 32) + 4;
+  let yPos = headerRowY + 36;
 
   // ---- Date strip (soft surface, no heavy border) ----
   const dateStripH = 16;
@@ -513,8 +484,9 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
   const cQty = 14;
   const cPrice = 26;
   const cVat = 14;
-  const cTot = 28;
+  const cTot = 22;
   const x0 = margin;
+  const tableW = cNo + cDesc + cUnit + cQty + cPrice + cVat + cTot;
   const xDesc = x0 + cNo;
   const xUnit = xDesc + cDesc;
   const xQty = xUnit + cUnit;
@@ -524,9 +496,9 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
 
   const headH = 9;
   setFill(PAL.surface2);
-  doc.rect(x0, yPos, contentWidth, headH, "F");
+  doc.rect(x0, yPos, tableW, headH, "F");
   setDraw(PAL.accent, 0.25);
-  doc.line(x0, yPos + headH, x0 + contentWidth, yPos + headH);
+  doc.line(x0, yPos + headH, x0 + tableW, yPos + headH);
 
   doc.setFont("Roboto", "bold");
   doc.setFontSize(7.5);
@@ -534,9 +506,9 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
   doc.text("№", x0 + 2, yPos + 6);
   doc.text("Описание", xDesc + 2, yPos + 6);
   doc.text("Мярка", xUnit + 1, yPos + 6);
-  doc.text("Кол.", xQty + 1, yPos + 6);
-  doc.text("Ед. цена", xPrice + 1, yPos + 6);
-  doc.text("ДДС", xVat + 1, yPos + 6);
+  doc.text("Кол.", xQty + cQty - 1, yPos + 6, { align: "right" });
+  doc.text("Ед. цена", xPrice + cPrice - 1, yPos + 6, { align: "right" });
+  doc.text("ДДС", xVat + cVat - 1, yPos + 6, { align: "right" });
   doc.text("Сума", xTot + cTot - 2, yPos + 6, { align: "right" });
 
   yPos += headH;
@@ -545,7 +517,7 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
   if (invoice.items && invoice.items.length > 0) {
     invoice.items.forEach((item: any, index: number) => {
       setDraw(PAL.border, 0.08);
-      doc.line(x0, yPos, x0 + contentWidth, yPos);
+      doc.line(x0, yPos, x0 + tableW, yPos);
 
       doc.setFont("Roboto", "normal");
       doc.setFontSize(8.5);
@@ -563,11 +535,13 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
       const rowY = yPos + 5.5;
 
       doc.text(item.unit || "бр.", xUnit + 1, rowY);
-      doc.text(String(Number(item.quantity || 0)), xQty + 1, rowY);
+      doc.text(String(Number(item.quantity || 0)), xQty + cQty - 1, rowY, { align: "right" });
       doc.text(Number(item.unitPrice || item.price || 0).toFixed(2), xPrice + cPrice - 1, rowY, {
         align: "right",
       });
-      doc.text(`${Number(item.taxRate || 0).toFixed(0)}%`, xVat + 1, rowY);
+      doc.text(`${Number(item.taxRate || 0).toFixed(0)}%`, xVat + cVat - 1, rowY, {
+        align: "right",
+      });
 
       const itemQuantity = Number(item.quantity || 0);
       const itemUnitPrice = Number(item.unitPrice || item.price || 0);
@@ -584,7 +558,7 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
   }
 
   setDraw(PAL.border, 0.15);
-  doc.line(x0, yPos, x0 + contentWidth, yPos);
+  doc.line(x0, yPos, x0 + tableW, yPos);
   yPos += 6;
 
   // ---- VAT exempt reasons per line (if any) ----

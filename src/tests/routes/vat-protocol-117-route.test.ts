@@ -117,8 +117,14 @@ describe("POST /api/vat-protocols-117", () => {
         single: async () => ({ data: {}, error: null }),
       }),
     }));
+    const userQuery = {
+      select: vi.fn(() => userQuery),
+      eq: vi.fn(() => userQuery),
+      maybeSingle: vi.fn(async () => ({ data: { invoicePreferences: {} }, error: null })),
+    };
     mockCreateAdminClient.mockReturnValue({
       from: vi.fn((table: string) => {
+        if (table === "User") return userQuery;
         if (table === "VatProtocol117") return { insert: insertSpy };
         if (table === "VatProtocol117Item") return { insert: vi.fn(async () => ({ error: null })) };
         throw new Error(`Unexpected table ${table}`);
@@ -138,9 +144,18 @@ describe("POST /api/vat-protocols-117", () => {
       }),
     }));
     const insertItems = vi.fn(async () => ({ error: null }));
+    const userQuery = {
+      select: vi.fn(() => userQuery),
+      eq: vi.fn(() => userQuery),
+      maybeSingle: vi.fn(async () => ({
+        data: { invoicePreferences: { startingVatProtocolNumber: 42 } },
+        error: null,
+      })),
+    };
 
     mockCreateAdminClient.mockReturnValue({
       from: vi.fn((table: string) => {
+        if (table === "User") return userQuery;
         if (table === "VatProtocol117") return { insert: insertProtocol };
         if (table === "VatProtocol117Item") return { insert: insertItems };
         throw new Error(`Unexpected table ${table}`);
@@ -153,6 +168,11 @@ describe("POST /api/vat-protocols-117", () => {
     const json = await res.json();
     expect(json.success).toBe(true);
     expect(json.vatProtocol117.protocolNumber).toBe("2612340000000001");
+    expect(mockGetNextDocumentNumber).toHaveBeenCalledWith(
+      expect.objectContaining({
+        startingNumber: 42,
+      })
+    );
     expect(insertProtocol).toHaveBeenCalled();
     expect(insertItems).toHaveBeenCalled();
   });

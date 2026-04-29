@@ -248,7 +248,6 @@ export async function PUT(
       unitPrice: item.unitPrice.toString(),
       unit: item.unit,
       taxRate: item.taxRate.toString(),
-      vatExemptReason: item.vatExemptReason ?? null,
       subtotal: item.subtotal.toString(),
       taxAmount: item.taxAmount.toString(),
       total: item.total.toString(),
@@ -295,8 +294,6 @@ export async function PUT(
           : data.paymentMethod || invoice.paymentMethod || "BANK_TRANSFER",
       isEInvoice: data.isEInvoice !== undefined ? data.isEInvoice : invoice.isEInvoice,
       isOriginal: data.isOriginal !== undefined ? data.isOriginal : invoice.isOriginal,
-      reverseCharge:
-        data.reverseCharge !== undefined ? data.reverseCharge : invoice.reverseCharge ?? false,
       supplyType: data.supplyType || invoice.supplyType || "DOMESTIC",
       notes: data.notes || null,
       termsAndConditions: data.termsAndConditions || null,

@@ -75,11 +75,12 @@ export default function ClientsClient({
   useEffect(() => { setCurrentPage(1); }, [searchQuery]);
 
   const filteredClients = clients.filter((client) => {
-    const query = searchQuery.toLowerCase();
+    const query = searchQuery.toLowerCase().trim();
     return (
       client.name.toLowerCase().includes(query) ||
       client.email?.toLowerCase().includes(query) ||
-      client.phone?.includes(query)
+      client.phone?.includes(query) ||
+      client.bulstatNumber?.toLowerCase().includes(query)
     );
   });
 
@@ -183,7 +184,7 @@ export default function ClientsClient({
             <div className="relative min-w-0 w-full flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Търсене по име, имейл или телефон..."
+                placeholder="Търсене по име, имейл, телефон или ЕИК..."
                 className="h-10 min-h-11 border-border pl-10 text-base sm:h-11 sm:text-sm"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -288,6 +289,11 @@ export default function ClientsClient({
                             <span className="block text-muted-foreground/80">Няма контактни данни</span>
                           )}
                         </div>
+                        {client.bulstatNumber ? (
+                          <Badge variant="outline" className="mt-2 text-[11px]">
+                            ЕИК: {client.bulstatNumber}
+                          </Badge>
+                        ) : null}
                         {client.createdById && createdByMap[client.createdById] && (
                           <p className="mt-1 text-[11px] text-muted-foreground">
                             От {createdByMap[client.createdById].name ?? "—"}

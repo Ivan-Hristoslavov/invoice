@@ -3,13 +3,16 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { resolveSessionUser } from "@/lib/session-user";
-import { getNextDocumentNumber } from "@/lib/document-numbering";
 import {
   createDocumentSnapshots,
   fetchOwnedCompanyAndClient,
   fetchProductsByIds,
   prepareDocumentItems,
 } from "@/lib/invoice-documents";
+import {
+  getNextInvoiceSequence,
+  rollbackInvoiceSequence,
+} from "@/lib/invoice-sequence";
 import { normalizeInvoiceStatus } from "@/lib/invoice-status";
 import cuid from "cuid";
 import { z } from "zod";
@@ -18,7 +21,7 @@ import { FIELD_LIMITS } from "@/lib/validations/field-limits";
 const debitNoteSchema = z.object({
   companyId: z.string().min(1, "Компанията е задължителна"),
   clientId: z.string().min(1, "Клиентът е задължителен"),
-  invoiceId: z.string().optional(),
+  invoiceId: z.string().trim().min(1, "Оригиналната фактура е задължителна"),
   issueDate: z.string().refine((s) => !isNaN(Date.parse(s)), "Невалидна дата"),
   reason: z.string().trim().min(1, "Причината за дебитното известие е задължителна").max(FIELD_LIMITS.reason, "Причината е твърде дълга"),
   currency: z.string().default("EUR"),
@@ -69,38 +72,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (validatedData.invoiceId) {
-      const { data: sourceInvoice, error: sourceInvoiceError } = await supabase
-        .from("Invoice")
-        .select("id, status, companyId, clientId, userId")
-        .eq("id", validatedData.invoiceId)
-        .eq("userId", company.userId)
-        .maybeSingle();
+    const { data: sourceInvoice, error: sourceInvoiceError } = await supabase
+      .from("Invoice")
+      .select("id, status, companyId, clientId, userId")
+      .eq("id", validatedData.invoiceId)
+      .eq("userId", company.userId)
+      .maybeSingle();
 
-      if (sourceInvoiceError) {
-        throw sourceInvoiceError;
-      }
+    if (sourceInvoiceError) {
+      throw sourceInvoiceError;
+    }
 
-      if (!sourceInvoice) {
-        return NextResponse.json(
-          { error: "Оригиналната фактура не е намерена" },
-          { status: 404 }
-        );
-      }
+    if (!sourceInvoice) {
+      return NextResponse.json(
+        { error: "Оригиналната фактура не е намерена" },
+        { status: 404 }
+      );
+    }
 
-      if (sourceInvoice.companyId !== validatedData.companyId || sourceInvoice.clientId !== validatedData.clientId) {
-        return NextResponse.json(
-          { error: "Дебитното известие трябва да използва същата фирма и клиент като оригиналната фактура." },
-          { status: 400 }
-        );
-      }
+    if (sourceInvoice.companyId !== validatedData.companyId || sourceInvoice.clientId !== validatedData.clientId) {
+      return NextResponse.json(
+        { error: "Дебитното известие трябва да използва същата фирма и клиент като оригиналната фактура." },
+        { status: 400 }
+      );
+    }
 
-      if (normalizeInvoiceStatus(sourceInvoice.status) !== "ISSUED") {
-        return NextResponse.json(
-          { error: "Дебитно известие може да се създаде само по издадена фактура." },
-          { status: 400 }
-        );
-      }
+    if (normalizeInvoiceStatus(sourceInvoice.status) !== "ISSUED") {
+      return NextResponse.json(
+        { error: "Дебитно известие може да се създаде само по издадена фактура." },
+        { status: 400 }
+      );
     }
     const productIds = validatedData.items
       .map((item: any) => item.productId)
@@ -118,24 +119,23 @@ export async function POST(request: NextRequest) {
     let debitNoteNumber = "";
     let debitNote: any = null;
     let debitNoteError: any = null;
+    let issuedSequence: number | null = null;
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
-      debitNoteNumber = await getNextDocumentNumber({
-        supabase,
-        table: "DebitNote",
-        numberColumn: "debitNoteNumber",
-        userId: company.userId,
-        companyId: validatedData.companyId,
-        companyEik: company.bulstatNumber,
-        type: "debit-note",
-      });
+      const nextInvoiceNumber = await getNextInvoiceSequence(
+        company.userId,
+        validatedData.companyId,
+        company.bulstatNumber
+      );
+      debitNoteNumber = nextInvoiceNumber.invoiceNumber;
+      issuedSequence = nextInvoiceNumber.sequence;
 
       const result = await supabase
         .from("DebitNote")
         .insert({
           id: debitNoteId,
           debitNoteNumber,
-          invoiceId: validatedData.invoiceId || null,
+          invoiceId: validatedData.invoiceId,
           companyId: validatedData.companyId,
           clientId: validatedData.clientId,
           userId: company.userId,
@@ -166,6 +166,9 @@ export async function POST(request: NextRequest) {
     }
 
     if (debitNoteError) {
+      if (issuedSequence !== null) {
+        await rollbackInvoiceSequence(company.userId, validatedData.companyId, issuedSequence);
+      }
       console.error("Error creating debit note:", debitNoteError);
       return NextResponse.json(
         { error: "Неуспешно създаване на дебитно известие" },
@@ -195,6 +198,9 @@ export async function POST(request: NextRequest) {
       // Rollback debit note creation
       await supabase.from("DebitNoteItem").delete().eq("debitNoteId", debitNoteId);
       await supabase.from("DebitNote").delete().eq("id", debitNoteId);
+      if (issuedSequence !== null) {
+        await rollbackInvoiceSequence(company.userId, validatedData.companyId, issuedSequence);
+      }
       
       return NextResponse.json(
         { error: "Неуспешно създаване на артикулите" },

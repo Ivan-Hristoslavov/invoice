@@ -28,23 +28,22 @@ export function formatPrice(value: number): string {
 export function formatCurrency(amount: number, currency: string = "EUR"): string {
   const currencySymbols: Record<string, string> = {
     EUR: "€",
-    BGN: "лв.",
     USD: "$",
     GBP: "£",
   };
 
-  const symbol = currencySymbols[currency] || currency;
   const formattedAmount = formatPrice(amount);
+  if (currency === "BGN") {
+    return `${formattedAmount} лв.`;
+  }
 
-  // BGN: amount + symbol (Bulgarian convention: 10.00 лв.)
-  if (currency === "BGN") return `${formattedAmount} ${symbol}`;
+  const symbol = currencySymbols[currency] || currency;
   return `${symbol}${formattedAmount}`;
 }
 
 export function getCurrencySymbol(currency: string = "EUR"): string {
   const currencySymbols: Record<string, string> = {
     EUR: "€",
-    BGN: "лв.",
     USD: "$",
     GBP: "£",
   };

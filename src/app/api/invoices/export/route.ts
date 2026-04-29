@@ -135,8 +135,13 @@ export async function GET(request: NextRequest) {
         },
       });
     } else {
-      // Return as JSON
-      return NextResponse.json({ invoices });
+      const filename = `invoices-export-${formatDate(new Date())}.json`;
+      return new NextResponse(JSON.stringify({ invoices }, null, 2), {
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          "Content-Disposition": `attachment; filename="${filename}"`,
+        },
+      });
     }
   } catch (error) {
     console.error("Грешка при експорт на фактури:", error);

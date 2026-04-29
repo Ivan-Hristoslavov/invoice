@@ -7,7 +7,6 @@ import {
   formatValidationIssues,
   validateBulgarianPartyInput,
 } from "@/lib/bulgarian-party";
-import { hasPermission } from "@/lib/permissions";
 import { getAccessibleOwnerUserIdsForUser } from "@/lib/team";
 import { z } from "zod";
 import { FIELD_LIMITS } from "@/lib/validations/field-limits";
@@ -94,11 +93,6 @@ export async function PUT(
       return NextResponse.json({ error: "Сесията ви е невалидна. Моля, влезте отново." }, { status: 401 });
     }
 
-    const canUpdate = await hasPermission(sessionUser.id, "client:update");
-    if (!canUpdate) {
-      return NextResponse.json({ error: "Нямате право да редактирате клиенти" }, { status: 403 });
-    }
-
     const { id } = await context.params;
     const json = await request.json();
     const validated = clientSchema.parse(json);
@@ -183,6 +177,21 @@ export async function PUT(
       return NextResponse.json(
         { error: "Невалидни данни за клиента. Моля, проверете полетата.", details },
         { status: 400 }
+      );
+    }
+
+    const maybeDbError = error as { code?: string; message?: string; details?: string } | null;
+    if (
+      maybeDbError?.code === "23505" &&
+      (maybeDbError?.message?.includes("Client_userId_bulstat_active_key") ||
+        maybeDbError?.details?.includes("bulstatNumber"))
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Вече имате активен клиент със същия ЕИК/БУЛСТАТ. Използвайте друг идентификатор или редактирайте съществуващия клиент.",
+        },
+        { status: 409 }
       );
     }
 
