@@ -47,7 +47,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           {/* Navbar at top - full width */}
           <Navbar />
           {/* Content area with sidebar */}
-          <div className="flex flex-1 lg:pl-72">
+          <div className="flex flex-1 lg:pl-[18rem]">
             <Sidebar />
             <main
               id="main-content"

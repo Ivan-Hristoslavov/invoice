@@ -9,6 +9,7 @@ import { APP_NAME } from "@/config/constants";
 import { createAdminClient } from "@/lib/supabase/server";
 import { resolveSessionUser } from "@/lib/session-user";
 import DebitNotesClient, { type DebitNoteListItem } from "./DebitNotesClient";
+import { ListPageShell } from "@/components/list";
 
 export const metadata: Metadata = {
   title: `Дебитни известия | ${APP_NAME}`,
@@ -83,23 +84,20 @@ export default async function DebitNotesPage() {
   }
 
   return (
-    <div className="app-page-shell min-w-0">
-      <div className="page-header">
-        <div className="min-w-0">
-          <h1 className="page-title">Дебитни известия</h1>
-          <p className="card-description mt-1">
-            Преглед на дебитни известия за доплащания при замяна на продукти
-          </p>
-        </div>
+    <ListPageShell
+      className="min-w-0"
+      title="Дебитни известия"
+      description="Преглед на дебитни известия за доплащания при замяна на продукти"
+      actions={
         <Button asChild className="btn-responsive">
           <Link href="/debit-notes/new" className="flex items-center whitespace-nowrap">
             <Plus className="mr-2 h-4 w-4" />
             Ново дебитно известие
           </Link>
         </Button>
-      </div>
-
+      }
+    >
       <DebitNotesClient debitNotes={debitNotes} />
-    </div>
+    </ListPageShell>
   );
 }

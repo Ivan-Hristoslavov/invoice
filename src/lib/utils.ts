@@ -32,9 +32,12 @@ export function formatCurrency(amount: number, currency: string = "EUR"): string
     GBP: "£",
   };
 
-  const symbol = currencySymbols[currency] || currency;
   const formattedAmount = formatPrice(amount);
+  if (currency === "BGN") {
+    return `${formattedAmount} лв.`;
+  }
 
+  const symbol = currencySymbols[currency] || currency;
   return `${symbol}${formattedAmount}`;
 }
 

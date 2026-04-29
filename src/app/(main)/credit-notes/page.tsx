@@ -7,6 +7,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { resolveSessionUser } from "@/lib/session-user";
 import CreditNotesClient, { type CreditNoteListItem } from "./CreditNotesClient";
 import { NewCreditNoteButton } from "./NewCreditNoteButton";
+import { ListPageShell } from "@/components/list";
 
 export const metadata: Metadata = {
   title: `Сторно документи | ${APP_NAME}`,
@@ -91,18 +92,13 @@ export default async function CreditNotesPage() {
   }
 
   return (
-    <div className="app-page-shell min-w-0">
-      <div className="page-header">
-        <div className="min-w-0">
-          <h1 className="page-title">Кредитни известия</h1>
-          <p className="card-description mt-1">
-            Преглед на издадени кредитни известия за отменени фактури
-          </p>
-        </div>
-        <NewCreditNoteButton />
-      </div>
-
+    <ListPageShell
+      className="min-w-0"
+      title="Кредитни известия"
+      description="Преглед на издадени кредитни известия за отменени фактури"
+      actions={<NewCreditNoteButton />}
+    >
       <CreditNotesClient creditNotes={creditNotes} />
-    </div>
+    </ListPageShell>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Check, X, CreditCard, Sparkles, Star, Zap, Crown, FileText, Shield, TrendingUp, ArrowRight } from 'lucide-react';
+import { Check, X, Sparkles, Star, Zap, Crown, FileText, Shield, TrendingUp, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -10,6 +10,9 @@ import { useSubscriptionLimit } from '@/hooks/useSubscriptionLimit';
 import { AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CancellationSurvey } from './CancellationSurvey';
+import { PlanStatusBanner } from './PlanStatusBanner';
+import { BillingIntervalToggle } from './BillingIntervalToggle';
+import { PlanComparisonModal } from './PlanComparisonModal';
 import { toast } from "@/lib/toast";
 import { cn, formatPrice } from '@/lib/utils';
 import { SUBSCRIPTION_PLANS } from '@/lib/subscription-plans';
@@ -103,6 +106,7 @@ export function SubscriptionPlans({ onSuccessRefetchDone }: SubscriptionPlansPro
   const [editingSubscription, setEditingSubscription] = useState(false);
   const [showCancellationSurvey, setShowCancellationSurvey] = useState(false);
   const [isYearly, setIsYearly] = useState(true);
+  const [compareOpen, setCompareOpen] = useState(false);
 
   // При връщане след плащане (?success=true): един път refetch с loading, после callback; след 4s тих retry
   const successParam = searchParams.get('success');
@@ -230,79 +234,37 @@ export function SubscriptionPlans({ onSuccessRefetchDone }: SubscriptionPlansPro
         </Alert>
       )}
 
-      {/* Current Subscription - Compact */}
-      {subscription && subscription.plan !== 'FREE' && (
-        <div className="flex items-center justify-between p-3 rounded-xl bg-linear-to-r from-primary/10 to-primary/5 border border-primary/20">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
-              <CreditCard className="h-4 w-4 text-primary" />
-            </div>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-sm">
-                  {PLANS[subscription.plan as PlanKey]?.displayName || subscription.plan}
-                </span>
-                <Badge variant={subscription.cancelAtPeriodEnd ? "outline-solid" : "secondary"} className="text-[10px] h-5">
-                  {subscription.cancelAtPeriodEnd ? 'Изтича' : 'Активен'}
-                </Badge>
-              </div>
-              <span className="text-xs text-muted-foreground">
-                {getSubscriptionEndsText()}
-              </span>
-            </div>
-          </div>
-          {subscription.cancelAtPeriodEnd !== true && (
-            <Button variant="ghost" size="sm" onClick={handleCancelButtonClick} disabled={cancelingSubscription} className="text-xs h-8 text-muted-foreground hover:text-destructive">
-              {cancelingSubscription ? '...' : 'Отказ'}
-            </Button>
-          )}
-        </div>
-      )}
+      <PlanStatusBanner
+        subscription={subscription}
+        getSubscriptionEndsText={getSubscriptionEndsText}
+        onCancelClick={handleCancelButtonClick}
+        cancelingSubscription={cancelingSubscription}
+      />
 
-      {/* Header + Toggle */}
       <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {/* Trial badge – по-компактен и не толкова висок */}
         <div className="flex w-full justify-center sm:justify-start">
-          <div className="flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 max-w-[240px]">
+          <div className="flex max-w-[240px] items-center justify-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1">
             <Sparkles className="h-4 w-4 shrink-0 text-emerald-500" />
-            <span className="text-xs font-medium text-emerald-500 dark:text-emerald-300 leading-none">
+            <span className="text-xs font-medium leading-none text-emerald-500 dark:text-emerald-300">
               14 дни безплатен trial
             </span>
           </div>
         </div>
-        
-        {/* Billing Toggle - Compact, центриран по-добре на мобилни */}
-        <div className="grid w-full max-w-xs grid-cols-2 gap-0.5 rounded-full border bg-muted/50 p-0.5 self-center sm:self-auto sm:w-auto sm:max-w-[220px]">
-          <button
-            onClick={() => setIsYearly(false)}
-            className={cn(
-              "flex min-w-0 items-center justify-center rounded-full px-2 py-1.5 text-xs font-medium transition-all",
-              !isYearly 
-                ? "bg-background shadow-xs text-foreground" 
-                : "text-muted-foreground hover:text-foreground"
-            )}
+
+        <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <Button
+            type="button"
+            variant="link"
+            className="h-auto self-center p-0 text-sm text-primary"
+            onClick={() => setCompareOpen(true)}
           >
-            Месечно
-          </button>
-          <button
-            onClick={() => setIsYearly(true)}
-            className={cn(
-              "flex min-w-0 items-center justify-center gap-1 rounded-full px-2 py-1.5 text-xs font-medium transition-all",
-              isYearly 
-                ? "bg-emerald-500 text-white shadow-xs" 
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            Годишно
-            <span className={cn(
-              "rounded-full px-1 py-0.5 text-[8px] font-bold leading-tight",
-              isYearly ? "bg-white/20" : "bg-emerald-500/20 text-emerald-600"
-            )}>
-              2 мес. безпл.
-            </span>
-          </button>
+            Сравни планове
+          </Button>
+          <BillingIntervalToggle isYearly={isYearly} onChange={setIsYearly} className="self-center" />
         </div>
       </div>
+
+      <PlanComparisonModal open={compareOpen} onOpenChange={setCompareOpen} />
 
       {isYearly && (
         <p className="text-center text-sm text-muted-foreground">

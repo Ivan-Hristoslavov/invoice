@@ -62,6 +62,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { createPortal } from "react-dom";
 import { formatInvoicePrice, formatInvoiceLongDate } from "./invoice-new-format";
 import { InvoiceStepIndicator } from "./InvoiceStepIndicator";
+import { clearInvoiceDraft, saveInvoiceDraft } from "./use-invoice-draft-autosave";
 import { evaluateInvoiceItemEditorDraft } from "@/lib/invoice-item-editor-draft";
 import { generateBulgarianInvoiceNumber } from "@/lib/bulgarian-invoice";
 import { mapCompanyBookToFormFields } from "@/lib/companybook";
@@ -738,6 +739,21 @@ function NewInvoiceContent() {
     "Прегледайте документа преди окончателното създаване.",
   ];
 
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      saveInvoiceDraft({
+        v: 1,
+        at: new Date().toISOString(),
+        currentStep,
+        invoiceData,
+        items,
+        goodsRecipient,
+        clientId: selectedClient?.id ?? null,
+      });
+    }, 900);
+    return () => window.clearTimeout(id);
+  }, [currentStep, invoiceData, items, goodsRecipient, selectedClient?.id]);
+
   const handleExistingClientSelect = useCallback((client: any) => {
     setSelectedClient(client);
     setCurrentStep(1);
@@ -1271,6 +1287,7 @@ function NewInvoiceContent() {
           console.error("Create invoice: missing id in response", payload);
           toast.error("Фактурата е създадена, но не можем да я отворим. Вижте списъка с фактури.");
           refreshUsage();
+          clearInvoiceDraft();
           router.push("/invoices");
           return;
         }
@@ -1278,6 +1295,7 @@ function NewInvoiceContent() {
 
         const invoiceUrl = `/invoices/${newInvoiceId}`;
         toast.success("Фактурата е създадена успешно!");
+        clearInvoiceDraft();
         router.push(invoiceUrl);
       } catch (error: any) {
         console.error("Error creating invoice:", error);

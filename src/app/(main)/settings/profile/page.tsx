@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ProfileForm } from "./ProfileForm";
 import { GdprSection } from "./GdprSection";
 import { User, Camera, Info } from "lucide-react";
+import { PageHeader } from "@/components/page";
 
 export const metadata: Metadata = {
   title: `Настройки на профила | ${APP_NAME}`,
@@ -50,6 +51,11 @@ export default async function ProfileSettingsPage(props: {
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      <PageHeader
+        title="Профил"
+        description="Лични данни, снимка и защита на личните данни (GDPR)"
+      />
+
       {/* Rich profile header */}
       <Card className="overflow-hidden">
         <div className="h-18 bg-linear-to-r from-primary/20 via-primary/10 to-primary/5 sm:h-24" />

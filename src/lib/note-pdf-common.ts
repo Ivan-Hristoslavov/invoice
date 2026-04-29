@@ -216,7 +216,7 @@ export async function generateNotePdfServer(
   yPos += 9;
 
   const items = Array.isArray(note.items) ? note.items : [];
-  items.forEach((item, index) => {
+  items.forEach((item: { description?: string; quantity?: number; unitPrice?: number; taxRate?: number; total?: number }, index: number) => {
     setDraw(PAL.border, 0.08);
     doc.line(x0, yPos, x0 + contentWidth, yPos);
     doc.setFont("Roboto", "normal");

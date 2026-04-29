@@ -10,6 +10,8 @@ interface TableProps extends React.ComponentProps<typeof HeroUITable> {
   contentAriaLabel?: string;
   contentClassName?: string;
   scrollContainerClassName?: string;
+  /** Row / cell vertical density */
+  density?: "comfortable" | "compact";
   /** Passed to the inner react-aria Table — use this instead of `onClick` on rows (proper press + a11y). */
   onRowAction?: (key: Key) => void;
 }
@@ -124,16 +126,27 @@ TableRow.displayName = "TableRow";
 
 interface TableHeadProps extends React.ComponentProps<typeof HeroUITable.Column> {
   sortable?: boolean;
+  /** Hide column below breakpoint (use with table row cells). */
+  hideBelow?: "sm" | "md" | "lg" | "xl" | "2xl";
 }
 
+const hideBelowClass: Record<NonNullable<TableHeadProps["hideBelow"]>, string> = {
+  sm: "hidden sm:table-cell",
+  md: "hidden md:table-cell",
+  lg: "hidden lg:table-cell",
+  xl: "hidden xl:table-cell",
+  "2xl": "hidden 2xl:table-cell",
+};
+
 const TableHead = React.forwardRef<HTMLTableCellElement, TableHeadProps>(
-  ({ className, sortable, children, ...props }, ref) => (
+  ({ className, sortable, hideBelow, children, ...props }, ref) => (
     <HeroUITable.Column
       ref={ref}
       allowsSorting={sortable}
       className={cn(
         "px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground",
         "sm:px-5",
+        hideBelow && hideBelowClass[hideBelow],
         className
       )}
       {...props}
@@ -146,11 +159,15 @@ TableHead.displayName = "TableHead";
 
 const TableCell = React.forwardRef<
   HTMLTableCellElement,
-  React.ComponentProps<typeof HeroUITable.Cell>
->(({ className, ...props }, ref) => (
+  React.ComponentProps<typeof HeroUITable.Cell> & { hideBelow?: TableHeadProps["hideBelow"] }
+>(({ className, hideBelow, ...props }, ref) => (
   <HeroUITable.Cell
     ref={ref}
-    className={cn("px-4 py-3.5 align-middle sm:px-5", className)}
+    className={cn(
+      "px-4 py-3.5 align-middle sm:px-5",
+      hideBelow && hideBelowClass[hideBelow],
+      className
+    )}
     {...props}
   />
 ));

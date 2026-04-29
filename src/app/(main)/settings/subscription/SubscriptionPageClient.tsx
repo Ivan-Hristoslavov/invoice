@@ -7,7 +7,8 @@ import { SubscriptionHistory } from '@/components/subscription/SubscriptionHisto
 import { useSearchParams } from 'next/navigation';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle2, XCircle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { PageHeader } from '@/components/page';
 
 function SubscriptionPageInner() {
   const searchParams = useSearchParams();
@@ -34,14 +35,11 @@ function SubscriptionPageInner() {
 
   return (
     <div className="app-page-shell">
-      <div className="app-page-header">
-        <div>
-          <h1 className="page-title">Абонамент</h1>
-          <p className="card-description mt-1">
-            Изберете план и вижте какво ви предлага — лимити, функции и история на плащанията.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Абонамент"
+        description="План, цени, лимити и история на плащанията (Stripe)"
+        className="mb-4"
+      />
 
       <div className="relative">
         {postPaymentLoading && (

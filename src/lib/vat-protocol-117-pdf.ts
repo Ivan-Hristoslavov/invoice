@@ -101,31 +101,8 @@ export async function generateVatProtocol117PdfServer(protocol: any): Promise<Bu
 
   const headerRowY = 22;
   const leftBlockTop = headerRowY;
-
-  doc.setFont("Roboto", "normal");
-  doc.setFontSize(7);
-  setText(PAL.muted);
-  doc.text("Издал протокола", margin, leftBlockTop);
-  doc.setFont("Roboto", "bold");
-  doc.setFontSize(12);
-  setText(PAL.ink);
-  doc.text(protocol.company?.name || "", margin, leftBlockTop + 4);
-  doc.setFont("Roboto", "normal");
-  doc.setFontSize(8.5);
-  setText(PAL.text);
   let ly = leftBlockTop + 9;
-  if (protocol.company?.address) {
-    doc.text(protocol.company.address, margin, ly);
-    ly += 4;
-  }
-  if (protocol.company?.city) {
-    doc.text(protocol.company.city, margin, ly);
-    ly += 4;
-  }
-  if (protocol.company?.phone) {
-    doc.text(`Тел. ${protocol.company.phone}`, margin, ly);
-    ly += 4;
-  }
+  
 
   doc.setFont("Roboto", "bold");
   doc.setFontSize(26);
