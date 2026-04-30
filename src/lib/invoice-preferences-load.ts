@@ -5,8 +5,10 @@ import { DEFAULT_VAT_RATE } from "@/config/constants";
 export type InvoicePreferencesPayload = {
   defaultVatRate: number;
   startingInvoiceNumber?: number;
+  startingProformaNumber?: number;
   startingVatProtocolNumber?: number;
   invoicePrefix: string;
+  proformaPrefix: string;
   resetNumberingYearly: boolean;
   defaultCurrency: string;
   showAmountInWords: boolean;
@@ -19,6 +21,7 @@ export type InvoicePreferencesPayload = {
 
 type PrefsJson = {
   invoicePrefix?: string | null;
+  proformaPrefix?: string | null;
   resetNumberingYearly?: boolean;
   defaultCurrency?: string;
   showAmountInWords?: boolean;
@@ -28,6 +31,7 @@ type PrefsJson = {
   autoArchiveAfterDays?: number;
   keepDraftDays?: number;
   startingVatProtocolNumber?: number | null;
+  startingProformaNumber?: number | null;
 };
 
 function parsePreferencesJson(value: Prisma.JsonValue | null): PrefsJson {
@@ -56,9 +60,12 @@ export async function getInvoicePreferencesForUser(
   return {
     defaultVatRate: user.defaultVatRate != null ? Number(user.defaultVatRate) : DEFAULT_VAT_RATE,
     startingInvoiceNumber: user.startingInvoiceNumber ?? undefined,
+    startingProformaNumber:
+      typeof j.startingProformaNumber === "number" ? j.startingProformaNumber : undefined,
     startingVatProtocolNumber:
       typeof j.startingVatProtocolNumber === "number" ? j.startingVatProtocolNumber : undefined,
     invoicePrefix: j.invoicePrefix ?? "",
+    proformaPrefix: j.proformaPrefix ?? "PF",
     resetNumberingYearly: j.resetNumberingYearly ?? false,
     defaultCurrency: j.defaultCurrency ?? "EUR",
     showAmountInWords: j.showAmountInWords ?? true,

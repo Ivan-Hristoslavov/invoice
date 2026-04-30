@@ -55,8 +55,9 @@ import {
 } from "@/components/ui/select";
 import { FormDatePicker } from "@/components/ui/date-picker";
 import { ContentLoader } from "@/components/ui/loading-spinner";
+import { LoadingButton } from "@/components/ui/LoadingButton";
 import { toast } from "@/lib/toast";
-import { useAsyncLock } from "@/hooks/use-async-lock";
+import { useAsyncAction } from "@/hooks/use-async-action";
 
 interface EditInvoiceFormProps {
   invoiceId: string;
@@ -296,7 +297,7 @@ function EditInvoiceItemCard({
 
 export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
   const router = useRouter();
-  const submitLock = useAsyncLock();
+  const submitAction = useAsyncAction();
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [invoice, setInvoice] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -539,7 +540,7 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
       return;
     }
 
-    await submitLock.run(async () => {
+    await submitAction.execute(async () => {
       try {
         if (items.length === 0) {
           toast.error("Трябва да добавите поне един артикул");
@@ -763,10 +764,20 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
               <Download className="h-4 w-4" />
               PDF
             </Button>
-            <Button type="submit" form="invoice-form" size="sm" disabled={submitLock.isPending} loading={submitLock.isPending} className="shrink-0 gap-1.5">
-              <Save className="h-4 w-4" />
-              {submitLock.isPending ? "Запазване..." : "Запази"}
-            </Button>
+            <LoadingButton
+              type="submit"
+              form="invoice-form"
+              size="sm"
+              loading={submitAction.loading}
+              className="shrink-0 gap-1.5"
+              idleText={
+                <>
+                  <Save className="h-4 w-4" />
+                  Запази
+                </>
+              }
+              loadingText="Запазване..."
+            />
           </div>
         </div>
       </div>
@@ -1120,10 +1131,19 @@ export default function EditInvoiceForm({ invoiceId }: EditInvoiceFormProps) {
               <Button variant="outline" asChild className="h-11 w-full justify-center sm:min-w-[120px]">
                 <Link href={`/invoices/${invoiceId}`}>Отказ</Link>
               </Button>
-              <Button type="submit" form="invoice-form" disabled={submitLock.isPending} loading={submitLock.isPending} className="h-11 w-full justify-center sm:min-w-[160px]">
-                <Save className="mr-1.5 h-4 w-4" />
-                {submitLock.isPending ? "Запазване..." : "Запази промените"}
-              </Button>
+              <LoadingButton
+                type="submit"
+                form="invoice-form"
+                loading={submitAction.loading}
+                className="h-11 w-full justify-center sm:min-w-[160px]"
+                idleText={
+                  <>
+                    <Save className="mr-1.5 h-4 w-4" />
+                    Запази промените
+                  </>
+                }
+                loadingText="Запазване..."
+              />
             </div>
           </div>
         </div>

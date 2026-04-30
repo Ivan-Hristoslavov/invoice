@@ -16,6 +16,8 @@ import {
   ArrowDownCircle,
   ArrowUpCircle,
   ClipboardList,
+  TableProperties,
+  FileBadge2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -44,6 +46,18 @@ const mainNavItems = [
     href: "/invoices",
     icon: FileText,
     gradient: "from-emerald-500 to-teal-600",
+  },
+  {
+    name: "Проформи",
+    href: "/proforma-invoices",
+    icon: FileBadge2,
+    gradient: "from-cyan-500 to-blue-600",
+  },
+  {
+    name: "Справки",
+    href: "/reports/invoices",
+    icon: TableProperties,
+    gradient: "from-slate-500 to-zinc-600",
   },
   {
     name: "Кредитни",
@@ -304,6 +318,29 @@ export function Sidebar() {
                                     <item.icon className="h-3.5 w-3.5 shrink-0 opacity-80" aria-hidden />
                                     <span className="min-w-0 leading-snug">{item.name}</span>
                                   </Link>
+                                  {item.children?.length ? (
+                                    <ul className="mt-1 space-y-0.5 pl-7" role="list">
+                                      {item.children.map((subTab) => {
+                                        const childActive = isSettingsChildActive(pathname, subTab.href);
+                                        return (
+                                          <li key={subTab.href}>
+                                            <Link
+                                              href={subTab.href}
+                                              aria-current={childActive ? "page" : undefined}
+                                              className={cn(
+                                                "flex min-h-8 items-center rounded-md px-2 py-1 text-xs transition-colors",
+                                                childActive
+                                                  ? "bg-primary/12 text-primary font-medium"
+                                                  : "text-foreground/75 hover:bg-muted/70 hover:text-foreground"
+                                              )}
+                                            >
+                                              {subTab.name}
+                                            </Link>
+                                          </li>
+                                        );
+                                      })}
+                                    </ul>
+                                  ) : null}
                                 </li>
                               );
                             })}

@@ -39,6 +39,8 @@ model User {
   documents                         Document[]
   Invoice_Invoice_createdByIdToUser Invoice[]         @relation("Invoice_createdByIdToUser")
   invoices                          Invoice[]
+  proformaInvoices                  ProformaInvoice[]
+  proformaSequences                 ProformaSequence[]
   invoiceSequences                  InvoiceSequence[]
   products                          Product[]
   sessions                          Session[]
@@ -128,6 +130,8 @@ model Company {
   debitNotes              DebitNote[]
   vatProtocol117s         VatProtocol117[]
   invoices                Invoice[]
+  proformaInvoices        ProformaInvoice[]
+  proformaSequences       ProformaSequence[]
   invoiceSequences        InvoiceSequence[]
   teamInvites             TeamInvite[]
   userRoles               UserRole[]
@@ -171,6 +175,7 @@ model Client {
   debitNotes                    DebitNote[]
   vatProtocol117s               VatProtocol117[]
   invoices                      Invoice[]
+  proformaInvoices              ProformaInvoice[]
 
   @@index([userId, name])
   @@index([createdById])
@@ -188,6 +193,7 @@ model Product {
   userId       String
   isActive     Boolean              @default(true)
   invoiceItems InvoiceItem[]
+  proformaInvoiceItems ProformaInvoiceItem[]
   user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   translations ProductTranslation[]
 
@@ -231,6 +237,7 @@ model Invoice {
   uniqueNapId                                 String?
   placeOfIssue                                String?
   paymentMethod                               String?
+  accountType                                 String?
   supplyDate                                  DateTime?
   isEInvoice                                  Boolean          @default(false)
   napStatus                                   String?
@@ -269,6 +276,8 @@ model Invoice {
   @@index([clientId])
   @@index([companyId])
   @@index([createdById])
+  @@index([paymentMethod])
+  @@index([accountType])
 }
 
 model InvoiceItem {
@@ -306,6 +315,75 @@ model InvoiceSequence {
   @@unique([companyId, year])
   @@index([userId, companyId, year])
   @@index([userId])
+}
+
+model ProformaInvoice {
+  id              String              @id @default(cuid())
+  proformaNumber  String
+  clientId        String
+  companyId       String
+  userId          String?
+  issueDate       DateTime
+  dueDate         DateTime?
+  status          String              @default("DRAFT")
+  subtotal        Decimal             @db.Decimal(10, 2)
+  taxAmount       Decimal             @db.Decimal(10, 2)
+  total           Decimal             @db.Decimal(10, 2)
+  notes           String?
+  currency        String              @default("EUR")
+  paymentMethod   String?
+  accountType     String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  sellerSnapshot  Json?
+  buyerSnapshot   Json?
+  itemsSnapshot   Json?
+  createdById     String?
+  user            User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  client          Client              @relation(fields: [clientId], references: [id])
+  company         Company             @relation(fields: [companyId], references: [id])
+  items           ProformaInvoiceItem[]
+
+  @@unique([proformaNumber, companyId])
+  @@index([userId, issueDate(sort: Desc)])
+  @@index([clientId])
+  @@index([companyId])
+  @@index([paymentMethod])
+  @@index([accountType])
+}
+
+model ProformaInvoiceItem {
+  id                String          @id @default(cuid())
+  proformaInvoiceId String
+  productId         String?
+  description       String
+  quantity          Decimal         @db.Decimal(10, 2)
+  unitPrice         Decimal         @db.Decimal(10, 2)
+  taxRate           Decimal         @default(0) @db.Decimal(5, 2)
+  subtotal          Decimal         @db.Decimal(10, 2)
+  taxAmount         Decimal         @db.Decimal(10, 2)
+  total             Decimal         @db.Decimal(10, 2)
+  unit              String?         @default("бр.")
+  proformaInvoice   ProformaInvoice @relation(fields: [proformaInvoiceId], references: [id], onDelete: Cascade)
+  product           Product?        @relation(fields: [productId], references: [id])
+
+  @@index([proformaInvoiceId])
+  @@index([productId])
+}
+
+model ProformaSequence {
+  id        String   @id @default(cuid())
+  companyId String
+  year      Int
+  sequence  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([companyId, year])
+  @@index([userId, companyId, year])
 }
 
 model CreditNote {

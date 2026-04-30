@@ -21,7 +21,9 @@ export function CompanySettingsTabBar() {
   }
 
   return (
-    <div className="mb-4 flex gap-1 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="mb-4 space-y-2">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Компания</p>
+      <div className="flex gap-1 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <nav className="flex min-w-0 flex-1 gap-1 rounded-2xl border border-border/60 bg-card/80 p-1" aria-label="Секции компания">
         {TABS.map((tab) => {
           const Icon = tab.icon;
@@ -44,6 +46,7 @@ export function CompanySettingsTabBar() {
           );
         })}
       </nav>
+      </div>
     </div>
   );
 }

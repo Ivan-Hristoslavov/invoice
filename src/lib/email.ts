@@ -3,6 +3,7 @@ import { exportInvoicePdfBuffer } from './invoice-export-pdf-buffer';
 import { createAdminClient } from './supabase/server';
 import { withDocumentSnapshots } from './document-snapshots';
 import { APP_NAME } from "@/config/constants";
+import { generateInvoicePdfServer } from "./pdf-generator";
 
 // Lazy initialization helper to avoid build-time errors
 function getSmtpTransporter() {
@@ -620,5 +621,86 @@ export async function sendDebitNoteEmail(params: {
     subject,
     html,
     attachments: [{ filename: params.pdfFilename, content: params.pdfBuffer }],
+  });
+}
+
+export async function sendInvoiceReportEmail(params: {
+  to: string;
+  periodLabel: string;
+  pdfBuffer: Buffer;
+  pdfFilename: string;
+}) {
+  const transporter = getSmtpTransporter();
+  const appName = process.env.NEXT_PUBLIC_APP_NAME || APP_NAME;
+
+  await transporter.sendMail({
+    from: getFromAddress(),
+    to: params.to,
+    subject: `Справка за фактури (${params.periodLabel})`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Здравейте!</h2>
+        <p>Изпращаме Ви справка за фактури за периода <strong>${params.periodLabel}</strong>.</p>
+        <p>Файлът е прикачен като PDF.</p>
+        <p style="margin-top: 24px; font-size: 14px; color: #6b7280;">
+          Това е автоматично съобщение от ${appName}.
+        </p>
+      </div>
+    `,
+    attachments: [{ filename: params.pdfFilename, content: params.pdfBuffer }],
+  });
+}
+
+export async function sendProformaEmail(params: {
+  to: string;
+  proformaId: string;
+  proformaNumber: string;
+  userId?: string;
+}) {
+  const supabase = createAdminClient();
+  let query = supabase
+    .from("ProformaInvoice")
+    .select("*, client:Client(*), company:Company(*), items:ProformaInvoiceItem(*)")
+    .eq("id", params.proformaId);
+  if (params.userId) query = query.eq("userId", params.userId);
+  const { data: proforma, error } = await query.single();
+  if (error || !proforma) {
+    throw new Error("Proforma not found or access denied");
+  }
+
+  const snapshotProforma = withDocumentSnapshots(
+    proforma,
+    proforma.company || null,
+    proforma.client || null,
+    proforma.items || []
+  );
+  const pdfInput = {
+    ...snapshotProforma,
+    invoiceNumber: proforma.proformaNumber,
+    issueDate: proforma.issueDate,
+    dueDate: proforma.dueDate || proforma.issueDate,
+    isOriginal: true,
+    status: proforma.status || "DRAFT",
+    documentTitle: "ПРОФОРМА ФАКТУРА",
+  };
+  const pdfBuffer = await generateInvoicePdfServer(pdfInput);
+  const safeNumber = (proforma.proformaNumber || proforma.id || "proforma").replace(/[^a-zA-Z0-9-_]/g, "_");
+
+  const transporter = getSmtpTransporter();
+  await transporter.sendMail({
+    from: getFromAddress(),
+    to: params.to,
+    subject: `Проформа фактура №${params.proformaNumber}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Здравейте!</h2>
+        <p>Изпращаме Ви <strong>Проформа фактура №${params.proformaNumber}</strong>.</p>
+        <p>PDF документът е прикачен към имейла.</p>
+        <p style="margin-top: 24px; font-size: 14px; color: #6b7280;">
+          Това е автоматично съобщение от ${process.env.NEXT_PUBLIC_APP_NAME || APP_NAME}.
+        </p>
+      </div>
+    `,
+    attachments: [{ filename: `Proforma-${safeNumber}.pdf`, content: Buffer.from(pdfBuffer) }],
   });
 }

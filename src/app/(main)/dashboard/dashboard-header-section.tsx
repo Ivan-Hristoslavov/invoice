@@ -1,4 +1,4 @@
-import { Plus, LayoutDashboard } from "lucide-react";
+import { Plus, LayoutDashboard, FileBadge2, TableProperties } from "lucide-react";
 import { LinkButton } from "@/components/dashboard/LinkButton";
 import { AppSectionKicker } from "@/components/app/AppSectionKicker";
 import { InvoiceWorkspaceSetup } from "@/components/invoice/InvoiceWorkspaceSetup";
@@ -39,6 +39,17 @@ export async function DashboardHeaderSection({ userId }: { userId: string }) {
           description="Добавете фирма и клиент веднъж — след това всяка нова фактура е с няколко клика."
         />
       )}
+
+      <div className="flex flex-wrap gap-2">
+        <LinkButton href="/reports/invoices" variant="outline" size="sm" linkClassName="flex items-center">
+          <TableProperties className="mr-1.5 h-4 w-4" />
+          Справки
+        </LinkButton>
+        <LinkButton href="/proforma-invoices" variant="outline" size="sm" linkClassName="flex items-center">
+          <FileBadge2 className="mr-1.5 h-4 w-4" />
+          Проформи
+        </LinkButton>
+      </div>
     </>
   );
 }

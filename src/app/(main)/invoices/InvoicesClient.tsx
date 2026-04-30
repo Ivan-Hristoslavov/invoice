@@ -69,6 +69,7 @@ import { CancelInvoiceModal } from "@/components/invoice/CancelInvoiceModal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
 import { useAsyncLock } from "@/hooks/use-async-lock";
+import { useAsyncAction } from "@/hooks/use-async-action";
 import { ProFeatureLock, UsageCounter, LockedButton, LimitBanner } from "@/components/ui/pro-feature-lock";
 import {
   Table,
@@ -142,6 +143,7 @@ export default function InvoicesClient({
   
   const invoiceUsage = getInvoiceUsage();
   const duplicateLock = useAsyncLock();
+  const deleteAction = useAsyncAction();
 
   // Modal state for status change
   const [statusModal, setStatusModal] = useState<{
@@ -170,35 +172,25 @@ export default function InvoicesClient({
 
   // Handle delete invoice
   const handleDeleteInvoice = async () => {
-    if (!deleteModal.invoice) return;
-    
-    const invoiceId = deleteModal.invoice.id;
-    const invoiceNumber = deleteModal.invoice.invoiceNumber;
-    
-    try {
+    await deleteAction.execute(async () => {
+      if (!deleteModal.invoice) return;
+
+      const invoiceId = deleteModal.invoice.id;
       const response = await fetch(`/api/invoices/${invoiceId}`, {
         method: "DELETE",
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || "Грешка при изтриване на фактурата");
       }
-      
-      // Remove invoice from local state
-      setInvoices(prev => prev.filter(inv => inv.id !== invoiceId));
+
+      setInvoices((prev) => prev.filter((inv) => inv.id !== invoiceId));
       toast.success("Фактурата беше изтрита успешно");
-      
-      // Refresh usage limits after deletion
       refreshUsage();
-      
-      // Refresh the page to update the list
       router.refresh();
-    } catch (error: any) {
-      console.error("Error deleting invoice:", error);
-      toast.error(error.message || "Грешка при изтриване на фактурата");
-      throw error; // Re-throw to let modal handle loading state
-    }
+      closeDeleteModal();
+    });
   };
 
   const openDeleteModal = (invoice: Invoice) => {
@@ -643,24 +635,24 @@ export default function InvoicesClient({
       </div>
 
       {/* Filters */}
-      <Card className="rounded-xl border border-border/40 shadow-sm">
-        <CardContent className="!p-2 sm:!p-2.5 md:!p-3">
-          <div className="space-y-2 md:hidden">
-            <div className="min-w-0">
+      <Card className="rounded-3xl border border-border/50 bg-card/90 shadow-sm">
+        <CardContent className="p-3! sm:p-4!">
+          <div className="space-y-3 md:hidden">
+            <div className="min-w-0 rounded-2xl border border-border/60 bg-muted/20 p-2">
               <SearchField
                 aria-label="Търсене по номер, клиент или дата"
                 placeholder="Търсене по номер, клиент или дата..."
                 value={searchQuery}
                 onChange={setSearchQuery}
-                className="[&_[data-slot=search-field-group]]:min-h-9 [&_[data-slot=search-field-input]]:text-sm"
+                className="**:data-[slot=search-field-group]:min-h-11 **:data-[slot=search-field-group]:rounded-full **:data-[slot=search-field-input]:text-sm"
               />
             </div>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-2 gap-2">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                className="min-h-0! h-9 justify-center text-sm"
+                className="min-h-0! h-11 justify-center rounded-2xl text-sm"
                 onClick={() => setShowMobileFilters((prev) => !prev)}
               >
                 <Filter className="mr-1.5 h-3.5 w-3.5" />
@@ -678,9 +670,9 @@ export default function InvoicesClient({
               <ExportDialogWrapper clients={clients} companies={companies} />
             </div>
             {showMobileFilters && (
-              <div className="grid gap-2">
+              <div className="grid gap-2 rounded-2xl border border-border/60 bg-muted/15 p-2.5">
                 <Select value={statusFilter} onValueChange={setStatusFilter} aria-label="Филтър по статус">
-                  <SelectTrigger className="h-auto min-h-9 w-full rounded-lg px-3 py-2 text-sm">
+                  <SelectTrigger className="h-auto min-h-10 w-full rounded-xl px-3 py-2 text-sm">
                     <Filter className="mr-1.5 h-3.5 w-3.5" />
                     <SelectValue placeholder="Филтър по статус" />
                   </SelectTrigger>
@@ -699,7 +691,7 @@ export default function InvoicesClient({
                   setSortField(field as any);
                   setSortDirection(dir as any);
                 }} aria-label="Сортиране на фактурите">
-                  <SelectTrigger className="h-auto min-h-9 w-full rounded-lg px-3 py-2 text-sm">
+                  <SelectTrigger className="h-auto min-h-10 w-full rounded-xl px-3 py-2 text-sm">
                     <ArrowUpDown className="mr-1.5 h-3.5 w-3.5" />
                     <SelectValue placeholder="Сортирай" />
                   </SelectTrigger>
@@ -715,50 +707,58 @@ export default function InvoicesClient({
               </div>
             )}
           </div>
-          <div className="hidden gap-2 md:grid md:grid-cols-2 xl:grid-cols-[minmax(0,1.35fr)_minmax(200px,1fr)_minmax(200px,1fr)_auto] xl:items-center">
-            <div className="min-w-0">
+          <div className="hidden md:grid md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-center md:gap-2">
+            <div className="min-w-0 rounded-2xl border border-border/60 bg-muted/20 p-2">
               <SearchField
                 aria-label="Търсене по номер, клиент или дата"
                 placeholder="Търсене по номер, клиент или дата..."
                 value={searchQuery}
                 onChange={setSearchQuery}
-                className="[&_[data-slot=search-field-group]]:min-h-9 [&_[data-slot=search-field-input]]:text-sm"
+                className="**:data-[slot=search-field-group]:min-h-11 **:data-[slot=search-field-group]:rounded-full **:data-[slot=search-field-input]:text-sm"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter} aria-label="Филтър по статус">
-              <SelectTrigger className="h-auto min-h-9 w-full rounded-lg px-3 py-2 text-sm">
-                <Filter className="mr-1.5 h-3.5 w-3.5" />
-                <SelectValue placeholder="Филтър по статус" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Всички статуси</SelectItem>
-                <SelectItem value="DRAFT">Чернови</SelectItem>
-                <SelectItem value="ISSUED">Издадени</SelectItem>
-                <SelectItem value="PAID">Платени</SelectItem>
-                <SelectItem value="OVERDUE">Просрочени</SelectItem>
-                <SelectItem value="VOIDED">Анулирани</SelectItem>
-                <SelectItem value="CANCELLED">Отказани</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={`${sortField}-${sortDirection}`} onValueChange={(val) => {
-              const [field, dir] = val.split("-");
-              setSortField(field as any);
-              setSortDirection(dir as any);
-            }} aria-label="Сортиране на фактурите">
-              <SelectTrigger className="h-auto min-h-9 w-full rounded-lg px-3 py-2 text-sm">
-                <ArrowUpDown className="mr-1.5 h-3.5 w-3.5" />
-                <SelectValue placeholder="Сортирай" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="date-desc">Дата (нови първо)</SelectItem>
-                <SelectItem value="date-asc">Дата (стари първо)</SelectItem>
-                <SelectItem value="amount-desc">Сума (намаляваща)</SelectItem>
-                <SelectItem value="amount-asc">Сума (нарастваща)</SelectItem>
-                <SelectItem value="number-desc">Номер (намаляващ)</SelectItem>
-                <SelectItem value="number-asc">Номер (нарастващ)</SelectItem>
-              </SelectContent>
-            </Select>
-            <div className="flex w-full xl:w-auto xl:justify-end">
+            <div className="min-w-0">
+              <Select value={statusFilter} onValueChange={setStatusFilter} aria-label="Филтър по статус">
+                <SelectTrigger className="h-auto min-h-11 w-full rounded-2xl px-3 py-2 text-sm">
+                  <Filter className="mr-1.5 h-3.5 w-3.5" />
+                  <SelectValue placeholder="Филтър по статус" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Всички статуси</SelectItem>
+                  <SelectItem value="DRAFT">Чернови</SelectItem>
+                  <SelectItem value="ISSUED">Издадени</SelectItem>
+                  <SelectItem value="PAID">Платени</SelectItem>
+                  <SelectItem value="OVERDUE">Просрочени</SelectItem>
+                  <SelectItem value="VOIDED">Анулирани</SelectItem>
+                  <SelectItem value="CANCELLED">Отказани</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="min-w-0">
+              <Select
+                value={`${sortField}-${sortDirection}`}
+                onValueChange={(val) => {
+                const [field, dir] = val.split("-");
+                setSortField(field as any);
+                setSortDirection(dir as any);
+                }}
+                aria-label="Сортиране на фактурите"
+              >
+                <SelectTrigger className="h-auto min-h-11 w-full rounded-2xl px-3 py-2 text-sm">
+                  <ArrowUpDown className="mr-1.5 h-3.5 w-3.5" />
+                  <SelectValue placeholder="Сортирай" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date-desc">Дата (нови първо)</SelectItem>
+                  <SelectItem value="date-asc">Дата (стари първо)</SelectItem>
+                  <SelectItem value="amount-desc">Сума (намаляваща)</SelectItem>
+                  <SelectItem value="amount-asc">Сума (нарастваща)</SelectItem>
+                  <SelectItem value="number-desc">Номер (намаляващ)</SelectItem>
+                  <SelectItem value="number-asc">Номер (нарастващ)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex w-full justify-end">
               <ExportDialogWrapper clients={clients} companies={companies} />
             </div>
           </div>
@@ -817,6 +817,19 @@ export default function InvoicesClient({
                   ? "Опитайте да промените филтрите за търсене"
                   : "Създайте първата си фактура, за да започнете да управлявате финансите си"}
               </p>
+              {searchQuery || statusFilter !== "all" ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mb-3"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setStatusFilter("all");
+                  }}
+                >
+                  Изчисти филтрите
+                </Button>
+              ) : null}
               {canCreateInvoices && (isLoadingUsage || canCreateInvoice) && (
                 <Button asChild>
                   <Link href="/invoices/new">
@@ -1424,6 +1437,7 @@ export default function InvoicesClient({
           isOpen={deleteModal.isOpen}
           onClose={closeDeleteModal}
           onConfirm={handleDeleteInvoice}
+          isLoading={deleteAction.loading}
           invoiceNumber={deleteModal.invoice.invoiceNumber}
         />
       )}

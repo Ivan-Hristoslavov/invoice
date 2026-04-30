@@ -42,7 +42,10 @@ function SearchFieldRoot({
     <HeroSearchField
       fullWidth={fullWidth}
       variant={variant}
-      className={cn("min-w-0", className)}
+      className={cn(
+        "min-w-0 **:data-[slot=search-field-group]:min-h-11 **:data-[slot=search-field-group]:rounded-2xl **:data-[slot=search-field-group]:border-border/70 **:data-[slot=search-field-group]:bg-muted/30 **:data-[slot=search-field-input]:text-sm **:data-[slot=search-field-input]:placeholder:text-muted-foreground/80",
+        className
+      )}
       {...props}
     >
       {label ? (

@@ -33,6 +33,8 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status");
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
+    const paymentMethod = searchParams.get("paymentMethod");
+    const accountType = searchParams.get("accountType");
 
     const supabase = createAdminClient();
     const { data: subscriptions } = await supabase
@@ -96,6 +98,12 @@ export async function GET(request: NextRequest) {
     if (endDate) {
       query = query.lte("issueDate", endDate);
     }
+    if (paymentMethod) {
+      query = query.eq("paymentMethod", paymentMethod);
+    }
+    if (accountType) {
+      query = query.eq("accountType", accountType);
+    }
     
     query = query.order("issueDate", { ascending: false });
     
@@ -120,6 +128,8 @@ export async function GET(request: NextRequest) {
           taxAmount: invoice.taxAmount.toString(),
           total: invoice.total.toString(),
           currency: invoice.currency,
+          paymentMethod: invoice.paymentMethod || "",
+          accountType: invoice.accountType || "",
           itemCount: invoice.items.length,
         };
       });
