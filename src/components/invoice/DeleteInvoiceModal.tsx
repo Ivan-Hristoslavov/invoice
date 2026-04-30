@@ -3,11 +3,13 @@
 import { useState, useEffect } from "react";
 import { Trash2, AlertTriangle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/LoadingButton";
 
 interface DeleteInvoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => Promise<void>;
+  isLoading?: boolean;
   invoiceNumber: string;
 }
 
@@ -15,9 +17,9 @@ export function DeleteInvoiceModal({
   isOpen,
   onClose,
   onConfirm,
+  isLoading = false,
   invoiceNumber,
 }: DeleteInvoiceModalProps) {
-  const [isLoading, setIsLoading] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
 
   // Start countdown when modal opens
@@ -62,16 +64,7 @@ export function DeleteInvoiceModal({
 
   const handleConfirm = async () => {
     if (countdown !== 0 || isLoading) return;
-    
-    setIsLoading(true);
-    try {
-      await onConfirm();
-      onClose();
-    } catch (error) {
-      // Error handling is done in the parent component
-    } finally {
-      setIsLoading(false);
-    }
+    await onConfirm();
   };
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -123,7 +116,7 @@ export function DeleteInvoiceModal({
         {/* Warning box */}
         <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-lg p-4 mb-6">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-500 flex-shrink-0 mt-0.5" />
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600 dark:text-red-500" />
             <div className="space-y-1">
               <p className="text-sm font-medium text-red-900 dark:text-red-200">
                 Внимание: Това действие е необратимо!
@@ -160,22 +153,22 @@ export function DeleteInvoiceModal({
           >
             Отказ
           </Button>
-          <Button
+          <LoadingButton
             variant="solid"
             color="red"
             onClick={handleConfirm}
+            loading={isLoading}
             disabled={!isDeleteEnabled}
             size="3"
-            loading={isLoading}
             className="flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {!isLoading && (
+            idleText={
               <>
                 <Trash2 className="h-4 w-4" />
                 Изтрий
               </>
-            )}
-          </Button>
+            }
+            loadingText="Изтриване..."
+          />
         </div>
       </div>
     </div>

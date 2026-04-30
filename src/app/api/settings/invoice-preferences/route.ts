@@ -9,6 +9,7 @@ import { getInvoicePreferencesForUser } from "@/lib/invoice-preferences-load";
 const invoicePreferencesSchema = z.object({
   defaultVatRate: z.number().min(0).max(100),
   invoicePrefix: z.union([z.string().max(10), z.literal("")]).optional(),
+  proformaPrefix: z.union([z.string().max(10), z.literal("")]).optional(),
   resetNumberingYearly: z.boolean(),
   startingInvoiceNumber: z
     .number()
@@ -18,6 +19,13 @@ const invoicePreferencesSchema = z.object({
     .nullable()
     .optional(),
   startingVatProtocolNumber: z
+    .number()
+    .int()
+    .min(1)
+    .max(9999999999)
+    .nullable()
+    .optional(),
+  startingProformaNumber: z
     .number()
     .int()
     .min(1)
@@ -35,6 +43,7 @@ const invoicePreferencesSchema = z.object({
 
 export type InvoicePreferencesJson = {
   invoicePrefix?: string | null;
+  proformaPrefix?: string | null;
   resetNumberingYearly?: boolean;
   defaultCurrency?: string;
   showAmountInWords?: boolean;
@@ -44,6 +53,7 @@ export type InvoicePreferencesJson = {
   autoArchiveAfterDays?: number;
   keepDraftDays?: number;
   startingVatProtocolNumber?: number | null;
+  startingProformaNumber?: number | null;
 };
 
 function parsePreferencesJson(value: Prisma.JsonValue | null): InvoicePreferencesJson {
@@ -67,9 +77,14 @@ export async function POST(request: NextRequest) {
       validatedData.invoicePrefix && validatedData.invoicePrefix.trim() !== ""
         ? validatedData.invoicePrefix.trim()
         : null;
+    const proformaPrefixNorm =
+      validatedData.proformaPrefix && validatedData.proformaPrefix.trim() !== ""
+        ? validatedData.proformaPrefix.trim()
+        : "PF";
 
     const invoicePreferences: Prisma.InputJsonValue = {
       invoicePrefix: prefixNorm,
+      proformaPrefix: proformaPrefixNorm,
       resetNumberingYearly: validatedData.resetNumberingYearly,
       defaultCurrency: validatedData.defaultCurrency,
       showAmountInWords: validatedData.showAmountInWords,
@@ -83,6 +98,11 @@ export async function POST(request: NextRequest) {
         validatedData.startingVatProtocolNumber === undefined
           ? null
           : validatedData.startingVatProtocolNumber,
+      startingProformaNumber:
+        validatedData.startingProformaNumber === null ||
+        validatedData.startingProformaNumber === undefined
+          ? null
+          : validatedData.startingProformaNumber,
     };
 
     await prisma.user.update({

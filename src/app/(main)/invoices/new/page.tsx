@@ -31,6 +31,7 @@ import {
   Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/LoadingButton";
 import { 
   Card, 
   CardContent, 
@@ -54,6 +55,7 @@ import { toast } from "@/lib/toast";
 import { DEFAULT_VAT_RATE } from "@/config/constants";
 import { grossToNetAmount, netToGrossAmount, roundMoney2 } from "@/lib/money-vat";
 import { useSubscriptionLimit } from "@/hooks/useSubscriptionLimit";
+import { useAsyncAction } from "@/hooks/use-async-action";
 import { useAsyncLock } from "@/hooks/use-async-lock";
 import { UsageCounter, LimitBanner } from "@/components/ui/pro-feature-lock";
 import { FormDatePicker } from "@/components/ui/date-picker";
@@ -87,14 +89,16 @@ function ProductCard({
   currency: string; 
   onAdd: () => void;
 }) {
+  const taxRate = Number(product.taxRate ?? 0);
+  const grossPrice = netToGrossAmount(Number(product.price), taxRate);
   return (
     <div
       onClick={onAdd}
-      className="group relative cursor-pointer overflow-hidden rounded-2xl border border-border/70 bg-card/80 p-3.5 transition-all duration-200 hover:border-primary/50 hover:shadow-md hover:bg-primary/3"
+      className="group relative cursor-pointer overflow-hidden rounded-3xl border border-border/70 bg-linear-to-br from-card via-card to-card/90 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-lg"
     >
-      <div className="flex items-center gap-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 transition-all duration-200 group-hover:bg-primary">
-          <Plus className="h-3.5 w-3.5 text-primary group-hover:text-primary-foreground transition-colors" />
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-primary/10 transition-all duration-200 group-hover:bg-primary group-hover:shadow-md">
+          <Plus className="h-4 w-4 text-primary transition-colors group-hover:text-primary-foreground" />
         </div>
 
         <div className="flex-1 min-w-0">
@@ -102,22 +106,23 @@ function ProductCard({
             {product.name}
           </p>
           {product.description && (
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">
+            <p className="mt-1 truncate text-xs text-muted-foreground">
               {product.description}
             </p>
           )}
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Цена без ДДС: {formatInvoicePrice(Number(product.price))} {currency}
+          </p>
         </div>
 
-        <div className="shrink-0 text-right">
-          <p className="text-base font-bold tabular-nums">
-            {formatInvoicePrice(
-              netToGrossAmount(Number(product.price), Number(product.taxRate) || 0)
-            )}
+        <div className="shrink-0 text-right rounded-2xl border border-border/70 bg-muted/20 px-2.5 py-2">
+          <p className="text-base font-bold tabular-nums leading-none">
+            {formatInvoicePrice(grossPrice)}
             <span className="text-xs font-normal text-muted-foreground ml-0.5">{currency}</span>
           </p>
-          {product.taxRate ? (
-            <span className="text-[10px] text-muted-foreground">ДДС {Number(product.taxRate)}%</span>
-          ) : null}
+          <span className="mt-1 inline-flex rounded-full bg-primary/8 px-2 py-0.5 text-[10px] font-medium text-primary">
+            ДДС {taxRate}%
+          </span>
         </div>
       </div>
     </div>
@@ -260,80 +265,88 @@ function InvoiceItemCard({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-3xl border border-border/70 bg-linear-to-br from-card to-card/80 px-4 py-3.5 shadow-sm transition-all hover:border-primary/30 hover:shadow-md sm:flex-row sm:items-center sm:gap-3">
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-bold text-muted-foreground">
-          {index + 1}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-foreground">
-            {item.description?.trim() || <span className="italic text-muted-foreground">Без описание</span>}
-          </p>
-          <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-            {formatInvoicePrice(unitGross)} {currency} (с ДДС) · ДДС {item.taxRate}%
-          </p>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-end gap-2 sm:justify-end sm:gap-3">
-        <div className="flex items-center gap-1 rounded-2xl border border-border/80 bg-background/80 p-1 shadow-sm">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0 rounded-xl"
-            onClick={() => adjustQuantity(-1)}
-            disabled={item.quantity <= 1}
-            aria-label="Намали количество"
-          >
-            <Minus className="h-3.5 w-3.5" />
-          </Button>
-          <NumericInput
-            allowDecimal={false}
-            value={qtyInput}
-            onChange={(e) => setQtyInput(e.target.value)}
-            onBlur={commitInlineQuantity}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                (e.target as HTMLInputElement).blur();
-              }
-            }}
-            className="h-8 w-14 min-h-0 border-0 bg-transparent px-0 text-center text-sm font-semibold shadow-none sm:h-9 sm:w-16"
-            aria-label="Количество"
-          />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0 rounded-xl"
-            onClick={() => adjustQuantity(1)}
-            aria-label="Увеличи количество"
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </Button>
+    <Card density="compact" className="border-border/70 bg-card hover:border-primary/35 hover:shadow-sm">
+      <CardContent density="compact" className="space-y-2 p-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-muted text-[11px] font-semibold text-muted-foreground">
+            {index + 1}
+          </span>
+          <div className="flex min-w-0 flex-1 items-baseline gap-2 text-sm">
+            <p className="truncate font-semibold text-foreground">
+              {item.description?.trim() || <span className="italic text-muted-foreground">Без описание</span>}
+            </p>
+            <p className="shrink-0 text-xs text-muted-foreground tabular-nums">
+              {formatInvoicePrice(unitGross)} {currency}
+            </p>
+            <p className="shrink-0 text-xs text-muted-foreground">
+              ДДС {Number(item.taxRate ?? 0)}%
+            </p>
+          </div>
+          <div className="shrink-0 text-right">
+            <p className="text-base font-bold leading-tight text-foreground tabular-nums">
+              {formatInvoicePrice(itemTotalWithTax)} {currency}
+            </p>
+          </div>
         </div>
 
-        <div className="shrink-0 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-right">
-          <p className="text-sm font-bold text-emerald-600 tabular-nums dark:text-emerald-400">
-            {formatInvoicePrice(itemTotalWithTax)} {currency}
-          </p>
-          <p className="text-[10px] text-muted-foreground tabular-nums">
-            + {formatInvoicePrice(itemTax)} ДДС
-          </p>
-        </div>
-
-        <div className="flex shrink-0 items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl" onClick={onEdit} type="button" aria-label="Редакция">
-            <Edit className="h-3.5 w-3.5" />
-          </Button>
-          {canRemove && (
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl text-destructive hover:bg-destructive/10" onClick={onRemove} type="button" aria-label="Изтрий">
-              <Trash2 className="h-3.5 w-3.5" />
+        <div className="flex items-center justify-between gap-2">
+          <div className="inline-flex items-center rounded-lg border border-border/80 bg-background/90 p-0.5">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-md"
+              onClick={() => adjustQuantity(-1)}
+              disabled={item.quantity <= 1}
+              aria-label="Намали количество"
+            >
+              <Minus className="h-3.5 w-3.5" />
             </Button>
-          )}
+            <NumericInput
+              allowDecimal={false}
+              value={qtyInput}
+              onChange={(e) => setQtyInput(e.target.value)}
+              onBlur={commitInlineQuantity}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+              className="h-8 w-12 min-h-0 border-0 bg-transparent px-0 text-center text-sm font-semibold shadow-none"
+              aria-label="Количество"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-md"
+              onClick={() => adjustQuantity(1)}
+              aria-label="Увеличи количество"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md" onClick={onEdit} type="button" aria-label="Редакция">
+              <Edit className="h-3.5 w-3.5" />
+            </Button>
+            {canRemove && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-md text-destructive hover:bg-destructive/10"
+                onClick={onRemove}
+                type="button"
+                aria-label="Изтрий"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -436,12 +449,12 @@ function InvoiceItemEditorDialog({
         <div className="flex items-start justify-between gap-4 pb-4">
           <div className="space-y-1 min-w-0">
             <h2 className="text-base font-semibold leading-tight sm:text-lg">
-              {isAddMode ? "Добавяне на артикул" : "Редакция на артикул"}
+              {isAddMode ? "Добавяне на ред" : "Редакция на ред"}
             </h2>
             <p className="text-sm text-muted-foreground">
               {isAddMode
-                ? "Попълнете име, количество, цена и ДДС за новия артикул. Име и цена са задължителни."
-                : "Променете описанието, количеството, цената и ДДС за този ред."}
+                ? "Въведете име, брой, цена и ДДС. Име и цена са задължителни."
+                : "Променете описание, брой, цена и ДДС за този ред."}
             </p>
           </div>
           <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-full" onClick={() => onOpenChange(false)} aria-label="Затвори">
@@ -493,7 +506,7 @@ function InvoiceItemEditorDialog({
               ) : null}
             </div>
             <div className="space-y-2 rounded-2xl border border-border/60 bg-muted/10 p-3 sm:p-3.5">
-              <Label className="text-xs font-semibold sm:text-sm">Ед. цена (брутно, с ДДС)</Label>
+              <Label className="text-xs font-semibold sm:text-sm">Ед. цена с ДДС</Label>
               <NumericInput
                 value={grossDraft}
                 onChange={(e) => setGrossDraft(e.target.value)}
@@ -513,7 +526,7 @@ function InvoiceItemEditorDialog({
             </span>
             {" · "}
             <span className="text-muted-foreground">
-              Бруто се взема от полето „Ед. цена (брутно, с ДДС)"
+              Брутната стойност идва от „Ед. цена с ДДС"
             </span>
           </p>
 
@@ -654,7 +667,7 @@ function NewInvoiceContent() {
   
   // State
   const [currentStep, setCurrentStep] = useState(0);
-  const submitLock = useAsyncLock();
+  const submitAction = useAsyncAction({ lockOnSuccess: true });
   const quickProductLock = useAsyncLock();
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
   const [isLoadingClients, setIsLoadingClients] = useState(true);
@@ -1195,7 +1208,7 @@ function NewInvoiceContent() {
   }, [currentStep, invoiceData.companyId, steps.length, validateClientStep, canProceedFromProductsStep]);
 
   const handleSubmit = async () => {
-    await submitLock.run(async () => {
+    await submitAction.execute(async () => {
       try {
         if (!validateClientStep()) {
           setCurrentStep(0);
@@ -1350,7 +1363,7 @@ function NewInvoiceContent() {
                         value={clientSearchQuery}
                         isDisabled={isLoadingClients}
                         onChange={setClientSearchQuery}
-                        className="[&_[data-slot=search-field-group]]:min-h-11 [&_[data-slot=search-field-input]]:font-medium"
+                        className="**:data-[slot=search-field-group]:min-h-11 **:data-[slot=search-field-input]:font-medium"
                       />
                     </div>
                   </div>
@@ -1367,8 +1380,20 @@ function NewInvoiceContent() {
                     </p>
                   </div>
                 ) : filteredClients.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-border/70 px-4 py-8 text-center text-sm text-muted-foreground">
-                    Няма клиент, който да отговаря на търсенето.
+                  <div className="rounded-2xl border border-dashed border-border/70 px-4 py-8 text-center">
+                    <p className="text-sm font-medium text-foreground">Няма клиент, който да отговаря на търсенето.</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Проверете изписването или изчистете търсенето, за да видите всички клиенти.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-3"
+                      onClick={() => setClientSearchQuery("")}
+                    >
+                      Изчисти търсенето
+                    </Button>
                   </div>
                 ) : (
                   <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -1838,7 +1863,7 @@ function NewInvoiceContent() {
                         placeholder="Търсене..."
                         value={productSearchQuery}
                         onChange={setProductSearchQuery}
-                        className="[&_[data-slot=search-field-group]]:min-h-11 [&_[data-slot=search-field-input]]:font-medium"
+                        className="**:data-[slot=search-field-group]:min-h-11 **:data-[slot=search-field-input]:font-medium"
                       />
                     </div>
                   </div>
@@ -1899,10 +1924,10 @@ function NewInvoiceContent() {
               )}
 
               {items.length === 0 ? (
-                <div className="py-10 text-center text-muted-foreground">
-                  <Package className="h-12 w-12 mx-auto mb-3 opacity-40" />
-                  <p className="font-medium">Няма добавени артикули</p>
-                  <p className="mt-1 text-sm">Изберете продукт от каталога или добавете ръчно</p>
+                <div className="rounded-2xl border border-dashed border-border/70 bg-muted/10 py-10 text-center text-muted-foreground">
+                  <Package className="mx-auto mb-3 h-12 w-12 opacity-40" />
+                  <p className="font-medium text-foreground">Няма добавени артикули</p>
+                  <p className="mt-1 text-sm">Изберете продукт от каталога или добавете ръчно артикул</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
@@ -2378,15 +2403,21 @@ function NewInvoiceContent() {
                     </Button>
                   </Link>
                 ) : (
-                  <Button
+                  <LoadingButton
                     onClick={() => void handleSubmit()}
-                    disabled={submitLock.isPending}
-                    loading={submitLock.isPending}
+                    loading={submitAction.loading}
+                    disabled={submitAction.isLocked}
                     className="h-11 w-full gap-2 justify-center bg-linear-to-r from-primary to-primary/80 hover:shadow-md hover:ring-2 hover:ring-primary/30 sm:w-auto"
+                    idleText={
+                      <>
+                        <Check className="h-4 w-4" />
+                        Създай фактура
+                      </>
+                    }
+                    loadingText="Създаване..."
                   >
-                    {!submitLock.isPending && <Check className="h-4 w-4" />}
-                    {submitLock.isPending ? "Създаване..." : "Създай фактура"}
-                  </Button>
+                    Създай фактура
+                  </LoadingButton>
                 )}
               </div>
               </div>

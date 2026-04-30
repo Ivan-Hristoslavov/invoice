@@ -29,29 +29,39 @@ export const SETTINGS_NAV_GROUPS: readonly {
     name: string;
     href: string;
     icon: LucideIcon;
+    children?: readonly { name: string; href: string }[];
   }[];
 }[] = [
   {
     title: "Организация и фактури",
     items: [
-      { name: "Компания", href: "/settings/company", icon: Building },
+      {
+        name: "Компания",
+        href: "/settings/company",
+        icon: Building,
+        children: [
+          { name: "Основни", href: "/settings/company" },
+          { name: "Банка", href: "/settings/company/bank" },
+          { name: "Лого", href: "/settings/company/logo" },
+        ],
+      },
       { name: "Фактури", href: "/settings/invoice-preferences", icon: FileText },
       { name: "Данъци (НАП)", href: "/settings/tax-compliance", icon: Scale },
     ],
   },
   {
-    title: "Акаунт",
+    title: "Акаунт и достъп",
     items: [
       { name: "Профил", href: "/settings/profile", icon: User },
       { name: "Сигурност", href: "/settings/security", icon: ShieldCheck },
     ],
   },
   {
-    title: "Плащане",
+    title: "План и плащане",
     items: [{ name: "Абонамент", href: "/settings/subscription", icon: CreditCard }],
   },
   {
-    title: "Система",
+    title: "Система и журнал",
     items: [{ name: "Одит", href: "/settings/audit-logs", icon: ScrollText }],
   },
 ] as const;

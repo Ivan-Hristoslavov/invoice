@@ -38,6 +38,7 @@ const preferencesSchema = z.object({
   
   // Настройки за номерация
   invoicePrefix: z.string().max(10).optional(),
+  proformaPrefix: z.string().max(10).optional(),
   /** Kept for backward compatibility; sequence no longer resets by calendar year. */
   resetNumberingYearly: z.boolean().default(false),
   startingInvoiceNumber: z
@@ -47,6 +48,12 @@ const preferencesSchema = z.object({
     .max(9999999999, "Началният номер не може да надхвърля 9999999999")
     .optional(),
   startingVatProtocolNumber: z
+    .number()
+    .int()
+    .min(1, "Началният номер трябва да е поне 1")
+    .max(9999999999, "Началният номер не може да надхвърля 9999999999")
+    .optional(),
+  startingProformaNumber: z
     .number()
     .int()
     .min(1, "Началният номер трябва да е поне 1")
@@ -75,9 +82,11 @@ function payloadToFormValues(data: InvoicePreferencesPayload): PreferencesFormVa
   return {
     defaultVatRate: data.defaultVatRate,
     invoicePrefix: data.invoicePrefix ?? "",
+    proformaPrefix: data.proformaPrefix ?? "PF",
     resetNumberingYearly: data.resetNumberingYearly,
     startingInvoiceNumber: data.startingInvoiceNumber,
     startingVatProtocolNumber: data.startingVatProtocolNumber,
+    startingProformaNumber: data.startingProformaNumber,
     defaultCurrency: data.defaultCurrency,
     showAmountInWords: data.showAmountInWords,
     defaultTermsAndConditions: data.defaultTermsAndConditions ?? "",
@@ -128,6 +137,12 @@ export function InvoicePreferencesForm({
               Number.isNaN(data.startingVatProtocolNumber)
                 ? null
                 : data.startingVatProtocolNumber,
+            startingProformaNumber:
+              data.startingProformaNumber === undefined ||
+              data.startingProformaNumber === null ||
+              Number.isNaN(data.startingProformaNumber)
+                ? null
+                : data.startingProformaNumber,
           }),
         });
 
@@ -251,6 +266,27 @@ export function InvoicePreferencesForm({
 
             <FormField
               control={form.control}
+              name="proformaPrefix"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Префикс на проформите</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      value={field.value ?? "PF"}
+                      placeholder="Напр. PF"
+                      className="min-h-11 rounded-2xl text-sm"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Префикс за серията на проформа фактурите (пример: <span className="font-mono">PF</span>).
+                  </FormDescription>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="resetNumberingYearly"
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
@@ -327,6 +363,30 @@ export function InvoicePreferencesForm({
                 </FormControl>
                 <FormDescription>
                   Отделна серия за протоколите по чл. 117. Следващият нов протокол ще започва поне от този номер.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="startingProformaNumber"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Начален номер на проформа</FormLabel>
+                <FormControl>
+                  <NumericInput
+                    allowDecimal={false}
+                    {...field}
+                    value={field.value || ""}
+                    onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                    placeholder="Напр. 1"
+                    className="min-h-11 rounded-2xl text-sm"
+                  />
+                </FormControl>
+                <FormDescription>
+                  Начална стойност за проформа серията. Използва се като минимум за следващия номер.
                 </FormDescription>
                 <FormMessage />
               </FormItem>

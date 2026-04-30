@@ -148,6 +148,7 @@ export const invoiceSchema = z.object({
   locale: z.string().optional().default('bg'),
   placeOfIssue: z.string().optional().default('София'),
   paymentMethod: z.string().optional().default('BANK_TRANSFER'),
+  accountType: z.enum(["BUSINESS", "PERSONAL"]).optional().default("BUSINESS"),
   isEInvoice: z.boolean().optional().default(false),
   isOriginal: z.boolean().optional().default(true),
   reverseCharge: z.boolean().default(false),

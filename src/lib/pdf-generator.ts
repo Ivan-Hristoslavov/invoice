@@ -352,7 +352,10 @@ export async function generateInvoicePdfServer(invoice: any): Promise<Buffer> {
   doc.setFont("Roboto", "bold");
   doc.setFontSize(26);
   setText(PAL.ink);
-  doc.text("ФАКТУРА", rightEdge, headerRowY + 10, { align: "right" });
+  const titleText = typeof invoice.documentTitle === "string" && invoice.documentTitle.trim().length > 0
+    ? invoice.documentTitle.trim()
+    : "ФАКТУРА";
+  doc.text(titleText, rightEdge, headerRowY + 10, { align: "right" });
   doc.setFontSize(11);
   doc.text(`№ ${invoice.invoiceNumber || "—"}`, rightEdge, headerRowY + 18, { align: "right" });
   doc.setFont("Roboto", "normal");

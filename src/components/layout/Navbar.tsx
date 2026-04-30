@@ -106,6 +106,15 @@ export function Navbar() {
               ⌘K
             </kbd>
           </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-10 w-10 rounded-full text-muted-foreground hover:text-foreground md:hidden"
+            onClick={() => setCommandPaletteOpen(true)}
+            aria-label="Отвори търсене"
+          >
+            <Command className="h-4 w-4" />
+          </Button>
 
           <ThemeMenu layout="icon" className="hidden sm:inline-flex" />
 
@@ -120,30 +129,6 @@ export function Navbar() {
               <Plus className="h-4 w-4" aria-hidden="true" />
             </Link>
           )}
-
-          {!isSessionLoading && session?.user ? (
-            <Link
-              href="/settings/profile"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border/70 bg-background/90 sm:hidden"
-              aria-label={
-                session.user.name
-                  ? `Профил: ${session.user.name}`
-                  : session.user.email
-                    ? `Профил: ${session.user.email}`
-                    : "Профил"
-              }
-            >
-              <Avatar
-                size="sm"
-                className="h-8 w-8 border border-border/50 bg-muted text-[10px] font-semibold"
-              >
-                <Avatar.Image src={session.user.image ?? undefined} alt="" />
-                <Avatar.Fallback className="bg-muted text-foreground">
-                  {userDisplayInitials(session.user.name, session.user.email)}
-                </Avatar.Fallback>
-              </Avatar>
-            </Link>
-          ) : null}
 
           {isSessionLoading ? (
             <Skeleton className="hidden h-9 w-9 shrink-0 rounded-full sm:block" aria-hidden />

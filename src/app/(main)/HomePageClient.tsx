@@ -649,7 +649,7 @@ export default function HomePage() {
 
             <nav
               className={cn(
-                "pointer-events-none absolute left-1/2 top-1/2 z-10 hidden min-h-0 -translate-x-1/2 -translate-y-1/2 items-center justify-center overflow-x-auto text-muted-foreground [scrollbar-width:none] md:pointer-events-auto md:flex md:max-w-[min(92vw,28rem)] [&::-webkit-scrollbar]:hidden",
+                "hidden min-w-0 flex-1 items-center justify-center overflow-x-auto text-muted-foreground [scrollbar-width:none] lg:flex [&::-webkit-scrollbar]:hidden",
                 "transition-[gap] duration-300 ease-out",
                 isHeaderCompact ? "gap-1 lg:gap-2" : "gap-1.5 lg:gap-3 xl:gap-4"
               )}
@@ -662,7 +662,7 @@ export default function HomePage() {
                     key={item.spy}
                     href={item.href}
                     scroll
-                    className={cn("pointer-events-auto whitespace-nowrap", landingNavLinkVisual(isActive))}
+                    className={cn("whitespace-nowrap", landingNavLinkVisual(isActive))}
                     aria-current={isActive ? "page" : undefined}
                     onClick={() => setActiveLandingSpy(item.spy)}
                   >

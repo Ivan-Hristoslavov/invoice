@@ -57,6 +57,8 @@ const InvoiceQuerySchema = z.object({
   clientId: z.string().optional(),
   fromDate: z.string().optional(),
   toDate: z.string().optional(),
+  paymentMethod: z.string().optional(),
+  accountType: z.string().optional(),
 });
 
 // Тип за фактура в отговора
@@ -190,6 +192,12 @@ export async function GET(request: NextRequest) {
         
         if (params.toDate) {
           query = query.lte("issueDate", params.toDate);
+        }
+        if (params.paymentMethod) {
+          query = query.eq("paymentMethod", params.paymentMethod);
+        }
+        if (params.accountType) {
+          query = query.eq("accountType", params.accountType);
         }
         
         // Apply sorting
@@ -384,6 +392,7 @@ export async function POST(request: NextRequest) {
                 validatedData.paymentMethod === "CARD"
                   ? "CREDIT_CARD"
                   : validatedData.paymentMethod || "BANK_TRANSFER",
+              accountType: validatedData.accountType || "BUSINESS",
               isEInvoice: validatedData.isEInvoice || false,
               isOriginal: validatedData.isOriginal !== false,
               supplyType: normalizedSupplyType,

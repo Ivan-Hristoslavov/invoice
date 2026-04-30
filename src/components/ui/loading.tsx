@@ -1,10 +1,9 @@
 "use client";
 
 import React from "react";
-import { Spinner } from "@heroui/react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { FullPageLoader, LoadingSpinner } from "@/components/ui/loading-spinner";
+export { LoadingButton } from "@/components/ui/LoadingButton";
 
 interface LoadingProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Вид на индикатора - може да бъде 'spinner', 'dots', или 'pulse' */
@@ -98,30 +97,3 @@ export function Loading({
   
   return content;
 }
-
-type LoadingButtonProps = React.ComponentProps<typeof Button> & {
-  isLoading?: boolean;
-  loadingText?: string;
-};
-
-export function LoadingButton({
-  isLoading,
-  children,
-  disabled,
-  className,
-  loadingText = "Обработка...",
-  ...props
-}: LoadingButtonProps) {
-  return (
-    <Button disabled={disabled || isLoading} className={cn("inline-flex items-center gap-2", className)} {...props}>
-      {isLoading ? (
-        <>
-          <Spinner size="sm" color="current" className="shrink-0" />
-          {loadingText}
-        </>
-      ) : (
-        children
-      )}
-    </Button>
-  );
-} 

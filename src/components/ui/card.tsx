@@ -19,14 +19,14 @@ const Card = React.forwardRef<
     variant === "flat" ? "tertiary" :
     (variant as "default" | "secondary" | "tertiary" | "transparent") ?? "default";
 
-  const densityClass = density === "compact" ? "rounded-2xl" : "rounded-[28px]";
+  const densityClass = density === "compact" ? "rounded-2xl" : "rounded-3xl";
 
   return (
     <HeroUICard
       ref={ref}
       variant={heroVariant}
       className={cn(
-        "glass-card overflow-hidden border border-border/60 shadow-sm",
+        "glass-card overflow-hidden border border-border/60 shadow-sm transition-[border-color,box-shadow] duration-200",
         densityClass,
         className
       )}

@@ -8,6 +8,7 @@ type InvoicePrefsJson = { invoicePrefix?: string | null };
 
 /** Single global row per company — avoids calendar-year resets (see InvoiceSequence @@unique([companyId, year])). */
 const GLOBAL_SEQUENCE_YEAR = 0;
+const GLOBAL_PROFORMA_SEQUENCE_YEAR = 0;
 
 /** Prepends user-defined prefix from settings (e.g. Ф-, ФАК-) to the numeric core. */
 export function applyInvoicePrefix(
@@ -219,4 +220,108 @@ export async function rollbackInvoiceSequence(
     })
     .eq('id', existing.id)
     .eq('sequence', issuedSequence);
+}
+
+export async function getNextProformaSequence(
+  userId: string,
+  companyId: string,
+  maxRetries: number = 5
+): Promise<{ sequence: number; proformaNumber: string }> {
+  const supabase = createAdminClient();
+  const year = new Date().getFullYear();
+  const { data: userPrefsRow } = await supabase
+    .from("User")
+    .select("invoicePreferences")
+    .eq("id", userId)
+    .single();
+  const rawPrefs =
+    userPrefsRow && typeof userPrefsRow.invoicePreferences === "object" && !Array.isArray(userPrefsRow.invoicePreferences)
+      ? (userPrefsRow.invoicePreferences as Record<string, unknown>)
+      : {};
+  const prefix = typeof rawPrefs.proformaPrefix === "string" && rawPrefs.proformaPrefix.trim().length > 0
+    ? rawPrefs.proformaPrefix.trim()
+    : "PF";
+  const startingProformaNumber = typeof rawPrefs.startingProformaNumber === "number" && rawPrefs.startingProformaNumber > 0
+    ? Math.floor(rawPrefs.startingProformaNumber)
+    : 1;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const { data: existingSequence, error: sequenceError } = await supabase
+        .from("ProformaSequence")
+        .select("id, sequence")
+        .eq("userId", userId)
+        .eq("companyId", companyId)
+        .eq("year", GLOBAL_PROFORMA_SEQUENCE_YEAR)
+        .maybeSingle();
+
+      if (sequenceError) throw sequenceError;
+
+      let nextSequence: number;
+      if (existingSequence) {
+        nextSequence = Math.max(existingSequence.sequence + 1, startingProformaNumber);
+        const { error: updateError } = await supabase
+          .from("ProformaSequence")
+          .update({
+            sequence: nextSequence,
+            updatedAt: new Date().toISOString(),
+          })
+          .eq("id", existingSequence.id);
+        if (updateError) throw updateError;
+      } else {
+        nextSequence = startingProformaNumber;
+        const { error: insertError } = await supabase.from("ProformaSequence").insert({
+          id: cuid(),
+          companyId,
+          userId,
+          year: GLOBAL_PROFORMA_SEQUENCE_YEAR,
+          sequence: nextSequence,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+        if (insertError && insertError.code !== "23505") throw insertError;
+        if (insertError?.code === "23505") {
+          await new Promise((resolve) => setTimeout(resolve, 50 * (attempt + 1)));
+          continue;
+        }
+      }
+
+      return {
+        sequence: nextSequence,
+        proformaNumber: `${prefix}-${year}-${String(nextSequence).padStart(6, "0")}`,
+      };
+    } catch (error) {
+      if (attempt === maxRetries - 1) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 50 * (attempt + 1)));
+    }
+  }
+
+  throw new Error("Failed to get next proforma sequence after all retries");
+}
+
+export async function rollbackProformaSequence(
+  userId: string,
+  companyId: string,
+  issuedSequence: number
+): Promise<void> {
+  const supabase = createAdminClient();
+  const { data: existing, error } = await supabase
+    .from("ProformaSequence")
+    .select("id, sequence")
+    .eq("userId", userId)
+    .eq("companyId", companyId)
+    .eq("year", GLOBAL_PROFORMA_SEQUENCE_YEAR)
+    .maybeSingle();
+
+  if (error || !existing) return;
+  if (existing.sequence !== issuedSequence) return;
+
+  await supabase
+    .from("ProformaSequence")
+    .update({
+      sequence: Math.max(0, issuedSequence - 1),
+      updatedAt: new Date().toISOString(),
+    })
+    .eq("id", existing.id)
+    .eq("sequence", issuedSequence);
 }

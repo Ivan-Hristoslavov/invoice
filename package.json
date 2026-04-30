@@ -19,10 +19,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "cursor:agent": "tsx scripts/cursor-agent.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.9.1",
+    "@cursor/sdk": "^1.0.10",
     "@heroui/react": "^3.0.2",
     "@heroui/styles": "^3.0.2",
     "@hookform/resolvers": "^5.0.1",
@@ -91,6 +93,7 @@
     "msw": "^2.8.4",
     "playwright": "^1.58.2",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5",
     "vitest": "^3.1.4"
   },
