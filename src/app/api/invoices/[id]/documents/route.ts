@@ -15,9 +15,13 @@ function sanitizeFileName(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120) || "file";
 }
 
-function getStoragePathFromPublicUrl(publicUrl: string, bucket: string): string | null {
+function getStoragePath(value: string, bucket: string): string | null {
+  if (!value) return null;
+  if (!value.startsWith("http://") && !value.startsWith("https://")) {
+    return value;
+  }
   try {
-    const u = new URL(publicUrl);
+    const u = new URL(value);
     const match = u.pathname.match(new RegExp(`/storage/v1/object/public/${bucket}/(.+)`));
     return match ? match[1] : null;
   } catch {
@@ -65,7 +69,24 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       throw documentsError;
     }
 
-    return NextResponse.json({ documents });
+    const documentsWithSignedUrls = await Promise.all(
+      (documents ?? []).map(async (document) => {
+        const storagePath = getStoragePath(document.url, STORAGE_BUCKET_IMAGES);
+        if (!storagePath) {
+          return document;
+        }
+        const { data: signed } = await supabase.storage
+          .from(STORAGE_BUCKET_IMAGES)
+          .createSignedUrl(storagePath, 60 * 10);
+        return {
+          ...document,
+          storagePath,
+          url: signed?.signedUrl ?? document.url,
+        };
+      })
+    );
+
+    return NextResponse.json({ documents: documentsWithSignedUrls });
   } catch (error) {
     console.error("Грешка при зареждане на документи:", error);
     return NextResponse.json(
@@ -133,7 +154,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const { count } = await supabase
       .from("Document")
       .select("id", { count: "exact", head: true })
-      .eq("invoiceId", invoiceId);
+      .eq("invoiceId", invoiceId)
+      .eq("userId", sessionUser.id);
     if ((count ?? 0) >= MAX_ATTACHMENTS_PER_INVOICE) {
       return NextResponse.json(
         { error: `Максимум ${MAX_ATTACHMENTS_PER_INVOICE} прикачени файла на фактура.` },
@@ -164,11 +186,6 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       );
     }
 
-    const { data: urlData } = supabase.storage
-      .from(STORAGE_BUCKET_IMAGES)
-      .getPublicUrl(storagePath);
-    const url = urlData.publicUrl;
-
     const { data: document, error: insertError } = await supabase
       .from("Document")
       .insert({
@@ -176,7 +193,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         name: file.name,
         size: file.size,
         type: file.type,
-        url,
+        url: storagePath,
         invoiceId,
         userId: sessionUser.id,
       })
@@ -188,7 +205,17 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       throw insertError;
     }
 
-    return NextResponse.json({ document });
+    const { data: signed } = await supabase.storage
+      .from(STORAGE_BUCKET_IMAGES)
+      .createSignedUrl(storagePath, 60 * 10);
+
+    return NextResponse.json({
+      document: {
+        ...document,
+        storagePath,
+        url: signed?.signedUrl ?? document.url,
+      },
+    });
   } catch (error) {
     console.error("Грешка при създаване на документ:", error);
     return NextResponse.json(
@@ -241,7 +268,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
     }
 
     const pathToRemove = document.url
-      ? getStoragePathFromPublicUrl(document.url, STORAGE_BUCKET_IMAGES)
+      ? getStoragePath(document.url, STORAGE_BUCKET_IMAGES)
       : null;
     if (pathToRemove) {
       await supabase.storage.from(STORAGE_BUCKET_IMAGES).remove([pathToRemove]);

@@ -68,6 +68,7 @@ import { clearInvoiceDraft, saveInvoiceDraft } from "./use-invoice-draft-autosav
 import { evaluateInvoiceItemEditorDraft } from "@/lib/invoice-item-editor-draft";
 import { generateBulgarianInvoiceNumber } from "@/lib/bulgarian-invoice";
 import { mapCompanyBookToFormFields } from "@/lib/companybook";
+import { ZDDS_ZERO_VAT_REASONS } from "@/lib/legal-basis";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -349,14 +350,6 @@ function InvoiceItemCard({
     </Card>
   );
 }
-
-const ZDDS_ZERO_VAT_REASONS = [
-  "чл. 28 ЗДДС (износ)",
-  "чл. 53 ЗДДС (вътреобщностна доставка)",
-  "чл. 69, ал. 2 ЗДДС",
-  "чл. 82 ЗДДС (обратно начисляване)",
-  "Друго основание",
-] as const;
 
 function InvoiceItemEditorDialog({
   item,

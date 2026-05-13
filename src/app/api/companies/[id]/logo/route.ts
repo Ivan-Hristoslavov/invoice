@@ -4,6 +4,19 @@ import { authOptions } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { STORAGE_BUCKET_IMAGES } from "@/config/constants";
 
+function getStoragePath(value: string, bucket: string): string | null {
+  if (!value) return null;
+  if (!value.startsWith("http://") && !value.startsWith("https://")) return value;
+  try {
+    const u = new URL(value);
+    const marker = `/storage/v1/object/public/${bucket}/`;
+    const index = u.pathname.indexOf(marker);
+    return index >= 0 ? u.pathname.slice(index + marker.length) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -39,16 +52,14 @@ export async function DELETE(
     // Delete logo from storage if exists
     if (company.logo) {
       try {
-        // Extract file path from logo URL
-        const logoUrl = new URL(company.logo);
-        const filePath = logoUrl.pathname.split('/').slice(-2).join('/'); // Get 'logos/filename'
-        
-        const { error: deleteError } = await supabase.storage
-          .from(STORAGE_BUCKET_IMAGES)
-          .remove([filePath]);
-
-        if (deleteError) {
-          console.warn('Неуспешно изтриване на логото от хранилището:', deleteError);
+        const filePath = getStoragePath(company.logo, STORAGE_BUCKET_IMAGES);
+        if (filePath) {
+          const { error: deleteError } = await supabase.storage
+            .from(STORAGE_BUCKET_IMAGES)
+            .remove([filePath]);
+          if (deleteError) {
+            console.warn('Неуспешно изтриване на логото от хранилището:', deleteError);
+          }
         }
       } catch (error) {
         console.warn('Грешка при обработка на URL за логото:', error);
@@ -59,7 +70,8 @@ export async function DELETE(
     const { error: updateError } = await supabase
       .from("Company")
       .update({ logo: null })
-      .eq("id", companyId);
+      .eq("id", companyId)
+      .eq("userId", session.user.id);
 
     if (updateError) {
       return NextResponse.json(

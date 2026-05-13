@@ -105,10 +105,10 @@ const DialogDescription = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => (
-  <p
-    ref={ref}
+  <HeroUIModal.Description
+    ref={ref as React.Ref<HTMLParagraphElement>}
     className={cn("text-sm text-muted-foreground", className)}
-    {...props}
+    {...(props as any)}
   />
 ));
 DialogDescription.displayName = "DialogDescription";

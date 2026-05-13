@@ -1,7 +1,7 @@
-import { APP_NAME } from "@/config/constants";
+import { APP_NAME, DEFAULT_SUPPORT_EMAIL_FALLBACK } from "@/config/constants";
 
 export const publicBusinessProfile = {
-  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@invoicy.bg",
+  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || DEFAULT_SUPPORT_EMAIL_FALLBACK,
   supportPhone: process.env.NEXT_PUBLIC_SUPPORT_PHONE || "",
   supportResponseHours: process.env.NEXT_PUBLIC_SUPPORT_RESPONSE_HOURS || "до 4 работни часа",
   legalCompanyName: process.env.NEXT_PUBLIC_LEGAL_COMPANY_NAME || "",

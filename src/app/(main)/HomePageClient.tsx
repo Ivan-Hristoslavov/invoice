@@ -30,7 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { APP_NAME } from "@/config/constants";
+import { APP_NAME, PUBLIC_APP_URL_FALLBACK } from "@/config/constants";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { LandingIconDecor } from "@/components/marketing/landing-icon-decor";
 import { BackgroundShapes } from "@/components/ui/background-shapes";
@@ -534,16 +534,9 @@ export default function HomePage() {
               priceCurrency: "EUR",
               description: "Безплатен план с ограничени функции",
             },
-            aggregateRating: {
-              "@type": "AggregateRating",
-              ratingValue: "4.8",
-              ratingCount: "150",
-              bestRating: "5",
-              worstRating: "1",
-            },
             description:
               "Фактури, протокол чл. 117 ЗДДС и VIES за български фирми — реквизити, PDF и проследяване на документи",
-            url: process.env.NEXT_PUBLIC_APP_URL || "https://invoicy.bg",
+            url: process.env.NEXT_PUBLIC_APP_URL || PUBLIC_APP_URL_FALLBACK,
             inLanguage: "bg-BG",
           }),
         }}
@@ -902,7 +895,7 @@ export default function HomePage() {
                       return (
                         <motion.div
                           key={pillar.title}
-                          initial={shouldReduceEffects ? undefined : { opacity: 0, y: 12 }}
+                          initial={undefined}
                           whileInView={shouldReduceEffects ? undefined : { opacity: 1, y: 0 }}
                           viewport={{ once: true, margin: "-32px" }}
                           transition={{

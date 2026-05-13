@@ -85,11 +85,13 @@ function omitMenuItemDomLeakProps(props: Record<string, unknown>): Record<string
   return next;
 }
 
-/** HeroUI `Dropdown.Item` извиква `onAction` без DOM event — кодът с `onClick` очаква поне stopPropagation. */
-const MENU_ITEM_CLICK_STUB = {
-  stopPropagation: () => {},
-  preventDefault: () => {},
-} as unknown as React.MouseEvent;
+/** HeroUI `Dropdown.Item` emits `onAction` without a DOM event, keep legacy `onClick` handlers safe. */
+function createMenuItemClickStub(): React.MouseEvent {
+  return {
+    stopPropagation: () => {},
+    preventDefault: () => {},
+  } as unknown as React.MouseEvent;
+}
 
 type DropdownRootProps = React.ComponentProps<typeof Dropdown>;
 
@@ -156,6 +158,7 @@ const DropdownMenuItem = React.forwardRef<
   Omit<React.ComponentProps<typeof Dropdown.Item>, "children" | "onAction"> & {
     inset?: boolean;
     destructive?: boolean;
+    onAction?: React.ComponentProps<typeof Dropdown.Item>["onAction"];
     onClick?: (e: React.MouseEvent | React.SyntheticEvent) => void;
     asChild?: boolean;
     children?: React.ReactNode;
@@ -180,11 +183,12 @@ const DropdownMenuItem = React.forwardRef<
           textFromAsChildMenuChildren(child.props.children as React.ReactNode) ??
           (typeof child.props.children === "string" ? child.props.children : undefined)
         }
-        onAction={() => {
-          onClick?.(MENU_ITEM_CLICK_STUB);
+        {...props}
+        onAction={(key) => {
+          props.onAction?.(key);
+          onClick?.(createMenuItemClickStub());
         }}
         onPointerDown={handlePointerDown}
-        {...props}
       >
         {(itemProps: unknown) =>
           React.cloneElement(child, {
@@ -214,9 +218,12 @@ const DropdownMenuItem = React.forwardRef<
         destructive && "text-destructive focus:bg-destructive/10 focus:text-destructive",
         className
       )}
-      onAction={onClick ? () => onClick(MENU_ITEM_CLICK_STUB) : undefined}
-      onPointerDown={handlePointerDown}
       {...props}
+      onAction={(key) => {
+        props.onAction?.(key);
+        onClick?.(createMenuItemClickStub());
+      }}
+      onPointerDown={handlePointerDown}
     >
       {children}
     </Dropdown.Item>

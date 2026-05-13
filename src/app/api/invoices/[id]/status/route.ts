@@ -10,6 +10,7 @@ import {
   type AppInvoiceStatus,
 } from "@/lib/invoice-status";
 import { validateInvoiceForIssuing } from "@/lib/validate-invoice-for-issuing";
+import { ensureInvoiceCanBeIssued } from "@/lib/services/invoice-issuance";
 
 // Valid status transitions for the current invoice lifecycle.
 const VALID_TRANSITIONS: Record<AppInvoiceStatus, AppInvoiceStatus[]> = {
@@ -58,6 +59,7 @@ export async function GET(
       .from("Invoice")
       .select("*, company:Company(*), client:Client(*), items:InvoiceItem(*)")
       .eq("id", id)
+      .eq("userId", sessionUser.id)
       .single();
 
     if (fullError || !fullInvoice) {
@@ -166,27 +168,13 @@ export async function PATCH(
     }
 
     if (requestedStatus === "ISSUED") {
-      const { data: fullInvoice, error: fullError } = await supabase
-        .from("Invoice")
-        .select("*, company:Company(*), client:Client(*), items:InvoiceItem(*)")
-        .eq("id", id)
-        .single();
-
-      if (fullError || !fullInvoice) {
-        console.error("Грешка при зареждане на фактура за валидация:", fullError);
-        return NextResponse.json(
-          { error: "Неуспешно зареждане на фактурата за валидация" },
-          { status: 500 }
-        );
-      }
-
-      const { validationErrors, warnings } = validateInvoiceForIssuing(fullInvoice);
-      if (validationErrors.length > 0) {
+      const issuanceValidation = await ensureInvoiceCanBeIssued(supabase, id);
+      if (!issuanceValidation.ok) {
         return NextResponse.json(
           {
             error: "Фактурата не може да бъде издадена поради липсващи данни",
-            validationErrors,
-            warnings,
+            validationErrors: issuanceValidation.errors,
+            warnings: issuanceValidation.warnings,
           },
           { status: 422 }
         );
@@ -203,6 +191,7 @@ export async function PATCH(
         updatedAt: new Date().toISOString(),
       })
       .eq("id", id)
+      .eq("userId", sessionUser.id)
       .select()
       .single();
 

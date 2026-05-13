@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { resolveSessionUser } from "@/lib/session-user";
 import type { Session } from "next-auth";
+import { STORAGE_BUCKET_IMAGES } from "@/config/constants";
 
 export type CompanyRecord = {
   id?: string;
@@ -51,6 +52,12 @@ export async function loadCompanySettingsData(session: Session) {
 
     if (!companyRes.error && companyRes.data) {
       company = companyRes.data;
+      if (company?.logo && !company.logo.startsWith("http")) {
+        const { data: signed } = await supabase.storage
+          .from(STORAGE_BUCKET_IMAGES)
+          .createSignedUrl(company.logo, 60 * 10);
+        company.logo = signed?.signedUrl ?? company.logo;
+      }
     }
 
     const prefs = userRes.data?.invoicePreferences as

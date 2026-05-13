@@ -39,12 +39,12 @@ import {
 } from "lucide-react";
 import { SearchField } from "@/components/ui/search-field";
 import { Toolbar } from "@heroui/react";
-import { ButtonGroup } from "@heroui/react";
 import { Badge } from "@/components/ui/badge";
 import { Pagination } from "@/components/ui/pagination";
 import { format } from "date-fns";
 import { bg } from "date-fns/locale";
 import ExportDialogWrapper from "./ExportDialogWrapper";
+import ImportDialogWrapper from "./ImportDialogWrapper";
 import {
   Select,
   SelectContent,
@@ -87,6 +87,7 @@ import {
 } from "@/lib/invoice-actions";
 import { InvoiceWorkspaceSetup } from "@/components/invoice/InvoiceWorkspaceSetup";
 import { AppSectionKicker } from "@/components/app/AppSectionKicker";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface Invoice {
   id: string;
@@ -574,14 +575,24 @@ export default function InvoicesClient({
         </div>
         <Toolbar className="page-header-actions flex min-h-0 w-full flex-wrap items-center justify-end gap-2 bg-transparent p-0 shadow-none sm:w-auto">
           {canCreateInvoices && (
-            <ButtonGroup size="md" className="hidden sm:inline-flex">
-              <Button variant="outline" asChild size="lg">
-                <Link href="/invoices/import">
-                  <Upload className="mr-2 h-4 w-4" />
-                  Импорт
+            <div className="hidden w-full min-w-0 flex-col gap-2 sm:flex sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
+              <Button variant="outline" asChild size="lg" className="w-full shrink-0 sm:w-auto">
+                <Link href="/invoices/import" className="flex items-center whitespace-nowrap">
+                  <Upload className="mr-2 h-4 w-4 shrink-0" aria-hidden />
+                  Импорт на фактури
                 </Link>
               </Button>
-            </ButtonGroup>
+              <ImportDialogWrapper
+                companies={companies}
+                fullWidth={false}
+                triggerSize="lg"
+                triggerClassName="w-full sm:w-auto"
+                onApplied={() => {
+                  refreshUsage();
+                  router.refresh();
+                }}
+              />
+            </div>
           )}
           {(isLoadingUsage || canCreateInvoice) ? (
             <Button 
@@ -647,26 +658,34 @@ export default function InvoicesClient({
                 className="**:data-[slot=search-field-group]:min-h-11 **:data-[slot=search-field-group]:rounded-full **:data-[slot=search-field-input]:text-sm"
               />
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid min-w-0 grid-cols-3 gap-2">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                className="min-h-0! h-11 justify-center rounded-2xl text-sm"
+                className="min-h-0! h-11 min-w-0 justify-center rounded-2xl text-sm"
                 onClick={() => setShowMobileFilters((prev) => !prev)}
               >
-                <Filter className="mr-1.5 h-3.5 w-3.5" />
-                Филтри
+                <Filter className="mr-1.5 h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">Филтри</span>
                 {activeFilterCount > 0 && (
-                  <span className="ml-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
+                  <span className="ml-1 flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
                     {activeFilterCount}
                   </span>
                 )}
                 {showMobileFilters
-                  ? <ChevronUp className="ml-1.5 h-3 w-3 text-muted-foreground" />
-                  : <ChevronDown className="ml-1.5 h-3 w-3 text-muted-foreground" />
+                  ? <ChevronUp className="ml-1.5 h-3 w-3 shrink-0 text-muted-foreground" />
+                  : <ChevronDown className="ml-1.5 h-3 w-3 shrink-0 text-muted-foreground" />
                 }
               </Button>
+              <ImportDialogWrapper
+                companies={companies}
+                compactLabel
+                onApplied={() => {
+                  refreshUsage();
+                  router.refresh();
+                }}
+              />
               <ExportDialogWrapper clients={clients} companies={companies} />
             </div>
             {showMobileFilters && (
@@ -758,7 +777,16 @@ export default function InvoicesClient({
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex w-full justify-end">
+            <div className="flex w-full min-w-0 justify-end gap-2">
+              <ImportDialogWrapper
+                companies={companies}
+                fullWidth={false}
+                triggerClassName="h-11 min-w-[8.5rem] shrink-0 px-3 sm:min-w-0 sm:px-4"
+                onApplied={() => {
+                  refreshUsage();
+                  router.refresh();
+                }}
+              />
               <ExportDialogWrapper clients={clients} companies={companies} />
             </div>
           </div>
@@ -768,82 +796,60 @@ export default function InvoicesClient({
       {/* Invoices List */}
       <Card className="border border-border/40 shadow-sm">
         <CardHeader className="space-y-1 pb-3 sm:pb-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <Badge variant="info" className="mb-2">
-                Документи
-              </Badge>
-              <CardTitle>Списък с фактури</CardTitle>
-              <CardDescription>
-                {filteredInvoices.length} от {invoices.length} фактури
-              </CardDescription>
-            </div>
-            <Toolbar className="flex min-h-0 w-full flex-col gap-2 bg-transparent p-0 shadow-none sm:w-auto sm:flex-row sm:justify-end">
-              {canCreateInvoices && (isLoadingUsage || canCreateInvoice) && (
-                <Button 
-                  asChild 
-                  className="h-11 w-full border-0 text-white shadow-lg transition-all gradient-primary hover:shadow-md hover:ring-2 hover:ring-emerald-400/25 sm:w-auto"
-                >
-                  <Link href="/invoices/new" className="flex items-center whitespace-nowrap">
-                    <Plus className="mr-2 h-4 w-4" />
-                    <span className="hidden sm:inline">Нова фактура</span>
-                    <span className="sm:hidden">Нова</span>
-                  </Link>
-                </Button>
-              )}
-              {canCreateInvoices && !isLoadingUsage && !canCreateInvoice && (
-                <LockedButton requiredPlan="PRO">
-                  <span className="hidden sm:inline">Нова фактура</span>
-                  <span className="sm:hidden">Нова</span>
-                </LockedButton>
-              )}
-            </Toolbar>
-          </div>
+          <Badge variant="info" className="mb-2">
+            Документи
+          </Badge>
+          <CardTitle>Списък с фактури</CardTitle>
+          <CardDescription>
+            {filteredInvoices.length} от {invoices.length} фактури
+          </CardDescription>
         </CardHeader>
         
         <CardContent className="p-0">
           {filteredInvoices.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-              <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                <FileText className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <p className="text-lg font-medium mb-1">
-                {searchQuery || statusFilter !== "all" 
-                  ? "Няма намерени фактури" 
-                  : "Все още нямате фактури"}
-              </p>
-              <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-                {searchQuery || statusFilter !== "all"
-                  ? "Опитайте да промените филтрите за търсене"
-                  : "Създайте първата си фактура, за да започнете да управлявате финансите си"}
-              </p>
-              {searchQuery || statusFilter !== "all" ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="mb-3"
-                  onClick={() => {
-                    setSearchQuery("");
-                    setStatusFilter("all");
-                  }}
-                >
-                  Изчисти филтрите
-                </Button>
-              ) : null}
-              {canCreateInvoices && (isLoadingUsage || canCreateInvoice) && (
-                <Button asChild>
-                  <Link href="/invoices/new">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Създай фактура
-                  </Link>
-                </Button>
-              )}
-              {canCreateInvoices && !isLoadingUsage && !canCreateInvoice && (
-                <LockedButton requiredPlan="PRO">
-                  Създай фактура
-                </LockedButton>
-              )}
-            </div>
+            <EmptyState
+              icon={FileText}
+              heading={
+                searchQuery || statusFilter !== "all"
+                  ? "Няма намерени фактури"
+                  : "Все още нямате фактури"
+              }
+              description={
+                searchQuery || statusFilter !== "all"
+                  ? "Опитайте да промените филтрите за търсене или изчистете ги."
+                  : "Създайте първата си фактура, за да започнете да управлявате финансите си."
+              }
+              action={
+                <div className="flex w-full max-w-md flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
+                  {searchQuery || statusFilter !== "all" ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full sm:w-auto"
+                      onClick={() => {
+                        setSearchQuery("");
+                        setStatusFilter("all");
+                      }}
+                    >
+                      Изчисти филтрите
+                    </Button>
+                  ) : null}
+                  {canCreateInvoices && (isLoadingUsage || canCreateInvoice) && (
+                    <Button asChild className="w-full sm:w-auto">
+                      <Link href="/invoices/new">
+                        <Plus className="mr-2 h-4 w-4" aria-hidden />
+                        Създай фактура
+                      </Link>
+                    </Button>
+                  )}
+                  {canCreateInvoices && !isLoadingUsage && !canCreateInvoice && (
+                    <LockedButton requiredPlan="PRO" className="w-full sm:w-auto">
+                      Създай фактура
+                    </LockedButton>
+                  )}
+                </div>
+              }
+            />
           ) : (
             <>
               <div className="space-y-2 px-2 pb-4 md:hidden sm:px-3">

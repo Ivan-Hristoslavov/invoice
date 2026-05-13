@@ -19,7 +19,7 @@
 Examples:
 
 - Local: `http://localhost:3000/api/webhooks/stripe`
-- Production: `https://yourdomain.com/api/webhooks/stripe`
+- Production: `https://invoicy-pro.com/api/webhooks/stripe`
 
 **Events to send:**  
 `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed` (or enable all subscription events).

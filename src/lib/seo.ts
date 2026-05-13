@@ -1,7 +1,7 @@
 import { Metadata } from "next";
-import { APP_NAME, APP_DESCRIPTION, SEO_KEYWORDS } from "@/config/constants";
+import { APP_NAME, APP_DESCRIPTION, SEO_KEYWORDS, PUBLIC_APP_URL_FALLBACK } from "@/config/constants";
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://invoicy.bg';
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || PUBLIC_APP_URL_FALLBACK;
 
 export function generateMetadata({
   title,
@@ -82,11 +82,6 @@ export function generateStructuredData(type: "SoftwareApplication" | "Organizati
         "@type": "Offer",
         price: "0",
         priceCurrency: "EUR",
-      },
-      aggregateRating: {
-        "@type": "AggregateRating",
-        ratingValue: "4.8",
-        ratingCount: "150",
       },
       description: APP_DESCRIPTION,
       url: baseUrl,

@@ -41,7 +41,12 @@ export default function ExportDialogWrapper({
   // Show loading state
   if (isLoadingUsage) {
     return (
-      <Button size="sm" className="mt-2" variant="outline" disabled>
+      <Button
+        size="sm"
+        className="min-h-0! h-11 w-full justify-center rounded-2xl text-sm"
+        variant="outline"
+        disabled
+      >
         <Download className="h-4 w-4 mr-2" />
         Експорт
       </Button>
@@ -54,10 +59,10 @@ export default function ExportDialogWrapper({
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Link href="/settings/subscription">
+            <Link href="/settings/subscription" className="w-full">
               <Button 
                 size="sm" 
-                className="mt-2 border-dashed border-amber-300 dark:border-amber-700" 
+                className="min-h-0! h-11 w-full justify-center rounded-2xl border-dashed border-amber-300 text-sm dark:border-amber-700" 
                 variant="outline"
               >
                 <Lock className="h-4 w-4 mr-2 text-amber-500" />
@@ -88,7 +93,11 @@ export default function ExportDialogWrapper({
       invoiceId={invoiceId}
       exportCapability={exportCapability}
     >
-      <Button size="sm" className="mt-2" variant="outline">
+      <Button
+        size="sm"
+        className="min-h-0! h-11 w-full justify-center rounded-2xl text-sm"
+        variant="outline"
+      >
         <Download className="h-4 w-4 mr-2" />
         Експорт
       </Button>

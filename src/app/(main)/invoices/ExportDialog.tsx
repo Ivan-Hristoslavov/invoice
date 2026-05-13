@@ -252,7 +252,7 @@ export default function ExportDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="flex max-h-[90vh] flex-col overflow-visible gap-0 p-0 sm:max-w-[520px]">
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-visible gap-0 p-0 sm:max-w-[min(92vw,640px)]">
         <div className="shrink-0 border-b border-border/60 px-6 pb-4 pt-6">
           <DialogHeader className="p-0">
             <DialogTitle>Експорт на фактури</DialogTitle>
@@ -262,7 +262,7 @@ export default function ExportDialog({
           </DialogHeader>
         </div>
 
-        <div className="flex min-h-0 max-h-[min(72vh,620px)] flex-1 flex-col gap-5 overflow-y-auto overflow-x-visible px-6 py-4">
+        <div className="flex min-h-0 max-h-[min(72vh,640px)] flex-1 flex-col gap-5 overflow-y-auto overflow-x-visible px-6 py-4">
           <div className="flex flex-col gap-3">
             <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Формат
@@ -612,23 +612,21 @@ export default function ExportDialog({
           )}
         </div>
 
-        <div className="shrink-0 border-t border-border/60 px-6 pb-6 pt-4">
-          <DialogFooter className="p-0 sm:justify-end">
-            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-              Отказ
-            </Button>
-            <Button
-              type="button"
-              onClick={handleExport}
-              disabled={
-                isExporting ||
-                (exportFormat === "microinvestXml" && (!microRangeStart || !microRangeEnd))
-              }
-            >
-              {isExporting ? "Експортиране..." : "Експорт"}
-            </Button>
-          </DialogFooter>
-        </div>
+        <DialogFooter className="border-t border-border/60 px-6 py-4 sm:justify-end">
+          <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
+            Отказ
+          </Button>
+          <Button
+            type="button"
+            onClick={handleExport}
+            disabled={
+              isExporting ||
+              (exportFormat === "microinvestXml" && (!microRangeStart || !microRangeEnd))
+            }
+          >
+            {isExporting ? "Експортиране..." : "Експорт"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

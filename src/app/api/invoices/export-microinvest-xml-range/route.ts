@@ -121,13 +121,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const fullInvoices: InvoiceExportLike[] = [];
-    for (const id of ids) {
-      const { error, fullInvoice } = await loadInvoiceExportGraph(id, sessionUser.id);
-      if (!error && fullInvoice) {
-        fullInvoices.push(fullInvoice as InvoiceExportLike);
-      }
-    }
+    const exportGraphs = await Promise.all(
+      ids.map((id) => loadInvoiceExportGraph(id, sessionUser.id))
+    );
+    const fullInvoices: InvoiceExportLike[] = exportGraphs
+      .filter((result) => !result.error && result.fullInvoice)
+      .map((result) => result.fullInvoice as InvoiceExportLike);
 
     if (fullInvoices.length === 0) {
       return NextResponse.json(

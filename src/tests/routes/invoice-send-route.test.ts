@@ -7,6 +7,8 @@ const mockCheckSubscriptionLimits = vi.fn();
 const mockCreateAdminClient = vi.fn();
 const mockSendInvoiceEmail = vi.fn();
 const mockLogAction = vi.fn();
+const mockEnsureInvoiceCanBeIssued = vi.fn();
+const mockMarkInvoiceAsIssued = vi.fn();
 
 vi.mock("next-auth", () => ({
   getServerSession: mockGetServerSession,
@@ -34,6 +36,11 @@ vi.mock("@/lib/email", () => ({
 
 vi.mock("@/lib/audit-log", () => ({
   logAction: mockLogAction,
+}));
+
+vi.mock("@/lib/services/invoice-issuance", () => ({
+  ensureInvoiceCanBeIssued: mockEnsureInvoiceCanBeIssued,
+  markInvoiceAsIssued: mockMarkInvoiceAsIssued,
 }));
 
 function createRequest() {
@@ -90,6 +97,8 @@ describe("POST /api/invoices/[id]/send", () => {
     mockCheckSubscriptionLimits.mockResolvedValue({ allowed: true });
     mockSendInvoiceEmail.mockResolvedValue(undefined);
     mockLogAction.mockResolvedValue(undefined);
+    mockEnsureInvoiceCanBeIssued.mockResolvedValue({ ok: true });
+    mockMarkInvoiceAsIssued.mockResolvedValue({ ok: true });
   });
 
   afterEach(() => {
@@ -98,7 +107,7 @@ describe("POST /api/invoices/[id]/send", () => {
   });
 
   it("sends a draft invoice and persists the issued database status", async () => {
-    const { client, update } = createSupabaseMock("DRAFT");
+    const { client } = createSupabaseMock("DRAFT");
     mockCreateAdminClient.mockReturnValue(client);
 
     const { POST } = await import("@/app/api/invoices/[id]/send/route");
@@ -117,11 +126,8 @@ describe("POST /api/invoices/[id]/send", () => {
         userId: "user-1",
       })
     );
-    expect(update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        status: "UNPAID",
-      })
-    );
+    expect(mockEnsureInvoiceCanBeIssued).toHaveBeenCalledWith(client, "invoice-1");
+    expect(mockMarkInvoiceAsIssued).toHaveBeenCalledWith(client, "invoice-1", "user-1");
   });
 
   it("does not resend cancelled invoices", async () => {
@@ -140,5 +146,25 @@ describe("POST /api/invoices/[id]/send", () => {
     expect(body.error).toMatch(/анулирани|отменени/i);
     expect(mockSendInvoiceEmail).not.toHaveBeenCalled();
     expect(update).not.toHaveBeenCalled();
+  });
+
+  it("returns 422 when invoice cannot be legally issued", async () => {
+    const { client } = createSupabaseMock("DRAFT");
+    mockCreateAdminClient.mockReturnValue(client);
+    mockEnsureInvoiceCanBeIssued.mockResolvedValue({
+      ok: false,
+      errors: ["Липсва място на издаване"],
+      warnings: [],
+    });
+
+    const { POST } = await import("@/app/api/invoices/[id]/send/route");
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ id: "invoice-1" }),
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(422);
+    expect(body.validationErrors).toContain("Липсва място на издаване");
+    expect(mockMarkInvoiceAsIssued).not.toHaveBeenCalled();
   });
 });

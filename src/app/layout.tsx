@@ -8,7 +8,13 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner-toaster";
 import { CookieConsent } from "@/components/gdpr/CookieConsent";
 import { AnalyticsGate } from "@/components/gdpr/AnalyticsGate";
-import { APP_NAME, APP_DEFAULT_TITLE, APP_DESCRIPTION, SEO_KEYWORDS } from "@/config/constants";
+import {
+  APP_NAME,
+  APP_DEFAULT_TITLE,
+  APP_DESCRIPTION,
+  SEO_KEYWORDS,
+  PUBLIC_APP_URL_FALLBACK,
+} from "@/config/constants";
 import { Providers } from "./providers";
 
 const geistSans = localFont({
@@ -29,7 +35,7 @@ function getAppUrl(): string {
     "";
 
   if (!rawUrl || rawUrl.startsWith("${")) {
-    return "https://invoicy.bg";
+    return PUBLIC_APP_URL_FALLBACK;
   }
 
   if (rawUrl.startsWith("http://") || rawUrl.startsWith("https://")) {
@@ -78,7 +84,6 @@ export const metadata: Metadata = {
     title: APP_DEFAULT_TITLE,
     description: APP_DESCRIPTION,
     images: ['/og-image.png'],
-    creator: '@invoicy_bg',
   },
   robots: {
     index: true,
@@ -136,11 +141,6 @@ export default async function RootLayout({
                 "@type": "Offer",
                 "price": "0",
               "priceCurrency": "EUR"
-              },
-              "aggregateRating": {
-                "@type": "AggregateRating",
-                "ratingValue": "4.8",
-                "ratingCount": "150"
               },
               "description": APP_DESCRIPTION,
               "url": appUrl,

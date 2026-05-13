@@ -5,7 +5,10 @@ import { resolveSessionUser } from "@/lib/session-user";
 import { createAdminClient } from "@/lib/supabase/server";
 import { canExportFormat, getSubscriptionPlan } from "@/lib/subscription-plans";
 import { loadInvoiceExportGraph } from "@/lib/invoice-export-data";
-import { buildMicroinvestWarehouseTxtBatch } from "@/lib/invoice-export-microinvest";
+import {
+  buildMicroinvestWarehouseTxt,
+  buildMicroinvestWarehouseTxtBatch,
+} from "@/lib/invoice-export-microinvest";
 import { getDatabaseStatusesForAppStatus } from "@/lib/invoice-status";
 import type { InvoiceExportLike } from "@/lib/invoice-export-microinvest";
 import iconv from "iconv-lite";
@@ -36,6 +39,8 @@ export async function GET(request: NextRequest) {
     const clientId = searchParams.get("clientId");
     const status = searchParams.get("status");
     const includePrint = searchParams.get("includePrint") !== "false";
+    const txtMode = searchParams.get("txtMode") === "kv" ? "kv" : "formscript";
+    const encoding = searchParams.get("encoding") === "utf8" ? "utf8" : "cp1251";
 
     if (!startDate || !endDate) {
       return NextResponse.json(
@@ -118,11 +123,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const fullInvoices: InvoiceExportLike[] = [];
-    for (const id of ids) {
-      const { error, fullInvoice } = await loadInvoiceExportGraph(id, sessionUser.id);
-      if (!error && fullInvoice) fullInvoices.push(fullInvoice as InvoiceExportLike);
-    }
+    const exportGraphs = await Promise.all(
+      ids.map((id) => loadInvoiceExportGraph(id, sessionUser.id))
+    );
+    const fullInvoices: InvoiceExportLike[] = exportGraphs
+      .filter((result) => !result.error && result.fullInvoice)
+      .map((result) => result.fullInvoice as InvoiceExportLike);
 
     if (fullInvoices.length === 0) {
       return NextResponse.json(
@@ -131,16 +137,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const txt = buildMicroinvestWarehouseTxtBatch(fullInvoices, { includePrint });
-    const txtWin1251 = iconv.encode(txt, "cp1251");
+    const txt =
+      txtMode === "kv"
+        ? fullInvoices.map((invoice) => buildMicroinvestWarehouseTxt(invoice)).join("\n\n")
+        : buildMicroinvestWarehouseTxtBatch(fullInvoices, { includePrint });
+    const txtBody = encoding === "cp1251" ? iconv.encode(txt, "cp1251") : txt;
     const safeStart = startDate.replace(/[^0-9-]/g, "");
     const safeEnd = endDate.replace(/[^0-9-]/g, "");
     const filename = `WarehouseProExport-range-${safeStart}-${safeEnd}.txt`;
 
-    return new NextResponse(txtWin1251, {
+    return new NextResponse(txtBody, {
       status: 200,
       headers: {
-        "Content-Type": "text/plain; charset=windows-1251",
+        "Content-Type":
+          encoding === "cp1251"
+            ? "text/plain; charset=windows-1251"
+            : "text/plain; charset=utf-8",
         "Content-Disposition": `attachment; filename="${filename}"`,
       },
     });

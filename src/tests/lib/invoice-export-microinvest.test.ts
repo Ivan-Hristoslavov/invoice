@@ -35,6 +35,7 @@ describe("invoice-export-microinvest", () => {
     });
     expect(xml).toContain("<Microinvest>");
     expect(xml).toContain("<ExportData>");
+    expect(xml).toContain('<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>');
     expect(xml).toContain("<StockReceiptType>2</StockReceiptType>");
     expect(xml).toContain("<PartnerName>ACME OOD</PartnerName>");
     expect(xml).toContain("<OperationDescription>Test sale</OperationDescription>");

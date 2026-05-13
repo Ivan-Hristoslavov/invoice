@@ -118,7 +118,7 @@ export function buildMicroinvestExportDataBlock(inv: InvoiceExportLike): string 
   return lines.join("\n");
 }
 
-const MICROINVEST_XML_DECL = '<?xml version="1.0" standalone="yes" ?>';
+const MICROINVEST_XML_DECL = '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>';
 
 function wrapMicroinvestRoot(exportDataBlocks: string[]): string {
   return [`${MICROINVEST_XML_DECL}\n<Microinvest>`, ...exportDataBlocks, `</Microinvest>\n`].join("\n");
@@ -171,8 +171,12 @@ export function buildMicroinvestWarehouseTxt(fullInvoice: InvoiceExportLike): st
   };
 
   return Object.entries(rows)
-    .map(([k, v]) => `${k}=${v}`)
+    .map(([k, v]) => `${k}=${sanitizeKeyValueTxt(v)}`)
     .join("\n");
+}
+
+function sanitizeKeyValueTxt(value: string): string {
+  return value.replace(/[\r\n]+/g, " ").replace(/=/g, "-").trim();
 }
 
 function sanitizeFormScriptValue(value: string): string {

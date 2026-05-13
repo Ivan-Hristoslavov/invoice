@@ -5,7 +5,11 @@ import { resolveSessionUser } from "@/lib/session-user";
 import { createAdminClient } from "@/lib/supabase/server";
 import { canExportFormat, getSubscriptionPlan } from "@/lib/subscription-plans";
 import { loadInvoiceExportGraph } from "@/lib/invoice-export-data";
-import { buildMicroinvestWarehouseTxt } from "@/lib/invoice-export-microinvest";
+import {
+  buildMicroinvestWarehouseTxt,
+  buildMicroinvestWarehouseTxtBatch,
+} from "@/lib/invoice-export-microinvest";
+import iconv from "iconv-lite";
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,6 +24,8 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const invoiceId = searchParams.get("invoiceId");
+    const txtMode = searchParams.get("txtMode") === "formscript" ? "formscript" : "kv";
+    const encoding = searchParams.get("encoding") === "utf8" ? "utf8" : "cp1251";
     if (!invoiceId) {
       return NextResponse.json({ error: "Липсва ID на фактура" }, { status: 400 });
     }
@@ -55,14 +61,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const txt = buildMicroinvestWarehouseTxt(fullInvoice);
+    const txt =
+      txtMode === "formscript"
+        ? buildMicroinvestWarehouseTxtBatch([fullInvoice], { includePrint: false })
+        : buildMicroinvestWarehouseTxt(fullInvoice);
+    const body = encoding === "cp1251" ? iconv.encode(txt, "cp1251") : txt;
     const safeName = String(invoice.invoiceNumber || invoiceId).replace(/[^a-zA-Z0-9-_]/g, "_");
     const filename = `WarehouseProExport-${safeName}.txt`;
 
-    return new NextResponse(txt, {
+    return new NextResponse(body, {
       status: 200,
       headers: {
-        "Content-Type": "text/plain; charset=utf-8",
+        "Content-Type":
+          encoding === "cp1251"
+            ? "text/plain; charset=windows-1251"
+            : "text/plain; charset=utf-8",
         "Content-Disposition": `attachment; filename="${filename}"`,
       },
     });

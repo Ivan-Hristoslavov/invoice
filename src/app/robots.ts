@@ -1,7 +1,8 @@
 import { MetadataRoute } from 'next';
+import { PUBLIC_APP_URL_FALLBACK } from '@/config/constants';
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://invoicy.bg';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || PUBLIC_APP_URL_FALLBACK;
 
   return {
     rules: [

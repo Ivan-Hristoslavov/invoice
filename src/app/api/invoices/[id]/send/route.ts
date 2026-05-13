@@ -7,10 +7,13 @@ import { sendInvoiceEmail } from "@/lib/email";
 import { logAction } from "@/lib/audit-log";
 import { resolveSessionUser } from "@/lib/session-user";
 import {
-  getDatabaseStatusForAppStatus,
   isIssuedLikeStatus,
   normalizeInvoiceStatus,
 } from "@/lib/invoice-status";
+import {
+  ensureInvoiceCanBeIssued,
+  markInvoiceAsIssued,
+} from "@/lib/services/invoice-issuance";
 
 export async function POST(
   request: NextRequest,
@@ -93,17 +96,21 @@ export async function POST(
     });
 
     if (!isIssuedLikeStatus(invoice.status)) {
-      const { error: updateError } = await supabase
-        .from("Invoice")
-        .update({ 
-          status: getDatabaseStatusForAppStatus("ISSUED"),
-          updatedAt: new Date().toISOString()
-        })
-        .eq("id", id)
-        .eq("userId", sessionUser.id);
+      const issuanceValidation = await ensureInvoiceCanBeIssued(supabase, id);
+      if (!issuanceValidation.ok) {
+        return NextResponse.json(
+          {
+            error: "Фактурата не може да бъде издадена поради липсващи данни",
+            validationErrors: issuanceValidation.errors,
+            warnings: issuanceValidation.warnings,
+          },
+          { status: 422 }
+        );
+      }
 
-      if (updateError) {
-        throw updateError;
+      const issueResult = await markInvoiceAsIssued(supabase, id, sessionUser.id);
+      if (!issueResult.ok) {
+        return NextResponse.json({ error: issueResult.error }, { status: 500 });
       }
     }
     

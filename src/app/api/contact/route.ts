@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { DEFAULT_SUPPORT_EMAIL_FALLBACK } from "@/config/constants";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
 
 const contactSchema = z.object({
@@ -85,7 +86,7 @@ export async function POST(req: NextRequest) {
 
     const transporter = getSmtpTransporter();
     const fromAddress = process.env.SMTP_FROM_ADDRESS || process.env.EMAIL_FROM_ADDRESS;
-    const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@invoicy.bg";
+    const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || DEFAULT_SUPPORT_EMAIL_FALLBACK;
     const toAddress = process.env.SMTP_TO_ADDRESS || supportEmail;
 
     if (!transporter || !fromAddress || !toAddress) {

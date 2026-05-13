@@ -7,8 +7,8 @@ import { logAction } from "@/lib/audit-log";
 import cuid from "cuid";
 import { resolveSessionUser } from "@/lib/session-user";
 import { withDocumentSnapshots } from "@/lib/document-snapshots";
-import { getNextDocumentNumber } from "@/lib/document-numbering";
 import { isIssuedLikeStatus, normalizeInvoiceStatus } from "@/lib/invoice-status";
+import { getNextInvoiceSequence, rollbackInvoiceSequence } from "@/lib/invoice-sequence";
 
 /**
  * POST /api/invoices/[id]/cancel
@@ -86,17 +86,16 @@ export async function POST(
     let creditNoteNumber = "";
     let creditNote: any = null;
     let creditNoteError: any = null;
+    let issuedSequence: number | null = null;
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
-      creditNoteNumber = await getNextDocumentNumber({
-        supabase: supabaseAdmin,
-        table: "CreditNote",
-        numberColumn: "creditNoteNumber",
-        userId: sessionUser.id,
-        companyId: invoice.companyId,
-        companyEik: invoice.company?.bulstatNumber,
-        type: "credit-note",
-      });
+      const nextInvoiceNumber = await getNextInvoiceSequence(
+        sessionUser.id,
+        invoice.companyId,
+        invoice.company?.bulstatNumber
+      );
+      creditNoteNumber = nextInvoiceNumber.invoiceNumber;
+      issuedSequence = nextInvoiceNumber.sequence;
 
       const result = await supabaseAdmin
         .from("CreditNote")
@@ -135,6 +134,9 @@ export async function POST(
     }
 
     if (creditNoteError) {
+      if (issuedSequence !== null) {
+        await rollbackInvoiceSequence(sessionUser.id, invoice.companyId, issuedSequence);
+      }
       console.error("Грешка при създаване на кредитно известие:", creditNoteError);
       return NextResponse.json(
         { error: "Неуспешно създаване на кредитно известие" },
@@ -162,7 +164,14 @@ export async function POST(
         .insert(creditNoteItems);
 
       if (itemsError) {
-        await supabaseAdmin.from("CreditNote").delete().eq("id", creditNoteId);
+        await supabaseAdmin
+          .from("CreditNote")
+          .delete()
+          .eq("id", creditNoteId)
+          .eq("userId", sessionUser.id);
+        if (issuedSequence !== null) {
+          await rollbackInvoiceSequence(sessionUser.id, invoice.companyId, issuedSequence);
+        }
         return NextResponse.json(
           { error: "Неуспешно създаване на артикули за кредитното известие" },
           { status: 500 }
@@ -180,13 +189,24 @@ export async function POST(
         creditNoteId,
         updatedAt: new Date().toISOString(),
       })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("userId", sessionUser.id);
 
     if (updateError) {
       console.error("Грешка при обновяване на фактура:", updateError);
       // Rollback credit note creation
-      await supabaseAdmin.from("CreditNoteItem").delete().eq("creditNoteId", creditNoteId);
-      await supabaseAdmin.from("CreditNote").delete().eq("id", creditNoteId);
+      await supabaseAdmin
+        .from("CreditNoteItem")
+        .delete()
+        .eq("creditNoteId", creditNoteId);
+      await supabaseAdmin
+        .from("CreditNote")
+        .delete()
+        .eq("id", creditNoteId)
+        .eq("userId", sessionUser.id);
+      if (issuedSequence !== null) {
+        await rollbackInvoiceSequence(sessionUser.id, invoice.companyId, issuedSequence);
+      }
       return NextResponse.json(
         { error: "Неуспешно обновяване на фактура" },
         { status: 500 }

@@ -84,16 +84,17 @@
 
 Добавете в `.env.local`:
 ```
-NEXT_PUBLIC_APP_URL=https://facturapro.bg
+NEXT_PUBLIC_APP_URL=https://invoicy-pro.com
 ```
 
 ## Структурирани данни
 
 Приложението вече включва JSON-LD structured data за:
-- SoftwareApplication schema
-- AggregateRating
+- SoftwareApplication / WebApplication schema
 - Offers
-- FeatureList
+- FeatureList (където е приложимо)
+
+`AggregateRating` не се включва, докато няма реални публични оценки — измислени рейтинги нарушават насоките за structured data.
 
 ## Проверка на SEO
 

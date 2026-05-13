@@ -56,6 +56,7 @@ const ACTION_LABELS: Record<string, string> = {
   ISSUE: "Издаване",
   SEND: "Изпращане",
   CANCEL: "Отмяна",
+  VOID: "Анулиране",
   EXPORT: "Експорт",
   EXPORT_DATA: "Експорт на данни",
   DELETE_ACCOUNT: "Изтриване на акаунт",
@@ -81,6 +82,7 @@ const getActionIcon = (action: string) => {
     case 'ISSUE': return <CheckCircle className="h-4 w-4" />;
     case 'SEND': return <Mail className="h-4 w-4" />;
     case 'CANCEL': return <XCircle className="h-4 w-4" />;
+    case 'VOID': return <XCircle className="h-4 w-4" />;
     case 'EXPORT': return <Download className="h-4 w-4" />;
     case 'EXPORT_DATA': return <Download className="h-4 w-4" />;
     case 'DELETE_ACCOUNT': return <Shield className="h-4 w-4" />;
@@ -96,6 +98,7 @@ const getActionColor = (action: string) => {
     case 'ISSUE': return 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20';
     case 'SEND': return 'bg-violet-500/10 text-violet-600 border-violet-500/20';
     case 'CANCEL': return 'bg-red-500/10 text-red-600 border-red-500/20';
+    case 'VOID': return 'bg-red-500/10 text-red-600 border-red-500/20';
     case 'EXPORT': return 'bg-amber-500/10 text-amber-600 border-amber-500/20';
     case 'EXPORT_DATA': return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
     case 'DELETE_ACCOUNT': return 'bg-red-500/10 text-red-600 border-red-500/20';

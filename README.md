@@ -68,13 +68,20 @@ cp .env.example .env.local
 
 4. Попълнете `.env.local` с вашите данни:
 ```env
-NEXT_PUBLIC_APP_URL=https://facturapro.bg
+NEXT_PUBLIC_APP_URL=https://invoicy-pro.com
+NEXTAUTH_URL=https://invoicy-pro.com
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 NEXTAUTH_SECRET=your-nextauth-secret
-NEXTAUTH_URL=http://localhost:3000
 ```
+
+За локална разработка задайте `NEXT_PUBLIC_APP_URL=http://localhost:3000` и `NEXTAUTH_URL=http://localhost:3000`.
+
+**Production интеграции (същият публичен домейн):**
+- **Google OAuth:** Authorized redirect URI `https://invoicy-pro.com/api/auth/callback/google`
+- **Supabase Auth:** Site URL и Redirect URLs да включват `https://invoicy-pro.com`
+- **Stripe Webhooks:** `https://invoicy-pro.com/api/webhooks/stripe`
 
 5. Стартирайте development сървъра:
 ```bash

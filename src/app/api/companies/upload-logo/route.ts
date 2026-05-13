@@ -49,6 +49,24 @@ function detectImageMimeType(buffer: Buffer): string | null {
   return null;
 }
 
+function getStoragePath(value: string, bucket: string): string | null {
+  if (!value) return null;
+  if (!value.startsWith("http://") && !value.startsWith("https://")) {
+    return value;
+  }
+  try {
+    const u = new URL(value);
+    const marker = `/storage/v1/object/public/${bucket}/`;
+    const index = u.pathname.indexOf(marker);
+    if (index >= 0) {
+      return u.pathname.slice(index + marker.length);
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -158,22 +176,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: urlData } = supabase.storage
-      .from(STORAGE_BUCKET_IMAGES)
-      .getPublicUrl(filePath);
-
-    const logoUrl = urlData.publicUrl;
+    const logoPath = filePath;
 
     // Delete old logo if exists
     if (company.logo) {
       try {
-        // Extract file path from old logo URL
-        const oldUrl = new URL(company.logo);
-        const oldPath = oldUrl.pathname.split('/').slice(-2).join('/'); // Get 'logos/filename'
-        
-        await supabase.storage
-          .from(STORAGE_BUCKET_IMAGES)
-          .remove([oldPath]);
+        const oldPath = getStoragePath(company.logo, STORAGE_BUCKET_IMAGES);
+        if (oldPath) {
+          await supabase.storage.from(STORAGE_BUCKET_IMAGES).remove([oldPath]);
+        }
       } catch (error) {
         // Ignore errors when deleting old logo
         console.warn('Could not delete old logo:', error);
@@ -183,7 +194,7 @@ export async function POST(request: NextRequest) {
     // Update company with new logo URL (scope to owner)
     const { error: updateError } = await supabase
       .from("Company")
-      .update({ logo: logoUrl })
+      .update({ logo: logoPath })
       .eq("id", companyId)
       .eq("userId", session.user.id as string);
 
@@ -199,9 +210,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const { data: signed } = await supabase.storage
+      .from(STORAGE_BUCKET_IMAGES)
+      .createSignedUrl(logoPath, 60 * 10);
+
     return NextResponse.json({
       success: true,
-      logoUrl,
+      logoUrl: signed?.signedUrl ?? logoPath,
+      storagePath: logoPath,
     });
   } catch (error) {
     console.error("Грешка при качване на лого:", error);

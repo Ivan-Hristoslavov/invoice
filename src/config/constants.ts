@@ -72,3 +72,9 @@ export const ALLOWED_ATTACHMENT_MIME_TYPES = [
 ] as const;
 export const MAX_ATTACHMENT_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 export const MAX_ATTACHMENTS_PER_INVOICE = 10;
+
+/** When `NEXT_PUBLIC_APP_URL` is unset (e.g. misconfigured deploy); set the real URL in Vercel. */
+export const PUBLIC_APP_URL_FALLBACK = "https://invoicy-pro.com";
+
+/** When `NEXT_PUBLIC_SUPPORT_EMAIL` is unset; override in env for your mailbox. */
+export const DEFAULT_SUPPORT_EMAIL_FALLBACK = "support@invoicy-pro.com";

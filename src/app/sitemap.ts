@@ -1,8 +1,8 @@
 import { MetadataRoute } from 'next';
-import { APP_NAME } from '@/config/constants';
+import { PUBLIC_APP_URL_FALLBACK } from '@/config/constants';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://invoicy.bg';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || PUBLIC_APP_URL_FALLBACK;
 
   return [
     {
@@ -10,18 +10,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 1,
-    },
-    {
-      url: `${baseUrl}/signup`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/signin`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.5,
     },
   ];
 }

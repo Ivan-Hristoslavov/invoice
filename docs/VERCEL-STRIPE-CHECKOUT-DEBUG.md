@@ -29,7 +29,7 @@ When `POST /api/subscription/direct-link` works locally but returns **500** with
 
 | Item | Action |
 |------|--------|
-| **NEXT_PUBLIC_APP_URL** | Set in Vercel → Project → Settings → **Environment Variables** for **Production** (and Preview if needed). Value: `https://invoice-ten-sigma.vercel.app` — no trailing slash, no spaces. |
+| **NEXT_PUBLIC_APP_URL** | Set in Vercel → Project → Settings → **Environment Variables** for **Production** (and Preview if needed). Example: `https://invoicy-pro.com` — no trailing slash, no spaces. |
 | **Build vs Runtime** | `NEXT_PUBLIC_*` is baked in at **build**. After adding/changing it, trigger a **new deployment** (Redeploy), not just a new preview. |
 | **Fallback** | If `NEXT_PUBLIC_APP_URL` is missing, the route falls back to `https://${VERCEL_URL}` (Vercel provides `VERCEL_URL`). Custom domains still work if `VERCEL_URL` matches the deployment. For a custom domain, set `NEXT_PUBLIC_APP_URL` to that domain. |
 | **STRIPE_SECRET_KEY** | Must be set for Production (and match the Stripe mode you use). |
@@ -37,7 +37,7 @@ When `POST /api/subscription/direct-link` works locally but returns **500** with
 
 ## Environment variable names (no secrets)
 
-- `NEXT_PUBLIC_APP_URL` – full app URL (e.g. `https://invoice-ten-sigma.vercel.app`)
+- `NEXT_PUBLIC_APP_URL` – full app URL (e.g. `https://invoicy-pro.com` or your Vercel preview URL)
 - `VERCEL_URL` – set by Vercel automatically (used as fallback if `NEXT_PUBLIC_APP_URL` is missing)
 - `STRIPE_SECRET_KEY` or `STRIPE_SECRET_KEY_FIXED`
 - `STRIPE_STARTER_MONTHLY_PRICE_ID`
@@ -47,7 +47,7 @@ When `POST /api/subscription/direct-link` works locally but returns **500** with
 ## How to fix
 
 1. In Vercel: **Settings → Environment Variables**  
-   Add (or fix) **NEXT_PUBLIC_APP_URL** = `https://invoice-ten-sigma.vercel.app` for **Production**.
+   Add (or fix) **NEXT_PUBLIC_APP_URL** = `https://invoicy-pro.com` for **Production** (or your chosen canonical domain).
 2. **Redeploy** the project (so the new value is in the build).
 3. Test again: open the subscription page, click pay for a plan; the request should return 200 and a Stripe Checkout URL, or a clear JSON error message.
 

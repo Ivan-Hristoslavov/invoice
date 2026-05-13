@@ -38,6 +38,14 @@ const sizeToHero: Record<NonNullable<ButtonProps["size"]>, "sm" | "md" | "lg"> =
 const triggerButtonLayout =
   "inline-flex min-h-10 flex-row items-center justify-center gap-1.5 rounded-2xl text-center text-sm font-medium leading-tight whitespace-normal sm:min-h-11 sm:whitespace-nowrap";
 
+function invokeOnClickFromPress(
+  onClick: React.MouseEventHandler<HTMLButtonElement> | undefined,
+  event: unknown
+) {
+  if (!onClick) return;
+  onClick(event as React.MouseEvent<HTMLButtonElement>);
+}
+
 // ---------- Root ----------
 interface AlertDialogProps {
   open?: boolean;
@@ -210,8 +218,8 @@ const AlertDialogAction = React.forwardRef<
             disabled && "pointer-events-none opacity-60",
             className
           ),
-          onPress: () => {
-            onClick?.({} as React.MouseEvent<HTMLButtonElement>);
+          onPress: (event) => {
+            invokeOnClickFromPress(onClick, event);
           },
           children,
           ...props,
@@ -259,8 +267,8 @@ const AlertDialogCancel = React.forwardRef<
             disabled && "pointer-events-none opacity-60",
             className
           ),
-          onPress: () => {
-            onClick?.({} as React.MouseEvent<HTMLButtonElement>);
+          onPress: (event) => {
+            invokeOnClickFromPress(onClick, event);
           },
           children,
           ...props,
